@@ -29,7 +29,7 @@ dotnet_toolchain = rule(
     attrs = {
         # Minimum requirements to specify a toolchain
         "builder": attr.label(
-            mandatory = True,
+            # mandatory = True,
             cfg = "exec",
             executable = True,
             doc = "Tool used to execute most Dotnet actions",
@@ -53,7 +53,7 @@ dotnet_toolchain = rule(
     provides = [platform_common.ToolchainInfo],
 )
 
-def declare_toolchains(host, sdk, builder):
+def declare_toolchains(host, sdk):
     """Declares dotnet_toolchain and toolchain targets for each platform."""
 
     # keep in sync with generate_toolchain_names
@@ -69,7 +69,7 @@ def declare_toolchains(host, sdk, builder):
             dotnetos = p.dotnetos,
             dotnetarch = p.dotnetarch,
             sdk = sdk,
-            builder = builder,
+            # builder = builder,
             tags = ["manual"],
             visibility = ["//visibility:public"],
         )

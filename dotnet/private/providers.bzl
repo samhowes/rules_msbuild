@@ -1,5 +1,17 @@
 """Dotnet Providers"""
 
+# See dotnet/providers.md#DotnetLibraryInfo for full documentation.
+DotnetLibraryInfo = provider(
+    doc = "A dotnet library dependency",
+    fields = {}
+)
+
+# See dotnet/providers.md#DotnetContextInfo for full documentation.
+DotnetContextInfo = provider(
+    doc = "A dotnet context",
+    fields = {}
+)
+
 DotnetSdkInfo = provider(
     doc = "Contains information about the Dotnet SDK used in the toolchain",
     fields = {

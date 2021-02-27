@@ -4,6 +4,5 @@ bzl_library(
     name = "binary",
     srcs = ["binary.bzl"],
     visibility = ["//dotnet:__subpackages__"],
-    deps = [
-    ],
+    deps = [],
 )

@@ -15,8 +15,14 @@ def emit_binary(
 
     if not executable:
         extension = dotnet.exe_extension
-        executable = dotnet.declare_file(dotnet, path = name, ext = extension)
+        executable = dotnet.actions.declare_file(dotnet._ctx.label.name + extension)
     #todo specify these
-    runfiles = dotnet._ctx.runfiles(files = [])
+    # runfiles = dotnet._ctx.runfiles(files = [])
+    print(dotnet._ctx.files.srcs)
+    dotnet.actions.do_nothing(mnemonic='DotnetBuild',inputs= dotnet._ctx.files.srcs)
+    dotnet.actions.write(
+        output = executable,
+        content = "Hello\n",
+    )
 
-    return executable, runfiles
+    return executable#, runfiles

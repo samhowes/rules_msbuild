@@ -29,15 +29,15 @@ package(default_visibility = ["//visibility:public"])
 
 dotnet_sdk(
     name = "dotnet_sdk",
-    goos = "{dotnetos}",
-    goarch = "{dotnetarch}",
-    root_file = "ROOT", # todo figure this out
-    package_list = ":package_list",
-    libs = [":libs"],
-    headers = [":headers"], #todo change this to refs?
-    srcs = [":srcs"], #todo remove this?
-    tools = [":tools"], #todo remove this?
-    dotnet = "bin/go{exe}", #todo find dotnet and find the definition of {exe}
+    dotnetos = "{dotnetos}",
+    dotnetarch = "{dotnetarch}",
+    root_file = "ROOT", 
+    # package_list = ":package_list",
+    # libs = [":libs"],
+    # headers = [":headers"], #todo change this to refs?
+    # srcs = [":srcs"], #todo remove this?
+    # tools = [":tools"], #todo remove this?
+    dotnet = "dotnet{exe}", 
 )
 
 # #todo remvoe this?
@@ -57,7 +57,7 @@ package_list(
 declare_toolchains(
     host = "{dotnetos}_{dotnetarch}", #todo fix this path?
     sdk = ":dotnet_sdk",
-    builder = ":builder", # todo remove this?
+    # builder = ":builder", # todo remove this?
 )
 
 #todo remove this?
