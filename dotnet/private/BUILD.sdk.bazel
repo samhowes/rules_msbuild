@@ -1,0 +1,72 @@
+load("@my_rules_dotnet//dotnet/private/rules:binary.bzl", "dotnet_tool_binary")
+load("@my_rules_dotnet//dotnet/private/rules:sdk.bzl", "package_list")
+load("@my_rules_dotnet//dotnet:def.bzl", "declare_toolchains", "dotnet_sdk")
+
+package(default_visibility = ["//visibility:public"])
+
+# filegroup(
+#     name = "libs",
+#     srcs = glob(
+#         ["pkg/{goos}_{goarch}/**/*.a"], # todo: make this be a list of dlls in the sdk
+#         exclude = ["pkg/{goos}_{goarch}/**/cmd/**"], # todo: make this be a list of excluded things
+#     ),
+# )
+
+# filegroup(
+#     name = "headers",
+#     srcs = glob(["pkg/include/*.h"]), # todo: ref assemblies?
+# )
+
+# filegroup(
+#     name = "srcs",
+#     srcs = glob(["src/**"]), # todo remove this?
+# )
+
+# filegroup(
+#     name = "tools",
+#     srcs = glob(["pkg/tool/**", "bin/gofmt*"]) # todo: what are dotnet tools?   
+# )
+
+dotnet_sdk(
+    name = "dotnet_sdk",
+    goos = "{dotnetos}",
+    goarch = "{dotnetarch}",
+    root_file = "ROOT", # todo figure this out
+    package_list = ":package_list",
+    libs = [":libs"],
+    headers = [":headers"], #todo change this to refs?
+    srcs = [":srcs"], #todo remove this?
+    tools = [":tools"], #todo remove this?
+    dotnet = "bin/go{exe}", #todo find dotnet and find the definition of {exe}
+)
+
+# #todo remvoe this?
+# dotnet_tool_binary( 
+#     name = "builder",
+#     srcs = ["@my_rules_dotnet//go/tools/builders:builder_srcs"],
+#     sdk = ":go_sdk",
+# )
+
+package_list(
+    name = "package_list",
+    srcs = [":srcs"], #todo remove this?
+    root_file = "ROOT", #todo root?
+    out = "packages.txt", #todo figure out for dotnet
+)
+
+declare_toolchains(
+    host = "{dotnetos}_{dotnetarch}", #todo fix this path?
+    sdk = ":dotnet_sdk",
+    builder = ":builder", # todo remove this?
+)
+
+#todo remove this?
+# filegroup(
+#     name = "files",
+#     srcs = glob([
+#         "bin/go*",
+#         "src/**",
+#         "pkg/**",
+#     ]),
+# )
+
