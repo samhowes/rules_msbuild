@@ -4,48 +4,14 @@ load("@my_rules_dotnet//dotnet:def.bzl", "declare_toolchains", "dotnet_sdk")
 
 package(default_visibility = ["//visibility:public"])
 
-# filegroup(
-#     name = "libs",
-#     srcs = glob(
-#         ["pkg/{goos}_{goarch}/**/*.a"], # todo: make this be a list of dlls in the sdk
-#         exclude = ["pkg/{goos}_{goarch}/**/cmd/**"], # todo: make this be a list of excluded things
-#     ),
-# )
-
-# filegroup(
-#     name = "headers",
-#     srcs = glob(["pkg/include/*.h"]), # todo: ref assemblies?
-# )
-
-# filegroup(
-#     name = "srcs",
-#     srcs = glob(["src/**"]), # todo remove this?
-# )
-
-# filegroup(
-#     name = "tools",
-#     srcs = glob(["pkg/tool/**", "bin/gofmt*"]) # todo: what are dotnet tools?   
-# )
-
 dotnet_sdk(
     name = "dotnet_sdk",
     dotnetos = "{dotnetos}",
     dotnetarch = "{dotnetarch}",
     root_file = "ROOT", 
-    # package_list = ":package_list",
-    # libs = [":libs"],
-    # headers = [":headers"], #todo change this to refs?
-    # srcs = [":srcs"], #todo remove this?
-    # tools = [":tools"], #todo remove this?
+    sdk_root = "sdk/{version}",
     dotnet = "dotnet{exe}", 
 )
-
-# #todo remvoe this?
-# dotnet_tool_binary( 
-#     name = "builder",
-#     srcs = ["@my_rules_dotnet//go/tools/builders:builder_srcs"],
-#     sdk = ":go_sdk",
-# )
 
 package_list(
     name = "package_list",
@@ -59,14 +25,4 @@ declare_toolchains(
     sdk = ":dotnet_sdk",
     # builder = ":builder", # todo remove this?
 )
-
-#todo remove this?
-# filegroup(
-#     name = "files",
-#     srcs = glob([
-#         "bin/go*",
-#         "src/**",
-#         "pkg/**",
-#     ]),
-# )
 

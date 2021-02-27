@@ -1,3 +1,7 @@
+"""Some pre-configured urls for downloading Dotnet sdk versions.
+Credit to: https://github.com/bazelbuild/rules_dotnet
+"""
+
 DOTNET_SDK_URLS = {
     "2.1.200": {
         "windows_amd64": (

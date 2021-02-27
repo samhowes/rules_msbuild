@@ -2,7 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>{tfm}</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    {compile_srcs}
+  </ItemGroup>
 
 </Project>

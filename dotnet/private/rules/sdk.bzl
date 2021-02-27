@@ -9,6 +9,7 @@ def _dotnet_sdk_impl(ctx):
         dotnetos = ctx.attr.dotnetos,
         dotnetarch = ctx.attr.dotnetarch,
         root_file = ctx.file.root_file,
+        sdk_root = ctx.file.sdk_root,
         libs = ctx.files.libs,
         dotnet = ctx.executable.dotnet,
     )]
@@ -28,6 +29,12 @@ dotnet_sdk = rule(
             mandatory = True,
             allow_single_file = True,
             doc = "A file in the SDK root directory.",
+        ),
+        "sdk_root": attr.label(
+            mandatory = True,
+            allow_single_file = True,
+            doc = ("The versioned directory containing the primary SDK" +
+                     "Artifacts and build extensions"),
         ),
         "libs": attr.label_list(
             allow_files = [".a"],

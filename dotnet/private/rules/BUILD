@@ -6,3 +6,5 @@ bzl_library(
     visibility = ["//dotnet:__subpackages__"],
     deps = [],
 )
+
+exports_files(["compile.tpl.proj"])

@@ -112,6 +112,7 @@ def _sdk_build_file(ctx, platform):
             "{dotnetos}": dotnetos,
             "{dotnetarch}": dotnetarch,
             "{exe}": ".exe" if dotnetos == "windows" else "",
+            "{version}": ctx.attr.version,
         },
     )
 
