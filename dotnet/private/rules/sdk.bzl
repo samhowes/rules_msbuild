@@ -6,12 +6,15 @@ load(
 
 def _dotnet_sdk_impl(ctx):
     return [DotnetSdkInfo(
+        dotnet = ctx.executable.dotnet,
         dotnetos = ctx.attr.dotnetos,
         dotnetarch = ctx.attr.dotnetarch,
         root_file = ctx.file.root_file,
         sdk_root = ctx.file.sdk_root,
-        libs = ctx.files.libs,
-        dotnet = ctx.executable.dotnet,
+        sdk_files = ctx.files.sdk_files,
+        fxr = ctx.files.fxr,
+        shared = ctx.files.shared,
+        packs = ctx.files.packs,
     )]
 
 dotnet_sdk = rule(
@@ -36,10 +39,24 @@ dotnet_sdk = rule(
             doc = ("The versioned directory containing the primary SDK" +
                      "Artifacts and build extensions"),
         ),
-        "libs": attr.label_list(
-            allow_files = [".a"],
-            doc = ("Pre-compiled .dll files for the standard library, " +
-                   "built for the execution platform"),
+        "sdk_files": attr.label(
+            mandatory = True,
+            doc = ("The files inside the sdk_root"),
+        ),
+        "fxr": attr.label(
+            mandatory = True,
+            allow_files = True,
+            doc = ("The hstfxr.dll"),
+        ),
+        "shared": attr.label(
+            mandatory = True,
+            allow_files = True,
+            doc = "The shared sdk libraries"
+        ),
+        "packs": attr.label_list(
+            mandatory = True,
+            allow_files = True,
+            doc = ("NuGet packages included with the SDK"),
         ),
         "tools": attr.label_list(
             allow_files = True,

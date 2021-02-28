@@ -73,9 +73,6 @@ def emit_binary(dotnet):
     args.add(proj.path)
     args.add('-p:IntermediateOutputPath={}'.format(intermediate_output.msbuild_path))
     args.add('-p:OutputPath={}'.format(output_dir))
-    
-
-    sdk_root = dotnet.toolchain.sdk.sdk_root.path
 
     env = {
         "DOTNET_CLI_HOME": dotnet.toolchain.sdk.root_file.dirname,
@@ -86,9 +83,14 @@ def emit_binary(dotnet):
 
     _add_nuget_environment(dotnet, env)
 
+    sdk = dotnet.toolchain.sdk
     dotnet.actions.run(
         mnemonic = "DotnetBuild",
-        inputs = dotnet._ctx.files.srcs + [proj, src_symlink],
+        inputs = (
+            dotnet._ctx.files.srcs + 
+            [proj, src_symlink]
+            + sdk.packs + sdk.shared + sdk.sdk_files
+            + sdk.fxr),
         outputs = outputs,
         executable = dotnet.toolchain.sdk.dotnet,
         arguments = [args],
@@ -101,8 +103,10 @@ def _add_nuget_environment(dotnet, env):
     """ Adds nuget environment variables for package restore
 
     https://github.com/NuGet/NuGet.Client/blob/3d1d3c77f441e2f653dad789e28fa11fec189b87/src/NuGet.Core/NuGet.Common/PathUtil/NuGetEnvironment.cs#L10
-    dotnet: dotnet_context() result
-    env: a dict of environment variables"""
+    Args:
+        dotnet: dotnet_context() result
+        env: a dict of environment variables
+    """
 
     dotnet_sdk_base = dotnet.toolchain.sdk.root_file.dirname
     env.update({
@@ -110,7 +114,7 @@ def _add_nuget_environment(dotnet, env):
         "USERPROFILE": dotnet_sdk_base,
         "PROGRAMFILES(X86)": dotnet_sdk_base, # used when constructing XPlatMachineWideSetting
         "PROGRAMFILES": dotnet_sdk_base, # used when constructing XPlatMachineWideSetting
-        #todo add other platform variables
+        #todo add variables for other platforms
         "APPDATA": dotnet_sdk_base # used by Settings.cs#LoadUserSpecificSettings: `NuGetFolderPath.UserSettingsDirectory` (windows only)
     })
 

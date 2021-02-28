@@ -1,28 +1,38 @@
 load("@my_rules_dotnet//dotnet/private/rules:binary.bzl", "dotnet_tool_binary")
 load("@my_rules_dotnet//dotnet/private/rules:sdk.bzl", "package_list")
-load("@my_rules_dotnet//dotnet:def.bzl", "declare_toolchains", "dotnet_sdk")
+load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_sdk")
 
 package(default_visibility = ["//visibility:public"])
+
+declare_toolchains(
+    host = "{dotnetos}_{dotnetarch}", #todo fix this path?
+    sdk = ":dotnet_sdk",
+)
 
 dotnet_sdk(
     name = "dotnet_sdk",
     dotnetos = "{dotnetos}",
     dotnetarch = "{dotnetarch}",
+    dotnet = "dotnet{exe}",
     root_file = "ROOT", 
     sdk_root = "sdk/{version}",
-    dotnet = "dotnet{exe}", 
+    sdk_files = ":sdk_files",
+    fxr = ":fxr",
+    shared = ":shared",
+    packs = [
+{pack_labels}
+    ]
 )
 
-package_list(
-    name = "package_list",
-    srcs = [":srcs"], #todo remove this?
-    root_file = "ROOT", #todo root?
-    out = "packages.txt", #todo figure out for dotnet
+filegroup(
+    name = "sdk_files",
+    srcs = glob(["sdk/{version}/**/*"]),
 )
 
-declare_toolchains(
-    host = "{dotnetos}_{dotnetarch}", #todo fix this path?
-    sdk = ":dotnet_sdk",
-    # builder = ":builder", # todo remove this?
+filegroup(
+    name = "fxr",
+    srcs = glob(["host/fxr/**/*"]), # not multi-version safe
 )
 
+# not multi-version safe
+{dynamics}

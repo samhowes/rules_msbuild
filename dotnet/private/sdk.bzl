@@ -17,8 +17,7 @@ def _dotnet_download_sdk_impl(ctx):
             fail("dotnetos set but dotnetarch not set")
         dotnetos, dotnetarch = ctx.attr.dotnetos, ctx.attr.dotnetarch
     platform = dotnetos + "_" + dotnetarch
-    _sdk_build_file(ctx, platform)
-
+    
     version = ctx.attr.version
     sdks = ctx.attr.sdks
     
@@ -65,6 +64,19 @@ def _dotnet_download_sdk_impl(ctx):
     filename, sha256 = sdks[platform]
     _remote_sdk(ctx, [url.format(filename) for url in ctx.attr.urls], ctx.attr.strip_prefix, sha256)
 
+    _sdk_build_file(ctx, platform)
+
+    # create dotnet init files so dotnet doesn't noisily print them out on the first build
+    dotnet_init_files = [
+        "aspNetCertificateSentinel",
+        "dotnetFirstUseSentinel",
+        "toolpath.sentinel"
+    ]
+    for f in dotnet_init_files:
+        ctx.file(".dotnet/{}.{}".format(ctx.attr.version, f))
+
+    ctx.file(".bazelignore", ".dotnet", executable=False)
+
     if not ctx.attr.sdks and not ctx.attr.version:
         # Returning this makes Bazel print a message that 'version' must be
         # specified for a reproducible build.
@@ -102,8 +114,28 @@ _dotnet_download_sdk = repository_rule(
 )
 
 def _sdk_build_file(ctx, platform):
+    """Creates the BUILD file for the downloaded dotnet sdk
+    
+    Assumes there is only one SDK in this directory, this is accurate for an 
+    individual directory, but dotnet is structured to allow multiple sdk versions to 
+    exist nicely next to each other.
+    """
     ctx.file("ROOT")
     dotnetos, _, dotnetarch = platform.partition("_")
+
+    dynamics = []
+    pack_labels = []
+    packs = ctx.path("packs")
+    for p in packs.readdir():
+        # pack_name, _, _ = p.rpartition("/")
+        pack_name = p.basename
+        pack_labels.append('        ":{}",'.format(pack_name))
+        dynamics.append("""
+filegroup(
+    name = "{pack}",
+    srcs = glob(["packs/{pack}/**/*"]),
+)""".format(pack=pack_name))
+
     ctx.template(
         "BUILD.bazel",
         Label("@my_rules_dotnet//dotnet/private:BUILD.sdk.bazel"),
@@ -113,6 +145,8 @@ def _sdk_build_file(ctx, platform):
             "{dotnetarch}": dotnetarch,
             "{exe}": ".exe" if dotnetos == "windows" else "",
             "{version}": ctx.attr.version,
+            "{pack_labels}": "\n".join(pack_labels),
+            "{dynamics}": "\n".join(dynamics)
         },
     )
 

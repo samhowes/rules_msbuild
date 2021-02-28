@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:def.bzl","dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl","dotnet_binary")
 
 dotnet_binary(
     name = "ConsoleApp",
