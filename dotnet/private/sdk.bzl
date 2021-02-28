@@ -75,7 +75,7 @@ def _dotnet_download_sdk_impl(ctx):
     for f in dotnet_init_files:
         ctx.file(".dotnet/{}.{}".format(ctx.attr.version, f))
 
-    ctx.file(".bazelignore", ".dotnet", executable=False)
+    ctx.file(".bazelignore", ".dotnet\n.nuget\n", executable=False)
 
     if not ctx.attr.sdks and not ctx.attr.version:
         # Returning this makes Bazel print a message that 'version' must be
@@ -148,6 +148,15 @@ filegroup(
             "{pack_labels}": "\n".join(pack_labels),
             "{dynamics}": "\n".join(dynamics)
         },
+    )
+
+    ctx.template(
+        ".nuget/NuGet.Build.config",
+        Label("@my_rules_dotnet//dotnet/private:NuGet.Build.config"),
+        executable = False,
+        substitutions = {
+            "{package_repository}": ".nuget" # no restore allowed for the Build Config
+        }
     )
 
 def _detect_host_platform(ctx):

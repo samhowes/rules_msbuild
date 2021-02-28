@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>{output_type}
-    <TargetFramework>{tfm}</TargetFramework>
+    <TargetFramework>{tfm}</TargetFramework>{msbuild_properties}
   </PropertyGroup>
 
   <ItemGroup>

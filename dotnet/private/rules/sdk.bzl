@@ -10,6 +10,7 @@ def _dotnet_sdk_impl(ctx):
         dotnetos = ctx.attr.dotnetos,
         dotnetarch = ctx.attr.dotnetarch,
         root_file = ctx.file.root_file,
+        nuget_build_config = ctx.file.nuget_build_config,
         sdk_root = ctx.file.sdk_root,
         sdk_files = ctx.files.sdk_files,
         fxr = ctx.files.fxr,
@@ -32,6 +33,10 @@ dotnet_sdk = rule(
             mandatory = True,
             allow_single_file = True,
             doc = "A file in the SDK root directory.",
+        ),
+        "nuget_build_config": attr.label(
+            mandatory = True,
+            allow_single_file = True
         ),
         "sdk_root": attr.label(
             mandatory = True,

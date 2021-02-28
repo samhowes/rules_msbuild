@@ -21,7 +21,7 @@ def emit_assembly(ctx, is_executable):
     assembly =  built_path(ctx, outputs, output_dir + "/" + ctx.label.name + extension)
     
     intermediate_output_dir = _declare_output_files(ctx, tfm, outputs, is_executable, library_extension)
-    proj = _make_project_file(ctx, is_executable, tfm, outputs)
+    proj = _make_project_file(ctx,toolchain, is_executable, tfm, outputs)
     args = _make_dotnet_args(ctx, toolchain, proj, intermediate_output_dir, output_dir)
     env = _make_dotnet_env(toolchain)
 
@@ -43,7 +43,7 @@ def emit_assembly(ctx, is_executable):
     
 def _declare_output_files(ctx, tfm, outputs, is_executable, library_extension): 
     intermediate_base = built_path(ctx, outputs, "obj", True)
-    intermediate_output = built_path(ctx, outputs, intermediate_base.msbuild_path + "/" + tfm, True)
+    intermediate_output = built_path(ctx, outputs, intermediate_base.msbuild_path + tfm, True)
     
     output_dir = tfm
     output_extensions = [
@@ -62,15 +62,19 @@ def _declare_output_files(ctx, tfm, outputs, is_executable, library_extension):
         built_path(ctx, outputs, output_dir + "/" + ctx.label.name + ext)
     return intermediate_output
 
-def _make_project_file(ctx, is_executable, tfm, outputs): 
+def _make_project_file(ctx, toolchain, is_executable, tfm, outputs): 
     # intermediate file, not an output, don't add to outputs
     proj = ctx.actions.declare_file(ctx.label.name + ".csproj")    
     
-    output_type = "\n    <OutputType>Exe</OutputType>" if is_executable else ""
+    output_type = _build_property("OutputType", "Exe") if is_executable else ""
 
     compile_srcs = [
         '    <Compile Include="$(MSBuildStartupDirectory)/{}" />'.format(src.path)
         for src in depset(ctx.files.srcs).to_list()
+    ]
+
+    msbuild_properties = [
+        _build_property("RestoreSources", "$(MSBuildStartupDirectory)/"+toolchain.sdk.root_file.dirname)
     ]
 
     ctx.actions.expand_template(
@@ -80,10 +84,14 @@ def _make_project_file(ctx, is_executable, tfm, outputs):
         substitutions = {
             "{compile_srcs}" : "\n".join(compile_srcs),
             "{tfm}": tfm,
-            "{output_type}": output_type
+            "{output_type}": output_type,
+            "{msbuild_properties}": "\n".join(msbuild_properties)
         },
     )
     return proj
+
+def _build_property(name, value):
+    return "\n    <{name}>{value}</{name}>".format(name=name, value=value)
 
 def _make_dotnet_args(ctx, toolchain, proj, intermediate_output_dir, output_dir): 
     args = ctx.actions.args()
@@ -93,13 +101,16 @@ def _make_dotnet_args(ctx, toolchain, proj, intermediate_output_dir, output_dir)
     args.add('--nologo')
     args.add('-p:UsePackageDownload=false')
     args.add('--no-dependencies') # just in case
-    args.add('--source="{}"'.format(toolchain.sdk.root_file.dirname)) # todo: set to @nuget
+    # args.add('--source="$(MSBuildStartupDirectory){}"'.format(toolchain.sdk.root_file.dirname)) # todo: set to @nuget
     args.add('-bl:{}'.format(proj.path + '.binlog'))
     # would be no-restore, but restore creates assetts.json which the actual build depends on
     # args.add('--no-restore') 
     args.add(proj.path)
     args.add('-p:IntermediateOutputPath={}'.format(intermediate_output_dir.msbuild_path))
     args.add('-p:OutputPath={}'.format(output_dir))
+
+    # GetRestoreSettingsTask#L142: this is resolved against msbuildstartupdirectory
+    args.add('-p:RestoreConfigFile="{}"'.format(toolchain.sdk.nuget_build_config.path)) 
 
     return args
 
