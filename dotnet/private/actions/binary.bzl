@@ -42,16 +42,13 @@ def emit_binary(dotnet):
 
     #todo specify these
     # runfiles = dotnet._ctx.runfiles(files = [])
-    symlink_target = "./" + ctx.label.package
-        
-    src_symlink = ctx.actions.declare_symlink("src")
-    ctx.actions.symlink(output=src_symlink, target_path= symlink_target)
-    # intermediate file, not an output?
-    proj = dotnet.actions.declare_file(dotnet._ctx.label.name + ".csproj")
+
+    # intermediate file, not an output, don't add to outputs
+    proj = dotnet.actions.declare_file(dotnet._ctx.label.name + ".csproj")    
     
     pkg_len = len(ctx.label.package)
     compile_srcs = [
-        '    <Compile Include="src{}" />'.format(src.path[pkg_len:])
+        '    <Compile Include="$(MSBuildStartupDirectory)/{}" />'.format(src.path)
         for src in depset(ctx.files.srcs).to_list()
     ]
 
@@ -94,7 +91,7 @@ def emit_binary(dotnet):
         mnemonic = "DotnetBuild",
         inputs = (
             dotnet._ctx.files.srcs + 
-            [proj, src_symlink]
+            [proj]
             + sdk.packs + sdk.shared + sdk.sdk_files
             + sdk.fxr),
         outputs = outputs,
