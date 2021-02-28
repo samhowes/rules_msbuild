@@ -26,17 +26,19 @@ load(
     _dotnet_binary = "dotnet_binary",
 )
 load(
-    "//dotnet/private:context.bzl",
-    _dotnet_context = "dotnet_context",
+    "//dotnet/private/rules:library.bzl",
+    _dotnet_library = "dotnet_library",
 )
 
 declare_toolchains = _declare_toolchains
 dotnet_toolchain = _dotnet_toolchain
 dotnet_sdk = _dotnet_sdk
-dotnet_context = _dotnet_context
 
 # See dotnet/providers.md#DotnetSdkInfo for full documentation.
 DotnetSdkInfo = _DotnetSdkInfo
 
 # See dotnet/core.md#dotnet_binary for full documentation.
 dotnet_binary = _dotnet_binary
+
+# See dotnet/core.md#dotnet_library for full documentation.
+dotnet_library = _dotnet_library

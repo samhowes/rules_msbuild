@@ -2,8 +2,11 @@
 
 # See dotnet/providers.md#DotnetLibraryInfo for full documentation.
 DotnetLibraryInfo = provider(
-    doc = "A dotnet library dependency",
-    fields = {}
+    doc = "Contains information about a Dotnet library",
+    fields = {
+        "assembly": "A file that is the compiled library", 
+        "deps": "A depset of info structs for this library's dependencies",
+    },
 )
 
 # See dotnet/providers.md#DotnetContextInfo for full documentation.

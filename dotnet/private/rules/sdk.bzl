@@ -76,9 +76,3 @@ dotnet_sdk = rule(
            "dotnet sdk directory structure."),
     provides = [DotnetSdkInfo],
 )
-
-def dotnet_tool_binary(**kwargs):
-    print("dotnet_tool_binary")
-
-def package_list(**kwargs):
-    print("package_list")

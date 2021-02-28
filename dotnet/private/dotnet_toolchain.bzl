@@ -1,7 +1,6 @@
 """Repository rules to define dotnet_toolchain"""
 load("//dotnet/private:platforms.bzl", "PLATFORMS")
 load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
-load("//dotnet/private/actions:binary.bzl", "emit_binary")
 
 def _dotnet_toolchain_impl(ctx):
     sdk = ctx.attr.sdk[DotnetSdkInfo]
@@ -13,15 +12,11 @@ def _dotnet_toolchain_impl(ctx):
         default_dotnetos = ctx.attr.dotnetos,
         default_dotnetarch = ctx.attr.dotnetarch,
         actions = struct(
-            binary = emit_binary,
         ),
         flags = struct(
             compile = (),
         ),
         sdk = sdk,
-
-        # Internal fields -- may be read by emit functions.
-        _builder = ctx.executable.builder,
     )]
 
 dotnet_toolchain = rule(

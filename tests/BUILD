@@ -1,4 +1,4 @@
-load("//dotnet:def.bzl", "dotnet_binary")
+load("//dotnet:defs.bzl", "dotnet_binary")
 
 sh_test(
     name = "hello_test",

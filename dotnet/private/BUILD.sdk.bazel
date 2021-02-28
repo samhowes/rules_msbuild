@@ -1,5 +1,3 @@
-load("@my_rules_dotnet//dotnet/private/rules:binary.bzl", "dotnet_tool_binary")
-load("@my_rules_dotnet//dotnet/private/rules:sdk.bzl", "package_list")
 load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_sdk")
 
 package(default_visibility = ["//visibility:public"])
