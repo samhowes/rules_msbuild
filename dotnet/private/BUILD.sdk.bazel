@@ -26,7 +26,10 @@ dotnet_sdk(
 
 filegroup(
     name = "sdk_files",
-    srcs = glob(["sdk/{version}/**/*"]),
+    # todo: process this glob better
+    # there are miscellaneous parts of the sdk that are unrelated
+    # like tests, FSharp, roslyn, resources, etc
+    srcs = glob(["sdk/{version}/**/*"]), 
 )
 
 filegroup(
