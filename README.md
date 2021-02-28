@@ -4,7 +4,7 @@
 Links
  -->
 
-This is currently a learning, work-in-progress, repository while I get familiar with [extending Bazel](https://docs.bazel.build/versions/master/skylark/concepts.html). [io_bazel_rules_dotnet](https://github.com/bazelbuild/rules_dotnet) is a working implementation of bazel rules for dotnet code.
+This is currently a learning, work-in-progress, repository while I get familiar with [extending Bazel](https://docs.bazel.build/versions/master/skylark/concepts.html). If you are looking for a working implementation of rules for dotnet head over to [io_bazel_rules_dotnet](https://github.com/bazelbuild/rules_dotnet).
 
 # Contents
 
