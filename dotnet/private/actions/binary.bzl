@@ -49,12 +49,18 @@ def emit_binary(dotnet):
     # intermediate file, not an output?
     proj = dotnet.actions.declare_file(dotnet._ctx.label.name + ".csproj")
     
+    pkg_len = len(ctx.label.package)
+    compile_srcs = [
+        '    <Compile Include="src{}" />'.format(src.path[pkg_len:])
+        for src in depset(ctx.files.srcs).to_list()
+    ]
+
     dotnet.actions.expand_template(
         template = dotnet._ctx.file._proj_template,
         output = proj,
         is_executable = False,
         substitutions = {
-            "{compile_srcs}" : "\n".join([]),
+            "{compile_srcs}" : "\n".join(compile_srcs),
             "{tfm}": tfm
         },
     )

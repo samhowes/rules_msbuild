@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    {compile_srcs}
+    <Compile Remove="**/*" />
+{compile_srcs}
   </ItemGroup>
 
 </Project>
