@@ -1,3 +1,0 @@
-# Walkthrough
-
-TODO

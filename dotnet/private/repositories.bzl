@@ -17,9 +17,6 @@ def dotnet_rules_dependencies():
         sha256 = "2bf34f026351d4b4b46b17956aa5b977cc1279d5679385f6885bf574dec5570c",
     )
 
-    # Needed by rules_dotnet implementation and tests.
-    # We can't call bazel_skylib_workspace from here. At the moment, it's only
-    # used to register unittest toolchains, which rules_dotnet does not need.
     _maybe(
         http_archive,
         name = "bazel_skylib",
