@@ -7,7 +7,7 @@ def built_path(ctx, outputs, p, is_directory=False):
         msbuild_path = p
     outputs.append(output)
     return struct(
-        output = output,
+        file = output,
         msbuild_path = msbuild_path,
         short_path = output.short_path
     )

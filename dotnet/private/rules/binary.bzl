@@ -3,13 +3,13 @@ load("//dotnet/private/rules:common.bzl", "ASSEMBLY_ATTRS")
 
 def _dotnet_binary_impl(ctx):
     """dotnet_binary_impl emits actions for compiling dotnet binaries"""
-    executable, outputs = emit_assembly(ctx, True)
+    executable, pdb, outputs = emit_assembly(ctx, True)
     return [
         DefaultInfo(
-            files = depset(outputs),
+            files = depset([executable.file]),
             # runfiles = dotnet._ctx.runfiles(files=[proj]),
             runfiles = None,
-            executable = executable.output,
+            executable = executable.file,
         ),
     ]
 

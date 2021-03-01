@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConsoleApp
+namespace tests.ConsoleApp
 {
     class Program
     {

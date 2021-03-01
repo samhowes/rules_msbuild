@@ -4,12 +4,13 @@ load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
 
 
 def _dotnet_library_impl(ctx):
-    """dotnet_library_impl emits actions for compiling dotnet code"""
-    library, outputs = emit_assembly(ctx, False)
+    """dotnet_library_impl emits actions for compiling a dotnet library"""
+    library, pdb, outputs = emit_assembly(ctx, False)
     return [
-        DefaultInfo(files=depset([library.output])),
+        DefaultInfo(files=depset(outputs)),
         DotnetLibraryInfo(
-            assembly = library,
+            assembly = library.file,
+            pdb = pdb.file,
             deps = depset()
         ),
     ]

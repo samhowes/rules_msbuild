@@ -4,7 +4,8 @@
 DotnetLibraryInfo = provider(
     doc = "Contains information about a Dotnet library",
     fields = {
-        "assembly": "A file that is the compiled library", 
+        "assembly": "The primary assembly that was compiled",
+        "pdb": "The pdb debug information, if available",
         "deps": "A depset of info structs for this library's dependencies",
     },
 )

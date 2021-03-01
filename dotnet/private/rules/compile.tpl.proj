@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>{output_type}
-    <TargetFramework>{tfm}</TargetFramework>{msbuild_properties}
+  <PropertyGroup>
+{output_type}<TargetFramework>{tfm}</TargetFramework>
+{msbuild_properties}
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="**/*" />
 {compile_srcs}
+  </ItemGroup>
+
+  <ItemGroup>
+{references}
   </ItemGroup>
 
 </Project>
