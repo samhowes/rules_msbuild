@@ -15,7 +15,10 @@ def emit_assembly(ctx, is_executable):
     """
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
     tfm = ctx.attr.target_framework
-    library_infos = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps]
+    library_infos = depset(
+        direct = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps],
+        transitive = [dep[DotnetLibraryInfo].deps for dep in ctx.attr.deps]
+    )
     outputs = []
     output_dir = tfm
 
@@ -27,7 +30,7 @@ def emit_assembly(ctx, is_executable):
     env = _make_dotnet_env(toolchain)
 
     dep_files = []
-    for li in library_infos:
+    for li in library_infos.to_list():
         dep_files.extend([li.assembly, li.pdb])
 
     sdk = toolchain.sdk
@@ -44,6 +47,7 @@ def emit_assembly(ctx, is_executable):
         arguments = [args],
         env = env,
     )
+    print(ctx.label)
     for o in outputs:
         print(o)
     return assembly, pdb, outputs
@@ -68,7 +72,7 @@ def _declare_output_files(ctx, toolchain, tfm, outputs, is_executable, library_e
     for ext in output_extensions: 
         built_path(ctx, outputs, output_dir + "/" + ctx.label.name + ext)
 
-    for li in library_infos:
+    for li in library_infos.to_list():
         for f in (li.assembly, li.pdb):
             built_path(ctx, outputs, paths.join(output_dir, f.basename))
     
@@ -102,7 +106,7 @@ def _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_info
                     li.assembly.basename)[0]
             }
         )
-        for li in library_infos
+        for li in library_infos.to_list()
     ]
 
     ctx.actions.expand_template(

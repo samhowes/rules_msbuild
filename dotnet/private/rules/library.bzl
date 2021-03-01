@@ -11,7 +11,10 @@ def _dotnet_library_impl(ctx):
         DotnetLibraryInfo(
             assembly = library.file,
             pdb = pdb.file,
-            deps = depset()
+            deps = depset(
+                direct = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps],
+                transitive = [dep[DotnetLibraryInfo].deps for dep in ctx.attr.deps],
+            )
         ),
     ]
 

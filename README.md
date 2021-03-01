@@ -13,6 +13,7 @@ This is currently a learning, work-in-progress, repository while I get familiar 
 - [Background](#setup)
   - [Resources](#resources)
 - [Goals](#goals)
+- [Limitations](#limitations)
 
 ## Quick links
 
@@ -203,3 +204,7 @@ The longer I have this code separated, the more duplication of work my team ends
 The more we integrate our code into one repository and the more projects depend on each other, the longer it takes to load everything in Visual Studio, and the more I wish we had fewer projects that depend on each other.
 
 I have worked in Bazel before, but my team has not. My goal is to provide them with a seamless transition to Bazel that improves build times and code management without impacting workflows using Visual Studio. A bazel implementation of rules for dotnet is the first necessary component, but integration with Visual Studio is an obvious second component for a team working in Dotnet. I am hoping to work on a Visual Studio extension that tightly integrates with these rules much like the [IntelliJ Plugin](https://ij.bazel.build/).
+
+# Limitations
+
+1. #17: Multiple donet\_\* targets cannot exist in the same directory.
