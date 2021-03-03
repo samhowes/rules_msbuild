@@ -7,7 +7,39 @@ load(
     "DOTNET_SDK_URLS"
 )
 
+def dotnet_register_toolchains(version = None):
+    """See /dotnet/toolchains.md#dotnet-register-toolchains for full documentation."""
+    sdk_kinds = ("_dotnet_download_sdk")
+    existing_rules = native.existing_rules()
+    sdk_rules = [r for r in existing_rules.values() if r["kind"] in sdk_kinds]
+    if len(sdk_rules) == 0 and "dotnet_sdk" in existing_rules:
+        # may be local_repository in bazel_tests.
+        sdk_rules.append(existing_rules["dotnet_sdk"]) #todo remove this?
+
+    if version and len(sdk_rules) > 0:
+        fail("dotnet_register_toolchains: version set after go sdk rule declared ({})".format(", ".join([r["name"] for r in sdk_rules])))
+    if len(sdk_rules) == 0:
+        if not version:
+            fail('dotnet_register_toolchains: version must be a string like "3.1.100"') # todo add "or host"
+        # elif version == "host":
+        #     go_host_sdk(name = "go_sdk")
+        else:
+            pv = _parse_version(version)
+            if not pv:
+                fail('dotnet_register_toolchains: version must be a string like "3.1.100" or "host"') # todo add "or host"
+            # if _version_less(pv, MIN_SUPPORTED_VERSION):
+            #     print("DEPRECATED: Go versions before {} are not supported and may not work".format(_version_string(MIN_SUPPORTED_VERSION)))
+            dotnet_download_sdk(
+                name = "dotnet_sdk",
+                version = version,
+            )
+
+def dotnet_download_sdk(name, **kwargs):
+    _dotnet_download_sdk(name = name, **kwargs)
+    _register_toolchains(name)
+
 def _dotnet_download_sdk_impl(ctx):
+    print('_dotnet_download_sdk_impl')
     if not ctx.attr.dotnetos and not ctx.attr.dotnetarch:
         dotnetos, dotnetarch = _detect_host_platform(ctx)
     else:
@@ -91,16 +123,6 @@ def _dotnet_download_sdk_impl(ctx):
         }
     return None
 
-def _remote_sdk(ctx, urls, strip_prefix, sha256):
-    if len(urls) == 0:
-        fail("no urls specified")
-    ctx.report_progress("Downloading and extracting Dotnet toolchain")
-    ctx.download_and_extract(
-        url = urls,
-        stripPrefix = strip_prefix,
-        sha256 = sha256,
-    )
-
 _dotnet_download_sdk = repository_rule(
     implementation = _dotnet_download_sdk_impl,
     attrs = {
@@ -112,6 +134,16 @@ _dotnet_download_sdk = repository_rule(
         "strip_prefix": attr.string(default = ""),
     },
 )
+
+def _remote_sdk(ctx, urls, strip_prefix, sha256):
+    if len(urls) == 0:
+        fail("no urls specified")
+    ctx.report_progress("Downloading and extracting Dotnet toolchain")
+    ctx.download_and_extract(
+        url = urls,
+        stripPrefix = strip_prefix,
+        sha256 = sha256,
+    )
 
 def _sdk_build_file(ctx, platform):
     """Creates the BUILD file for the downloaded dotnet sdk
@@ -209,10 +241,6 @@ def _detect_host_platform(ctx):
 
     return dotnetos, dotnetarch
 
-def dotnet_download_sdk(name, **kwargs):
-    _dotnet_download_sdk(name = name, **kwargs)
-    _register_toolchains(name)
-
 def _register_toolchains(repo):
     labels = [
         "@{}//:{}".format(repo, name)
@@ -256,29 +284,3 @@ def _parse_version(version):
         parsed.append(version[r:])
     return tuple(parsed)
 
-def dotnet_register_toolchains(version = None):
-    """See /dotnet/toolchains.md#dotnet-register-toolchains for full documentation."""
-    sdk_kinds = ("_dotnet_download_sdk")
-    existing_rules = native.existing_rules()
-    sdk_rules = [r for r in existing_rules.values() if r["kind"] in sdk_kinds]
-    if len(sdk_rules) == 0 and "dotnet_sdk" in existing_rules:
-        # may be local_repository in bazel_tests.
-        sdk_rules.append(existing_rules["dotnet_sdk"]) #todo remove this?
-
-    if version and len(sdk_rules) > 0:
-        fail("dotnet_register_toolchains: version set after go sdk rule declared ({})".format(", ".join([r["name"] for r in sdk_rules])))
-    if len(sdk_rules) == 0:
-        if not version:
-            fail('dotnet_register_toolchains: version must be a string like "3.1.100"') # todo add "or host"
-        # elif version == "host":
-        #     go_host_sdk(name = "go_sdk")
-        else:
-            pv = _parse_version(version)
-            if not pv:
-                fail('dotnet_register_toolchains: version must be a string like "3.1.100" or "host"') # todo add "or host"
-            # if _version_less(pv, MIN_SUPPORTED_VERSION):
-            #     print("DEPRECATED: Go versions before {} are not supported and may not work".format(_version_string(MIN_SUPPORTED_VERSION)))
-            dotnet_download_sdk(
-                name = "dotnet_sdk",
-                version = version,
-            )

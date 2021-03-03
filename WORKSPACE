@@ -22,3 +22,10 @@ load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_rules_dependencies", "dotnet_r
 
 dotnet_rules_dependencies()
 dotnet_register_toolchains(version = "3.1.100")
+
+load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_restore")
+nuget_restore(
+    package_specs = [
+        "CommandLineParser:2.8.0"
+    ]
+)

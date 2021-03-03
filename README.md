@@ -19,6 +19,7 @@ This is currently a learning, work-in-progress, repository while I get familiar 
 
 - [Core Rules Reference](./dotnet/rules.md) (dotnet_binary, dotnet_library, dotnet_test)
 - [Repository Rules Reference](./dotnet/repository_rules.md)
+- [NuGet Management](./dotnet/nuget.md)
 - [Understanding the Build](./dotnet/understanding.md)
 
 # Features

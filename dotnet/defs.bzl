@@ -29,10 +29,20 @@ load(
     "//dotnet/private/rules:library.bzl",
     _dotnet_library = "dotnet_library",
 )
+load(
+    "//dotnet/private/nuget:repository.bzl",
+    _nuget_restore = "nuget_restore"
+)
+load(
+    "//dotnet/private/nuget:rules.bzl",
+    _nuget_import = "nuget_import"
+)
 
 declare_toolchains = _declare_toolchains
 dotnet_toolchain = _dotnet_toolchain
 dotnet_sdk = _dotnet_sdk
+nuget_restore = _nuget_restore
+nuget_import = _nuget_import
 
 # See dotnet/providers.md#DotnetSdkInfo for full documentation.
 DotnetSdkInfo = _DotnetSdkInfo
