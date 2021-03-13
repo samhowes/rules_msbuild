@@ -95,3 +95,11 @@ Bootstrapping has occurred:
 1. Frameworks depending on those packages are listed
 1. Transitive closure must be computed
 1. Complete BUILD files can be generated
+
+# Bootstrap process
+
+```bash
+bazel build //... --build_tag_filters "nuget_restore"
+bazel query rdeps | bazel run @nuget//:bootstrap
+bazel build //...
+```

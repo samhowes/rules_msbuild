@@ -4,6 +4,6 @@ package(default_visibility = ["//tests:__subpackages__"])
 
 dotnet_library(
     name = "ClassLibrary",
+    srcs = glob(["**/*.cs"]),
     target_framework = "netstandard2.1",
-    srcs = glob(["**/*.cs"])
 )

@@ -1,1 +1,7 @@
 bazel-*
+bin
+obj
+*.csproj
+*.sln
+*.user
+.vs
