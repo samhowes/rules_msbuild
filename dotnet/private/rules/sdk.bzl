@@ -1,4 +1,5 @@
 """Defines the actual SDK after it has been downloaded"""
+
 load(
     "//dotnet/private:providers.bzl",
     "DotnetSdkInfo",
@@ -36,13 +37,13 @@ dotnet_sdk = rule(
         ),
         "nuget_build_config": attr.label(
             mandatory = True,
-            allow_single_file = True
+            allow_single_file = True,
         ),
         "sdk_root": attr.label(
             mandatory = True,
             allow_single_file = True,
             doc = ("The versioned directory containing the primary SDK" +
-                     "Artifacts and build extensions"),
+                   "Artifacts and build extensions"),
         ),
         "sdk_files": attr.label(
             mandatory = True,
@@ -56,7 +57,7 @@ dotnet_sdk = rule(
         "shared": attr.label(
             mandatory = True,
             allow_files = True,
-            doc = "The shared sdk libraries"
+            doc = "The shared sdk libraries",
         ),
         "packs": attr.label_list(
             mandatory = True,

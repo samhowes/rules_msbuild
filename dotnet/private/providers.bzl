@@ -13,7 +13,7 @@ DotnetLibraryInfo = provider(
 # See dotnet/providers.md#DotnetContextInfo for full documentation.
 DotnetContextInfo = provider(
     doc = "A dotnet context",
-    fields = {}
+    fields = {},
 )
 
 DotnetSdkInfo = provider(
@@ -23,8 +23,8 @@ DotnetSdkInfo = provider(
         "dotnetarch": "The host architecture the SDK was built for.",
         "root_file": "A file in the SDK root directory",
         "nuget_build_config": "Build-time nuget.config, should not have network packages. ",
-        "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the "+
-            "extracted folder"),
+        "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the " +
+                     "extracted folder"),
         "sdk_files": ("The files under sdk_root"),
         "fxr": ("The hstfxr.dll"),
         "shared": ("The shared sdk libraries"),

@@ -4,7 +4,7 @@ load(
 )
 load(
     "//dotnet/private:sdk_urls.bzl",
-    "DOTNET_SDK_URLS"
+    "DOTNET_SDK_URLS",
 )
 
 def dotnet_register_toolchains(version = None):
@@ -14,19 +14,21 @@ def dotnet_register_toolchains(version = None):
     sdk_rules = [r for r in existing_rules.values() if r["kind"] in sdk_kinds]
     if len(sdk_rules) == 0 and "dotnet_sdk" in existing_rules:
         # may be local_repository in bazel_tests.
-        sdk_rules.append(existing_rules["dotnet_sdk"]) #todo remove this?
+        sdk_rules.append(existing_rules["dotnet_sdk"])  #todo remove this?
 
     if version and len(sdk_rules) > 0:
         fail("dotnet_register_toolchains: version set after go sdk rule declared ({})".format(", ".join([r["name"] for r in sdk_rules])))
     if len(sdk_rules) == 0:
         if not version:
-            fail('dotnet_register_toolchains: version must be a string like "3.1.100"') # todo add "or host"
-        # elif version == "host":
-        #     go_host_sdk(name = "go_sdk")
+            fail('dotnet_register_toolchains: version must be a string like "3.1.100"')  # todo add "or host"
+            # elif version == "host":
+            #     go_host_sdk(name = "go_sdk")
+
         else:
             pv = _parse_version(version)
             if not pv:
-                fail('dotnet_register_toolchains: version must be a string like "3.1.100" or "host"') # todo add "or host"
+                fail('dotnet_register_toolchains: version must be a string like "3.1.100" or "host"')  # todo add "or host"
+
             # if _version_less(pv, MIN_SUPPORTED_VERSION):
             #     print("DEPRECATED: Go versions before {} are not supported and may not work".format(_version_string(MIN_SUPPORTED_VERSION)))
             dotnet_download_sdk(
@@ -39,7 +41,7 @@ def dotnet_download_sdk(name, **kwargs):
     _register_toolchains(name)
 
 def _dotnet_download_sdk_impl(ctx):
-    print('_dotnet_download_sdk_impl')
+    print("_dotnet_download_sdk_impl")
     if not ctx.attr.dotnetos and not ctx.attr.dotnetarch:
         dotnetos, dotnetarch = _detect_host_platform(ctx)
     else:
@@ -49,12 +51,13 @@ def _dotnet_download_sdk_impl(ctx):
             fail("dotnetos set but dotnetarch not set")
         dotnetos, dotnetarch = ctx.attr.dotnetos, ctx.attr.dotnetarch
     platform = dotnetos + "_" + dotnetarch
-    
+
     version = ctx.attr.version
     sdks = ctx.attr.sdks
-    
+
     if not sdks:
         sdks = DOTNET_SDK_URLS[version]
+
     #     # If sdks was unspecified, download a full list of files.
     #     # If version was unspecified, pick the latest version.
     #     # Even if version was specified, we need to download the file list
@@ -102,12 +105,12 @@ def _dotnet_download_sdk_impl(ctx):
     dotnet_init_files = [
         "aspNetCertificateSentinel",
         "dotnetFirstUseSentinel",
-        "toolpath.sentinel"
+        "toolpath.sentinel",
     ]
     for f in dotnet_init_files:
         ctx.file(".dotnet/{}.{}".format(ctx.attr.version, f))
 
-    ctx.file(".bazelignore", ".dotnet\n.nuget\n", executable=False)
+    ctx.file(".bazelignore", ".dotnet\n.nuget\n", executable = False)
 
     if not ctx.attr.sdks and not ctx.attr.version:
         # Returning this makes Bazel print a message that 'version' must be
@@ -129,7 +132,7 @@ _dotnet_download_sdk = repository_rule(
         "dotnetos": attr.string(),
         "dotnetarch": attr.string(),
         "sdks": attr.string_list_dict(),
-        "urls": attr.string_list(default = ["https://dl.google.com/go/{}"]), # todo fis this url for dotnet
+        "urls": attr.string_list(default = ["https://dl.google.com/go/{}"]),  # todo fis this url for dotnet
         "version": attr.string(),
         "strip_prefix": attr.string(default = ""),
     },
@@ -166,7 +169,7 @@ def _sdk_build_file(ctx, platform):
 filegroup(
     name = "{pack}",
     srcs = glob(["packs/{pack}/**/*"]),
-)""".format(pack=pack_name))
+)""".format(pack = pack_name))
 
     ctx.template(
         "BUILD.bazel",
@@ -178,7 +181,7 @@ filegroup(
             "{exe}": ".exe" if dotnetos == "windows" else "",
             "{version}": ctx.attr.version,
             "{pack_labels}": "\n".join(pack_labels),
-            "{dynamics}": "\n".join(dynamics)
+            "{dynamics}": "\n".join(dynamics),
         },
     )
 
@@ -187,8 +190,8 @@ filegroup(
         Label("@my_rules_dotnet//dotnet/private:NuGet.Build.config"),
         executable = False,
         substitutions = {
-            "{package_repository}": ".nuget" # no restore allowed for the Build Config
-        }
+            "{package_repository}": ".nuget",  # no restore allowed for the Build Config
+        },
     )
 
 def _detect_host_platform(ctx):
@@ -283,4 +286,3 @@ def _parse_version(version):
         # pre-release suffix
         parsed.append(version[r:])
     return tuple(parsed)
-

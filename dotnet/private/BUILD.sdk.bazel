@@ -3,24 +3,24 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_sdk")
 package(default_visibility = ["//visibility:public"])
 
 declare_toolchains(
-    host = "{dotnetos}_{dotnetarch}", #todo fix this path?
+    host = "{dotnetos}_{dotnetarch}",  #todo fix this path?
     sdk = ":dotnet_sdk",
 )
 
 dotnet_sdk(
     name = "dotnet_sdk",
-    dotnetos = "{dotnetos}",
-    dotnetarch = "{dotnetarch}",
     dotnet = "dotnet{exe}",
-    root_file = "ROOT",
-    nuget_build_config = ".nuget/NuGet.Build.config", 
-    sdk_root = "sdk/{version}",
-    sdk_files = ":sdk_files",
+    dotnetarch = "{dotnetarch}",
+    dotnetos = "{dotnetos}",
     fxr = ":fxr",
-    shared = ":shared",
+    nuget_build_config = ".nuget/NuGet.Build.config",
     packs = [
-{pack_labels}
-    ]
+        {pack_labels},
+    ],
+    root_file = "ROOT",
+    sdk_files = ":sdk_files",
+    sdk_root = "sdk/{version}",
+    shared = ":shared",
 )
 
 filegroup(
@@ -28,12 +28,12 @@ filegroup(
     # todo: process this glob better
     # there are miscellaneous parts of the sdk that are unrelated
     # like tests, FSharp, roslyn, resources, etc
-    srcs = glob(["sdk/{version}/**/*"]), 
+    srcs = glob(["sdk/{version}/**/*"]),
 )
 
 filegroup(
     name = "fxr",
-    srcs = glob(["host/fxr/**/*"]), # not multi-version safe
+    srcs = glob(["host/fxr/**/*"]),  # not multi-version safe
 )
 
 # not multi-version safe

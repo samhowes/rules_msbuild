@@ -1,4 +1,5 @@
 """Repository rules to define dotnet_toolchain"""
+
 load("//dotnet/private:platforms.bzl", "PLATFORMS")
 load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 

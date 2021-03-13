@@ -18,7 +18,7 @@ bzl_library(
     name = "dotnet_context_data",
     srcs = ["context.bzl"],
     deps = [
-        ":common.bzl"
+        ":common.bzl",
     ],
 )
 

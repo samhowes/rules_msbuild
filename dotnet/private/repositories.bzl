@@ -1,7 +1,8 @@
 """Dependencies of dotnet_rules"""
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-def dotnet_rules_dependencies(): 
+def dotnet_rules_dependencies():
     # Repository of standard constraint settings and values.
     # Bazel declares this automatically after 0.28.0, but it's better to
     # define an explicit version.
@@ -27,7 +28,6 @@ def dotnet_rules_dependencies():
         ],
         sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
     )
-
 
 def _maybe(repo_rule, name, **kwargs):
     if name not in native.existing_rules():
