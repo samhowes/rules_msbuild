@@ -1,0 +1,6 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[starlark]": {
+    "editor.defaultFormatter": "BazelBuild.vscode-bazel"
+  }
+}
