@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <TargetFramework>{tfm}</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+{package_references}
+  </ItemGroup>
+
+</Project>

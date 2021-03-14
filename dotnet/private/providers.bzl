@@ -7,6 +7,7 @@ DotnetLibraryInfo = provider(
         "assembly": "The primary assembly that was compiled",
         "pdb": "The pdb debug information, if available",
         "deps": "A depset of info structs for this library's dependencies",
+        "package_info": "A NuGetPackageInfo struct if this is a nuget package.",
     },
 )
 
@@ -14,6 +15,23 @@ DotnetLibraryInfo = provider(
 DotnetContextInfo = provider(
     doc = "A dotnet context",
     fields = {},
+)
+
+NugetPreRestoreInfo = provider(
+    doc = "Props file gneration information",
+    fields = {
+        "primary_name": "The name of the target being restored",
+        "tfms": "The target framework versions restored by the props file",
+        "props_file": "The generated props file for restoring from.",
+    },
+)
+
+NugetPackageInfo = provider(
+    doc = "Package restore information",
+    fields = {
+        "name": "Package name",
+        "version": "A nuget version string",
+    },
 )
 
 DotnetSdkInfo = provider(

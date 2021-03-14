@@ -1,2 +1,2 @@
-echo "bazel query 'rdeps(//..., @nuget//...) except @nuget//...'  --output xml > nuget_targets.xml; bazel run @my_rules_dotnet//:bootstrap_nuget"
+echo "bazel query 'rdeps(attr(tags, \"dotnet_pre_restore\", //...), @nuget//...) except @nuget//...'  --output xml | bazel run @nuget//:bootstrapper"
 

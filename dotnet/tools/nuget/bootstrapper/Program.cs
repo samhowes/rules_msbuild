@@ -3,163 +3,106 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
 
 namespace bootstrapper
 {
-    public class Label
-    {
-        private static Regex LabelRegex = new Regex("^(@(?<repository>\\w+))?(?<root>//)?(?<package>[^\\:]+)?:?(?<name>.*)");
-
-        public Label(string labelOrPath)
-        {
-            RawValue = labelOrPath;
-            var match = LabelRegex.Match(labelOrPath);
-            if (match.Success)
-            {
-                WorkspaceName = match.Groups["repository"].Value;
-                Repository = match.Groups["repository"].Value;
-                IsRooted = match.Groups["root"].Success;
-                Package = match.Groups["package"].Value ?? "";
-                Name = match.Groups["name"].Value;
-            }
-            else
-            {
-                IsPath = true;
-            }
-        }
-
-        public string RawValue { get; set; }
-
-        public bool IsPath { get; set; }
-
-        public string WorkspaceName { get; set; }
-
-        public bool IsRooted { get; set; }
-
-        public string Repository { get; set; }
-
-        public string Name { get; set; }
-
-        public string Package { get; set; }
-
-        public string PathRoot { get; set; }
-
-        public string Filepath { get; set; }
-    }
-
     internal class Program
     {
+        private static BazelEnvironment Env = new BazelEnvironment();
+
         private static void Main(string[] args)
         {
-            const string repositoryName = "nuget";
+            Env.GetRunFiles();
 
-            var xmlPath = args[0];
-            // if we are running under Bazel run, assume relative to the workspace directory
-            var xmlLabel = new Label(xmlPath);
-            var bazelEnvironment = new BazelEnvironment();
-            bazelEnvironment.ResolveLabel(xmlLabel);
+            var rootLocation = File.ReadAllLines(Env.Runfiles!.ShortDict["ROOT_LOCATION"].AbsolutePath).First();
+            var rootDir = Path.GetDirectoryName(rootLocation);
+            var repoRoot = Path.Combine(Env.WorkspaceExecRoot, rootDir);
+            var buildPath = Path.Combine(repoRoot, "BUILD");
 
-            if (!File.Exists(xmlLabel.Filepath))
+            var buildContents = File.ReadAllText(buildPath);
+
+            //const string repositoryName = "nuget";
+            TextReader reader;
+            if (args.Length > 0)
             {
-                Console.WriteLine($"Invalid path: {xmlPath}");
-                Environment.Exit(1);
-            }
+                var xmlPath = args[0];
+                // if we are running under Bazel run, assume relative to the workspace directory
+                var xmlLabel = new Label(xmlPath);
+                Env.ResolveLabel(xmlLabel);
 
-            var reader = new StreamReader(xmlLabel.Filepath);
-            var queryParser = new QueryParser(reader);
-            var packagesByTargetFramework = queryParser.GetPackagesByFramework(repositoryName);
-
-            foreach (var tfm in packagesByTargetFramework)
-            {
-                var outputPath = Path.Join(Path.GetDirectoryName(xmlLabel.Filepath), tfm.Key + "deps.txt");
-                Console.WriteLine(outputPath);
-                using var txt = new StreamWriter(outputPath);
-                foreach (var package in tfm.Value)
+                if (!File.Exists(xmlLabel.Filepath))
                 {
-                    txt.WriteLine(package.Name);
+                    Console.WriteLine($"Invalid path: {xmlPath}");
+                    Environment.Exit(1);
                 }
-                txt.Flush();
-                txt.Close();
-            }
-        }
-    }
 
-    public class QueryParser
-    {
-        private readonly TextReader _reader;
-
-        public QueryParser(TextReader reader)
-        {
-            _reader = reader;
-        }
-
-        public Dictionary<string, HashSet<Label>> GetPackagesByFramework(string repositoryName)
-        {
-            _reader.ReadLine(); // ignore the version header: bazel outputs xml version 1.1, but dotnet core doesn't support 1.1
-            var document = XDocument.Load(_reader);
-            var query = document.Root;
-            var version = query!.Attribute("version");
-            if (query.Name != "query" || version?.Value != "2")
-            {
-                Console.WriteLine($"Unexpected document type, expected <query version=\"2\"> as the root element.");
-                Environment.Exit(1);
-            }
-
-            var tfms = new Dictionary<string, HashSet<Label>>();
-            foreach (var rule in query.Descendants("rule"))
-            {
-                var lists = rule.Descendants("list");
-                var deps = lists
-                    .Where(l => l.Attribute("name")?.Value == "deps");
-                var depLabels = deps
-                    .SelectMany(d => d.Descendants("label")
-                        .Select(l => l.Attribute("value")?.Value)
-                        .Where(l => l != null)
-                        .Select(l => new Label(l))
-                        .Where(l => l.WorkspaceName == repositoryName));
-
-                var ruleTfms = rule.Descendants("string")
-                    .Where(s => s.Attribute("name")?.Value == "target_framework")
-                    .Select(s => s.Attribute("value")?.Value)
-                    .Where(s => s != null);
-
-                foreach (var tfm in ruleTfms)
-                {
-                    if (!tfms.TryGetValue(tfm, out var packages))
-                    {
-                        packages = new HashSet<Label>();
-                        tfms[tfm] = packages;
-                    }
-
-                    foreach (var dep in depLabels)
-                    {
-                        packages.Add(dep);
-                    }
-                }
-            }
-
-            return tfms;
-        }
-    }
-
-    public class BazelEnvironment
-    {
-        public static string WorkingDirectory = Environment.GetEnvironmentVariable("BUILD_WORKING_DIRECTORY")!;
-        public static string WorkspaceDirectory = Environment.GetEnvironmentVariable("BUILD_WORKSPACE_DIRECTORY");
-
-        public void ResolveLabel(Label label)
-        {
-            label.PathRoot = label.IsRooted ? WorkspaceDirectory : WorkingDirectory;
-            if (label.IsPath)
-            {
-                label.Filepath = Path.IsPathRooted(label.RawValue) ? label.RawValue : Path.Combine(WorkingDirectory, label.RawValue);
+                reader = new StreamReader(xmlLabel.Filepath);
             }
             else
             {
-                label.Filepath = Path.Combine(label.PathRoot, label.Package, label.Name);
+                reader = Console.In;
             }
+
+            var queryParser = new QueryParser(reader);
+            var targets = queryParser.GetTargets(Env.WorkspaceName);
+            using var writer = new StreamWriter(buildPath);
+            var buildWriter = new BuildWriter(writer);
+            buildWriter.Write(buildContents, targets);
+
+            writer.Close();
+        }
+    }
+
+    public class BuildWriter
+    {
+        private static readonly Regex Regex = new Regex(@"^(?<indent>\s+)(?<comment>#\s?bootstrap:(?<variable_name>\w+)\s*)",
+                RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
+
+        private readonly StreamWriter _writer;
+
+        public BuildWriter(StreamWriter writer)
+        {
+            _writer = writer;
+        }
+
+        public void Write(string buildContents, List<DotnetTarget> targets)
+        {
+            var tfms = targets.SelectMany(t => t.Tfms);
+            var writeIndex = 0;
+
+            void WriteSpan(int length)
+            {
+                var span = ((ReadOnlySpan<char>)buildContents).Slice(writeIndex, length);
+                _writer.Write(span);
+            }
+
+            foreach (Match match in Regex.Matches(buildContents))
+            {
+                var indent = match.Groups["indent"];
+                void WriteListItem(string value)
+                {
+                    _writer.WriteLine($"{indent}\"{value}\",");
+                }
+
+                WriteSpan(match.Index - writeIndex);
+                writeIndex = match.Index + match.Value.Length;
+
+                switch (match.Groups["variable_name"].Value)
+                {
+                    case "tfms":
+                        foreach (var tfm in tfms)
+                            WriteListItem(tfm);
+                        break;
+
+                    case "deps":
+                        foreach (var target in targets)
+                            WriteListItem(target.Label.FullName);
+                        break;
+                }
+                _writer.Write(match.Value);
+            }
+            WriteSpan(buildContents.Length - writeIndex);
+            _writer.Flush();
         }
     }
 }

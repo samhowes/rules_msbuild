@@ -14,5 +14,9 @@ def element(name, value, attrs = {}):
         value = value,
     )
 
-def inline_element(name, attr_name, value):
-    return '    <{name} {attr_name}="{value}" />\n'.format(name = name, attr_name = attr_name, value = value)
+def inline_element(name, attrs):
+    attr_strings = [
+        "{}=\"{}\"".format(a, attrs[a])
+        for a in attrs
+    ]
+    return "<{name} {attrs} />\n".format(name = name, attrs = " ".join(attr_strings))

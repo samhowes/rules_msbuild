@@ -150,9 +150,9 @@ def _remote_sdk(ctx, urls, strip_prefix, sha256):
 
 def _sdk_build_file(ctx, platform):
     """Creates the BUILD file for the downloaded dotnet sdk
-    
-    Assumes there is only one SDK in this directory, this is accurate for an 
-    individual directory, but dotnet is structured to allow multiple sdk versions to 
+
+    Assumes there is only one SDK in this directory, this is accurate for an
+    individual directory, but dotnet is structured to allow multiple sdk versions to
     exist nicely next to each other.
     """
     ctx.file("ROOT")
@@ -164,7 +164,7 @@ def _sdk_build_file(ctx, platform):
     for p in packs.readdir():
         # pack_name, _, _ = p.rpartition("/")
         pack_name = p.basename
-        pack_labels.append('        ":{}",'.format(pack_name))
+        pack_labels.append("\":{}\"".format(pack_name))
         dynamics.append("""
 filegroup(
     name = "{pack}",
@@ -180,7 +180,7 @@ filegroup(
             "{dotnetarch}": dotnetarch,
             "{exe}": ".exe" if dotnetos == "windows" else "",
             "{version}": ctx.attr.version,
-            "{pack_labels}": "\n".join(pack_labels),
+            "{pack_labels}": ",\n        ".join(pack_labels),
             "{dynamics}": "\n".join(dynamics),
         },
     )

@@ -1,12 +1,18 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
 load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
-load("//dotnet/private/actions:common.bzl", "built_path")
+load(
+    "//dotnet/private/actions:common.bzl",
+    "STARTUP_DIR",
+    "built_path",
+    "make_dotnet_args",
+    "make_dotnet_env",
+)
 load("//dotnet/private:common.bzl", "dotnetos_to_exe_extension", "dotnetos_to_library_extension")
 
 def emit_assembly(ctx, is_executable):
     """Compile a dotnet assembly with the provided project template
-    
+
     Args:
         ctx: a ctx with //dotnet/private/rules:common.bzl.DOTNET_ATTRS
         is_executable: if the assembly should be executable
@@ -26,8 +32,8 @@ def emit_assembly(ctx, is_executable):
 
     intermediate_output_dir, assembly, pdb = _declare_output_files(ctx, toolchain, tfm, outputs, is_executable, library_extension, library_infos)
     proj = _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_infos)
-    args = _make_dotnet_args(ctx, toolchain, proj, intermediate_output_dir, output_dir)
-    env = _make_dotnet_env(toolchain)
+    args = make_dotnet_args(ctx, toolchain, "build", proj, intermediate_output_dir.msbuild_path, output_dir)
+    env = make_dotnet_env(toolchain)
 
     dep_files = []
     for li in library_infos.to_list():
@@ -67,6 +73,14 @@ def _declare_output_files(ctx, toolchain, tfm, outputs, is_executable, library_e
             ".runtimeconfig.dev.json",  # todo find out when this is NOT output
             ".runtimeconfig.json",
         ])
+
+    #     tfm_files = [
+    #     ".AssemblyInfo.cs",
+    # ]
+
+    # for f in tfm_files:
+    #     name = prefix + f
+    #     intermediate_names.append(paths.join(tfm, name))
     output_extensions.append(".deps.json")
 
     # todo toggle this when not debug
@@ -91,12 +105,11 @@ def _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_info
     output_type = element("OutputType", "Exe") if is_executable else ""
 
     compile_srcs = [
-        inline_element("Compile", "Include", paths.join("$(MSBuildStartupDirectory)", src.path))
+        inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
         for src in depset(ctx.files.srcs).to_list()
     ]
 
     msbuild_properties = [
-        element("RestoreSources", paths.join("$(MSBuildStartupDirectory)", toolchain.sdk.root_file.dirname)),
     ]
 
     references = [
@@ -104,7 +117,7 @@ def _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_info
             "Reference",
             element(
                 "HintPath",
-                paths.join("$(MSBuildStartupDirectory)", li.assembly.path),
+                paths.join(STARTUP_DIR, li.assembly.path),
             ),
             {
                 "Include": paths.split_extension(
@@ -128,44 +141,3 @@ def _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_info
         },
     )
     return proj
-
-def _make_dotnet_args(ctx, toolchain, proj, intermediate_output_dir, output_dir):
-    args = ctx.actions.args()
-    args.use_param_file("@%s")
-    args.set_param_file_format("shell")
-    args.add("build")
-    args.add("--nologo")
-    args.add("-p:UsePackageDownload=false")
-    args.add("--no-dependencies")  # just in case
-
-    # args.add('--source="$(MSBuildStartupDirectory){}"'.format(toolchain.sdk.root_file.dirname)) # todo: set to @nuget
-    args.add("-bl:{}".format(proj.path + ".binlog"))
-
-    # would be no-restore, but restore creates assetts.json which the actual build depends on
-    # args.add('--no-restore')
-    args.add(proj.path)
-    args.add("-p:IntermediateOutputPath={}".format(intermediate_output_dir.msbuild_path))
-    args.add("-p:OutputPath={}".format(output_dir))
-
-    # GetRestoreSettingsTask#L142: this is resolved against msbuildstartupdirectory
-    args.add('-p:RestoreConfigFile="{}"'.format(toolchain.sdk.nuget_build_config.path))
-
-    return args
-
-def _make_dotnet_env(toolchain):
-    dotnet_sdk_base = toolchain.sdk.root_file.dirname
-    env = {
-        "DOTNET_CLI_HOME": toolchain.sdk.root_file.dirname,
-        "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
-        # isolate Dotnet from using the system installed sdk
-        "DOTNET_MULTILEVEL_LOOKUP": "0",
-
-        # https://github.com/NuGet/NuGet.Client/blob/3d1d3c77f441e2f653dad789e28fa11fec189b87/src/NuGet.Core/NuGet.Common/PathUtil/NuGetEnvironment.cs#L10
-        "PROGRAMDATA": dotnet_sdk_base,
-        "USERPROFILE": dotnet_sdk_base,
-        "PROGRAMFILES(X86)": dotnet_sdk_base,  # used when constructing XPlatMachineWideSetting
-        "PROGRAMFILES": dotnet_sdk_base,  # used when constructing XPlatMachineWideSetting
-        #todo add variables for other platforms
-        "APPDATA": dotnet_sdk_base,  # used by Settings.cs#LoadUserSpecificSettings: `NuGetFolderPath.UserSettingsDirectory` (windows only)
-    }
-    return env

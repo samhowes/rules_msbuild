@@ -5,6 +5,6 @@ dotnet_binary(
     srcs = ["Program.cs"],
     target_framework = "netcoreapp3.1",
     deps = [
-        "@nuget//commandlineparser",
+        "@nuget//CommandLineParser",
     ],
 )

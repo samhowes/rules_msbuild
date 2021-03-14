@@ -22,3 +22,7 @@ bzl_library(
 )
 
 exports_files(["compile.tpl.proj"])
+
+exports_files(["nuget_deps.tpl.props"])
+
+exports_files(["nuget_restore.tpl.proj"])

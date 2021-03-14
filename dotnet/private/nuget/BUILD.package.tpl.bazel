@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet/private/nuget:fake_rules.bzl", "fake_nuget_import")
+load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "fake_nuget_import")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,4 +12,5 @@ package(default_visibility = ["//visibility:public"])
 
 fake_nuget_import(
     name = "{name}",
+    version = "{version}",
 )

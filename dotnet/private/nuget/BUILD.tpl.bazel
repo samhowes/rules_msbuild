@@ -1,0 +1,32 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_tool_binary", "nuget_restore")
+
+sh_binary(
+    name = "query",
+    srcs = ["@my_rules_dotnet//dotnet/private/nuget:query_nuget_deps_srcs"],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "root_location",
+    srcs = ["ROOT"],
+    outs = ["ROOT_LOCATION"],
+    cmd = "echo $(location ROOT) > $@",
+)
+
+dotnet_tool_binary(
+    name = "bootstrapper",
+    srcs = ["@my_rules_dotnet//dotnet/tools/nuget/bootstrapper:bootstrapper_srcs"],
+    data = [":root_location"],
+    target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
+)
+
+nuget_restore(
+    name = "restore",
+    target_frameworks = [
+        # bootstrap:tfms
+    ],
+    deps = [
+        # bootstrap:deps
+    ],
+)

@@ -1,4 +1,7 @@
-sh_binary(
-    name = "query_nuget_deps",
-    srcs = ["query_nuget_deps.sh"],
+filegroup(
+    name = "query_nuget_deps_srcs",
+    srcs = [
+        "query_nuget_deps.sh",
+    ],
+    visibility = ["//visibility:public"],
 )

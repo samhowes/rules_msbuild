@@ -10,6 +10,10 @@
 {compile_srcs}
   </ItemGroup>
 
+  <!-- <ItemGroup>
+    <ProjectReference Include="{nuget_props_path}" />
+  </ItemGroup> -->
+
   <ItemGroup>
 {references}
   </ItemGroup>
