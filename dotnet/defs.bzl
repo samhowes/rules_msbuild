@@ -25,12 +25,9 @@ load(
 )
 load(
     "//dotnet/private/rules:core.bzl",
-    _dotnet_tool_binary = "dotnet_tool_binary",
-)
-load(
-    "//dotnet/private:core_macros.bzl",
     _dotnet_binary = "dotnet_binary",
     _dotnet_library = "dotnet_library",
+    _dotnet_tool_binary = "dotnet_tool_binary",
 )
 load(
     "//dotnet/private/nuget:repository.bzl",

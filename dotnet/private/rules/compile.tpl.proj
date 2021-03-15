@@ -1,21 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
   <PropertyGroup>
-{output_type}<TargetFramework>{tfm}</TargetFramework>
-{msbuild_properties}
+    <!-- Build Properties -->
+    {msbuild_properties}
   </PropertyGroup>
+
+  {imports}
 
   <ItemGroup>
     <Compile Remove="**/*" />
-{compile_srcs}
+    {compile_srcs}
   </ItemGroup>
 
-  <!-- <ItemGroup>
-    <ProjectReference Include="{nuget_props_path}" />
-  </ItemGroup> -->
-
   <ItemGroup>
-{references}
+    <!-- Compiled assembly references -->
+    {references}
   </ItemGroup>
 
 </Project>

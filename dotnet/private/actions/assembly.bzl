@@ -1,10 +1,11 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
 load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
+load("//dotnet/private/actions:restore.bzl", "restore")
 load(
     "//dotnet/private/actions:common.bzl",
+    "INTERMEDIATE_BASE",
     "STARTUP_DIR",
-    "built_path",
     "make_dotnet_args",
     "make_dotnet_env",
 )
@@ -20,96 +21,110 @@ def emit_assembly(ctx, is_executable):
         Tuple: the emitted assembly and all outputs
     """
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-    tfm = ctx.attr.target_framework
+    output_path = ctx.attr.target_framework
+    intermediate_path = INTERMEDIATE_BASE
+    library_extension = dotnetos_to_library_extension(toolchain.default_dotnetos)
+
     library_infos = depset(
         direct = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps],
         transitive = [dep[DotnetLibraryInfo].deps for dep in ctx.attr.deps],
     )
-    outputs = []
-    output_dir = tfm
 
-    library_extension = dotnetos_to_library_extension(toolchain.default_dotnetos)
+    restore_file, restore_outputs = restore(ctx, intermediate_path)
 
-    intermediate_output_dir, assembly, pdb = _declare_output_files(ctx, toolchain, tfm, outputs, is_executable, library_extension, library_infos)
-    proj = _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_infos)
-    args = make_dotnet_args(ctx, toolchain, "build", proj, intermediate_output_dir.msbuild_path, output_dir)
+    assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, library_infos)
+    compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, library_infos)
+
+    args = make_dotnet_args(ctx, toolchain, "build", compile_file)
     env = make_dotnet_env(toolchain)
 
     dep_files = []
     for li in library_infos.to_list():
         dep_files.extend([li.assembly, li.pdb])
 
+    copied_dep_files = [
+        ctx.actions.declare_file(df.basename, sibling = assembly)
+        for df in dep_files
+    ]
+
     sdk = toolchain.sdk
+    inputs = (
+        [compile_file, restore_file] +
+        restore_outputs +
+        ctx.files.srcs +
+        dep_files +
+        sdk.packs +
+        sdk.shared +
+        sdk.sdk_files +
+        sdk.fxr
+    )
+
+    outputs = (
+        [assembly, pdb] +
+        assembly_files +
+        copied_dep_files
+    )
+
     ctx.actions.run(
         mnemonic = "DotnetBuild",
-        inputs = (
-            ctx.files.srcs +
-            [proj] +
-            dep_files +
-            sdk.packs + sdk.shared + sdk.sdk_files +
-            sdk.fxr
-        ),
+        inputs = inputs,
         outputs = outputs,
         executable = toolchain.sdk.dotnet,
         arguments = [args],
         env = env,
     )
-    print(ctx.label)
-    for o in outputs:
-        print(o)
     return assembly, pdb, outputs
 
-def _declare_output_files(ctx, toolchain, tfm, outputs, is_executable, library_extension, library_infos):
-    output_dir = tfm
+def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, library_infos):
+    output_dir = ctx.attr.target_framework
 
-    # primary outputs
-    extension = dotnetos_to_exe_extension(toolchain.default_dotnetos) if is_executable else library_extension
-    assembly = built_path(ctx, outputs, output_dir + "/" + ctx.label.name + extension)
-    output_extensions = []
+    exe_extension = dotnetos_to_exe_extension(toolchain.default_dotnetos) if is_executable else library_extension
+    assembly = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + exe_extension))
 
-    if is_executable:
-        output_extensions.extend([
-            library_extension,  # already declared before this method if it is not executable
-            ".runtimeconfig.dev.json",  # todo find out when this is NOT output
-            ".runtimeconfig.json",
-        ])
-
-    #     tfm_files = [
-    #     ".AssemblyInfo.cs",
-    # ]
-
-    # for f in tfm_files:
-    #     name = prefix + f
-    #     intermediate_names.append(paths.join(tfm, name))
-    output_extensions.append(".deps.json")
+    extensions = [
+        ".deps.json",
+        # already declared as `assembly` if not executable
+        library_extension if is_executable else None,
+    ]
 
     # todo toggle this when not debug
-    pdb = built_path(ctx, outputs, output_dir + "/" + ctx.label.name + ".pdb")
-    for ext in output_extensions:
-        built_path(ctx, outputs, output_dir + "/" + ctx.label.name + ext)
+    pdb = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + ".pdb"))
+
+    if is_executable:
+        extensions.extend([
+            ".runtimeconfig.json",
+            # todo find out when this is NOT output
+            ".runtimeconfig.dev.json",
+        ])
+
+    file_paths = [
+        paths.join(output_dir, ctx.attr.name + ext)
+        for ext in extensions
+        if ext != None
+    ]
 
     for li in library_infos.to_list():
-        for f in (li.assembly, li.pdb):
-            built_path(ctx, outputs, paths.join(output_dir, f.basename))
+        file_paths.extend([
+            paths.join(output_dir, f.basename)
+            for f in (li.assembly, li.pdb)
+        ])
 
-    # intermediate outputs
-    intermediate_base = built_path(ctx, outputs, "obj", True)
-    intermediate_output = built_path(ctx, outputs, intermediate_base.msbuild_path + tfm, True)
+    files = [
+        ctx.actions.declare_file(file_path)
+        for file_path in file_paths
+    ]
 
-    return intermediate_output, assembly, pdb
+    return assembly, pdb, files
 
-def _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_infos):
-    # intermediate file, not an output, don't add to outputs
-    proj = ctx.actions.declare_file(ctx.label.name + ".csproj")
-
-    output_type = element("OutputType", "Exe") if is_executable else ""
+def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, library_infos):
+    msbuild_properties = [
+        element("OutputType", "Exe") if is_executable else None,
+        element("OutputPath", "$(MSBuildThisFileDirectory)"),
+    ]
 
     compile_srcs = [
         inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
         for src in depset(ctx.files.srcs).to_list()
-    ]
-
-    msbuild_properties = [
     ]
 
     references = [
@@ -128,16 +143,16 @@ def _make_project_file(ctx, toolchain, is_executable, tfm, outputs, library_info
         for li in library_infos.to_list()
     ]
 
+    compile_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
     ctx.actions.expand_template(
-        template = ctx.file._proj_template,
-        output = proj,
+        template = ctx.file._compile_template,
+        output = compile_file,
         is_executable = False,
         substitutions = {
-            "{compile_srcs}": "\n".join(compile_srcs),
-            "{tfm}": tfm,
-            "{output_type}": output_type,
-            "{msbuild_properties}": "\n".join(msbuild_properties),
-            "{references}": "\n".join(references),
+            "{msbuild_properties}": "\n    ".join([p for p in msbuild_properties if p != None]),
+            "{imports}": inline_element("Import", {"Project": restore_file.basename}),
+            "{compile_srcs}": "\n    ".join(compile_srcs),
+            "{references}": "\n    ".join(references),
         },
     )
-    return proj
+    return compile_file

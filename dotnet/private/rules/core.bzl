@@ -9,21 +9,21 @@ TFM_ATTR = attr.string(
 DEPS_ATTR = attr.label_list(
     providers = [DotnetLibraryInfo],
 )
-TOOL_ASSEMBLY_ATTRS = {
+ASSEMBLY_ATTRS = {
     "srcs": attr.label_list(allow_files = [".cs"]),
     "target_framework": TFM_ATTR,
     "data": attr.label_list(allow_files = True),
     "deps": DEPS_ATTR,
-    "_proj_template": attr.label(
+    "_compile_template": attr.label(
         default = Label("//dotnet/private/rules:compile.tpl.proj"),
+        allow_single_file = True,
+    ),
+    "_restore_template": attr.label(
+        default = Label("//dotnet/private/rules:restore.tpl.props"),
         allow_single_file = True,
     ),
     "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
 }
-ASSEMBLY_ATTRS = dict(
-    TOOL_ASSEMBLY_ATTRS,
-    restore = attr.label(mandatory = True),
-)
 
 def _dotnet_tool_binary_impl(ctx):
     """A tool for building that can only depend on the donet sdk (no nuget deps)"""
@@ -41,10 +41,10 @@ def _dotnet_binary_impl(ctx):
     executable, pdb, outputs = emit_assembly(ctx, True)
     return [
         DefaultInfo(
-            files = depset([executable.file]),
+            files = depset([executable, pdb]),
             # runfiles = dotnet._ctx.runfiles(files=[proj]),
             runfiles = None,
-            executable = executable.file,
+            executable = executable,
         ),
     ]
 
@@ -54,8 +54,8 @@ def _dotnet_library_impl(ctx):
     return [
         DefaultInfo(files = depset(outputs)),
         DotnetLibraryInfo(
-            assembly = library.file,
-            pdb = pdb.file,
+            assembly = library,
+            pdb = pdb,
             deps = depset(
                 direct = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps],
                 transitive = [dep[DotnetLibraryInfo].deps for dep in ctx.attr.deps],
@@ -65,7 +65,7 @@ def _dotnet_library_impl(ctx):
 
 dotnet_tool_binary = rule(
     implementation = _dotnet_tool_binary_impl,
-    attrs = TOOL_ASSEMBLY_ATTRS,
+    attrs = ASSEMBLY_ATTRS,
     executable = True,
     toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
 )

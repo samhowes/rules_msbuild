@@ -8,7 +8,7 @@ def element(name, value, attrs = {}):
             for k, v in attrs.items()
         ],
     )
-    return "    <{open_tag}>{value}</{name}>\n".format(
+    return "<{open_tag}>{value}</{name}>".format(
         name = name,
         open_tag = " ".join(open_tag_items),
         value = value,
@@ -19,4 +19,4 @@ def inline_element(name, attrs):
         "{}=\"{}\"".format(a, attrs[a])
         for a in attrs
     ]
-    return "<{name} {attrs} />\n".format(name = name, attrs = " ".join(attr_strings))
+    return "<{name} {attrs} />".format(name = name, attrs = " ".join(attr_strings))

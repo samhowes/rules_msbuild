@@ -1,11 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
   <PropertyGroup>
-    <TargetFrameworks>{tfms}</TargetFrameworks>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     {msbuild_properties}
   </PropertyGroup>
 
+  {imports}
+
   <ItemGroup>
-    {references}
+    <Compile Remove="**/*" />
   </ItemGroup>
 </Project>

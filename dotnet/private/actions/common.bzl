@@ -39,28 +39,24 @@ def make_dotnet_env(toolchain, nuget_environment_info = None):
         if env_name == "":
             continue
         env[env_name] = getattr(nuget_environment_info, name)
-    print(env)
+
     return env
 
-def make_dotnet_args(ctx, toolchain, target, proj, intermediate_output_dir, output_dir = None):
+def make_dotnet_args(ctx, toolchain, msbuild_target, proj):
     args = ctx.actions.args()
     args.use_param_file("@%s")
     args.set_param_file_format("shell")
-    args.add(target)
+    args.add("msbuild")
+    args.add("-t:" + msbuild_target)
+    args.add(proj.path)
 
-    # args.add("--nologo")
-    # args.add("-p:UsePackageDownload=false")
-    # args.add("--no-dependencies")  # just in case
+    args.add("-nologo")
 
-    # args.add('--source="$(MSBuildStartupDirectory){}"'.format(toolchain.sdk.root_file.dirname)) # todo: set to @nuget
+    # todo disable when not debugging the build
     args.add("-bl:{}".format(proj.path + ".binlog"))
 
-    # would be no-restore, but restore creates assetts.json which the actual build depends on
-    # args.add('--no-restore')
-    args.add(proj.path)
-    args.add("-p:IntermediateOutputPath={}/".format(intermediate_output_dir))
-    if (output_dir != None):
-        args.add("-p:OutputPath={}".format(output_dir))
+    # if msbuild_target != "restore":
+    #     args.add("--no-restore")
 
     # GetRestoreSettingsTask#L142: this is resolved against msbuildstartupdirectory
     args.add('-p:RestoreConfigFile="{}"'.format(toolchain.sdk.nuget_build_config.path))

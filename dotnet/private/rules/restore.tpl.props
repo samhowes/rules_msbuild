@@ -2,10 +2,13 @@
   
   <PropertyGroup>
     <TargetFramework>{tfm}</TargetFramework>
+    <!-- Build Properties -->
+    {msbuild_properties}
   </PropertyGroup>
 
   <ItemGroup>
-{package_references}
+    <!-- Packages -->
+    {package_references}
   </ItemGroup>
 
 </Project>
