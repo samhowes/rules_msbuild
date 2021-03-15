@@ -8,3 +8,5 @@ py_library(
         "@rules_python//python/runfiles",
     ],
 )
+
+exports_files(["build_test.py"])
