@@ -8,6 +8,10 @@ class BuildTestCase(unittest.TestCase):
     
     def setUpBase(self):
         self.target = environ.get("DOTNET_BUILD_TARGET")
+        self.args = environ.get("DOTNET_BUILD_TARGET_ARGS")
+        if self.args != None:
+            self.args = self.args.split(";")
+
         self.r = runfiles.Create()
         self.workspace_name = "my_rules_dotnet"
 
@@ -16,8 +20,9 @@ class BuildTestCase(unittest.TestCase):
 
     def assertOutput(self, expected):
         executable = self.location(self.target)
-
-        actual_raw = check_output([executable])
+        args = [executable] + self.args
+        
+        actual_raw = check_output(args)
 
         actual = str(actual_raw, 'utf-8')
         expected += "\r\n"

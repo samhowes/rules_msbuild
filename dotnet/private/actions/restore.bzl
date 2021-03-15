@@ -2,7 +2,6 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
 load(
     "//dotnet/private/actions:common.bzl",
     "STARTUP_DIR",
@@ -10,17 +9,18 @@ load(
     "make_dotnet_env",
 )
 
-def restore(ctx, intermediate_path):
+def restore(ctx, intermediate_path, packages):
     """Emits an action for generating files necessary for a nuget restore
     
     Args:
         ctx: the ctx of the dotnet rule
         intermediate_path: the path to the obj directory
+        packages: a list of NuGetPackageInfo providers to restore
     Returns:
         a list of files in the package
     """
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-    restore_file = _make_restore_file(ctx, toolchain, intermediate_path)
+    restore_file = _make_restore_file(ctx, toolchain, intermediate_path, packages)
 
     outputs = _declare_files(ctx, restore_file, intermediate_path)
 
@@ -63,19 +63,13 @@ def _declare_files(ctx, restore_file, intermediate_path):
 
     return files
 
-def _make_restore_file(ctx, toolchain, intermediate_path):
-    packages = [
-        p[DotnetLibraryInfo]
-        for p in ctx.attr.deps
-        if hasattr(p[DotnetLibraryInfo], "package_info") and p[DotnetLibraryInfo].package_info != None
-    ]
-
+def _make_restore_file(ctx, toolchain, intermediate_path, packages):
     package_references = [
         inline_element(
             "PackageReference",
             {
-                "Include": p.package_info.name,
-                "Version": p.package_info.version,
+                "Include": p.name,
+                "Version": p.version,
             },
         )
         for p in packages

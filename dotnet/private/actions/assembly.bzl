@@ -24,27 +24,30 @@ def emit_assembly(ctx, is_executable):
     output_path = ctx.attr.target_framework
     intermediate_path = INTERMEDIATE_BASE
     library_extension = dotnetos_to_library_extension(toolchain.default_dotnetos)
+    tfm = ctx.attr.target_framework
 
-    library_infos = depset(
-        direct = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps],
-        transitive = [dep[DotnetLibraryInfo].deps for dep in ctx.attr.deps],
-    )
+    references = []
+    packages = []
+    copied_files = []
 
-    restore_file, restore_outputs = restore(ctx, intermediate_path)
+    for dep in ctx.attr.deps:
+        info = dep[DotnetLibraryInfo]
+        _collect_files(info, copied_files, tfm, references, packages)
 
-    assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, library_infos)
-    compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, library_infos)
+        for tinfo in info.deps.to_list():
+            _collect_files(tinfo, copied_files, tfm, None, None)
+
+    restore_file, restore_outputs = restore(ctx, intermediate_path, packages)
+
+    assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references)
+    compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, references)
 
     args = make_dotnet_args(ctx, toolchain, "build", compile_file)
     env = make_dotnet_env(toolchain)
 
-    dep_files = []
-    for li in library_infos.to_list():
-        dep_files.extend([li.assembly, li.pdb])
-
-    copied_dep_files = [
-        ctx.actions.declare_file(df.basename, sibling = assembly)
-        for df in dep_files
+    copied_files_output = [
+        ctx.actions.declare_file(cf.basename, sibling = assembly)
+        for cf in copied_files
     ]
 
     sdk = toolchain.sdk
@@ -52,7 +55,7 @@ def emit_assembly(ctx, is_executable):
         [compile_file, restore_file] +
         restore_outputs +
         ctx.files.srcs +
-        dep_files +
+        copied_files +
         sdk.packs +
         sdk.shared +
         sdk.sdk_files +
@@ -62,7 +65,7 @@ def emit_assembly(ctx, is_executable):
     outputs = (
         [assembly, pdb] +
         assembly_files +
-        copied_dep_files
+        copied_files_output
     )
 
     ctx.actions.run(
@@ -75,7 +78,34 @@ def emit_assembly(ctx, is_executable):
     )
     return assembly, pdb, outputs
 
-def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, library_infos):
+def _collect_files(info, copied_files, tfm, references = None, packages = None):
+    package = getattr(info, "package_info", None)
+    if package != None:
+        if package.is_fake:
+            # todo(#20): enable JIT NuGet fetch
+            fail("Package dep {} has not been fetched, did you forget to run @nuget//:fetch?".format(package.name + ":" + package.version))
+
+        framework_info = getattr(package.frameworks, tfm, None)
+        if framework_info == None:
+            fail("TargetFramework {} was not fetched for package dep {}. Fetched tfms: {}. " +
+                 "Did you forget to run @nuget//:fetch?".format(
+                     tfm,
+                     package.name + ":" + package.version,
+                     ", ".join([k for k, v in package.frameworks]),
+                 ))
+
+        copied_files.extend(framework_info.assemblies + framework_info.data)
+        if packages != None:
+            packages.append(package)
+    else:
+        copied_files.append(info.assembly)
+        if info.pdb != None:
+            copied_files.append(info.pdb)
+
+        if references != None:
+            references.append(info.assembly)
+
+def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references):
     output_dir = ctx.attr.target_framework
 
     exe_extension = dotnetos_to_exe_extension(toolchain.default_dotnetos) if is_executable else library_extension
@@ -87,36 +117,25 @@ def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, li
         library_extension if is_executable else None,
     ]
 
-    # todo toggle this when not debug
-    pdb = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + ".pdb"))
+    # todo(#21) toggle this when not debug
+    pdb = ctx.actions.declare_file(ctx.attr.name + ".pdb", sibling = assembly)
 
     if is_executable:
         extensions.extend([
             ".runtimeconfig.json",
-            # todo find out when this is NOT output
+            # todo(#22) find out when this is NOT output
             ".runtimeconfig.dev.json",
         ])
 
-    file_paths = [
-        paths.join(output_dir, ctx.attr.name + ext)
+    files = [
+        ctx.actions.declare_file(ctx.attr.name + ext, sibling = assembly)
         for ext in extensions
         if ext != None
     ]
 
-    for li in library_infos.to_list():
-        file_paths.extend([
-            paths.join(output_dir, f.basename)
-            for f in (li.assembly, li.pdb)
-        ])
-
-    files = [
-        ctx.actions.declare_file(file_path)
-        for file_path in file_paths
-    ]
-
     return assembly, pdb, files
 
-def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, library_infos):
+def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, libraries):
     msbuild_properties = [
         element("OutputType", "Exe") if is_executable else None,
         element("OutputPath", "$(MSBuildThisFileDirectory)"),
@@ -132,16 +151,18 @@ def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file,
             "Reference",
             element(
                 "HintPath",
-                paths.join(STARTUP_DIR, li.assembly.path),
+                paths.join(STARTUP_DIR, f.path),
             ),
             {
                 "Include": paths.split_extension(
-                    li.assembly.basename,
+                    f.basename,
                 )[0],
             },
         )
-        for li in library_infos.to_list()
+        for f in libraries
     ]
+
+    # todo(#4) add package references
 
     compile_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
     ctx.actions.expand_template(

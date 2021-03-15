@@ -12,7 +12,7 @@ load(
     "//dotnet/private:providers.bzl",
     _DotnetLibraryInfo = "DotnetLibraryInfo",
     _DotnetSdkInfo = "DotnetSdkInfo",
-    _NugetPackageInfo = "NugetPackageInfo",
+    _NuGetPackageInfo = "NuGetPackageInfo",
 )
 load(
     "//dotnet/private:dotnet_toolchain.bzl",
@@ -36,7 +36,7 @@ load(
 load(
     "//dotnet/private/rules:nuget.bzl",
     _nuget_import = "nuget_import",
-    _nuget_restore = "nuget_restore",
+    # _nuget_restore = "nuget_restore",
 )
 
 declare_toolchains = _declare_toolchains
@@ -44,13 +44,14 @@ dotnet_toolchain = _dotnet_toolchain
 dotnet_sdk = _dotnet_sdk
 
 nuget_config = _nuget_config
-nuget_restore = _nuget_restore
+
+# nuget_restore = _nuget_restore
 nuget_import = _nuget_import
 
 # See dotnet/providers.md#DotnetSdkInfo for full documentation.
 DotnetSdkInfo = _DotnetSdkInfo
 DotnetLibraryInfo = _DotnetLibraryInfo
-NugetPackageInfo = _NugetPackageInfo
+NuGetPackageInfo = _NuGetPackageInfo
 
 dotnet_tool_binary = _dotnet_tool_binary
 dotnet_binary = _dotnet_binary

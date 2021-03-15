@@ -6,8 +6,8 @@ DotnetLibraryInfo = provider(
     fields = {
         "assembly": "The primary assembly that was compiled",
         "pdb": "The pdb debug information, if available",
-        "deps": "A depset of info structs for this library's dependencies",
-        "package_info": "A NuGetPackageInfo struct if this is a nuget package.",
+        "deps": "A depset of DotnetLibraryInfo for this library's dependencies",
+        "package_info": "A NuGetPackageInfo provider if this is a nuget package.",
     },
 )
 
@@ -17,20 +17,30 @@ DotnetContextInfo = provider(
     fields = {},
 )
 
-NugetPreRestoreInfo = provider(
-    doc = "Props file gneration information",
-    fields = {
-        "primary_name": "The name of the target being restored",
-        "tfms": "The target framework versions restored by the props file",
-        "props_file": "The generated props file for restoring from.",
-    },
-)
-
-NugetPackageInfo = provider(
+NuGetPackageInfo = provider(
     doc = "Package restore information",
     fields = {
         "name": "Package name",
         "version": "A nuget version string",
+        "is_fake": "A boolean indicating if this is a placeholder package for bootstrapping",
+        "frameworks": (
+            "A struct from a cannonical tfm (e.g. netcoreapp3.1) to NuGetFetchedPackageFrameworkInfo providers " +
+            "for framework specific package information. The members of this struct are defined by the *package consumers*, not by " +
+            "the package. i.e. if the package is a netstandard2.0 package, but the consuming target is targeting netcoreapp3.1, then " +
+            "the key `netcoreapp3.1` will exist in this struct, *not* netstandard2.0. This matches up with the packages.lock.json and " +
+            "allows package consumers to easily access the deps specific to their framework."
+        ),
+    },
+)
+
+NuGetFetchedPackageFrameworkInfo = provider(
+    doc = "NuGetPackage info for a specific framework.",
+    fields = {
+        "tfm": "The canonical tfm that requested this package.",
+        "assemblies": "depset of files used by consumers to compile.",
+        "data": "List of files that are runtime dependencies of this package (these should be copied to the output directory).",
+        "files": "List of *all* files that comprise this package for this framework. Includes .dll, .xml, other?",
+        "deps": "Depset of NuGetPackageInfo that this package depends on for `tfm`.",
     },
 )
 

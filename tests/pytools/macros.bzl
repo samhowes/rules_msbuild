@@ -14,7 +14,7 @@ def py_build_test(target):
         ],
     )
 
-def build_test(name, expected_output = "", expected_files = []):
+def build_test(name, args = [], expected_output = "", expected_files = []):
     target = name.rsplit("_", 1)[0]
     src = "//tests/pytools:build_test.py"
     py_test(
@@ -23,6 +23,7 @@ def build_test(name, expected_output = "", expected_files = []):
         srcs = [src],
         env = {
             "DOTNET_BUILD_TARGET": "$(rootpath :{})".format(target),
+            "DOTNET_BUILD_TARGET_ARGS": ";".join(args),
             "DOTNET_BUILD_EXPECTED_OUTPUT": expected_output,
             "DOTNET_BUILD_EXPECTED_FILES": ";".join(expected_files),
         },
