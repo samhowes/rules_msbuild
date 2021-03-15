@@ -5,11 +5,11 @@ def py_build_test(target):
     py_test(
         name = name,
         srcs = [name + ".py"],
-        args = [
-            "$(rootpath :{})".format(target),
-        ],
+        env = {
+            "DOTNET_BUILD_TARGET": "$(rootpath :{})".format(target),
+        },
         data = [":" + target],
         deps = [
-            "//tests/pytools:executable_fixture",
+            "//tests/pytools:build_test_case",
         ],
     )

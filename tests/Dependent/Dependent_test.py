@@ -6,11 +6,13 @@ class TestHelloBazel(BuildTestCase):
         self.setUpBase()
 
     def test_output(self):
-        self.assertOutput("Hello Bazel!")
+        self.assertOutput("Hello Secret: Foo")
     
     def test_files(self):
         self.assertFiles([
-            "HelloBazel.pdb"
+            "Dependent.pdb",
+            "ClassLibrary.dll",
+            "ClassLibrary.pdb",
         ])
 
 if __name__ == '__main__':

@@ -60,7 +60,6 @@ def _dotnet_library_impl(ctx):
                 direct = [dep[DotnetLibraryInfo] for dep in ctx.attr.deps],
                 transitive = [dep[DotnetLibraryInfo].deps for dep in ctx.attr.deps],
             ),
-            is_package = False,
         ),
     ]
 

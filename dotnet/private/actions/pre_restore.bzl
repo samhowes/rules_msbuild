@@ -14,7 +14,7 @@ def pre_restore(ctx):
     packages = [
         p[DotnetLibraryInfo]
         for p in ctx.attr.deps
-        if hasattr(p[DotnetLibraryInfo], "package_info")
+        if hasattr(p[DotnetLibraryInfo], "package_info") and p[DotnetLibraryInfo].package_info != None
     ]
 
     props_file = _props_file(ctx, packages)
