@@ -26,18 +26,9 @@ def emit_assembly(ctx, is_executable):
     library_extension = dotnetos_to_library_extension(toolchain.default_dotnetos)
     tfm = ctx.attr.target_framework
 
-    references = []
-    packages = []
-    copied_files = []
+    references, packages, copied_files = process_deps(ctx.attr.deps, tfm)
 
-    for dep in ctx.attr.deps:
-        info = dep[DotnetLibraryInfo]
-        _collect_files(info, copied_files, tfm, references, packages)
-
-        for tinfo in info.deps.to_list():
-            _collect_files(tinfo, copied_files, tfm, None, None)
-
-    restore_file, restore_outputs = restore(ctx, intermediate_path, packages)
+    restore_file, restore_outputs = restore(ctx, toolchain.sdk, intermediate_path, packages)
 
     assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references)
     compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, references)
@@ -77,6 +68,21 @@ def emit_assembly(ctx, is_executable):
         env = env,
     )
     return assembly, pdb, outputs
+
+def process_deps(deps, tfm):
+    references = []
+    packages = []
+    copied_files = []
+
+    for dep in deps:
+        info = dep[DotnetLibraryInfo]
+        print(info)
+        _collect_files(info, copied_files, tfm, references, packages)
+
+        for tinfo in info.deps.to_list():
+            _collect_files(tinfo, copied_files, tfm, None, None)
+
+    return references, packages, copied_files
 
 def _collect_files(info, copied_files, tfm, references = None, packages = None):
     package = getattr(info, "package_info", None)

@@ -27,6 +27,10 @@ go_rules_dependencies()
 go_register_toolchains(version = "1.16")
 ### end sanity ###
 
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
 load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
 dotnet_rules_dependencies()

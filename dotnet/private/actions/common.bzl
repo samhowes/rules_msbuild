@@ -17,17 +17,17 @@ def built_path(ctx, outputs, p, is_directory = False):
         short_path = output.short_path,
     )
 
-def make_dotnet_env(toolchain, nuget_environment_info = None):
-    dotnet_sdk_base = toolchain.sdk.root_file.dirname
+def make_dotnet_env(sdk, nuget_environment_info = None):
+    dotnet_sdk_base = sdk.root_file.dirname
     env = {
-        "DOTNET_CLI_HOME": toolchain.sdk.root_file.dirname,
+        "DOTNET_CLI_HOME": sdk.root_file.dirname,
         "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
         # isolate Dotnet from using the system installed sdk
         "DOTNET_MULTILEVEL_LOOKUP": "0",
         "NUGET_SHOW_STACK": "true",
     }
 
-    os = toolchain.sdk.dotnetos
+    os = sdk.dotnetos
     if os not in NUGET_ENVIRONMENTS:
         fail("No nuget environment configuration for os {}".format(os))
 
@@ -42,7 +42,7 @@ def make_dotnet_env(toolchain, nuget_environment_info = None):
 
     return env
 
-def make_dotnet_args(ctx, toolchain, msbuild_target, proj):
+def make_dotnet_args(ctx, sdk, msbuild_target, proj):
     args = ctx.actions.args()
     args.use_param_file("@%s")
     args.set_param_file_format("shell")
@@ -59,6 +59,6 @@ def make_dotnet_args(ctx, toolchain, msbuild_target, proj):
     #     args.add("--no-restore")
 
     # GetRestoreSettingsTask#L142: this is resolved against msbuildstartupdirectory
-    args.add('-p:RestoreConfigFile="{}"'.format(toolchain.sdk.nuget_build_config.path))
+    args.add('-p:RestoreConfigFile="{}"'.format(sdk.nuget_build_config.path))
 
     return args

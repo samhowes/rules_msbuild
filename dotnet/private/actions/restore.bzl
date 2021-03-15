@@ -9,23 +9,25 @@ load(
     "make_dotnet_env",
 )
 
-def restore(ctx, intermediate_path, packages):
+def restore(ctx, sdk, intermediate_path, packages):
     """Emits an action for generating files necessary for a nuget restore
     
     Args:
         ctx: the ctx of the dotnet rule
+        sdk: the dotnet sdk
         intermediate_path: the path to the obj directory
         packages: a list of NuGetPackageInfo providers to restore
     Returns:
         a list of files in the package
     """
-    toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-    restore_file = _make_restore_file(ctx, toolchain, intermediate_path, packages)
+    if len(packages) > 0:
+        fail("fial")
+    restore_file = _make_restore_file(ctx, sdk, intermediate_path, packages)
 
     outputs = _declare_files(ctx, restore_file, intermediate_path)
 
-    args = make_dotnet_args(ctx, toolchain, "restore", restore_file)
-    env = make_dotnet_env(toolchain)
+    args = make_dotnet_args(ctx, sdk, "restore", restore_file)
+    env = make_dotnet_env(sdk)
 
     ctx.actions.run(
         mnemonic = "NuGetRestore",
@@ -33,7 +35,7 @@ def restore(ctx, intermediate_path, packages):
             [restore_file]  # todo: maybe include NuSpec files as inputs?
         ),
         outputs = outputs,
-        executable = toolchain.sdk.dotnet,
+        executable = sdk.dotnet,
         arguments = [args],
         env = env,
     )
@@ -63,7 +65,7 @@ def _declare_files(ctx, restore_file, intermediate_path):
 
     return files
 
-def _make_restore_file(ctx, toolchain, intermediate_path, packages):
+def _make_restore_file(ctx, sdk, intermediate_path, packages):
     package_references = [
         inline_element(
             "PackageReference",
@@ -76,7 +78,7 @@ def _make_restore_file(ctx, toolchain, intermediate_path, packages):
     ]
 
     msbuild_properties = [
-        element("RestoreSources", paths.join(STARTUP_DIR, toolchain.sdk.root_file.dirname)),
+        element("RestoreSources", paths.join(STARTUP_DIR, sdk.root_file.dirname)),
         element("IntermediateOutputPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
     ]
 
