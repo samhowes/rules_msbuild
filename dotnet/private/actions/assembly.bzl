@@ -25,23 +25,23 @@ def emit_assembly(ctx, is_executable):
     intermediate_path = INTERMEDIATE_BASE
     library_extension = dotnetos_to_library_extension(toolchain.default_dotnetos)
     tfm = ctx.attr.target_framework
+    sdk = toolchain.sdk
 
     references, packages, copied_files = process_deps(ctx.attr.deps, tfm)
 
-    restore_file, restore_outputs = restore(ctx, toolchain.sdk, intermediate_path, packages)
+    restore_file, restore_outputs = restore(ctx, sdk, intermediate_path, packages)
 
     assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references)
     compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, references)
 
-    args = make_dotnet_args(ctx, toolchain, "build", compile_file)
-    env = make_dotnet_env(toolchain)
+    args = make_dotnet_args(ctx, sdk, "build", compile_file)
+    env = make_dotnet_env(sdk)
 
     copied_files_output = [
         ctx.actions.declare_file(cf.basename, sibling = assembly)
         for cf in copied_files
     ]
 
-    sdk = toolchain.sdk
     inputs = (
         [compile_file, restore_file] +
         restore_outputs +
@@ -68,48 +68,6 @@ def emit_assembly(ctx, is_executable):
         env = env,
     )
     return assembly, pdb, outputs
-
-def process_deps(deps, tfm):
-    references = []
-    packages = []
-    copied_files = []
-
-    for dep in deps:
-        info = dep[DotnetLibraryInfo]
-        print(info)
-        _collect_files(info, copied_files, tfm, references, packages)
-
-        for tinfo in info.deps.to_list():
-            _collect_files(tinfo, copied_files, tfm, None, None)
-
-    return references, packages, copied_files
-
-def _collect_files(info, copied_files, tfm, references = None, packages = None):
-    package = getattr(info, "package_info", None)
-    if package != None:
-        if package.is_fake:
-            # todo(#20): enable JIT NuGet fetch
-            fail("Package dep {} has not been fetched, did you forget to run @nuget//:fetch?".format(package.name + ":" + package.version))
-
-        framework_info = getattr(package.frameworks, tfm, None)
-        if framework_info == None:
-            fail("TargetFramework {} was not fetched for package dep {}. Fetched tfms: {}. " +
-                 "Did you forget to run @nuget//:fetch?".format(
-                     tfm,
-                     package.name + ":" + package.version,
-                     ", ".join([k for k, v in package.frameworks]),
-                 ))
-
-        copied_files.extend(framework_info.assemblies + framework_info.data)
-        if packages != None:
-            packages.append(package)
-    else:
-        copied_files.append(info.assembly)
-        if info.pdb != None:
-            copied_files.append(info.pdb)
-
-        if references != None:
-            references.append(info.assembly)
 
 def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references):
     output_dir = ctx.attr.target_framework
@@ -183,3 +141,52 @@ def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file,
         },
     )
     return compile_file
+
+def process_deps(deps, tfm):
+    """Split deps into assembly references and packages
+
+    Args:
+        deps: the deps of a dotnet assembly ctx
+        tfm: the target framework moniker being built
+    Returns:
+        references, packages, copied_files
+    """
+    references = []
+    packages = []
+    copied_files = []
+
+    for dep in deps:
+        info = dep[DotnetLibraryInfo]
+        _collect_files(info, copied_files, tfm, references, packages)
+
+        for tinfo in info.deps.to_list():
+            _collect_files(tinfo, copied_files, tfm, None, None)
+
+    return references, packages, copied_files
+
+def _collect_files(info, copied_files, tfm, references = None, packages = None):
+    package = getattr(info, "package_info", None)
+    if package != None:
+        if package.is_fake:
+            # todo(#20): enable JIT NuGet fetch
+            fail("Package dep {} has not been fetched, did you forget to run @nuget//:fetch?".format(package.name + ":" + package.version))
+
+        framework_info = getattr(package.frameworks, tfm, None)
+        if framework_info == None:
+            fail("TargetFramework {} was not fetched for package dep {}. Fetched tfms: {}. " +
+                 "Did you forget to run @nuget//:fetch?".format(
+                     tfm,
+                     package.name + ":" + package.version,
+                     ", ".join([k for k, v in package.frameworks]),
+                 ))
+
+        copied_files.extend(framework_info.assemblies + framework_info.data)
+        if packages != None:
+            packages.append(package)
+    else:
+        copied_files.append(info.assembly)
+        if info.pdb != None:
+            copied_files.append(info.pdb)
+
+        if references != None:
+            references.append(info.assembly)
