@@ -14,5 +14,5 @@ steps:
   displayName: 'Run a one-line script'
 
 - script: |
-    bazel --version
+    bazel test //tests/HelloBazel:all
   displayName: 'Bazel version'
