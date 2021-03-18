@@ -1,5 +1,5 @@
 # Dotnet Rules for Bazel
-
+[![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=Job)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master)
 <!--
 Links
  -->
