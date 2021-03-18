@@ -41,7 +41,6 @@ def dotnet_download_sdk(name, **kwargs):
     _register_toolchains(name)
 
 def _dotnet_download_sdk_impl(ctx):
-    print("_dotnet_download_sdk_impl")
     if not ctx.attr.dotnetos and not ctx.attr.dotnetarch:
         dotnetos, dotnetarch = _detect_host_platform(ctx)
     else:
@@ -97,7 +96,7 @@ def _dotnet_download_sdk_impl(ctx):
     if platform not in sdks:
         fail("unsupported platform {}".format(platform))
     filename, sha256 = sdks[platform]
-    _remote_sdk(ctx, [url.format(filename) for url in ctx.attr.urls], ctx.attr.strip_prefix, sha256)
+    _remote_sdk(ctx, [filename], ctx.attr.strip_prefix, sha256)
 
     _sdk_build_file(ctx, platform)
 
