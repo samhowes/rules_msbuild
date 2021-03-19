@@ -1,5 +1,8 @@
 # Dotnet Rules for Bazel
-[![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=Job)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master)
+| Windows | Mac | Linux |
+|---------|-----|-------|
+|[![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=windows)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master&jobName=windows)|[![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=mac)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master&jobName=mac)|[![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=linux)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master&jobName=linux)|
+
 <!--
 Links
  -->
