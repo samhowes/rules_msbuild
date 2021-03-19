@@ -11,7 +11,7 @@ load(
 
 def restore(ctx, sdk, intermediate_path, packages):
     """Emits an action for generating files necessary for a nuget restore
-    
+
     Args:
         ctx: the ctx of the dotnet rule
         sdk: the dotnet sdk
@@ -32,7 +32,9 @@ def restore(ctx, sdk, intermediate_path, packages):
     ctx.actions.run(
         mnemonic = "NuGetRestore",
         inputs = (
-            [restore_file]  # todo: maybe include NuSpec files as inputs?
+            [restore_file] +  # todo: maybe include NuSpec files as inputs?
+            sdk.init_files +
+            [sdk.nuget_build_config]
         ),
         outputs = outputs,
         executable = sdk.dotnet,

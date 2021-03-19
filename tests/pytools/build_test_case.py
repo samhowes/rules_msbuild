@@ -2,7 +2,7 @@ import unittest
 from rules_python.python.runfiles import runfiles
 from subprocess import check_output
 from sys import argv, exit, stderr
-from os import path, environ
+from os import path, environ, linesep
 
 class BuildTestCase(unittest.TestCase):
     
@@ -25,7 +25,7 @@ class BuildTestCase(unittest.TestCase):
         actual_raw = check_output(args)
 
         actual = str(actual_raw, 'utf-8')
-        expected += "\r\n"
+        expected += linesep
         if actual != expected:
             print(f'Expected:\n"{expected}"\nActual:\n"{actual}"', file=stderr)
             exit(1)

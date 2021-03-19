@@ -69,6 +69,6 @@ NUGET_ENVIRONMENTS = {
 def isolated_environment(repo_root):
     isolated_kwargs = {}
     for k, _ in WIN_ENVIRONMENT.items():
-        isolated_kwargs[k] = paths.join(repo_root, "nuget")
+        isolated_kwargs[k] = paths.join(repo_root)
 
     return NugetEnvironmentInfo(**isolated_kwargs)
