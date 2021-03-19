@@ -6,28 +6,32 @@
 trigger:
 - master
 
+parameters:
+  - name: platforms
+    type: object
+    default:
+    - name: windows
+      vmImage: windows-2019
+    - name: linux
+      vmImage: ubuntu-latest
+    - name: mac
+      vmImage: macOS-latest
+
 jobs:
-- job: BuildAndTest
-  strategy: 
-    matrix:
-      windows:
-        vmImage: windows-2019
-      linux:
-        vmImage: ubuntu-latest
-      mac:
-        vmImage: macOS-latest
+- ${{ each platform in parameters.platforms }}:
+  - job: ${{ platform.name }}
 
-  pool:
-    vmImage: $(vmImage)
+    pool:
+      vmImage: ${{ platform.vmImage }}
 
-  steps:
-  - script: bazel --version
-    displayName: 'Bazel Version'
+    steps:
+    - script: bazel --version
+      displayName: 'Bazel Version'
 
-  - script: |
-      bazel build //tests/sanity
-    displayName: 'Sanity Test'
-  
-  - script: |
-      bazel test //tests/HelloBazel:HelloBazel_test
-    displayName: 'Hello Bazel from dotnet_rules'
+    - script: |
+        bazel build //tests/sanity
+      displayName: 'Sanity Test'
+    
+    - script: |
+        bazel test //tests/HelloBazel:HelloBazel_test
+      displayName: 'Hello Bazel from rules_dotnet'
