@@ -4,7 +4,4 @@ def dotnetos_to_exe_extension(dotnetos):
     return ""
 
 def dotnetos_to_library_extension(dotnetos):
-    return {
-        "windows": ".dll",
-        "darwin": ".dll",
-    }.get(dotnetos, ".so")
+    return ".dll"
