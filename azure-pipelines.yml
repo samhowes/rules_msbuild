@@ -19,7 +19,7 @@ parameters:
 
 jobs:
 - ${{ each platform in parameters.platforms }}:
-  - job: BuildAndTest ${{ platform.name }}
+  - job: ${{ platform.name }}
 
     pool:
       vmImage: ${{ platform.vmImage }}
@@ -34,4 +34,4 @@ jobs:
     
     - script: |
         bazel test //tests/HelloBazel:HelloBazel_test
-      displayName: 'Hello Bazel from dotnet_rules'
+      displayName: 'Hello Bazel from rules_dotnet'
