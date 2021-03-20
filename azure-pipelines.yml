@@ -47,7 +47,7 @@ jobs:
     - task: PublishTestResults@2
       inputs:
         testResultsFormat: 'JUnit'
-        testResultsFiles: '**/test.xml'
+        testResultsFiles: '**/*test.xml'
         searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
         failTaskOnFailedTests: true
         buildPlatform: '${{ platform.name }}'
