@@ -43,6 +43,6 @@ jobs:
         searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
         failTaskOnFailedTests: true
         buildPlatform: '${{ platform.name }}'
-        testRunTitle: 'bazel test'
+        testRunTitle: '${{ platform.name }}'
         publishRunAttachments: true
       condition: always()
