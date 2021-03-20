@@ -7,16 +7,17 @@ from os import path, environ, linesep
 class BuildTestCase(unittest.TestCase):
     
     def setUpBase(self):
-        self.target = environ.get("DOTNET_BUILD_TARGET")
-        self.args = environ.get("DOTNET_BUILD_TARGET_ARGS")
+        self.target = environ.get("TARGET_EXECUTABLE")
+        self.args = environ.get("TARGET_EXECUTABLE_ARGS")
         if self.args != None:
             self.args = self.args.split(";")
 
         self.r = runfiles.Create()
-        self.workspace_name = "my_rules_dotnet"
+        self.workspace_name = environ.get("TEST_WORKSPACE")
+        self.output_base = path.dirname(environ.get('TEST_BINARY'))
 
     def location(self, short_path):
-        return self.r.Rlocation(self.workspace_name + "/" + self.target)
+        return self.r.Rlocation("/".join([self.workspace_name, short_path]))
 
     def assertOutput(self, expected):
         executable = self.location(self.target)
@@ -26,14 +27,11 @@ class BuildTestCase(unittest.TestCase):
 
         actual = str(actual_raw, 'utf-8')
         expected += linesep
-        if actual != expected:
-            print(f'Expected:\n"{expected}"\nActual:\n"{actual}"', file=stderr)
-            exit(1)
+        self.assertEqual(expected, actual, msg="Incorrect stdout")
 
-    def assertFiles(self, file_list):
-        output_dir = path.dirname(self.location(self.target))
-
+    def assertFiles(self, dirname, file_list):
         for f in file_list:
-            fpath = path.join(output_dir, f)
-            self.assertTrue(path.exists(fpath), msg=f"Missing file {fpath}")
+            rpath = path.join(self.output_base, dirname, f)
+            fpath = self.location(rpath)
+            self.assertTrue(path.exists(fpath), msg=f"Missing file: name={f}\n rpath={rpath}\n fpath={fpath}")
 

@@ -41,7 +41,7 @@ def _dotnet_binary_impl(ctx):
     executable, pdb, outputs = emit_assembly(ctx, True)
     return [
         DefaultInfo(
-            files = depset([executable, pdb]),
+            files = depset(outputs),
             # runfiles = dotnet._ctx.runfiles(files=[proj]),
             runfiles = None,
             executable = executable,
