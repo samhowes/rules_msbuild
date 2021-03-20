@@ -44,4 +44,5 @@ jobs:
         failTaskOnFailedTests: true
         buildPlatform: '${{ platform.name }}'
         testRunTitle: 'bazel test'
+        publishRunAttachments: true
       condition: always()
