@@ -33,8 +33,16 @@ jobs:
       displayName: 'Sanity Test'
     
     - script: |
-        bazel test //tests/HelloBazel:HelloBazel_test
+        bazel test --test_output=all //tests/HelloBazel:HelloBazel_test
       displayName: 'Hello Bazel from rules_dotnet'
+
+    - task: ExtractFiles@1
+      displayName: 'Extract test details'
+      inputs:
+        archiveFilePatterns: 'bazel-testlogs/**/*.zip'
+        destinationFolder: 'bazel-testlogs/'
+        cleanDestinationFolder: false
+        overwriteExistingFiles: true
 
     - task: PublishTestResults@2
       inputs:
