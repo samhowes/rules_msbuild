@@ -17,6 +17,7 @@ def _dotnet_sdk_impl(ctx):
         fxr = ctx.files.fxr,
         shared = ctx.files.shared,
         packs = ctx.files.packs,
+        init_files = ctx.files.init_files,
     )]
 
 dotnet_sdk = rule(
@@ -34,6 +35,11 @@ dotnet_sdk = rule(
             mandatory = True,
             allow_single_file = True,
             doc = "A file in the SDK root directory.",
+        ),
+        "init_files": attr.label(
+            mandatory = True,
+            allow_files = True,
+            doc = "The dotnet init files, these prevent noisy welcome messages on first build",
         ),
         "nuget_build_config": attr.label(
             mandatory = True,

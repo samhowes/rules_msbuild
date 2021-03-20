@@ -50,6 +50,7 @@ DotnetSdkInfo = provider(
         "dotnetos": "The host OS the SDK was built for.",
         "dotnetarch": "The host architecture the SDK was built for.",
         "root_file": "A file in the SDK root directory",
+        "init_files": "The init files for dotnet, these prevent dotnet from printing noisy welcome messages",
         "nuget_build_config": "Build-time nuget.config, should not have network packages. ",
         "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the " +
                      "extracted folder"),

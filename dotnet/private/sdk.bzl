@@ -101,29 +101,15 @@ def _dotnet_download_sdk_impl(ctx):
     _sdk_build_file(ctx, platform)
 
     # create dotnet init files so dotnet doesn't noisily print them out on the first build
-    dotnet_init_files = [
-        "aspNetCertificateSentinel",
-        "dotnetFirstUseSentinel",
-        "toolpath.sentinel",
+
+    init_files = [
+        ctx.file(".dotnet/{}.{}".format(version, f))
+        for f in [
+            "aspNetCertificateSentinel",
+            "dotnetFirstUseSentinel",
+            "toolpath.sentinel",
+        ]
     ]
-    for f in dotnet_init_files:
-        ctx.file(".dotnet/{}.{}".format(ctx.attr.version, f))
-
-    ctx.file(".bazelignore", ".dotnet\n.nuget\n", executable = False)
-
-    if not ctx.attr.sdks and not ctx.attr.version:
-        # Returning this makes Bazel print a message that 'version' must be
-        # specified for a reproducible build.
-        return {
-            "name": ctx.attr.name,
-            "dotnetos": ctx.attr.goos,
-            "dotnetarch": ctx.attr.goarch,
-            "sdks": ctx.attr.sdks,
-            "urls": ctx.attr.urls,
-            "version": version,
-            "strip_prefix": ctx.attr.strip_prefix,
-        }
-    return None
 
 _dotnet_download_sdk = repository_rule(
     implementation = _dotnet_download_sdk_impl,
@@ -161,7 +147,6 @@ def _sdk_build_file(ctx, platform):
     pack_labels = []
     packs = ctx.path("packs")
     for p in packs.readdir():
-        # pack_name, _, _ = p.rpartition("/")
         pack_name = p.basename
         pack_labels.append("\":{}\"".format(pack_name))
         dynamics.append("""

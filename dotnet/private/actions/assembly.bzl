@@ -50,7 +50,8 @@ def emit_assembly(ctx, is_executable):
         sdk.packs +
         sdk.shared +
         sdk.sdk_files +
-        sdk.fxr
+        sdk.fxr +
+        sdk.init_files
     )
 
     outputs = (

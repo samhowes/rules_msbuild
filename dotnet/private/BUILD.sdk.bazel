@@ -13,6 +13,7 @@ dotnet_sdk(
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
+    init_files = ":init_files",
     nuget_build_config = ".nuget/NuGet.Build.config",
     packs = [
         {pack_labels},
@@ -21,6 +22,13 @@ dotnet_sdk(
     sdk_files = ":sdk_files",
     sdk_root = "sdk/{version}",
     shared = ":shared",
+)
+
+# init files so dotnet doesn't print welcome messages
+# included because bazel sandboxes these away
+filegroup(
+    name = "init_files",
+    srcs = glob([".dotnet/**/*"], allow_empty=False),
 )
 
 filegroup(
