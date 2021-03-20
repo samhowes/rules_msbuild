@@ -33,13 +33,9 @@ class BuildTestCase:
 
     def assertFiles(self, dirname, file_list):
         for f in file_list:
-            print(f)
             assert f != None
-            rpath = path.join(self.output_base, dirname, f)
-            assert rpath != None
-            print(rpath)
+            rpath = "/".join([self.output_base, dirname, f])
             fpath = self.location(rpath)
-            print(fpath)
             assert fpath != None
             assert path.exists(fpath) #, msg=f"Missing file: name={f}\n rpath={rpath}\n fpath={fpath}")
 
