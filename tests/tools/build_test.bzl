@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@rules_python//python:defs.bzl", "py_test")
+load("@pip//:requirements.bzl", "requirement")
 
 def py_build_test(target):
     name = target + "_test"
@@ -72,11 +73,13 @@ def _build_test(name, target, expected_files, env):
         main = src,
         srcs = [src],
         env = env,
+        args = ["--junitxml=pytest.xml"],
         data = [
             ":" + target,
             ":" + artifacts,
         ],
         deps = [
+            requirement("pytest"),
             "//tests/tools:build_test_case",
         ],
     )
