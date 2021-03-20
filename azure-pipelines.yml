@@ -35,3 +35,10 @@ jobs:
     - script: |
         bazel test //tests/HelloBazel:HelloBazel_test
       displayName: 'Hello Bazel from rules_dotnet'
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/test.xml'
+        searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
+        failTaskOnFailedTests: true
+        buildPlatform: '${{ platform.name }}'
