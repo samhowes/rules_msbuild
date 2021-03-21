@@ -1,5 +1,5 @@
-from os import path, environ, linesep
-from subprocess import check_output
+from os import path, environ
+from subprocess import check_output, CalledProcessError
 
 from rules_python.python.runfiles import runfiles
 
@@ -24,8 +24,15 @@ class BuildTestCase:
         executable = self.location(self.target)
         args = [executable] + self.args
 
-        actual_raw = check_output(args)
+        out_raw = None
+        err = None
+        try:
+            out_raw = check_output(args)
+        except CalledProcessError as error:
+            out_raw = error.stdout
+            err = error.stderr
 
-        actual = str(actual_raw, 'utf-8')
-        return actual
-
+        out = None
+        if out_raw is not None:
+            out = str(out_raw, 'utf-8')
+        return out, err
