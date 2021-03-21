@@ -1,29 +1,39 @@
-import pytest
-from os import environ, path
-import os
-from tests.tools.build_test_case import BuildTestCase
 import json
+import os
+from os import environ
+from os import path
+
+import pytest
 import sys
+
+from tests.tools.build_test_case import BuildTestCase
 
 
 class TestBuild(BuildTestCase):
     def test_output(self):
         expected = environ.get("EXPECTED_OUTPUT")
-        if expected == None or len(expected) == 0:
+        if expected is None or len(expected) == 0:
             return
-        
-        self.assertOutput(expected)
-    
+
+        actual = self.get_output()
+        assert actual == expected
+
     def test_files(self):
-        expected = environ.get("EXPECTED_FILES")
-        if expected == None or len(expected) == 0:
+        expected: str = environ.get("EXPECTED_FILES")
+        if expected is None or len(expected) == 0:
             return
         expected_dict = json.loads(expected)
         for dirname in expected_dict:
-            self.assertFiles(dirname, expected_dict[dirname])
+            for f in expected_dict[dirname]:
+                assert f is not None
+                rpath = "/".join([self.output_base, dirname, f])
+                fpath = self.location(rpath)
+                assert fpath is not None, f'Missing runfile item for {rpath}'
+                assert path.exists(fpath), (
+                    f"Missing file: '{f}'\n name: {f}\n runfiles path: {rpath}\n file path: {fpath}")
+
 
 if __name__ == "__main__":
-    log_dir = os.environ.get("TEST_UNDECLARED_OUTPUTS_DIR")
-    file_log_path = os.path.join(log_dir, "pytest.xml")
-    
-    sys.exit(pytest.main([__file__, f'--junitxml={file_log_path}']))
+    xml_output = os.environ.get("XML_OUTPUT_FILE")
+    exit_code = pytest.main([__file__, "-vv", f'--junitxml={xml_output}'])
+    sys.exit(exit_code)
