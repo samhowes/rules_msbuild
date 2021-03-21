@@ -30,6 +30,7 @@ class BuildTestCase:
             out_raw = check_output(args)
         except CalledProcessError as error:
             out_raw = error.stdout
+            print(err)
             err = error.stderr
 
         out = None
