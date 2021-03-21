@@ -15,9 +15,8 @@ class TestBuild(BuildTestCase):
         if expected is None or len(expected) == 0:
             return
 
-        out, err = self.get_output()
-        assert err is None
-        assert out == expected
+        code, out, err = self.get_output()
+        assert (code, out, err) == (0, expected, '')
 
     def test_files(self):
         expected: str = environ.get("EXPECTED_FILES")

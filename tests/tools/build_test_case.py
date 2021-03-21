@@ -1,5 +1,5 @@
 from os import path, environ
-from subprocess import check_output, CalledProcessError
+from subprocess import run, CalledProcessError
 
 from rules_python.python.runfiles import runfiles
 
@@ -20,20 +20,17 @@ class BuildTestCase:
     def location(self, short_path):
         return self.r.Rlocation("/".join([self.workspace_name, short_path]))
 
+    def decode(self, output):
+        return str(output, 'utf-8')
+
     def get_output(self):
         executable = self.location(self.target)
         args = [executable] + self.args
 
-        out_raw = None
-        err = None
+        completed = None
         try:
-            out_raw = check_output(args)
+            completed = run(args, capture_output=True)
         except CalledProcessError as error:
-            out_raw = error.stdout
-            print(err)
-            err = error.stderr
+            completed = error
 
-        out = None
-        if out_raw is not None:
-            out = str(out_raw, 'utf-8')
-        return out, err
+        return completed.returncode, self.decode(completed.stdout), self.decode(completed.stderr)
