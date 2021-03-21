@@ -29,6 +29,11 @@ jobs:
       displayName: 'Bazel Version'
 
     - script: |
+        env
+        which dotnet
+      displayName: 'Environment'
+    
+    - script: |
         bazel build //tests/sanity
       displayName: 'Sanity Test'
     
