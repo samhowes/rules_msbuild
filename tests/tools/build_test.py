@@ -24,10 +24,21 @@ class TestBuild(BuildTestCase):
             return
         expected_dict = json.loads(expected)
         for dirname in expected_dict:
+            prefix = None
+            external = False
+            if len(dirname) > 0 and dirname[0] == "@":
+                prefix = [dirname[1:]]
+                external = True
+            else:
+                prefix = [self.output_base]
+                if len(dirname) > 0:
+                    prefix.append(dirname)
+
             for f in expected_dict[dirname]:
                 assert f is not None
-                rpath = "/".join([self.output_base, dirname, f])
-                fpath = self.location(rpath)
+
+                rpath = "/".join(prefix + [f])
+                fpath = self.location(rpath, external)
                 assert fpath is not None, f'Missing runfile item for {rpath}'
                 assert path.exists(fpath), (
                     f"Missing file: '{f}'\n name: {f}\n runfiles path: {rpath}\n file path: {fpath}")

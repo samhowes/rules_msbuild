@@ -144,6 +144,7 @@ def _sdk_build_file(ctx, platform):
     dotnetos, _, dotnetarch = platform.partition("_")
 
     dynamics = []
+    dynamic_targets = []
     pack_labels = []
     packs = ctx.path("packs")
     for p in packs.readdir():
@@ -166,6 +167,7 @@ filegroup(
             "{version}": ctx.attr.version,
             "{pack_labels}": ",\n        ".join(pack_labels),
             "{dynamics}": "\n".join(dynamics),
+            "{dynamic_targets}": ",\n        ".join(dynamic_targets),
         },
     )
 

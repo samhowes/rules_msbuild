@@ -5,8 +5,7 @@ load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
 load(
     "//dotnet/private/actions:common.bzl",
     "STARTUP_DIR",
-    "make_dotnet_args",
-    "make_dotnet_env",
+    "make_dotnet_cmd"
 )
 
 def restore(ctx, sdk, intermediate_path, packages):
@@ -26,8 +25,8 @@ def restore(ctx, sdk, intermediate_path, packages):
 
     outputs = _declare_files(ctx, restore_file, intermediate_path)
 
-    args = make_dotnet_args(ctx, sdk, "restore", restore_file)
-    env = make_dotnet_env(sdk)
+    args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "restore", restore_file)
+    outputs.extend(cmd_outputs)
 
     ctx.actions.run(
         mnemonic = "NuGetRestore",
@@ -42,7 +41,7 @@ def restore(ctx, sdk, intermediate_path, packages):
         env = env,
     )
 
-    return restore_file, outputs
+    return restore_file, outputs + [restore_file]
 
 def _declare_files(ctx, restore_file, intermediate_path):
     file_names = []

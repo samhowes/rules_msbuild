@@ -61,5 +61,6 @@ DotnetSdkInfo = provider(
         "tools": ("List of executable files in the SDK built for " +
                   "the execution platform, excluding the dotnet binary file"),
         "dotnet": "The dotnet binary file",
+        "all_files": "all sdk files",
     },
 )

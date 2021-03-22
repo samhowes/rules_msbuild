@@ -42,8 +42,7 @@ def _dotnet_binary_impl(ctx):
     return [
         DefaultInfo(
             files = depset(outputs),
-            # runfiles = dotnet._ctx.runfiles(files=[proj]),
-            runfiles = None,
+            runfiles = ctx.runfiles(files = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"].sdk.all_files),
             executable = executable,
         ),
     ]
@@ -52,7 +51,9 @@ def _dotnet_library_impl(ctx):
     """dotnet_library_impl emits actions for compiling a dotnet library"""
     library, pdb, outputs = emit_assembly(ctx, False)
     return [
-        DefaultInfo(files = depset(outputs)),
+        DefaultInfo(
+            files = depset(outputs)
+        ),
         DotnetLibraryInfo(
             assembly = library,
             pdb = pdb,

@@ -10,12 +10,21 @@ dotnet_binary(
 binary_test(
     name = "HelloBazel_test",
     expected_files = {
+        "": [
+            "HelloBazel.csproj",
+            "HelloBazel.csproj.binlog",
+            "HelloBazel.restore.proj",
+            "HelloBazel.restore.proj.binlog",
+        ],
         "netcoreapp3.1": [
             "HelloBazel.pdb",
             "HelloBazel.dll",
             "HelloBazel.deps.json",
             "HelloBazel.runtimeconfig.json",
             "HelloBazel.runtimeconfig.dev.json",
+        ],
+        "@dotnet_sdk": [
+            "host/fxr/3.1.0",
         ],
     },
     expected_output = "Hello Bazel!",

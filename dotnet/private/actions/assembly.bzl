@@ -6,8 +6,7 @@ load(
     "//dotnet/private/actions:common.bzl",
     "INTERMEDIATE_BASE",
     "STARTUP_DIR",
-    "make_dotnet_args",
-    "make_dotnet_env",
+    "make_dotnet_cmd",
 )
 load("//dotnet/private:common.bzl", "dotnetos_to_exe_extension", "dotnetos_to_library_extension")
 
@@ -34,8 +33,7 @@ def emit_assembly(ctx, is_executable):
     assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references)
     compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, references)
 
-    args = make_dotnet_args(ctx, sdk, "build", compile_file)
-    env = make_dotnet_env(sdk)
+    args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "build", compile_file)
 
     copied_files_output = [
         ctx.actions.declare_file(cf.basename, sibling = assembly)
@@ -57,7 +55,8 @@ def emit_assembly(ctx, is_executable):
     outputs = (
         [assembly, pdb] +
         assembly_files +
-        copied_files_output
+        copied_files_output +
+        cmd_outputs
     )
 
     ctx.actions.run(
@@ -68,7 +67,7 @@ def emit_assembly(ctx, is_executable):
         arguments = [args],
         env = env,
     )
-    return assembly, pdb, outputs
+    return assembly, pdb, outputs + [compile_file] + restore_outputs
 
 def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references):
     output_dir = ctx.attr.target_framework

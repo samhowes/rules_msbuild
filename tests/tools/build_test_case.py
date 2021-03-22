@@ -17,8 +17,14 @@ class BuildTestCase:
         cls.workspace_name = environ.get("TEST_WORKSPACE")
         cls.output_base = path.dirname(environ.get('TEST_BINARY'))
 
-    def location(self, short_path):
-        return self.r.Rlocation("/".join([self.workspace_name, short_path]))
+    def location(self, short_path, external=False):
+        rpath = None
+        if not external:
+            rpath = "/".join([self.workspace_name, short_path])
+        else:
+            rpath = short_path
+
+        return self.r.Rlocation(rpath)
 
     def decode(self, output):
         return str(output, 'utf-8')

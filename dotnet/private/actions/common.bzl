@@ -17,6 +17,13 @@ def built_path(ctx, outputs, p, is_directory = False):
         short_path = output.short_path,
     )
 
+def make_dotnet_cmd(ctx, sdk, msbuild_target, proj, nuget_environment_info = None):
+
+    args, outputs = make_dotnet_args(ctx, sdk, msbuild_target, proj)
+    env = make_dotnet_env(sdk, nuget_environment_info)
+
+    return args, env, outputs
+
 def make_dotnet_env(sdk, nuget_environment_info = None):
     dotnet_sdk_base = sdk.root_file.dirname
     env = {
@@ -52,8 +59,12 @@ def make_dotnet_args(ctx, sdk, msbuild_target, proj):
 
     args.add("-nologo")
 
+    outputs = []
     # todo disable when not debugging the build
-    args.add("-bl:{}".format(proj.path + ".binlog"))
+    if True:
+        binlog = ctx.actions.declare_file(proj.basename + ".binlog", sibling = proj)
+        args.add("-bl:{}".format(binlog.path))
+        outputs.append(binlog)
 
     # if msbuild_target != "restore":
     #     args.add("--no-restore")
@@ -61,4 +72,4 @@ def make_dotnet_args(ctx, sdk, msbuild_target, proj):
     # GetRestoreSettingsTask#L142: this is resolved against msbuildstartupdirectory
     args.add('-p:RestoreConfigFile="{}"'.format(sdk.nuget_build_config.path))
 
-    return args
+    return args, outputs
