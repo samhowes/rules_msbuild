@@ -7,15 +7,15 @@ trigger:
 - master
 
 parameters:
-  - name: platforms
-    type: object
-    default:
-    - name: windows
-      vmImage: windows-2019
-    - name: linux
-      vmImage: ubuntu-latest
-    - name: mac
-      vmImage: macOS-latest
+- name: platforms
+  type: object
+  default:
+  - name: windows
+    vmImage: windows-2019
+  - name: linux
+    vmImage: ubuntu-latest
+  - name: mac
+    vmImage: macOS-latest
 
 jobs:
 - ${{ each platform in parameters.platforms }}:
@@ -25,35 +25,24 @@ jobs:
       vmImage: ${{ platform.vmImage }}
 
     steps:
-    - script: bazel --version
-      displayName: 'Bazel Version'
-
     - script: |
-        env
-        which dotnet
-      displayName: 'Environment'
-    
+        bazel --version
+        env | sort
+      displayName: 'Environment Info'
+
     - script: |
         bazel build //tests/sanity
       displayName: 'Sanity Test'
-    
+
     - script: |
         bazel test --test_output=all //tests/HelloBazel:HelloBazel_test
-      displayName: 'Hello Bazel from rules_dotnet'
+      displayName: 'Hello Bazel'
       continueOnError: true
-
-    - task: ExtractFiles@1
-      displayName: 'Extract test details'
-      inputs:
-        archiveFilePatterns: 'bazel-testlogs/**/*.zip'
-        destinationFolder: 'bazel-testlogs/'
-        cleanDestinationFolder: false
-        overwriteExistingFiles: true
 
     - task: PublishTestResults@2
       inputs:
         testResultsFormat: 'JUnit'
-        testResultsFiles: '**/*test.xml'
+        testResultsFiles: '**/test.xml'
         searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
         failTaskOnFailedTests: true
         buildPlatform: '${{ platform.name }}'

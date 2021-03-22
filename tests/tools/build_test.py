@@ -14,7 +14,7 @@ class TestBuild(BuildTestCase):
         expected = environ.get("EXPECTED_OUTPUT")
         if expected is None or len(expected) == 0:
             return
-
+        expected += os.linesep
         code, out, err = self.get_output()
         assert (code, out, err) == (0, expected, '')
 
