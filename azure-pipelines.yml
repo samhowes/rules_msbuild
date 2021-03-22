@@ -7,15 +7,15 @@ trigger:
 - master
 
 parameters:
-  - name: platforms
-    type: object
-    default:
-    - name: windows
-      vmImage: windows-2019
-    - name: linux
-      vmImage: ubuntu-latest
-    - name: mac
-      vmImage: macOS-latest
+- name: platforms
+  type: object
+  default:
+  - name: windows
+    vmImage: windows-2019
+  - name: linux
+    vmImage: ubuntu-latest
+  - name: mac
+    vmImage: macOS-latest
 
 jobs:
 - ${{ each platform in parameters.platforms }}:
@@ -25,13 +25,26 @@ jobs:
       vmImage: ${{ platform.vmImage }}
 
     steps:
-    - script: bazel --version
-      displayName: 'Bazel Version'
+    - script: |
+        bazel --version
+        env | sort
+      displayName: 'Environment Info'
 
     - script: |
         bazel build //tests/sanity
       displayName: 'Sanity Test'
-    
+
     - script: |
-        bazel test //tests/HelloBazel:HelloBazel_test
-      displayName: 'Hello Bazel from rules_dotnet'
+        bazel test --test_output=all //tests/HelloBazel:HelloBazel_test
+      displayName: 'Hello Bazel'
+      continueOnError: true
+
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/test.xml'
+        searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
+        failTaskOnFailedTests: true
+        buildPlatform: '${{ platform.name }}'
+        testRunTitle: '${{ platform.name }}'
+        publishRunAttachments: true

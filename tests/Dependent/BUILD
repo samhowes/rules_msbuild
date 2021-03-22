@@ -1,15 +1,5 @@
-load("//tests/pytools:macros.bzl", "build_test")
+load("//tests/tools:build_test.bzl", "binary_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
-
-build_test(
-    name = "Dependent_test",
-    expected_files = [
-        "Dependent.pdb",
-        "ClassLibrary.dll",
-        "ClassLibrary.pdb",
-    ],
-    expected_output = "Hello Secret: Foo",
-)
 
 dotnet_binary(
     name = "Dependent",
@@ -18,4 +8,17 @@ dotnet_binary(
     deps = [
         "//tests/ClassLibrary",
     ],
+)
+
+binary_test(
+    name = "Dependent_test",
+    expected_files = {
+        "netcoreapp3.1": [
+            "Dependent.dll",
+            "ClassLibrary.pdb",
+            "ClassLibrary.dll",
+        ],
+    },
+    expected_output = "Hello Secret: Foo",
+    target = "Dependent",
 )
