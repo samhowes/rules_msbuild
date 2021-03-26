@@ -33,8 +33,8 @@ py_test(
     name = "launcher_test",
     srcs = ["launcher_test.py"],
     data = [
-        ":run_greeter",
-#        ":Greeter"
+#        ":run_greeter",
+        ":Greeter"
     ],
     deps = [
         "//tests/tools:mypytest",
