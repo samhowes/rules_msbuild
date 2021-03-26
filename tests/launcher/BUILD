@@ -33,7 +33,7 @@ py_test(
     name = "launcher_test",
     srcs = ["launcher_test.py"],
     data = [
-#        ":run_greeter",
+        ":run_greeter",
         ":Greeter"
     ],
     deps = [
