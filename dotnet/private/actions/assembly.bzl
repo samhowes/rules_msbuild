@@ -68,6 +68,10 @@ def emit_assembly(ctx, is_executable):
         sdk.all_files
     )
 
+    print("msbuild_outputs for " + ctx.attr.name)
+    for o in msbuild_outputs:
+        print(o.path)
+
     ctx.actions.run(
         mnemonic = "DotnetBuild",
         inputs = inputs,
