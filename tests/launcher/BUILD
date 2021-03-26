@@ -14,7 +14,7 @@ genrule(
     srcs = [],
     outs = ["run_greeter.txt"],
     cmd = "$(location :Greeter) 'genrule' > $@",
-    tools = [":Greeter"],
+    exec_tools = [":Greeter"],
 )
 
 # a set of assertions that the launcher works in various scenarios
