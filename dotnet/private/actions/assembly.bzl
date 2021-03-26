@@ -30,8 +30,9 @@ def emit_assembly(ctx, is_executable):
     msbuild_outputs = []
 
     references, packages, copied_files = process_deps(ctx.attr.deps, tfm)
-    assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain)
+    assembly, pdb, assembly_files, intermediate_files = _declare_assembly_files(ctx, toolchain, intermediate_path)
     msbuild_outputs += assembly_files
+    msbuild_outputs += intermediate_files
     all_outputs += assembly_files
 
     for cf in copied_files:
@@ -56,9 +57,9 @@ def emit_assembly(ctx, is_executable):
     msbuild_outputs += cmd_outputs
     all_outputs += cmd_outputs
 
-    msbuild_outputs.append(
-        ctx.actions.declare_directory(paths.join(intermediate_path, tfm))
-    )
+#    msbuild_outputs.append(
+#        ctx.actions.declare_directory(paths.join(intermediate_path, tfm))
+#    )
 
     inputs = (
         [compile_file, restore_file] +
@@ -116,7 +117,7 @@ def _make_executable_files(ctx, assembly, sdk):
     )
     return launcher, files
 
-def _declare_assembly_files(ctx, toolchain):
+def _declare_assembly_files(ctx, toolchain, intermediate_path):
     output_dir = ctx.attr.target_framework
     assembly = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + ".dll"))
 
@@ -124,7 +125,21 @@ def _declare_assembly_files(ctx, toolchain):
     pdb = ctx.actions.declare_file(ctx.attr.name + ".pdb", sibling = assembly)
     deps = ctx.actions.declare_file(ctx.attr.name + ".deps.json", sibling = assembly)
 
-    return assembly, pdb, [assembly, pdb, deps]
+    intermediate_files = [
+        ctx.actions.declare_file(
+            paths.join(intermediate_path, output_dir, ctx.attr.name + "." + ext)
+        )
+        for ext in [
+                "AssemblyInfo.cs",
+                "AssemblyInfoInputs.cache",
+                "assets.cache",
+                "csproj.FileListAbsolute.txt",
+                "csprojAssemblyReference.cache",
+                "dll",
+                "pdb"
+            ]
+    ]
+    return assembly, pdb, [assembly, pdb, deps], intermediate_files
 
 def _make_compile_file(ctx, toolchain, is_executable, restore_file, libraries):
     msbuild_properties = [
