@@ -37,7 +37,6 @@ jobs:
     - script: |
         bazel test --test_output=all -- //tests/HelloBazel:HelloBazel_test //tests/launcher:all
       displayName: 'Dotnet Rules Tests'
-      continueOnError: true
 
     - task: PublishTestResults@2
       inputs:
@@ -48,3 +47,4 @@ jobs:
         buildPlatform: '${{ platform.name }}'
         testRunTitle: '${{ platform.name }}'
         publishRunAttachments: true
+      condition: always()
