@@ -56,6 +56,10 @@ def emit_assembly(ctx, is_executable):
     msbuild_outputs += cmd_outputs
     all_outputs += cmd_outputs
 
+    msbuild_outputs.append(
+        ctx.actions.declare_directory(paths.join(intermediate_path, tfm))
+    )
+
     inputs = (
         [compile_file, restore_file] +
         restore_outputs +
