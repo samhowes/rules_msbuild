@@ -35,8 +35,7 @@ jobs:
       displayName: 'Sanity Test'
 
     - script: |
-        bazel test --test_output=all //tests/HelloBazel:HelloBazel_test
-        bazel test --test_output=all //tests/launcher:all
+        bazel test --test_output=all -- //tests/HelloBazel:HelloBazel_test //tests/launcher:all
       displayName: 'Dotnet Rules Tests'
       continueOnError: true
 
