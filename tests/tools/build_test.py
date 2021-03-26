@@ -1,11 +1,8 @@
 import json
 import os
-from os import environ
-from os import path
+from os import environ, path
 
-import pytest
-import sys
-
+from tests.tools import mypytest
 from tests.tools.build_test_case import BuildTestCase
 
 
@@ -45,6 +42,4 @@ class TestBuild(BuildTestCase):
 
 
 if __name__ == "__main__":
-    xml_output = os.environ.get("XML_OUTPUT_FILE")
-    exit_code = pytest.main([__file__, "-vv", f'--junitxml={xml_output}'])
-    sys.exit(exit_code)
+    mypytest.main(__file__)

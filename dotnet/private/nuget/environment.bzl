@@ -53,11 +53,11 @@ WIN_ENVIRONMENT = dict(
 # a mapping of fields of NugetEnvironmentInfo to environment variable names on macos
 DARWIN_ENVIRONMENT = dict(
     UserProfile = "HOME",
-    ApplicationData = "???",
-    LocalApplicationData = "???",
+    ApplicationData = "", # todo
+    LocalApplicationData = "", # todo
     ProgramFilesX86 = "",
     ProgramFiles = "",
-    CommonApplicationData = "???",
+    CommonApplicationData = "", # todo
 )
 
 NUGET_ENVIRONMENTS = {

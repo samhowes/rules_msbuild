@@ -36,7 +36,8 @@ jobs:
 
     - script: |
         bazel test --test_output=all //tests/HelloBazel:HelloBazel_test
-      displayName: 'Hello Bazel'
+        bazel test --test_output=all //tests/launcher:all
+      displayName: 'Dotnet Rules Tests'
       continueOnError: true
 
     - task: PublishTestResults@2

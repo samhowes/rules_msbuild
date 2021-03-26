@@ -58,7 +58,7 @@ dotnet_sdk = rule(
         ),
         "all_files": attr.label(
             mandatory = True,
-            doc = ("All files that compries the sdk."),
+            doc = ("All files that comprise the sdk."),
         ),
         "fxr": attr.label(
             mandatory = True,

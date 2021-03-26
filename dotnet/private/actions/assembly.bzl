@@ -9,6 +9,7 @@ load(
     "make_dotnet_cmd",
 )
 load("//dotnet/private:common.bzl", "dotnetos_to_exe_extension", "dotnetos_to_library_extension")
+load("//dotnet/private/actions:common.bzl", "make_dotnet_env")
 
 def emit_assembly(ctx, is_executable):
     """Compile a dotnet assembly with the provided project template
@@ -22,88 +23,111 @@ def emit_assembly(ctx, is_executable):
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
     output_path = ctx.attr.target_framework
     intermediate_path = INTERMEDIATE_BASE
-    library_extension = dotnetos_to_library_extension(toolchain.default_dotnetos)
     tfm = ctx.attr.target_framework
     sdk = toolchain.sdk
 
+    all_outputs = []
+    msbuild_outputs = []
+
     references, packages, copied_files = process_deps(ctx.attr.deps, tfm)
+    assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain)
+    msbuild_outputs += assembly_files
+    all_outputs += assembly_files
 
-    restore_file, restore_outputs = restore(ctx, sdk, intermediate_path, packages)
+    for cf in copied_files:
+        f = ctx.actions.declare_file(cf.basename, sibling = assembly)
+        msbuild_outputs.append(f)
+        all_outputs.append(f)
 
-    assembly, pdb, assembly_files = _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references)
-    compile_file = _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, references)
+    restore_file, restore_outputs, cmd_outputs = restore(ctx, sdk, intermediate_path, packages)
+    all_outputs += cmd_outputs
+
+    compile_file = _make_compile_file(ctx, toolchain, is_executable, restore_file, references)
+
+    launcher = None
+    executable_files = []
+    if is_executable:
+        launcher, executable_files = _make_executable_files(ctx, assembly, sdk)
+        msbuild_outputs += executable_files
+        all_outputs += executable_files
+        all_outputs.append(launcher)
 
     args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "build", compile_file)
-
-    copied_files_output = [
-        ctx.actions.declare_file(cf.basename, sibling = assembly)
-        for cf in copied_files
-    ]
+    msbuild_outputs += cmd_outputs
+    all_outputs += cmd_outputs
 
     inputs = (
         [compile_file, restore_file] +
         restore_outputs +
         ctx.files.srcs +
         copied_files +
-        sdk.packs +
-        sdk.shared +
-        sdk.sdk_files +
-        sdk.fxr +
-        sdk.init_files
-    )
-
-    outputs = (
-        [assembly, pdb] +
-        assembly_files +
-        copied_files_output +
-        cmd_outputs
+        sdk.all_files
     )
 
     ctx.actions.run(
         mnemonic = "DotnetBuild",
         inputs = inputs,
-        outputs = outputs,
+        outputs = msbuild_outputs,
         executable = toolchain.sdk.dotnet,
         arguments = [args],
         env = env,
     )
-    return assembly, pdb, outputs + [compile_file] + restore_outputs
 
-def _declare_assembly_files(ctx, toolchain, is_executable, library_extension, references):
-    output_dir = ctx.attr.target_framework
+    return assembly, pdb, all_outputs, launcher
 
-    exe_extension = dotnetos_to_exe_extension(toolchain.default_dotnetos) if is_executable else library_extension
-    assembly = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + exe_extension))
+def _make_executable_files(ctx, assembly, sdk):
+    name = ctx.attr.name
 
-    extensions = [
-        ".deps.json",
-        # already declared as `assembly` if not executable
-        library_extension if is_executable else None,
-    ]
+    # todo(#31) make this .bat or exe on windows
+    launcher = ctx.actions.declare_file(name, sibling = assembly)
 
-    # todo(#21) toggle this when not debug
-    pdb = ctx.actions.declare_file(ctx.attr.name + ".pdb", sibling = assembly)
-
-    if is_executable:
-        extensions.extend([
+    files = [
+        ctx.actions.declare_file(name + ext, sibling = assembly)
+        for ext in [
             ".runtimeconfig.json",
             # todo(#22) find out when this is NOT output
             ".runtimeconfig.dev.json",
-        ])
-
-    files = [
-        ctx.actions.declare_file(ctx.attr.name + ext, sibling = assembly)
-        for ext in extensions
-        if ext != None
+        ]
     ]
 
-    return assembly, pdb, files
+    env = [
+        "export {}=\"{}\"".format(k, v)
+        for k, v in make_dotnet_env(sdk).items()
+    ]
 
-def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file, libraries):
+    ctx.actions.expand_template(
+        template = ctx.file._launcher_template,
+        output = launcher,
+        is_executable = True,
+        substitutions = {
+            "%dotnet_root%": sdk.root_file.dirname,
+            "%dotnet_env%": "\n".join(env),
+            "%dotnet_bin%": ctx.workspace_name + "/" + sdk.dotnet.path,
+            "%target_bin%": ctx.workspace_name + "/" + assembly.short_path
+        },
+    )
+    return launcher, files
+
+def _declare_assembly_files(ctx, toolchain):
+    output_dir = ctx.attr.target_framework
+    assembly = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + ".dll"))
+
+    # todo(#21) toggle this when not debug
+    pdb = ctx.actions.declare_file(ctx.attr.name + ".pdb", sibling = assembly)
+    deps = ctx.actions.declare_file(ctx.attr.name + ".deps.json", sibling = assembly)
+
+    return assembly, pdb, [assembly, pdb, deps]
+
+def _make_compile_file(ctx, toolchain, is_executable, restore_file, libraries):
     msbuild_properties = [
-        element("OutputType", "Exe") if is_executable else None,
         element("OutputPath", "$(MSBuildThisFileDirectory)"),
     ]
+
+    if is_executable:
+        msbuild_properties.extend([
+            element("OutputType", "Exe"),
+            element("UseAppHost", "False"),
+        ])
 
     compile_srcs = [
         inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
@@ -129,15 +153,16 @@ def _make_compile_file(ctx, toolchain, is_executable, output_path, restore_file,
     # todo(#4) add package references
 
     compile_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
+    sep = "\n    " # two indents of size 2
     ctx.actions.expand_template(
         template = ctx.file._compile_template,
         output = compile_file,
         is_executable = False,
         substitutions = {
-            "{msbuild_properties}": "\n    ".join([p for p in msbuild_properties if p != None]),
+            "{msbuild_properties}": sep.join(msbuild_properties),
             "{imports}": inline_element("Import", {"Project": restore_file.basename}),
-            "{compile_srcs}": "\n    ".join(compile_srcs),
-            "{references}": "\n    ".join(references),
+            "{compile_srcs}": sep.join(compile_srcs),
+            "{references}": sep.join(references),
         },
     )
     return compile_file

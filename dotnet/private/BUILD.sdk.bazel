@@ -28,6 +28,7 @@ dotnet_sdk(
 filegroup(
     name = "all_files",
     srcs = [
+        "dotnet{exe}",
         ":init_files",
         ":sdk_files",
         ":fxr",

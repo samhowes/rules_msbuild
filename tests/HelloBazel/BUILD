@@ -7,13 +7,12 @@ dotnet_binary(
     target_framework = "netcoreapp3.1",
 )
 
+# checks the compilation output from :HelloBazel
 binary_test(
     name = "HelloBazel_test",
     expected_files = {
         "": [
-            "HelloBazel.csproj",
             "HelloBazel.csproj.binlog",
-            "HelloBazel.restore.proj",
             "HelloBazel.restore.proj.binlog",
         ],
         "netcoreapp3.1": [
@@ -27,6 +26,5 @@ binary_test(
             "host/fxr/3.1.0",
         ],
     },
-    expected_output = "Hello Bazel!",
     target = "HelloBazel",
 )

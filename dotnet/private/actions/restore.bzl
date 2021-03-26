@@ -41,7 +41,7 @@ def restore(ctx, sdk, intermediate_path, packages):
         env = env,
     )
 
-    return restore_file, outputs + [restore_file]
+    return restore_file, outputs + [restore_file], cmd_outputs
 
 def _declare_files(ctx, restore_file, intermediate_path):
     file_names = []
