@@ -34,6 +34,7 @@ def emit_assembly(ctx, is_executable):
     msbuild_outputs += assembly_files
     msbuild_outputs += intermediate_files
     all_outputs += assembly_files
+    all_outputs += intermediate_files
 
     for cf in copied_files:
         f = ctx.actions.declare_file(cf.basename, sibling = assembly)
