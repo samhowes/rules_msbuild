@@ -1,0 +1,20 @@
+// Reference: https://code.visualstudio.com/docs/remote/containers#_devcontainerjson-reference
+{
+    "name": "Bazel",
+    "dockerFile": "Dockerfile",
+    "runArgs": [
+        // "-e USER=\"$(id -u)\"",
+        // "-u=\"$(id -u)\"",
+    ],
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.gopath": "/go",
+        "go.useLanguageServer": true
+    },
+    "extensions": [
+        "golang.Go",
+        "bazelbuild.vscode-bazel"
+    ],
+    // "remoteUser": "vscode"
+}
