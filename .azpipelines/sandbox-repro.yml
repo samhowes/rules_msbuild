@@ -19,7 +19,7 @@ jobs:
         displayName: 'Sanity Test'
 
       - script: |
-          bazel build //tests/launcher:run_greeter
+          bazel build //tests/launcher:single
         displayName: 'build greeter'
 
       - script: |
