@@ -54,7 +54,7 @@ jobs:
           bazel build //tests/launcher:double
         displayName: 'build & test output'
 
-      - script: bash tar -zcvf logs.tar.gz bazel-bin/**/*.binlog
+      - script: tar -zcvf logs.tar.gz bazel-bin/**/*.binlog
         condition: always()
 
       - publish: $(Build.SourcesDirectory)/logs.tar.gz

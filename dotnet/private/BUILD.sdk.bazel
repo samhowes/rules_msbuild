@@ -10,7 +10,7 @@ declare_toolchains(
 dotnet_sdk(
     name = "dotnet_sdk",
     all_files = ":all_files",
-    dotnet = "dotnet_wrapper.sh",
+    dotnet = "dotnet{exe}",
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
