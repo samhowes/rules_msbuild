@@ -51,7 +51,7 @@ jobs:
         displayName: 'Sanity Test'
 
       - script: |
-          bazel build //tests/launcher:double
+          bazel build --keep_going //tests/launcher:double
         displayName: 'build & test output'
 
       - script: |
