@@ -17,12 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Environment
+        run: |
+          bazel --version
+          env | sort
+
       - name: RC Setup
         run: ./.ci/make_rc.sh
 
       - name: Sanity Test
         run: |
-          bazel test //tests/sanity:all
+          bazel build //tests/sanity:all
 
       - name: Bazel build
         run: |
