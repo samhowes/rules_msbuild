@@ -1,0 +1,29 @@
+name: Sandbox Issue Repro
+
+on:
+  push:
+    branches: [ sandbox-repro ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  # secrets
+  BUILDBUDDY_API_KEY:
+
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: RC Setup
+        run: ./.ci/make_rc.sh
+
+      - name: Sanity Test
+        run: |
+          bazel test //tests/sanity:all
+
+      - name: Bazel build
+        run: |
+          bazel test //tests/launcher:all
