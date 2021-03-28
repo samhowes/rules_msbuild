@@ -17,6 +17,16 @@ genrule(
     exec_tools = [":Greeter"],
 )
 
+filegroup(
+    name = "single",
+    srcs = [":run_greeter"],
+)
+
+filegroup(
+    name = "double",
+    srcs = [":run_greeter", ":Greeter"],
+)
+
 # a set of assertions that the launcher works in various scenarios
 # 1) `bazel run` would work via checking the output of :run_greeter
 #   $0 is relative to execroot

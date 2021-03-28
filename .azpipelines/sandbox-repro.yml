@@ -23,7 +23,7 @@ jobs:
         displayName: 'build greeter'
 
       - script: |
-          bazel test //tests/launcher:launcher_test
+          bazel build //tests/launcher:double
         displayName: 'test output'
 
       - task: PublishTestResults@2
@@ -51,7 +51,7 @@ jobs:
         displayName: 'Sanity Test'
 
       - script: |
-          bazel test //tests/launcher:launcher_test
+          bazel build //tests/launcher:double
         displayName: 'build & test output'
 
       - task: PublishTestResults@2
