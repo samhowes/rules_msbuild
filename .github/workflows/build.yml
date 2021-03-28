@@ -10,17 +10,17 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+env:
+  BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
 
 jobs:
-  issue:
+  working:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
       - name: RC Setup
         run: .ci/init.sh
-        env:
-          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
 
       - name: Sanity Test
         run: |
@@ -31,5 +31,21 @@ jobs:
           bazel build //tests/launcher:run_greeter
 
       - name: Bazel test
+        run: |
+          bazel test //tests/launcher:launcher_test
+
+  not_working:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: RC Setup
+        run: .ci/init.sh
+
+      - name: Sanity Test
+        run: |
+          bazel test //tests/sanity:all
+
+      - name: Bazel build & test
         run: |
           bazel test //tests/launcher:launcher_test
