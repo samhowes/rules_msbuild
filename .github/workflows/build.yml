@@ -7,10 +7,6 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-env:
-  # secrets
-  BUILDBUDDY_API_KEY:
-
 jobs:
   issue:
     runs-on: ubuntu-latest
@@ -24,6 +20,8 @@ jobs:
 
       - name: RC Setup
         run: ./.ci/make_rc.sh
+        env:
+          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
 
       - name: Sanity Test
         run: |
