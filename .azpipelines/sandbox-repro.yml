@@ -15,7 +15,7 @@ jobs:
           BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
 
       - script: |
-          bazel build //tests/sanity
+          bazel test //tests/sanity:all
         displayName: 'Sanity Test'
 
       - script: |
@@ -47,7 +47,7 @@ jobs:
           BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
 
       - script: |
-          bazel build //tests/sanity
+          bazel test //tests/sanity:all
         displayName: 'Sanity Test'
 
       - script: |
