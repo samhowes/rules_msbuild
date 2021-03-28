@@ -55,7 +55,7 @@ jobs:
         displayName: 'build & test output'
 
       - script: tar -zcvf logs.tar.gz bazel-bin/**/*.binlog
-        workingDirectory: $(Build.SourcesDirectory)
+        workingDirectory: $(Agent.WorkingDirectory)
         condition: always()
 
       - publish: $(Build.SourcesDirectory)/logs.tar.gz
