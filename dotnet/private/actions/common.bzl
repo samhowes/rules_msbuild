@@ -31,6 +31,8 @@ def make_dotnet_env(sdk, nuget_environment_info = None):
         "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
         # isolate Dotnet from using the system installed sdk
         "DOTNET_MULTILEVEL_LOOKUP": "0",
+        "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+        "DOTNET_NOLOGO": "1",
         "NUGET_SHOW_STACK": "true",
     }
 
