@@ -13,7 +13,7 @@ parameters:
   - name: windows
     vmImage: windows-2019
   - name: linux
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-18.04
   - name: mac
     vmImage: macOS-latest
 
