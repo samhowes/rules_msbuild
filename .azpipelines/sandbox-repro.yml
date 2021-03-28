@@ -35,7 +35,7 @@ jobs:
           publishRunAttachments: true
         condition: always()
 
-  - job: not-working
+  - job: not_working
 
     pool:
       vmImage: ubuntu-latest
