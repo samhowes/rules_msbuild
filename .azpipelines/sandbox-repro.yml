@@ -32,8 +32,6 @@ jobs:
           testResultsFiles: '**/test.xml'
           searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
           failTaskOnFailedTests: true
-          buildPlatform: '${{ platform.name }}'
-          testRunTitle: '${{ platform.name }}'
           publishRunAttachments: true
         condition: always()
 
@@ -62,7 +60,5 @@ jobs:
           testResultsFiles: '**/test.xml'
           searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
           failTaskOnFailedTests: true
-          buildPlatform: '${{ platform.name }}'
-          testRunTitle: '${{ platform.name }}'
           publishRunAttachments: true
         condition: always()
