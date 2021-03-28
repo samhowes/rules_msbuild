@@ -35,7 +35,7 @@ jobs:
       displayName: 'Sanity Test'
 
     - script: |
-        bazel test --test_output=all --sandbox_debug -- //tests/launcher:all
+        bazel test --test_output=all --sandbox_debug --announce_rc -- //tests/launcher:all
       displayName: 'Dotnet Rules Tests'
 
     - task: PublishTestResults@2
