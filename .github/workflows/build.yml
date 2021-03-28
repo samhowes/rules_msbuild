@@ -24,7 +24,7 @@ jobs:
 
       - name: Sanity Test
         run: |
-          bazel build //tests/sanity:all
+          bazel test //tests/sanity:all
 
       - name: Bazel build
         run: |

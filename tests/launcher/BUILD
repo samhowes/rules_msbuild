@@ -34,11 +34,16 @@ py_test(
     srcs = ["launcher_test.py"],
     data = [
         ":run_greeter",
-#        ":Greeter"
+        ":Greeter"
     ],
     deps = [
         "//tests/tools:mypytest",
         "//tests/tools:executable",
         "@rules_python//python/runfiles",
-    ]
+    ],
+    env = {
+        "TARGET_PATH": "tests/launcher/netcoreapp3.1"
+    }
 )
+# for the sanity test in go
+exports_files(["launcher_test.py"])

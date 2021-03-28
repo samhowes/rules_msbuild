@@ -16,7 +16,8 @@ def IsWindows():
 
 
 BINNAME = "Greeter" + ("exe" if IsWindows() else "")
-BINPATH = "my_rules_dotnet/tests/launcher/netcoreapp3.1/" + BINNAME
+TARGET_PATH = os.environ.get("TARGET_PATH")
+BINPATH = f"my_rules_dotnet/{TARGET_PATH}/" + BINNAME
 EXPECTED_OUTPUT = "Hello: LauncherTest!\n"
 
 
@@ -48,7 +49,8 @@ class TestLauncher(object):
         os.chmod(fpath, stat.S_IRWXU)
 
     def test_run_genrule_works(self):
-        contents = self.get_contents("my_rules_dotnet/tests/launcher/run_greeter.txt")
+        txt_dir = os.path.dirname(TARGET_PATH)
+        contents = self.get_contents(f"my_rules_dotnet/{txt_dir}/run_greeter.txt")
         assert "Hello: genrule!\n" == contents
 
     def test_run_data_dep_works(self):
@@ -102,6 +104,8 @@ class TestLauncher(object):
         self.assert_success(executable, env, exec_dir)
 
     def test_bootstrap_env_vars(self):
+        if "launcher" not in TARGET_PATH:  # lazy
+            return
         executable = Executable(self.r.Rlocation(BINPATH))
         _, stdout, _ = executable.run(env={})
 
