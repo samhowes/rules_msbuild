@@ -35,8 +35,12 @@ jobs:
             displayName: 'Sanity Test'
 
           - script: |
-              bazel test //tests/launcher:run_greeter
-            displayName: 'Dotnet Rules Tests'
+              bazel build //tests/launcher:run_greeter
+            displayName: 'working'
+
+          - script: |
+              bazel test //tests/launcher:launcher_test
+            displayName: 'working'
 
           - task: PublishTestResults@2
             inputs:
