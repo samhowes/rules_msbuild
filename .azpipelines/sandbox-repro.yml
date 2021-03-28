@@ -1,0 +1,68 @@
+trigger:
+  - master
+
+jobs:
+
+  - job: working
+
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+      - bash: .ci/init.sh
+        displayName: 'Init CI'
+        env:
+          BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
+
+      - script: |
+          bazel build //tests/sanity
+        displayName: 'Sanity Test'
+
+      - script: |
+          bazel build //tests/launcher:run_greeter
+        displayName: 'build greeter'
+
+      - script: |
+          bazel test //tests/launcher:launcher_test
+        displayName: 'test output'
+
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '**/test.xml'
+          searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
+          failTaskOnFailedTests: true
+          buildPlatform: '${{ platform.name }}'
+          testRunTitle: '${{ platform.name }}'
+          publishRunAttachments: true
+        condition: always()
+
+  - job: not-working
+
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+      - bash: .ci/init.sh
+        displayName: 'Init CI'
+        env:
+          BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
+
+      - script: |
+          bazel build //tests/sanity
+        displayName: 'Sanity Test'
+
+      - script: |
+          bazel test //tests/launcher:launcher_test
+        displayName: 'build & test output'
+
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '**/test.xml'
+          searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
+          failTaskOnFailedTests: true
+          buildPlatform: '${{ platform.name }}'
+          testRunTitle: '${{ platform.name }}'
+          publishRunAttachments: true
+        condition: always()

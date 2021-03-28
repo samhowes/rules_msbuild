@@ -28,4 +28,8 @@ jobs:
 
       - name: Bazel build
         run: |
-          bazel test //tests/launcher:run_greeter
+          bazel build //tests/launcher:run_greeter
+
+      - name: Bazel test
+        run: |
+          bazel test //tests/launcher:launcher_test

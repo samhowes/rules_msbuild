@@ -36,11 +36,11 @@ jobs:
 
           - script: |
               bazel build //tests/launcher:run_greeter
-            displayName: 'working'
+            displayName: 'build greeter'
 
           - script: |
               bazel test //tests/launcher:launcher_test
-            displayName: 'working'
+            displayName: 'test output'
 
           - task: PublishTestResults@2
             inputs:
