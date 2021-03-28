@@ -66,8 +66,7 @@ def emit_assembly(ctx, is_executable):
         [compile_file, restore_file] +
         restore_outputs +
         ctx.files.srcs +
-        copied_files +
-        sdk.all_files
+        copied_files
     )
 
     print("msbuild_outputs for " + ctx.attr.name)
