@@ -13,13 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Environment
-        run: |
-          bazel --version
-          env | sort
-
       - name: RC Setup
-        run: ./.ci/make_rc.sh
+        run: .ci/init.sh
         env:
           BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
 
@@ -29,4 +24,4 @@ jobs:
 
       - name: Bazel build
         run: |
-          bazel test //tests/launcher:all
+          bazel test //tests/launcher:run_greeter

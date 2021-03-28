@@ -1,0 +1,50 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  - master
+
+parameters:
+  - name: platforms
+    type: object
+    default:
+      - name: windows
+        vmImage: windows-2019
+      - name: linux
+        vmImage: ubuntu-latest
+      - name: mac
+        vmImage: macOS-latest
+
+jobs:
+  - ${{ each platform in parameters.platforms }}:
+      - job: ${{ platform.name }}
+
+        pool:
+          vmImage: ${{ platform.vmImage }}
+
+        steps:
+          - bash: .ci/init.sh
+            displayName: 'Init CI'
+            env:
+              BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
+
+          - script: |
+              bazel build //tests/sanity
+            displayName: 'Sanity Test'
+
+          - script: |
+              bazel test //tests/launcher:run_greeter
+            displayName: 'Dotnet Rules Tests'
+
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/test.xml'
+              searchFolder: '$(System.DefaultWorkingDirectory)/bazel-testlogs'
+              failTaskOnFailedTests: true
+              buildPlatform: '${{ platform.name }}'
+              testRunTitle: '${{ platform.name }}'
+              publishRunAttachments: true
+            condition: always()
