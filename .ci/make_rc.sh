@@ -6,5 +6,5 @@ cat >.bazelrc <<EOF
 build --announce_rc
 build --sandbox_debug
 test --test_output=all
-try-import %workspace%/.buildbuddy/buildbuddy.bazelrc
+try-import %workspace%/buildbuddy.bazelrc
 EOF
