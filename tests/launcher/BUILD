@@ -24,7 +24,10 @@ filegroup(
 
 filegroup(
     name = "double",
-    srcs = [":run_greeter", ":Greeter"],
+    srcs = [
+        ":Greeter",
+        ":run_greeter",
+    ],
 )
 
 # a set of assertions that the launcher works in various scenarios
@@ -44,16 +47,17 @@ py_test(
     srcs = ["launcher_test.py"],
     data = [
         ":run_greeter",
-#        ":Greeter"
-    ],
-    deps = [
-        "//tests/tools:mypytest",
-        "//tests/tools:executable",
-        "@rules_python//python/runfiles",
+        #        ":Greeter"
     ],
     env = {
-        "TARGET_PATH": "tests/launcher/netcoreapp3.1"
-    }
+        "TARGET_PATH": "tests/launcher/netcoreapp3.1",
+    },
+    deps = [
+        "//tests/tools:executable",
+        "//tests/tools:mypytest",
+        "@rules_python//python/runfiles",
+    ],
 )
+
 # for the sanity test in go
 exports_files(["launcher_test.py"])

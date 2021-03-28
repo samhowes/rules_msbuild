@@ -1,11 +1,6 @@
-load(
-    "//dotnet/private:platforms.bzl",
-    "generate_toolchain_names",
-)
-load(
-    "//dotnet/private:sdk_urls.bzl",
-    "DOTNET_SDK_URLS",
-)
+load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
+load("//dotnet/private:sdk_urls.bzl", "DOTNET_SDK_URLS")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def dotnet_register_toolchains(version = None):
     """See /dotnet/toolchains.md#dotnet-register-toolchains for full documentation."""
@@ -98,18 +93,17 @@ def _dotnet_download_sdk_impl(ctx):
     filename, sha256 = sdks[platform]
     _remote_sdk(ctx, [filename], ctx.attr.strip_prefix, sha256)
 
-    _sdk_build_file(ctx, platform)
-
     # create dotnet init files so dotnet doesn't noisily print them out on the first build
-
     init_files = [
-        ctx.file(".dotnet/{}.{}".format(version, f))
+        ctx.file(".dotnet/{}.{}".format(version, f), "")
         for f in [
             "aspNetCertificateSentinel",
             "dotnetFirstUseSentinel",
             "toolpath.sentinel",
         ]
     ]
+
+    _sdk_build_file(ctx, platform)
 
 _dotnet_download_sdk = repository_rule(
     implementation = _dotnet_download_sdk_impl,
@@ -140,7 +134,7 @@ def _sdk_build_file(ctx, platform):
     individual directory, but dotnet is structured to allow multiple sdk versions to
     exist nicely next to each other.
     """
-    ctx.file("ROOT")
+    root = ctx.file("ROOT")
     dotnetos, _, dotnetarch = platform.partition("_")
 
     dynamics = []
@@ -155,6 +149,16 @@ filegroup(
     name = "{pack}",
     srcs = glob(["packs/{pack}/**/*"]),
 )""".format(pack = pack_name))
+
+
+    ctx.template(
+        "dotnet_wrapper.sh",
+        Label("@my_rules_dotnet//dotnet/private:dotnet_wrapper.tpl.sh"),
+        executable = True,
+        substitutions = {
+            "%dotnet_bin%": str(ctx.path("dotnet"))
+        },
+    )
 
     ctx.template(
         "BUILD.bazel",

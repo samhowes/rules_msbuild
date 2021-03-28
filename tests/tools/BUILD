@@ -6,7 +6,7 @@ py_library(
     srcs = ["mypytest.py"],
     visibility = ["//visibility:public"],
     deps = [
-        requirement("pytest")
+        requirement("pytest"),
     ],
 )
 
@@ -25,4 +25,5 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [],
 )
+
 exports_files(["build_test.py"])

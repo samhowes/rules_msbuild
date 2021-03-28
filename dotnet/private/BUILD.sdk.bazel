@@ -9,7 +9,8 @@ declare_toolchains(
 
 dotnet_sdk(
     name = "dotnet_sdk",
-    dotnet = "dotnet{exe}",
+    all_files = ":all_files",
+    dotnet = "dotnet_wrapper.sh",
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
@@ -20,7 +21,6 @@ dotnet_sdk(
     ],
     root_file = "ROOT",
     sdk_files = ":sdk_files",
-    all_files = ":all_files",
     sdk_root = "sdk/{version}",
     shared = ":shared",
 )
@@ -29,9 +29,9 @@ filegroup(
     name = "all_files",
     srcs = [
         "dotnet{exe}",
+        ":fxr",
         ":init_files",
         ":sdk_files",
-        ":fxr",
         {dynamic_targets}
     ],
 )
@@ -40,7 +40,10 @@ filegroup(
 # included because bazel sandboxes these away
 filegroup(
     name = "init_files",
-    srcs = glob([".dotnet/**/*"], allow_empty=False),
+    srcs = glob(
+        [".dotnet/**/*"],
+        allow_empty = False,
+    ),
 )
 
 filegroup(

@@ -18,13 +18,12 @@ def built_path(ctx, outputs, p, is_directory = False):
     )
 
 def make_dotnet_cmd(ctx, sdk, msbuild_target, proj, nuget_environment_info = None):
-
     args, outputs = make_dotnet_args(ctx, sdk, msbuild_target, proj)
-    env = make_dotnet_env(sdk, nuget_environment_info)
+    env = make_dotnet_env(sdk, nuget_environment_info, ctx.var["COMPILATION_MODE"])
 
     return args, env, outputs
 
-def make_dotnet_env(sdk, nuget_environment_info = None):
+def make_dotnet_env(sdk, nuget_environment_info = None, prefix=None):
     dotnet_sdk_base = sdk.root_file.dirname
     env = {
         "DOTNET_CLI_HOME": sdk.root_file.dirname,
@@ -34,6 +33,7 @@ def make_dotnet_env(sdk, nuget_environment_info = None):
         "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
         "DOTNET_NOLOGO": "1",
         "NUGET_SHOW_STACK": "true",
+        "PREFIX":prefix
     }
 
     os = sdk.dotnetos
@@ -62,6 +62,7 @@ def make_dotnet_args(ctx, sdk, msbuild_target, proj):
     args.add("-nologo")
 
     outputs = []
+
     # todo disable when not debugging the build
     if True:
         binlog = ctx.actions.declare_file(proj.basename + ".binlog", sibling = proj)

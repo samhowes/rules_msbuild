@@ -46,6 +46,9 @@ def emit_assembly(ctx, is_executable):
 
     compile_file = _make_compile_file(ctx, toolchain, is_executable, restore_file, references)
 
+    print("generated templates")
+    print(compile_file.path)
+
     launcher = None
     executable_files = []
     if is_executable:
@@ -58,9 +61,9 @@ def emit_assembly(ctx, is_executable):
     msbuild_outputs += cmd_outputs
     all_outputs += cmd_outputs
 
-#    msbuild_outputs.append(
-#        ctx.actions.declare_directory(paths.join(intermediate_path, tfm))
-#    )
+    #    msbuild_outputs.append(
+    #        ctx.actions.declare_directory(paths.join(intermediate_path, tfm))
+    #    )
 
     inputs = (
         [compile_file, restore_file] +
@@ -113,7 +116,7 @@ def _make_executable_files(ctx, assembly, sdk):
             "%dotnet_root%": sdk.root_file.dirname,
             "%dotnet_env%": "\n".join(env),
             "%dotnet_bin%": ctx.workspace_name + "/" + sdk.dotnet.path,
-            "%target_bin%": ctx.workspace_name + "/" + assembly.short_path
+            "%target_bin%": ctx.workspace_name + "/" + assembly.short_path,
         },
     )
     return launcher, files
@@ -128,17 +131,17 @@ def _declare_assembly_files(ctx, toolchain, intermediate_path):
 
     intermediate_files = [
         ctx.actions.declare_file(
-            paths.join(intermediate_path, output_dir, ctx.attr.name + "." + ext)
+            paths.join(intermediate_path, output_dir, ctx.attr.name + "." + ext),
         )
         for ext in [
-                "AssemblyInfo.cs",
-                "AssemblyInfoInputs.cache",
-                "assets.cache",
-                "csproj.FileListAbsolute.txt",
-                "csprojAssemblyReference.cache",
-                "dll",
-                "pdb"
-            ]
+            "AssemblyInfo.cs",
+            "AssemblyInfoInputs.cache",
+            "assets.cache",
+            "csproj.FileListAbsolute.txt",
+            "csprojAssemblyReference.cache",
+            "dll",
+            "pdb",
+        ]
     ]
     return assembly, pdb, [assembly, pdb, deps], intermediate_files
 
@@ -177,7 +180,7 @@ def _make_compile_file(ctx, toolchain, is_executable, restore_file, libraries):
     # todo(#4) add package references
 
     compile_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
-    sep = "\n    " # two indents of size 2
+    sep = "\n    "  # two indents of size 2
     ctx.actions.expand_template(
         template = ctx.file._compile_template,
         output = compile_file,

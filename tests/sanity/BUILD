@@ -35,15 +35,15 @@ py_test(
     name = "launcher_test",
     srcs = ["//tests/launcher:launcher_test.py"],
     data = [
+        ":Greeter",
         ":run_greeter",
-        ":Greeter"
-    ],
-    deps = [
-        "//tests/tools:mypytest",
-        "//tests/tools:executable",
-        "@rules_python//python/runfiles",
     ],
     env = {
-        "TARGET_PATH": "tests/sanity/Greeter_"
-    }
+        "TARGET_PATH": "tests/sanity/Greeter_",
+    },
+    deps = [
+        "//tests/tools:executable",
+        "//tests/tools:mypytest",
+        "@rules_python//python/runfiles",
+    ],
 )

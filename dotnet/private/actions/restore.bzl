@@ -5,7 +5,7 @@ load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
 load(
     "//dotnet/private/actions:common.bzl",
     "STARTUP_DIR",
-    "make_dotnet_cmd"
+    "make_dotnet_cmd",
 )
 
 def restore(ctx, sdk, intermediate_path, packages):
