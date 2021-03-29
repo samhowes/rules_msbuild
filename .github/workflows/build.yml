@@ -27,5 +27,5 @@ jobs:
           bash tests/runall.sh
 
       - name: tar outputs
-      - script: |
+      - run: |
           bash .ci/tar.sh
