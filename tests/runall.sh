@@ -2,7 +2,7 @@
 
 set +e
 
-echo "$TMPDIR"
+echo "TMPDIR: $TMPDIR"
 
 report=""
 exit_status=0
@@ -14,10 +14,6 @@ function run() {
   (( exit_status = exit_status || this_exit))
 }
 
-function fail() {
-  return $1
-}
-
 # if these don't build, nothing will
 run bazel build //tests/sanity //tests/HelloBazel
 
@@ -26,5 +22,8 @@ run bazel test //tests/HelloBazel:all
 # targets that __must__ be run by itself
 run bazel build //tests/sandboxing/parallel
 
+
+echo -e "\n\n============================================ TEST REPORT ================================================="
 echo -n "$report"
+echo -e "Exiting with status: $exit_status"
 exit $exit_status
