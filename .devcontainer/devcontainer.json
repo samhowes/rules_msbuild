@@ -3,6 +3,7 @@
     "name": "Bazel",
     "dockerFile": "Dockerfile",
     "runArgs": [
+        "--privileged"
         // "-e USER=\"$(id -u)\"",
         // "-u=\"$(id -u)\"",
     ],

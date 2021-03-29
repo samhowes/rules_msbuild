@@ -39,7 +39,7 @@ jobs:
             condition: always()
 
           - publish: bazel-out.tar.gz
-            artifact: bazel-out
+            artifact: ${{ platform.name }}-bazel-out
             condition: always()
 
           - task: PublishTestResults@2
