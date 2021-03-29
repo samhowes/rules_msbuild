@@ -2,8 +2,6 @@
 
 set +e
 
-echo "TMPDIR: $TMPDIR"
-
 report=""
 exit_status=0
 function run() {
