@@ -1,0 +1,30 @@
+name: build-and-test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+env:
+  BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: CI Init
+        run: .ci/init.sh
+      
+      - name: Build & Test
+        run: bash tests/runall.sh
+
+      - name: tar outputs
+        run: bash .ci/tar.sh
+

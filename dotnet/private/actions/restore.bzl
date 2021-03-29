@@ -1,12 +1,16 @@
 """Actions for dotnet restore"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
+load(
+    "//dotnet/private/actions:xml.bzl",
+    "STARTUP_DIR",
+    "THIS_DIR",
+    "inline_element",
+    "properties",
+)
 load(
     "//dotnet/private/actions:common.bzl",
-    "STARTUP_DIR",
-    "make_dotnet_args",
-    "make_dotnet_env",
+    "make_dotnet_cmd",
 )
 
 def restore(ctx, sdk, intermediate_path, packages):
@@ -26,8 +30,8 @@ def restore(ctx, sdk, intermediate_path, packages):
 
     outputs = _declare_files(ctx, restore_file, intermediate_path)
 
-    args = make_dotnet_args(ctx, sdk, "restore", restore_file)
-    env = make_dotnet_env(sdk)
+    args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "restore", restore_file)
+    outputs.extend(cmd_outputs)
 
     ctx.actions.run(
         mnemonic = "NuGetRestore",
@@ -42,7 +46,7 @@ def restore(ctx, sdk, intermediate_path, packages):
         env = env,
     )
 
-    return restore_file, outputs
+    return restore_file, outputs + [restore_file], cmd_outputs
 
 def _declare_files(ctx, restore_file, intermediate_path):
     file_names = []
@@ -68,6 +72,20 @@ def _declare_files(ctx, restore_file, intermediate_path):
     return files
 
 def _make_restore_file(ctx, sdk, intermediate_path, packages):
+    pre_import_msbuild_properties = {
+        "RestoreSources": paths.join(STARTUP_DIR, sdk.root_file.dirname),
+        # this is where nuget creates project.assets.json (and other files) during a restore
+        "BaseIntermediateOutputPath": THIS_DIR + intermediate_path,
+        "IntermediateOutputPath": paths.join(THIS_DIR, intermediate_path),
+        # https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build?view=vs-2019#msbuildprojectextensionspath
+        # this is where nuget looks for a project.assets.json during a build
+        "MSBuildProjectExtensionsPath": THIS_DIR + intermediate_path,
+        # we could just set ProjectAssetsFile here, but we're setting the other properties in case they have other impacts
+        "OutputPath": THIS_DIR + paths.dirname(intermediate_path),
+        "ImportDirectoryBuildProps": "false",
+        "UseSharedCompilation": "false",
+    }
+
     package_references = [
         inline_element(
             "PackageReference",
@@ -79,20 +97,16 @@ def _make_restore_file(ctx, sdk, intermediate_path, packages):
         for p in packages
     ]
 
-    msbuild_properties = [
-        element("RestoreSources", paths.join(STARTUP_DIR, sdk.root_file.dirname)),
-        element("IntermediateOutputPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
-    ]
-
     restore_file = ctx.actions.declare_file(ctx.attr.name + ".restore.proj")
     ctx.actions.expand_template(
         template = ctx.file._restore_template,
         output = restore_file,
         is_executable = False,
         substitutions = {
+            "{pre_import_msbuild_properties}": properties(pre_import_msbuild_properties),
+            "{sdk}": "Microsoft.NET.Sdk",  # todo(#3)
             "{tfm}": ctx.attr.target_framework,
             "{package_references}": "\n    ".join(package_references),
-            "{msbuild_properties}": "\n    ".join(msbuild_properties),
         },
     )
     return restore_file

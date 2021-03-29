@@ -1,7 +1,7 @@
 load("//dotnet/private/nuget:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 INTERMEDIATE_BASE = "obj"
-STARTUP_DIR = "$(MSBuildStartupDirectory)"
 
 def built_path(ctx, outputs, p, is_directory = False):
     if is_directory:
@@ -17,14 +17,23 @@ def built_path(ctx, outputs, p, is_directory = False):
         short_path = output.short_path,
     )
 
-def make_dotnet_env(sdk, nuget_environment_info = None):
+def make_dotnet_cmd(ctx, sdk, msbuild_target, proj, nuget_environment_info = None):
+    args, outputs = make_dotnet_args(ctx, sdk, msbuild_target, proj)
+    env = make_dotnet_env(sdk, nuget_environment_info, ctx.var["COMPILATION_MODE"])
+
+    return args, env, outputs
+
+def make_dotnet_env(sdk, nuget_environment_info = None, prefix=None):
     dotnet_sdk_base = sdk.root_file.dirname
     env = {
         "DOTNET_CLI_HOME": sdk.root_file.dirname,
         "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
         # isolate Dotnet from using the system installed sdk
         "DOTNET_MULTILEVEL_LOOKUP": "0",
+        "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
+        "DOTNET_NOLOGO": "1",
         "NUGET_SHOW_STACK": "true",
+        "PREFIX":prefix
     }
 
     os = sdk.dotnetos
@@ -44,21 +53,26 @@ def make_dotnet_env(sdk, nuget_environment_info = None):
 
 def make_dotnet_args(ctx, sdk, msbuild_target, proj):
     args = ctx.actions.args()
-    args.use_param_file("@%s")
-    args.set_param_file_format("shell")
+#    args.use_param_file("@%s.rsp", use_always=True)
+#    args.set_param_file_format("shell")
     args.add("msbuild")
     args.add("-t:" + msbuild_target)
     args.add(proj.path)
-
     args.add("-nologo")
 
-    # todo disable when not debugging the build
-    args.add("-bl:{}".format(proj.path + ".binlog"))
+    outputs = []
 
+    # todo disable when not debugging the build
+    if True:
+        binlog = ctx.actions.declare_file(proj.basename + ".binlog", sibling = proj)
+        args.add("-bl:{}".format(binlog.path))
+        outputs.append(binlog)
+
+    # todo
     # if msbuild_target != "restore":
     #     args.add("--no-restore")
 
     # GetRestoreSettingsTask#L142: this is resolved against msbuildstartupdirectory
     args.add('-p:RestoreConfigFile="{}"'.format(sdk.nuget_build_config.path))
 
-    return args
+    return args, outputs

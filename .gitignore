@@ -6,3 +6,4 @@ obj
 *.user
 .vs
 .ijwb
+*.bazelrc

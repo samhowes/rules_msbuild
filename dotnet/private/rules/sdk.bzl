@@ -18,6 +18,7 @@ def _dotnet_sdk_impl(ctx):
         shared = ctx.files.shared,
         packs = ctx.files.packs,
         init_files = ctx.files.init_files,
+        all_files = ctx.files.all_files,
     )]
 
 dotnet_sdk = rule(
@@ -54,6 +55,10 @@ dotnet_sdk = rule(
         "sdk_files": attr.label(
             mandatory = True,
             doc = ("The files inside the sdk_root"),
+        ),
+        "all_files": attr.label(
+            mandatory = True,
+            doc = ("All files that comprise the sdk."),
         ),
         "fxr": attr.label(
             mandatory = True,

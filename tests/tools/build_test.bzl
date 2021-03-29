@@ -37,6 +37,7 @@ def binary_test(name, target, args = [], expected_output = "", expected_files = 
         "TARGET_EXECUTABLE_ARGS": ";".join(args),
         "EXPECTED_OUTPUT": expected_output,
     }
+
     _build_test(name, target, expected_files, env)
 
 def library_test(name, target, expected_files = {}):
@@ -73,13 +74,13 @@ def _build_test(name, target, expected_files, env):
         main = src,
         srcs = [src],
         env = env,
-        args = ["--junitxml=pytest.xml"],
         data = [
             ":" + target,
             ":" + artifacts,
         ],
         deps = [
-            requirement("pytest"),
+            "//tests/tools:mypytest",
+            "//tests/tools:executable",
             "//tests/tools:build_test_case",
         ],
     )

@@ -7,12 +7,3 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 declare_constraints()
-
-# bzl_library(
-#     name = "toolchains",
-#     srcs = ["toolchains.bzl"],
-#     deps = [
-#         "@my_rules_dotnet//dotnet/private:platforms.bzl",
-#         "@my_rules_dotnet//dotnet/private:sdk.bzl",
-#     ],
-# )

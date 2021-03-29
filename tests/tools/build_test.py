@@ -1,11 +1,8 @@
 import json
 import os
-from os import environ
-from os import path
+from os import environ, path
 
-import pytest
-import sys
-
+from tests.tools import mypytest
 from tests.tools.build_test_case import BuildTestCase
 
 
@@ -24,16 +21,25 @@ class TestBuild(BuildTestCase):
             return
         expected_dict = json.loads(expected)
         for dirname in expected_dict:
+            prefix = None
+            external = False
+            if len(dirname) > 0 and dirname[0] == "@":
+                prefix = [dirname[1:]]
+                external = True
+            else:
+                prefix = [self.output_base]
+                if len(dirname) > 0:
+                    prefix.append(dirname)
+
             for f in expected_dict[dirname]:
                 assert f is not None
-                rpath = "/".join([self.output_base, dirname, f])
-                fpath = self.location(rpath)
+
+                rpath = "/".join(prefix + [f])
+                fpath = self.location(rpath, external)
                 assert fpath is not None, f'Missing runfile item for {rpath}'
                 assert path.exists(fpath), (
                     f"Missing file: '{f}'\n name: {f}\n runfiles path: {rpath}\n file path: {fpath}")
 
 
 if __name__ == "__main__":
-    xml_output = os.environ.get("XML_OUTPUT_FILE")
-    exit_code = pytest.main([__file__, "-vv", f'--junitxml={xml_output}'])
-    sys.exit(exit_code)
+    mypytest.main(__file__)

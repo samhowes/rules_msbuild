@@ -9,6 +9,7 @@ declare_toolchains(
 
 dotnet_sdk(
     name = "dotnet_sdk",
+    all_files = ":all_files",
     dotnet = "dotnet{exe}",
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
@@ -24,11 +25,25 @@ dotnet_sdk(
     shared = ":shared",
 )
 
+filegroup(
+    name = "all_files",
+    srcs = [
+        "dotnet{exe}",
+        ":fxr",
+        ":init_files",
+        ":sdk_files",
+        {dynamic_targets}
+    ],
+)
+
 # init files so dotnet doesn't print welcome messages
 # included because bazel sandboxes these away
 filegroup(
     name = "init_files",
-    srcs = glob([".dotnet/**/*"], allow_empty=False),
+    srcs = glob(
+        [".dotnet/**/*"],
+        allow_empty = False,
+    ),
 )
 
 filegroup(

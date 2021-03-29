@@ -1,36 +1,32 @@
-from os import path, environ
-from subprocess import run, CalledProcessError
+import os
 
 from rules_python.python.runfiles import runfiles
+
+from tests.tools.executable import Executable
 
 
 class BuildTestCase:
 
     @classmethod
     def setup_class(cls):
-        cls.target = environ.get("TARGET_EXECUTABLE")
-        cls.args = environ.get("TARGET_EXECUTABLE_ARGS")
+        cls.target = os.environ.get("TARGET_EXECUTABLE")
+        cls.args = os.environ.get("TARGET_EXECUTABLE_ARGS")
         if cls.args is not None:
             cls.args = cls.args.split(";")
 
         cls.r = runfiles.Create()
-        cls.workspace_name = environ.get("TEST_WORKSPACE")
-        cls.output_base = path.dirname(environ.get('TEST_BINARY'))
+        cls.workspace_name = os.environ.get("TEST_WORKSPACE")
+        cls.output_base = os.path.dirname(os.environ.get('TEST_BINARY'))
 
-    def location(self, short_path):
-        return self.r.Rlocation("/".join([self.workspace_name, short_path]))
+    def location(self, short_path, external=False):
+        rpath = None
+        if not external:
+            rpath = "/".join([self.workspace_name, short_path])
+        else:
+            rpath = short_path
 
-    def decode(self, output):
-        return str(output, 'utf-8')
+        return self.r.Rlocation(rpath)
 
     def get_output(self):
-        executable = self.location(self.target)
-        args = [executable] + self.args
-
-        completed = None
-        try:
-            completed = run(args, capture_output=True)
-        except CalledProcessError as error:
-            completed = error
-
-        return completed.returncode, self.decode(completed.stdout), self.decode(completed.stderr)
+        executable = Executable(self.location(self.target))
+        return executable.run(self.args)

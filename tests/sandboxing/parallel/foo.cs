@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace tests.HelloBazel
+namespace tests.sandboxing.parallel
 {
     class Program
     {
