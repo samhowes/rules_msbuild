@@ -80,7 +80,10 @@ def _make_restore_file(ctx, sdk, intermediate_path, packages):
 
     msbuild_properties = [
         element("RestoreSources", paths.join(STARTUP_DIR, sdk.root_file.dirname)),
-        element("IntermediateOutputPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
+        element("BaseIntermediateOutputPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
+        # https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build?view=vs-2019#msbuildprojectextensionspath
+        element("MSBuildProjectExtensionsPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
+        element("IntermediateOutputPath", paths.join("$(MSBuildThisFileDirectory)", intermediate_path, ctx.attr.target_framework)),
     ]
 
     restore_file = ctx.actions.declare_file(ctx.attr.name + ".restore.proj")

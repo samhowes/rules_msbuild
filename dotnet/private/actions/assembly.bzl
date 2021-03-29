@@ -7,9 +7,8 @@ load(
     "INTERMEDIATE_BASE",
     "STARTUP_DIR",
     "make_dotnet_cmd",
+    "make_dotnet_env",
 )
-load("//dotnet/private:common.bzl", "dotnetos_to_exe_extension", "dotnetos_to_library_extension")
-load("//dotnet/private/actions:common.bzl", "make_dotnet_env")
 
 def emit_assembly(ctx, is_executable):
     """Compile a dotnet assembly with the provided project template
@@ -21,8 +20,12 @@ def emit_assembly(ctx, is_executable):
         Tuple: the emitted assembly and all outputs
     """
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-    output_path = ctx.attr.target_framework
-    intermediate_path = INTERMEDIATE_BASE
+    compiliation_mode = ctx.var["COMPILATION_MODE"]
+    output_path = compiliation_mode + "/" + ctx.attr.target_framework
+    intermediate_path = compiliation_mode + "/" + INTERMEDIATE_BASE
+
+    # output_path = ctx.attr.target_framework
+    # intermediate_path = INTERMEDIATE_BASE
     tfm = ctx.attr.target_framework
     sdk = toolchain.sdk
 
@@ -30,7 +33,7 @@ def emit_assembly(ctx, is_executable):
     msbuild_outputs = []
 
     references, packages, copied_files = process_deps(ctx.attr.deps, tfm)
-    assembly, pdb, assembly_files, intermediate_files = _declare_assembly_files(ctx, toolchain, intermediate_path)
+    assembly, pdb, assembly_files, intermediate_files = _declare_assembly_files(ctx, toolchain, output_path, intermediate_path)
     msbuild_outputs += assembly_files
     msbuild_outputs += intermediate_files
     all_outputs += assembly_files
@@ -121,8 +124,7 @@ def _make_executable_files(ctx, assembly, sdk):
     )
     return launcher, files
 
-def _declare_assembly_files(ctx, toolchain, intermediate_path):
-    output_dir = ctx.attr.target_framework
+def _declare_assembly_files(ctx, toolchain, output_dir, intermediate_path):
     assembly = ctx.actions.declare_file(paths.join(output_dir, ctx.attr.name + ".dll"))
 
     # todo(#21) toggle this when not debug

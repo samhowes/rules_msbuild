@@ -18,12 +18,12 @@ genrule(
 )
 
 filegroup(
-    name = "single",
+    name = "host",
     srcs = [":run_greeter"],
 )
 
 filegroup(
-    name = "double",
+    name = "both",
     srcs = [
         ":Greeter",
         ":run_greeter",
