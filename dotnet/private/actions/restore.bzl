@@ -82,7 +82,8 @@ def _make_restore_file(ctx, sdk, intermediate_path, packages):
         "MSBuildProjectExtensionsPath": THIS_DIR + intermediate_path,
         # we could just set ProjectAssetsFile here, but we're setting the other properties in case they have other impacts
         "OutputPath": THIS_DIR + paths.dirname(intermediate_path),
-        "ImportDirectoryBuildProps": "false"
+        "ImportDirectoryBuildProps": "false",
+        "UseSharedCompilation": "false",
     }
 
     package_references = [
