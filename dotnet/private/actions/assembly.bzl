@@ -25,11 +25,9 @@ def emit_assembly(ctx, is_executable):
     """
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
     compiliation_mode = ctx.var["COMPILATION_MODE"]
-    output_path = compiliation_mode + "/" + ctx.attr.target_framework
-    intermediate_path = compiliation_mode + "/" + INTERMEDIATE_BASE
+    output_path = ctx.attr.target_framework
+    intermediate_path = INTERMEDIATE_BASE
 
-    # output_path = ctx.attr.target_framework
-    # intermediate_path = INTERMEDIATE_BASE
     tfm = ctx.attr.target_framework
     sdk = toolchain.sdk
 
@@ -53,9 +51,6 @@ def emit_assembly(ctx, is_executable):
 
     compile_file = _make_compile_file(ctx, toolchain, is_executable, restore_file, references)
 
-    print("generated templates")
-    print(compile_file.path)
-
     launcher = None
     executable_files = []
     if is_executable:
@@ -75,10 +70,6 @@ def emit_assembly(ctx, is_executable):
         copied_files +
         sdk.init_files
     )
-
-    print("msbuild_outputs for " + ctx.attr.name)
-    for o in msbuild_outputs:
-        print(o.path)
 
     ctx.actions.run(
         mnemonic = "DotnetBuild",
@@ -149,7 +140,6 @@ def _declare_assembly_files(ctx, toolchain, output_dir, intermediate_path):
 
 def _make_compile_file(ctx, toolchain, is_executable, restore_file, libraries):
     msbuild_properties = [
-
     ]
 
     if is_executable:
