@@ -2,7 +2,7 @@ name: Slack reporter
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ["build-and-test"]
     types: 
       - completed
       - requested
