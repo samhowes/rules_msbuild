@@ -1,7 +1,7 @@
 load("//dotnet/private/nuget:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 INTERMEDIATE_BASE = "obj"
-STARTUP_DIR = "$(MSBuildStartupDirectory)"
 
 def built_path(ctx, outputs, p, is_directory = False):
     if is_directory:
@@ -53,12 +53,11 @@ def make_dotnet_env(sdk, nuget_environment_info = None, prefix=None):
 
 def make_dotnet_args(ctx, sdk, msbuild_target, proj):
     args = ctx.actions.args()
-    args.use_param_file("@%s")
-    args.set_param_file_format("shell")
+#    args.use_param_file("@%s.rsp", use_always=True)
+#    args.set_param_file_format("shell")
     args.add("msbuild")
     args.add("-t:" + msbuild_target)
     args.add(proj.path)
-
     args.add("-nologo")
 
     outputs = []
@@ -69,6 +68,7 @@ def make_dotnet_args(ctx, sdk, msbuild_target, proj):
         args.add("-bl:{}".format(binlog.path))
         outputs.append(binlog)
 
+    # todo
     # if msbuild_target != "restore":
     #     args.add("--no-restore")
 

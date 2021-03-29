@@ -1,10 +1,15 @@
 """Actions for dotnet restore"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
+load(
+    "//dotnet/private/actions:xml.bzl",
+    "STARTUP_DIR",
+    "THIS_DIR",
+    "inline_element",
+    "properties",
+)
 load(
     "//dotnet/private/actions:common.bzl",
-    "STARTUP_DIR",
     "make_dotnet_cmd",
 )
 
@@ -67,6 +72,19 @@ def _declare_files(ctx, restore_file, intermediate_path):
     return files
 
 def _make_restore_file(ctx, sdk, intermediate_path, packages):
+    pre_import_msbuild_properties = {
+        "RestoreSources": paths.join(STARTUP_DIR, sdk.root_file.dirname),
+        # this is where nuget creates project.assets.json (and other files) during a restore
+        "BaseIntermediateOutputPath": THIS_DIR + intermediate_path,
+        "IntermediateOutputPath": paths.join(THIS_DIR, intermediate_path),
+        # https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build?view=vs-2019#msbuildprojectextensionspath
+        # this is where nuget looks for a project.assets.json during a build
+        "MSBuildProjectExtensionsPath": THIS_DIR + intermediate_path,
+        # we could just set ProjectAssetsFile here, but we're setting the other properties in case they have other impacts
+        "OutputPath": THIS_DIR + paths.dirname(intermediate_path),
+        "ImportDirectoryBuildProps": "false"
+    }
+
     package_references = [
         inline_element(
             "PackageReference",
@@ -78,23 +96,16 @@ def _make_restore_file(ctx, sdk, intermediate_path, packages):
         for p in packages
     ]
 
-    msbuild_properties = [
-        element("RestoreSources", paths.join(STARTUP_DIR, sdk.root_file.dirname)),
-        element("BaseIntermediateOutputPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
-        # https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build?view=vs-2019#msbuildprojectextensionspath
-        element("MSBuildProjectExtensionsPath", "$(MSBuildThisFileDirectory)" + intermediate_path),
-        element("IntermediateOutputPath", paths.join("$(MSBuildThisFileDirectory)", intermediate_path, ctx.attr.target_framework)),
-    ]
-
     restore_file = ctx.actions.declare_file(ctx.attr.name + ".restore.proj")
     ctx.actions.expand_template(
         template = ctx.file._restore_template,
         output = restore_file,
         is_executable = False,
         substitutions = {
+            "{pre_import_msbuild_properties}": properties(pre_import_msbuild_properties),
+            "{sdk}": "Microsoft.NET.Sdk",  # todo(#3)
             "{tfm}": ctx.attr.target_framework,
             "{package_references}": "\n    ".join(package_references),
-            "{msbuild_properties}": "\n    ".join(msbuild_properties),
         },
     )
     return restore_file

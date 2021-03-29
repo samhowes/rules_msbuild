@@ -1,5 +1,14 @@
 """Xml Helpers"""
 
+STARTUP_DIR = "$(MSBuildStartupDirectory)"
+THIS_DIR = "$(MSBuildThisFileDirectory)"
+
+def properties(property_dict):
+    return "\n    ".join([
+        element(k,v)
+        for k,v in property_dict.items()
+    ])
+
 def element(name, value, attrs = {}):
     open_tag_items = [name]
     open_tag_items.extend(

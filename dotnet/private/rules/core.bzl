@@ -20,7 +20,7 @@ ASSEMBLY_ATTRS = {
         allow_single_file = True,
     ),
     "_restore_template": attr.label(
-        default = Label("//dotnet/private/rules:restore.tpl.props"),
+        default = Label("//dotnet/private/rules:restore.tpl.proj"),
         allow_single_file = True,
     ),
     "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),

@@ -55,12 +55,11 @@ jobs:
         displayName: 'build & test output'
 
       - script: |
-          ls -al
-          tar -zcvf logs.tar.gz bazel-bin/**/*.binlog
+          bash .ci/tar.sh
         condition: always()
 
-      - publish: $(Build.SourcesDirectory)/logs.tar.gz
-        artifact: Binlogs
+      - publish: bazel-out.tar.gz
+        artifact: bazel-out
         condition: always()
 
       - task: PublishTestResults@2

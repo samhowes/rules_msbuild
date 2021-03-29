@@ -1,11 +1,15 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
-load("//dotnet/private/actions:xml.bzl", "element", "inline_element")
+load(
+    "//dotnet/private/actions:xml.bzl",
+    "STARTUP_DIR",
+    "element",
+    "inline_element",
+)
 load("//dotnet/private/actions:restore.bzl", "restore")
 load(
     "//dotnet/private/actions:common.bzl",
     "INTERMEDIATE_BASE",
-    "STARTUP_DIR",
     "make_dotnet_cmd",
     "make_dotnet_env",
 )
@@ -63,10 +67,6 @@ def emit_assembly(ctx, is_executable):
     args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "build", compile_file)
     msbuild_outputs += cmd_outputs
     all_outputs += cmd_outputs
-
-    #    msbuild_outputs.append(
-    #        ctx.actions.declare_directory(paths.join(intermediate_path, tfm))
-    #    )
 
     inputs = (
         [compile_file, restore_file] +
@@ -133,7 +133,7 @@ def _declare_assembly_files(ctx, toolchain, output_dir, intermediate_path):
 
     intermediate_files = [
         ctx.actions.declare_file(
-            paths.join(intermediate_path, output_dir, ctx.attr.name + "." + ext),
+            paths.join(intermediate_path, ctx.attr.target_framework, ctx.attr.name + "." + ext),
         )
         for ext in [
             "AssemblyInfo.cs",
@@ -149,7 +149,7 @@ def _declare_assembly_files(ctx, toolchain, output_dir, intermediate_path):
 
 def _make_compile_file(ctx, toolchain, is_executable, restore_file, libraries):
     msbuild_properties = [
-        element("OutputPath", "$(MSBuildThisFileDirectory)"),
+
     ]
 
     if is_executable:
