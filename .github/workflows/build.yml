@@ -1,4 +1,4 @@
-name: Sandbox Issue Repro
+name: Build & Test
 
 on:
   push:
@@ -14,38 +14,18 @@ env:
   BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
 
 jobs:
-  working:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: RC Setup
+      - name: CI Init
         run: .ci/init.sh
 
-      - name: Sanity Test
+      - name: Build & Test
         run: |
-          bazel test //tests/sanity:all
+          bash tests/runall.sh
 
-      - name: Bazel build
-        run: |
-          bazel build //tests/launcher:run_greeter
-
-      - name: Bazel test
-        run: |
-          bazel test //tests/launcher:launcher_test
-
-  not_working:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: RC Setup
-        run: .ci/init.sh
-
-      - name: Sanity Test
-        run: |
-          bazel test //tests/sanity:all
-
-      - name: Bazel build & test
-        run: |
-          bazel test //tests/launcher:launcher_test
+      - name: tar outputs
+      - script: |
+          bash .ci/tar.sh

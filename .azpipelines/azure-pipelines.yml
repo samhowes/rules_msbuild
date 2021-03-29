@@ -20,27 +20,27 @@ parameters:
 jobs:
   - ${{ each platform in parameters.platforms }}:
       - job: ${{ platform.name }}
-
         pool:
           vmImage: ${{ platform.vmImage }}
 
         steps:
           - bash: .ci/init.sh
-            displayName: 'Init CI'
+            displayName: 'CI Init'
             env:
               BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
 
           - script: |
-              bazel test //tests/sanity:all
-            displayName: 'Sanity Test'
+              bash tests/runall.sh
+            displayName: 'Build & Test'
 
           - script: |
-              bazel build //tests/launcher:run_greeter
-            displayName: 'build greeter'
+              bash .ci/tar.sh
+            displayName: 'tar outputs'
+            condition: always()
 
-          - script: |
-              bazel test //tests/launcher:launcher_test
-            displayName: 'test output'
+          - publish: bazel-out.tar.gz
+            artifact: bazel-out
+            condition: always()
 
           - task: PublishTestResults@2
             inputs:
