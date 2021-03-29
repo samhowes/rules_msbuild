@@ -23,9 +23,7 @@ jobs:
         run: .ci/init.sh
       
       - name: Build & Test
-        run: |
-          bash tests/runall.sh
+        run: bash tests/runall.sh
 
       - name: tar outputs
-        run: |
-          bash .ci/tar.sh
+        run: bash .ci/tar.sh
