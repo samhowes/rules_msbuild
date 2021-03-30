@@ -23,7 +23,7 @@ binary_test(
             "HelloBazel.runtimeconfig.dev.json",
         ],
         "@dotnet_sdk": [
-            "host/fxr/3.1.0",
+            "sdk/3.1.100/dotnet.dll",
         ],
     },
     target = "HelloBazel",

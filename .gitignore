@@ -6,4 +6,5 @@ obj
 *.user
 .vs
 .ijwb
+.clwb
 *.bazelrc
