@@ -35,6 +35,14 @@ load("//:deps.bzl", "py_deps")
 
 py_deps()
 
+### temporary setup for windows launcher ###
+# todo remove this configuration
+local_repository(
+    name = "bazel_tools_public",
+    path = "../bazel",
+)
+###
+
 load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
 dotnet_rules_dependencies()
