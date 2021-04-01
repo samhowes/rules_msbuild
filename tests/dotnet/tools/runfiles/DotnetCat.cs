@@ -8,9 +8,9 @@ namespace MyRulesDotnet.Tools.RunfilesTests
         static void Main(string[] args)
         {
             var r = Runfiles.Create();
-            var contents = File.ReadAllText(r.Rlocation("my_rules_dotnet/tests/dotnet/tools/runfiles/netcoreapp3.1/foo.txt"));
+            var contents = File.ReadAllText(r.Rlocation("my_rules_dotnet/tests/dotnet/tools/runfiles/foo.txt"));
 
-            Console.WriteLine(contents);
+            Console.Write(contents);
         }
     }
 }

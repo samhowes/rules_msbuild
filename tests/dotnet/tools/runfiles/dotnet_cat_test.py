@@ -10,9 +10,13 @@ class TestLauncher(object):
     @classmethod
     def setup_class(cls):
         cls.r = runfiles.Create()
+        cls.workspace_name = os.environ.get("TEST_WORKSPACE")
+
+    def location(self, path):
+        return self.r.Rlocation(self.workspace_name + "/" + path)
 
     def get_contents(self, rpath):
-        fpath = self.r.Rlocation(rpath)
+        fpath = self.location(rpath)
         with open(fpath) as f:
             contents = f.read()
         return contents
@@ -23,7 +27,7 @@ class TestLauncher(object):
 
     def test_run_data_dep_works(self):
         env = self.r.EnvVars()
-        executable = Executable(self.r.Rlocation("TARGET_BINARY"))
+        executable = Executable(self.location(os.environ.get("TARGET_BINARY")))
         contents = self.assert_success(executable, env)
         assert "Hello Runfiles!\n" == contents
 
