@@ -18,8 +18,8 @@ py_test(
     name = "launcher_test",
     srcs = ["launcher_test.py"],
     data = [
+        ":Greeter",
         ":run_greeter",
-        #        ":Greeter"
     ],
     env = {
         "TARGET_PATH": "tests/launcher/netcoreapp3.1",
