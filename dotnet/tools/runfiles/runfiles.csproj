@@ -1,0 +1,8 @@
+<!-- todo(#12) remove this file -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>MyRulesDotnet.Tools</RootNamespace>
+  </PropertyGroup>
+</Project>

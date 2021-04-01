@@ -31,7 +31,11 @@ def _dotnet_binary_impl(ctx):
     assembly, pdb, outputs, launcher = emit_assembly(ctx, True)
 
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
-    assembly_runfiles = ctx.runfiles(files = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"].sdk.all_files + outputs)
+    assembly_runfiles = ctx.runfiles(files = (
+        ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"].sdk.all_files +
+        outputs +
+        ctx.files.data
+    ))
     assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
     return [
         DefaultInfo(
