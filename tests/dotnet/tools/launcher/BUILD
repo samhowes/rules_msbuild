@@ -22,7 +22,8 @@ py_test(
         ":run_greeter",
     ],
     env = {
-        "TARGET_PATH": "tests/launcher/netcoreapp3.1",
+        "TARGET_PATH": "$(location :Greeter)",
+        "TXT_RESULT": "$(location :run_greeter)",
     },
     deps = [
         "//tests/tools:executable",

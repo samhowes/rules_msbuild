@@ -18,6 +18,7 @@ def _dotnet_toolchain_impl(ctx):
             compile = (),
         ),
         sdk = sdk,
+        _builder = ctx.executable.builder,
     )]
 
 dotnet_toolchain = rule(
@@ -49,7 +50,7 @@ dotnet_toolchain = rule(
     provides = [platform_common.ToolchainInfo],
 )
 
-def declare_toolchains(host, sdk):
+def declare_toolchains(host, sdk, builder):
     """Declares dotnet_toolchain and toolchain targets for each platform."""
 
     # keep in sync with generate_toolchain_names
@@ -65,7 +66,7 @@ def declare_toolchains(host, sdk):
             dotnetos = p.dotnetos,
             dotnetarch = p.dotnetarch,
             sdk = sdk,
-            # builder = builder,
+            builder = builder,
             tags = ["manual"],
             visibility = ["//visibility:public"],
         )

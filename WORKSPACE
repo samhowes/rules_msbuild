@@ -36,10 +36,13 @@ load("//:deps.bzl", "py_deps")
 py_deps()
 
 ### temporary setup for windows launcher ###
-# todo remove this configuration
-local_repository(
+# todo(#43) remove this configuration
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
     name = "bazel_tools_public",
-    path = "../bazel",
+    branch = "public_launcher",
+    remote = "https://github.com/samhowes/bazel",
 )
 ###
 

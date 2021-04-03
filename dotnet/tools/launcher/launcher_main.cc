@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "src/tools/launcher/dotnet_launcher.h"
+#include "dotnet/tools/launcher/dotnet_launcher.h"
 #include "external/bazel_tools_public/src/tools/launcher/launcher.h"
 #include "external/bazel_tools_public/src/tools/launcher/util/data_parser.h"
 #include "external/bazel_tools_public/src/tools/launcher/util/launcher_util.h"

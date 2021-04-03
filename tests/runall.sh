@@ -9,17 +9,20 @@ function run() {
   this_exit=$?
   this_str=$*
   printf -v report "%s%s: %s\n" "$report" "$this_str" "$this_exit"
-  (( exit_status = exit_status || this_exit))
+  ((exit_status = exit_status || this_exit))
 }
 
 # if these don't build, nothing will
 run bazel build //tests/sanity //tests/HelloBazel
 
-run bazel test //tests/HelloBazel:all //tests/dotnet/tools/runfiles:all
+run bazel test //tests/HelloBazel:all //tests/dotnet/tools/...
 
 # targets that __must__ be run by itself
 run bazel build //tests/sandboxing/parallel
 
+# todo(#12) remove this call
+run dotnet test tests/dotnet/tools/builder
+run dotnet test tests/dotnet/tools/runfiles
 
 echo -e "\n\n============================================ TEST REPORT ================================================="
 echo -n "$report"

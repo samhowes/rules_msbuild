@@ -1,6 +1,6 @@
 
-#ifndef DOTNET_SRC_TOOLS_LAUNCHER_DOTNET_LAUNCHER_H_
-#define DOTNET_SRC_TOOLS_LAUNCHER_DOTNET_LAUNCHER_H_
+#ifndef DOTNET_TOOLS_LAUNCHER_WINDOWS_DOTNET_LAUNCHER_H_
+#define DOTNET_TOOLS_LAUNCHER_WINDOWS_DOTNET_LAUNCHER_H_
 
 #include "external/bazel_tools_public/src/tools/launcher/launcher.h"
 
@@ -25,4 +25,4 @@ namespace my_rules_dotnet {
     }  // namespace launcher
 }  // namespace my_rules_dotnet
 
-#endif  // DOTNET_SRC_TOOLS_LAUNCHER_DOTNET_LAUNCHER_H_
+#endif  // DOTNET_TOOLS_LAUNCHER_WINDOWS_DOTNET_LAUNCHER_H_

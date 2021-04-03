@@ -1,5 +1,5 @@
-load("//dotnet/private/actions:assembly.bzl", "emit_assembly")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
+load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "make_launcher")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 TFM_ATTR = attr.string(
@@ -10,11 +10,11 @@ TFM_ATTR = attr.string(
 DEPS_ATTR = attr.label_list(
     providers = [DotnetLibraryInfo],
 )
-ASSEMBLY_ATTRS = {
+
+# Used by dotnet_tool_binary
+BASE_ASSEMBLY_ATTRS = {
     "srcs": attr.label_list(allow_files = [".cs"]),
     "target_framework": TFM_ATTR,
-    "data": attr.label_list(allow_files = True),
-    "deps": DEPS_ATTR,
     "_compile_template": attr.label(
         default = Label("//dotnet/private/rules:compile.tpl.proj"),
         allow_single_file = True,
@@ -23,16 +23,33 @@ ASSEMBLY_ATTRS = {
         default = Label("//dotnet/private/rules:restore.tpl.proj"),
         allow_single_file = True,
     ),
-    "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
 }
 
+ASSEMBLY_ATTRS = dicts.add(BASE_ASSEMBLY_ATTRS, {
+    "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
+    "data": attr.label_list(allow_files = True),
+    "deps": DEPS_ATTR,
+})
+
+def _dotnet_tool_binary_impl(ctx):
+    sdk = ctx.attr.sdk[DotnetSdkInfo]
+    assembly, pdb, outputs = emit_assembly(ctx, sdk, True)
+    return [
+        DefaultInfo(
+            files = depset(outputs),
+            executable = assembly,
+        ),
+    ]
+
 def _dotnet_binary_impl(ctx):
-    """dotnet_binary_impl emits actions for compiling dotnet binaries"""
-    assembly, pdb, outputs, launcher = emit_assembly(ctx, True)
+    toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
+    assembly, pdb, outputs = emit_assembly(ctx, toolchain.sdk, True)
+
+    launcher = make_launcher(ctx, toolchain, assembly)
 
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(files = (
-        ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"].sdk.all_files +
+        toolchain.sdk.all_files +
         outputs +
         ctx.files.data
     ))
@@ -46,8 +63,8 @@ def _dotnet_binary_impl(ctx):
     ]
 
 def _dotnet_library_impl(ctx):
-    """dotnet_library_impl emits actions for compiling a dotnet library"""
-    library, pdb, outputs, _ = emit_assembly(ctx, False)
+    toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
+    library, pdb, outputs = emit_assembly(ctx, toolchain.sdk, False)
     return [
         DefaultInfo(
             files = depset(outputs),
@@ -62,11 +79,25 @@ def _dotnet_library_impl(ctx):
         ),
     ]
 
+dotnet_tool_binary = rule(
+    implementation = _dotnet_tool_binary_impl,
+    attrs = dicts.add(BASE_ASSEMBLY_ATTRS, {
+        "sdk": attr.label(
+            mandatory = True,
+            providers = [DotnetSdkInfo],
+        ),
+    }),
+    executable = True,
+    doc = """Used instead of dotnet_binary for executables in the toolchain.
+
+dotnet_tool_binaries cannot have any dependencies and are used to build other dotnet_* targets.""",
+)
+
 dotnet_binary = rule(
     implementation = _dotnet_binary_impl,
     attrs = dicts.add(ASSEMBLY_ATTRS, {
         "_launcher_template": attr.label(
-            default = Label("//dotnet/private/launcher:launcher_unix"),
+            default = Label("//dotnet/tools/launcher"),
             allow_single_file = True,
         ),
     }),
