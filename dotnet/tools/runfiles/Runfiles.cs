@@ -218,7 +218,7 @@ namespace MyRulesDotnet.Tools
             {
                 var result = new Dictionary<string, string>();
 
-                using (var reader = new StreamReader(new FileStream(path, FileMode.Open), Encoding.UTF8))
+                using (var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read), Encoding.UTF8))
                 {
                     while (true)
                     {

@@ -1,10 +1,11 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_sdk")
+load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_sdk", "dotnet_tool_binary")
 
 package(default_visibility = ["//visibility:public"])
 
 declare_toolchains(
-    host = "{dotnetos}_{dotnetarch}",  #todo fix this path?
+    host = "{dotnetos}_{dotnetarch}",
     sdk = ":dotnet_sdk",
+    builder = ":builder",
 )
 
 dotnet_sdk(
@@ -23,6 +24,13 @@ dotnet_sdk(
     sdk_files = ":sdk_files",
     sdk_root = "sdk/{version}",
     shared = ":shared",
+)
+
+dotnet_tool_binary(
+    name = "builder",
+    srcs = ["@my_rules_dotnet//dotnet/tools/builder:builder_srcs"],
+    target_framework = "netcoreapp3.1",
+    sdk = ":dotnet_sdk"
 )
 
 filegroup(

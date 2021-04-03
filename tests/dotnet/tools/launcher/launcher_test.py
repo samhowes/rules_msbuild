@@ -1,6 +1,5 @@
 import os
 import shutil
-import stat
 from os import environ, path
 
 from rules_python.python.runfiles import runfiles
@@ -15,10 +14,9 @@ def IsWindows():
     return False
 
 
-BINNAME = "Greeter" + ("exe" if IsWindows() else "")
-TARGET_PATH = os.environ.get("TARGET_PATH")
-BINPATH = f"my_rules_dotnet/{TARGET_PATH}/" + BINNAME
-EXPECTED_OUTPUT = "Hello: LauncherTest!\n"
+BINPATH = os.environ.get("TARGET_PATH")
+BINNAME = os.path.basename(BINPATH)
+EXPECTED_OUTPUT = "Hello: LauncherTest!" + os.linesep
 
 
 class TestLauncher(object):
@@ -30,50 +28,64 @@ class TestLauncher(object):
         cls.tmp_dir = os.environ.get("TEST_TMPDIR")
         cls.runfiles_dir = environ.get("TEST_SRCDIR")
 
+    def rlocation(self, rpath):
+        print("Locating: ", rpath)
+        fpath = self.r.Rlocation("/".join([self.workspace_name, rpath]))
+        return fpath
+
     def copy_manifest(self, fake_runfiles_dir):
         copied_manifest = os.path.join(fake_runfiles_dir, "MANIFEST")
         src_manifest = os.path.join(self.runfiles_dir, "MANIFEST")
         shutil.copyfile(src_manifest, copied_manifest)
 
     def get_contents(self, rpath):
-        fpath = self.r.Rlocation(rpath)
+        fpath = self.rlocation(rpath)
+        print("Reading: ", fpath)
         with open(fpath) as f:
             contents = f.read()
         return contents
 
-    def copy_bin(self, dest):
-        src = self.r.Rlocation(BINPATH)
-        os.makedirs(dest)
-        fpath = os.path.join(dest, BINNAME)
-        shutil.copyfile(src, fpath)
-        os.chmod(fpath, stat.S_IRWXU)
-
     def test_run_genrule_works(self):
-        txt_dir = os.path.dirname(TARGET_PATH)
-        contents = self.get_contents(f"my_rules_dotnet/{txt_dir}/run_greeter.txt")
+        contents = self.get_contents(os.environ.get("TXT_RESULT"))
         assert "Hello: genrule!\n" == contents
 
     def test_run_data_dep_works(self):
         env = self.r.EnvVars()
-        executable = Executable(self.r.Rlocation(BINPATH))
-        self.assert_success(executable, env)
+        executable = Executable(self.rlocation(BINPATH))
+        out = self.assert_success(executable, env)
+        assert out == EXPECTED_OUTPUT
 
-    def test_run_direct_top_level(self):
-        """Simulate the user executing the binary directly"""
-        exec_dir = os.path.join(self.tmp_dir, "run_direct")
-        self.copy_bin(exec_dir)
+    def run_direct(self, dirname: str, args=None):
+        """Simulate the user executing the binary directly given that they have built it directly"""
+        exec_dir = os.path.join(self.tmp_dir, dirname)
         fake_runfiles_dir = os.path.join(exec_dir, BINNAME + ".runfiles")
+
+        bin_path = self.rlocation(BINPATH)
+
+        shutil.copytree(
+            os.path.dirname(bin_path),
+            exec_dir,
+            ignore=lambda _, __: [os.path.basename(bin_path) + ".runfiles"])
 
         if IsWindows():
             os.makedirs(fake_runfiles_dir)
+            print(exec_dir)
+            print(os.listdir(exec_dir))
+            # bazel creates this on non-windows, but does not add it to the sandbox
             self.copy_manifest(fake_runfiles_dir)
         else:
             os.symlink(self.runfiles_dir, fake_runfiles_dir)
 
-        env = {}  # deliberately empty env
+        env = None  # deliberately empty env
         os.chdir(exec_dir)
-        executable = Executable("./" + BINNAME)
-        self.assert_success(executable, env, exec_dir)
+        print('Cwd: ', os.getcwd())
+        executable = Executable(os.path.join(".", BINNAME))
+        out = self.assert_success(executable, env, exec_dir, args=args)
+        return out
+
+    def test_run_direct_top_level(self):
+        out = self.run_direct("top_level")
+        assert out == EXPECTED_OUTPUT
 
     def test_run_symlinked(self):
         """Simulate the user running from inside Greeter's own symlink tree"""
@@ -85,29 +97,28 @@ class TestLauncher(object):
         fake_runfiles_dir = os.path.join(test_dir, BINNAME + ".runfiles")
         os.symlink(self.runfiles_dir, fake_runfiles_dir)
 
-        exec_dir = os.path.dirname(os.path.join(fake_runfiles_dir, BINPATH))
+        exec_dir = os.path.dirname(os.path.join(fake_runfiles_dir, self.workspace_name, BINPATH))
 
         env = {}  # deliberately empty env
         os.chdir(exec_dir)
-        executable = Executable("./" + BINNAME)
-        self.assert_success(executable, env, exec_dir)
+        executable = Executable(os.path.join(".", BINNAME))
+        out = self.assert_success(executable, env, exec_dir)
+        assert out == EXPECTED_OUTPUT
 
     def test_run_symlinked_other(self):
         """Simulate the user running from inside another binary's symlink tree"""
         if IsWindows():
             return
 
-        exec_dir = os.path.dirname(self.r.Rlocation(BINPATH))
+        exec_dir = os.path.dirname(self.rlocation(BINPATH))
         env = {}  # deliberately empty env
         os.chdir(exec_dir)
-        executable = Executable("./" + BINNAME)
-        self.assert_success(executable, env, exec_dir)
+        executable = Executable(os.path.join(".", BINNAME))
+        out = self.assert_success(executable, env, exec_dir)
+        assert out == EXPECTED_OUTPUT
 
     def test_bootstrap_env_vars(self):
-        if "launcher" not in TARGET_PATH:  # lazy
-            return
-        executable = Executable(self.r.Rlocation(BINPATH))
-        _, stdout, _ = executable.run(env={})
+        stdout = self.run_direct("bootstrap_env", args=[])
 
         env: dict[str, str] = {}
         for line in stdout.split("*~*"):
@@ -121,15 +132,19 @@ class TestLauncher(object):
         assert "RUNFILES_MANIFEST_FILE" in env.keys()
         assert "DOTNET_MULTILEVEL_LOOKUP" in env.keys()
 
-        assert env["RUNFILES_DIR"].endswith("launcher_test.runfiles")
-        assert env["RUNFILES_MANIFEST_FILE"].endswith(os.path.join("launcher_test.runfiles", "MANIFEST"))
+        assert env["RUNFILES_DIR"].endswith(BINNAME + ".runfiles")
 
-    def assert_success(self, executable, env, cwd=None):
-        code, stdout, stderr = executable.run(["LauncherTest"], env=env, cwd=cwd)
+        # the launcher apparently always uses forward slashes for this one
+        assert env["RUNFILES_MANIFEST_FILE"].endswith("/".join([BINNAME + ".runfiles", "MANIFEST"]))
 
-        assert code == 0, stderr
+    def assert_success(self, executable, env, cwd=None, args=None):
+        args = ["LauncherTest"] if args is None else args
+
+        code, stdout, stderr = executable.run(args, env=env, cwd=cwd)
+
+        assert code == 0, stderr + "\n" + stdout
         assert stderr == ""
-        assert stdout == EXPECTED_OUTPUT
+        return stdout
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# //tests/launcher
+# //tests/dotnet/tools/launcher
 
 A set of tests that verifies that the launcher is functioning appropriately
 
@@ -8,7 +8,7 @@ A set of tests that verifies that the launcher is functioning appropriately
    get its own runfiles.
     1. This also reproduces [#33](https://github.com/samhowes/my_rules_dotnet/issues/33) when built
        simultaneously with `:Greeter`, see
-       [`//tests/sandboxing/parallel`](../sandboxing/parallel/Readme.md) for coverage of that issue.
+       [`//tests/sandboxing/parallel`](../../../sandboxing/parallel/Readme.md) for coverage of that issue.
 1. `:launcher_test`: the primary set of tests for this package, a set of assertions that the
    launcher works in various scenarios:
     1. Simulate `bazel run` via checking the output file of `:run_greeter`

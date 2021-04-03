@@ -24,7 +24,14 @@ jobs:
           vmImage: ${{ platform.vmImage }}
 
         steps:
-          - bash: .ci/init.sh
+          - bash: |
+              if [[ '${{platform.name}}' == 'windows' ]]; then
+                export CI_EXEC='cmd';
+                git config --system core.longpaths true
+              else
+                export CI_EXEC='bash';
+              fi
+              .ci/init.sh
             displayName: 'CI Init'
             env:
               BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)

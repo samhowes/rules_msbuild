@@ -35,6 +35,17 @@ load("//:deps.bzl", "py_deps")
 
 py_deps()
 
+### temporary setup for windows launcher ###
+# todo(#43) remove this configuration
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
+    name = "bazel_tools_public",
+    branch = "public_launcher",
+    remote = "https://github.com/samhowes/bazel",
+)
+###
+
 load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
 dotnet_rules_dependencies()
