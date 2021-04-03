@@ -1,3 +1,4 @@
+load("//tests/tools:build_test.bzl", "library_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 
 dotnet_library(
@@ -9,3 +10,17 @@ dotnet_library(
         "//tests/Transitive/TransitiveTransitiveLib",
     ],
 )
+
+library_test(
+    name = "TransitiveLib_test",
+    expected_files = {
+        "netstandard2.1": [
+            "TransitiveLib.pdb",
+            "TransitiveLib.dll",
+            "TransitiveTransitiveLib.pdb",
+            "TransitiveTransitiveLib.dll",
+        ],
+    },
+    target = "TransitiveLib",
+)
+

@@ -15,7 +15,8 @@ _RestoreTestInfo = provider(
 def _restore_fake_rule_impl(ctx):
     fake_sdk = DotnetSdkInfo(
         root_file = struct(dirname = "fake_sdk"),
-        nuget_build_config = struct(path = "nuget_build_config.path"),
+        init_files = [],
+        nuget_build_config = ctx.file._nuget_config,
         dotnetos = "windows",
         dotnet = "fakedotnet",
     )
@@ -28,7 +29,7 @@ def _restore_fake_rule_impl(ctx):
         )
         for name, version in ctx.attr.packages.items()
     ]
-    restore_file, outputs = restore(ctx, fake_sdk, ctx.attr.name + "/intermediate_path", packages)
+    restore_file, outputs, cmd_outputs = restore(ctx, fake_sdk, ctx.attr.name + "/intermediate_path", packages)
     return _RestoreTestInfo(restore_file = restore_file, outputs = outputs)
 
 restore_fake_rule = rule(
@@ -36,6 +37,7 @@ restore_fake_rule = rule(
     attrs = dicts.add(ASSEMBLY_ATTRS, {
         "target_framework": attr.string(default = "fake_tfm"),
         "packages": attr.string_dict(),
+        "_nuget_config": attr.label(allow_single_file = True, default = ":nuget_build.config"),
     }),
 )
 

@@ -2,18 +2,22 @@ import json
 import os
 from os import environ, path
 
+import pytest
+
 from tests.tools import mypytest
 from tests.tools.build_test_case import BuildTestCase
 
+EXPECTED_OUTPUT = environ.get("EXPECTED_OUTPUT")
+
 
 class TestBuild(BuildTestCase):
+
+    @pytest.mark.skipif(EXPECTED_OUTPUT is None or len(EXPECTED_OUTPUT) == 0,
+                        reason="no output requested")
     def test_output(self):
-        expected = environ.get("EXPECTED_OUTPUT")
-        if expected is None or len(expected) == 0:
-            return
-        expected += os.linesep
+        expected_output = EXPECTED_OUTPUT + os.linesep
         code, out, err = self.get_output()
-        assert (code, out, err) == (0, expected, '')
+        assert (code, out, err) == (0, expected_output, '')
 
     def test_files(self):
         expected: str = environ.get("EXPECTED_FILES")

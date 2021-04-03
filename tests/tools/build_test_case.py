@@ -29,4 +29,4 @@ class BuildTestCase:
 
     def get_output(self):
         executable = Executable(self.location(self.target))
-        return executable.run(self.args)
+        return executable.run(self.args, self.r.EnvVars())
