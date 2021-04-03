@@ -15,7 +15,12 @@ function run() {
 # if these don't build, nothing will
 run bazel build //tests/sanity //tests/HelloBazel
 
-run bazel test //tests/HelloBazel:all //tests/dotnet/tools/...
+run bazel test //tests/HelloBazel:all \
+  //tests/ClassLibrary:all \
+  //tests/Dependent:all \
+  //tests/Transitive/... \
+  //tests/dotnet/...
+
 
 # targets that __must__ be run by itself
 run bazel build //tests/sandboxing/parallel

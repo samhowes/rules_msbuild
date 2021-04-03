@@ -2,6 +2,7 @@ import os
 import shutil
 from os import environ, path
 
+import pytest
 from rules_python.python.runfiles import runfiles
 
 from tests.tools import mypytest
@@ -87,10 +88,9 @@ class TestLauncher(object):
         out = self.run_direct("top_level")
         assert out == EXPECTED_OUTPUT
 
+    @pytest.mark.skipif(IsWindows(), reason="unix only")
     def test_run_symlinked(self):
         """Simulate the user running from inside Greeter's own symlink tree"""
-        if IsWindows():
-            return
 
         test_dir = os.path.join(self.tmp_dir, "run_symlinked")
         os.makedirs(test_dir)
@@ -105,11 +105,9 @@ class TestLauncher(object):
         out = self.assert_success(executable, env, exec_dir)
         assert out == EXPECTED_OUTPUT
 
+    @pytest.mark.skipif(IsWindows(), reason="unix only")
     def test_run_symlinked_other(self):
         """Simulate the user running from inside another binary's symlink tree"""
-        if IsWindows():
-            return
-
         exec_dir = os.path.dirname(self.rlocation(BINPATH))
         env = {}  # deliberately empty env
         os.chdir(exec_dir)

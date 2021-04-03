@@ -245,11 +245,11 @@ def process_deps(deps, tfm):
         _collect_files(info, copied_files, tfm, references, packages)
 
         for tinfo in info.deps.to_list():
-            _collect_files(tinfo, copied_files, tfm, None, None)
+            _collect_files(tinfo, copied_files, tfm, references, None)
 
     return references, packages, copied_files
 
-def _collect_files(info, copied_files, tfm, references = None, packages = None):
+def _collect_files(info, copied_files, tfm, references, packages = None):
     package = getattr(info, "package_info", None)
     if package != None:
         if package.is_fake:
@@ -273,5 +273,4 @@ def _collect_files(info, copied_files, tfm, references = None, packages = None):
         if info.pdb != None:
             copied_files.append(info.pdb)
 
-        if references != None:
-            references.append(info.assembly)
+        references.append(info.assembly)

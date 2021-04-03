@@ -39,7 +39,6 @@ def _process_deps_fake_rule_impl(ctx):
         for p in packages
     ]
 
-    print(deps)
     references, packages, copied_files = process_deps(deps, "fake_tfm")
     return _ProcessDepsInfo(
         references = references,
