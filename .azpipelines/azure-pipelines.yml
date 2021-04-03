@@ -26,7 +26,7 @@ jobs:
         steps:
           - bash: git config --system core.longpaths true
             displayName: 'Configure Windows Paths'
-            condition: eq(${{platform.name}}, 'windows')
+            condition: eq('${{platform.name}}', 'windows')
 
           - bash: .ci/init.sh
             displayName: 'CI Init'
