@@ -104,8 +104,8 @@ set -e
 # --- end runfiles.bash initialization v2 ---
 
 # --- begin my_rules_dotnet code
-target_bin_path="$(rlocation %target_bin%)"
-dotnet_bin_path="$(rlocation %dotnet_bin%)"
+target_bin_path="$(rlocation %target_bin_path%)"
+dotnet_bin_path="$(rlocation %dotnet_bin_path%)"
 
 if [[ "${DOTNET_LAUNCHER_DEBUG:-}" == 1 ]]; then
   echo "INFO[dotnet.launcher]: target_bin=target_bin_path"
@@ -115,4 +115,4 @@ fi
 # environment variables for the dotnet executable
 %dotnet_env%
 
-dotnet_bin_path exec "$target_bin_path" "$@"
+$dotnet_bin_path exec "$target_bin_path" "$@"

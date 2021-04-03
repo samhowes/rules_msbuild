@@ -60,25 +60,26 @@ class TestLauncher(object):
         exec_dir = os.path.join(self.tmp_dir, dirname)
         fake_runfiles_dir = os.path.join(exec_dir, BINNAME + ".runfiles")
 
+        bin_path = self.rlocation(BINPATH)
+
+        shutil.copytree(
+            os.path.dirname(bin_path),
+            exec_dir,
+            ignore=lambda _, __: [os.path.basename(bin_path) + ".runfiles"])
+
         if IsWindows():
-            bin_path = self.rlocation(BINPATH)
-
-            shutil.copytree(
-                os.path.dirname(bin_path),
-                exec_dir,
-                ignore=lambda _, __: [os.path.basename(bin_path) + ".runfiles"])
-
             os.makedirs(fake_runfiles_dir)
-            self.copy_manifest(fake_runfiles_dir)
             print(exec_dir)
             print(os.listdir(exec_dir))
+            # bazel creates this on non-windows, but does not add it to the sandbox
+            self.copy_manifest(fake_runfiles_dir)
         else:
             os.symlink(self.runfiles_dir, fake_runfiles_dir)
 
         env = None  # deliberately empty env
         os.chdir(exec_dir)
-        print(os.getcwd())
-        executable = Executable(os.path.join("", BINNAME))
+        print('Cwd: ', os.getcwd())
+        executable = Executable(os.path.join(".", BINNAME))
         out = self.assert_success(executable, env, exec_dir, args=args)
         return out
 
@@ -96,11 +97,11 @@ class TestLauncher(object):
         fake_runfiles_dir = os.path.join(test_dir, BINNAME + ".runfiles")
         os.symlink(self.runfiles_dir, fake_runfiles_dir)
 
-        exec_dir = os.path.dirname(os.path.join(fake_runfiles_dir, BINPATH))
+        exec_dir = os.path.dirname(os.path.join(fake_runfiles_dir, self.workspace_name, BINPATH))
 
         env = {}  # deliberately empty env
         os.chdir(exec_dir)
-        executable = Executable(os.path.join("", BINNAME))
+        executable = Executable(os.path.join(".", BINNAME))
         out = self.assert_success(executable, env, exec_dir)
         assert out == EXPECTED_OUTPUT
 
@@ -112,7 +113,7 @@ class TestLauncher(object):
         exec_dir = os.path.dirname(self.rlocation(BINPATH))
         env = {}  # deliberately empty env
         os.chdir(exec_dir)
-        executable = Executable(os.path.join("", BINNAME))
+        executable = Executable(os.path.join(".", BINNAME))
         out = self.assert_success(executable, env, exec_dir)
         assert out == EXPECTED_OUTPUT
 

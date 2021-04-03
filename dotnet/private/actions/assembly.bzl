@@ -63,7 +63,7 @@ def make_launcher(ctx, toolchain, assembly):
     else:
         substitutions = dict([
             ("%{}%".format(k), v)
-            for k, v in launch_data
+            for k, v in launch_data.items()
         ])
         substitutions["%dotnet_env%"] = "\n".join([
             "export {}=\"{}\"".format(k, v)
@@ -74,7 +74,7 @@ def make_launcher(ctx, toolchain, assembly):
             template = launcher_template,
             output = launcher,
             is_executable = True,
-            substitutions = dict(),
+            substitutions = substitutions,
         )
     return launcher
 
