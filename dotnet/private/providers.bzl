@@ -33,6 +33,18 @@ NuGetPackageInfo = provider(
     },
 )
 
+def MSBuildSdk(name, version):
+    """An msbuild sdk happens to actually be a NuGetPackage
+
+    https://github.com/microsoft/MSBuildSdks#how-can-i-use-these-sdks
+    """
+    return NuGetPackageInfo(
+        name = name,
+        version = version,
+    )
+
+DEFAULT_SDK = MSBuildSdk("Microsoft.NET.Sdk", None)
+
 NuGetFetchedPackageFrameworkInfo = provider(
     doc = "NuGetPackage info for a specific framework.",
     fields = {

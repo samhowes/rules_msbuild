@@ -1,5 +1,5 @@
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
-load("//dotnet/private:sdk_urls.bzl", "DOTNET_SDK_URLS")
+load("sdk_urls.bzl", "DOTNET_SDK_URLS")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def dotnet_register_toolchains(version = None):
@@ -37,7 +37,7 @@ def dotnet_download_sdk(name, **kwargs):
 
 def _dotnet_download_sdk_impl(ctx):
     if not ctx.attr.dotnetos and not ctx.attr.dotnetarch:
-        dotnetos, dotnetarch = _detect_host_platform(ctx)
+        dotnetos, dotnetarch = detect_host_platform(ctx)
     else:
         if not ctx.attr.dotnetos:
             fail("dotnetarch set but dotnetos not set")
@@ -150,19 +150,9 @@ filegroup(
     srcs = glob(["packs/{pack}/**/*"]),
 )""".format(pack = pack_name))
 
-
-    ctx.template(
-        "dotnet_wrapper.sh",
-        Label("@my_rules_dotnet//dotnet/private:dotnet_wrapper.tpl.sh"),
-        executable = True,
-        substitutions = {
-            "%dotnet_bin%": str(ctx.path("dotnet"))
-        },
-    )
-
     ctx.template(
         "BUILD.bazel",
-        Label("@my_rules_dotnet//dotnet/private:BUILD.sdk.bazel"),
+        Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),
         executable = False,
         substitutions = {
             "{dotnetos}": dotnetos,
@@ -177,14 +167,14 @@ filegroup(
 
     ctx.template(
         ".nuget/NuGet.Build.config",
-        Label("@my_rules_dotnet//dotnet/private:NuGet.Build.config"),
+        Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.Build.config"),
         executable = False,
         substitutions = {
             "{package_repository}": ".nuget",  # no restore allowed for the Build Config
         },
     )
 
-def _detect_host_platform(ctx):
+def detect_host_platform(ctx):
     if ctx.os.name == "linux":
         # untested
         dotnetos, dotnetarch = "linux", "amd64"

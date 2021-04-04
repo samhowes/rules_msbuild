@@ -20,7 +20,7 @@ BASE_ASSEMBLY_ATTRS = {
         allow_single_file = True,
     ),
     "_restore_template": attr.label(
-        default = Label("//dotnet/private/rules:restore.tpl.proj"),
+        default = Label("//dotnet/private/msbuild:restore.tpl.proj"),
         allow_single_file = True,
     ),
 }

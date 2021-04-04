@@ -1,4 +1,4 @@
-load(":providers.bzl", "DotnetContextInfo")
+load("//dotnet/private:providers.bzl", "DotnetContextInfo")
 
 def _dotnet_context_data_impl(ctx):
     providers = [

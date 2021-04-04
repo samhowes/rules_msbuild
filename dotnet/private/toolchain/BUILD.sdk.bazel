@@ -8,6 +8,11 @@ declare_toolchains(
     builder = ":builder",
 )
 
+filegroup(
+    name = "dotnet_bin",
+    srcs = ["dotnet{exe}"],
+)
+
 dotnet_sdk(
     name = "dotnet_sdk",
     all_files = ":all_files",

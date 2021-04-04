@@ -9,17 +9,24 @@
   </PropertyGroup>
 
   <!--  https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview -->
-  <Import Project="Sdk.props" Sdk="{sdk}" />
+  {sdk_props}
 
   <PropertyGroup>
-    <TargetFramework>{tfm}</TargetFramework>
+    {post_import_msbuild_properties}
   </PropertyGroup>
+
+  <ItemGroup><Compile Remove="**/*" /></ItemGroup>
+
+  <ItemGroup>
+    <!-- Projects/Assemblies -->
+    {references}
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Packages -->
     {package_references}
   </ItemGroup>
 
-  <Import Project="Sdk.targets" Sdk="{sdk}" />
+  {sdk_targets}
 
 </Project>

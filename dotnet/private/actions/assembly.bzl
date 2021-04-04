@@ -1,17 +1,12 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
-load(
-    "//dotnet/private/actions:xml.bzl",
-    "STARTUP_DIR",
-    "element",
-    "inline_element",
-)
+load("//dotnet/private:xml.bzl", "make_compile_file")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load(
     "//dotnet/private/actions:common.bzl",
     "INTERMEDIATE_BASE",
-    "make_dotnet_cmd",
     "make_dotnet_env",
+    "make_dotnet_exec_cmd",
 )
 
 def make_launcher(ctx, toolchain, assembly):
@@ -23,7 +18,7 @@ def make_launcher(ctx, toolchain, assembly):
         sibling = assembly,
     )
 
-    dotnet_env = make_dotnet_env(sdk)
+    dotnet_env = make_dotnet_env(sdk.root_file, sdk.dotnetos)
     launch_data = {
         "dotnet_root": sdk.root_file.dirname,
         "dotnet_bin_path": sdk.dotnet.short_path.split("/", 1)[1],  # ctx.workspace_name + "/" + sdk.dotnet.path,
@@ -111,7 +106,7 @@ def emit_assembly(ctx, sdk, is_executable):
     restore_file, restore_outputs, cmd_outputs = restore(ctx, sdk, intermediate_path, packages)
     all_outputs += cmd_outputs
 
-    compile_file = _make_compile_file(ctx, is_executable, restore_file, references)
+    compile_file = make_compile_file(ctx, is_executable, restore_file, references)
 
     executable_files = []
     if is_executable:
@@ -119,7 +114,7 @@ def emit_assembly(ctx, sdk, is_executable):
         msbuild_outputs += executable_files
         all_outputs += executable_files
 
-    args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "build", compile_file)
+    args, env, cmd_outputs = make_dotnet_exec_cmd(ctx, sdk, "build", compile_file)
     msbuild_outputs += cmd_outputs
     all_outputs += cmd_outputs
 
@@ -178,54 +173,6 @@ def _declare_assembly_files(ctx, output_dir, intermediate_path):
         ]
     ]
     return assembly, pdb, [assembly, pdb, deps], intermediate_files
-
-def _make_compile_file(ctx, is_executable, restore_file, libraries):
-    msbuild_properties = [
-    ]
-
-    if is_executable:
-        msbuild_properties.extend([
-            element("OutputType", "Exe"),
-            element("UseAppHost", "False"),
-        ])
-
-    compile_srcs = [
-        inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
-        for src in depset(ctx.files.srcs).to_list()
-    ]
-
-    references = [
-        element(
-            "Reference",
-            element(
-                "HintPath",
-                paths.join(STARTUP_DIR, f.path),
-            ),
-            {
-                "Include": paths.split_extension(
-                    f.basename,
-                )[0],
-            },
-        )
-        for f in libraries
-    ]
-
-    # todo(#4) add package references
-
-    compile_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
-    sep = "\n    "  # two indents of size 2
-    ctx.actions.expand_template(
-        template = ctx.file._compile_template,
-        output = compile_file,
-        is_executable = False,
-        substitutions = {
-            "{msbuild_properties}": sep.join(msbuild_properties),
-            "{imports}": inline_element("Import", {"Project": restore_file.basename}),
-            "{compile_srcs}": sep.join(compile_srcs),
-            "{references}": sep.join(references),
-        },
-    )
-    return compile_file
 
 def process_deps(deps, tfm):
     """Split deps into assembly references and packages
