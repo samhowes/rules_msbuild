@@ -1,17 +1,9 @@
 """Actions for dotnet restore"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "//dotnet/private/actions:xml.bzl",
-    "STARTUP_DIR",
-    "THIS_DIR",
-    "inline_element",
-    "properties",
-)
-load(
-    "//dotnet/private/actions:common.bzl",
-    "make_dotnet_cmd",
-)
+load("//dotnet/private/msbuild:xml.bzl", "STARTUP_DIR", "prepare_restore_file")
+load("//dotnet/private/actions:common.bzl", "make_dotnet_exec_cmd")
+load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
 
 def restore(ctx, sdk, intermediate_path, packages):
     """Emits an action for generating files necessary for a nuget restore
@@ -24,19 +16,21 @@ def restore(ctx, sdk, intermediate_path, packages):
     Returns:
         a list of files in the package
     """
-    if len(packages) > 0:
-        fail("fial")
     restore_file = _make_restore_file(ctx, sdk, intermediate_path, packages)
 
     outputs = _declare_files(ctx, restore_file, intermediate_path)
 
-    args, env, cmd_outputs = make_dotnet_cmd(ctx, sdk, "restore", restore_file)
+    args, env, cmd_outputs = make_dotnet_exec_cmd(ctx, sdk, "restore", restore_file)
     outputs.extend(cmd_outputs)
+
+    restore_inputs = []
+    for p in packages:
+        restore_inputs.extend(p.all_files.to_list())
 
     ctx.actions.run(
         mnemonic = "NuGetRestore",
         inputs = (
-            [restore_file] +  # todo: maybe include NuSpec files as inputs?
+            [restore_file] + restore_inputs +
             sdk.init_files +
             [sdk.nuget_build_config]
         ),
@@ -72,41 +66,21 @@ def _declare_files(ctx, restore_file, intermediate_path):
     return files
 
 def _make_restore_file(ctx, sdk, intermediate_path, packages):
-    pre_import_msbuild_properties = {
-        "RestoreSources": paths.join(STARTUP_DIR, sdk.root_file.dirname),
-        # this is where nuget creates project.assets.json (and other files) during a restore
-        "BaseIntermediateOutputPath": THIS_DIR + intermediate_path,
-        "IntermediateOutputPath": paths.join(THIS_DIR, intermediate_path),
-        # https://docs.microsoft.com/en-us/visualstudio/msbuild/customize-your-build?view=vs-2019#msbuildprojectextensionspath
-        # this is where nuget looks for a project.assets.json during a build
-        "MSBuildProjectExtensionsPath": THIS_DIR + intermediate_path,
-        # we could just set ProjectAssetsFile here, but we're setting the other properties in case they have other impacts
-        "OutputPath": THIS_DIR + paths.dirname(intermediate_path),
-        "ImportDirectoryBuildProps": "false",
-        "UseSharedCompilation": "false",
-    }
-
-    package_references = [
-        inline_element(
-            "PackageReference",
-            {
-                "Include": p.name,
-                "Version": p.version,
-            },
-        )
-        for p in packages
-    ]
+    build_sdk = DEFAULT_SDK  # todo(#3)
+    substitutions = prepare_restore_file(
+        build_sdk,
+        intermediate_path,
+        [],  # no references needed for the restore
+        packages,
+        paths.join(STARTUP_DIR, sdk.nuget_build_config.path),
+        ctx.attr.target_framework,
+    )
 
     restore_file = ctx.actions.declare_file(ctx.attr.name + ".restore.proj")
     ctx.actions.expand_template(
         template = ctx.file._restore_template,
         output = restore_file,
         is_executable = False,
-        substitutions = {
-            "{pre_import_msbuild_properties}": properties(pre_import_msbuild_properties),
-            "{sdk}": "Microsoft.NET.Sdk",  # todo(#3)
-            "{tfm}": ctx.attr.target_framework,
-            "{package_references}": "\n    ".join(package_references),
-        },
+        substitutions = substitutions,
     )
     return restore_file

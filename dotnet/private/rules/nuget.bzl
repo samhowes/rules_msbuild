@@ -1,61 +1,50 @@
 """Rules for importing nuget packages"""
 
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetPackageInfo")
-
-def fake_nuget_import(name, version):
-    nuget_import(
-        name = name,
-        package_name = name,
-        version = version,
-        is_fake = True,
-    )
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetFilegroupInfo", "NuGetPackageInfo")
 
 def _nuget_import_impl(ctx):
+    tfms = {}
+    all_files = []
+    for target in ctx.attr.frameworks:
+        info = target[NuGetFilegroupInfo]
+        tfms[info.name] = info
+
     return [DotnetLibraryInfo(
         assembly = None,
         pdb = None,
         deps = depset(),
         package_info = NuGetPackageInfo(
             name = ctx.attr.name,
+            packages_folder = paths.join(ctx.label.workspace_root, "packages"),
             version = ctx.attr.version,
-            is_fake = ctx.attr.is_fake,
+            frameworks = struct(**tfms),
+            all_files = depset(ctx.files.all_files),
         ),
     )]
 
-# def _nuget_restore_impl(ctx):
-#     """emits actions for restoring packages for a dotnet assembly"""
-#     files = restore(ctx)
-#     return [
-#         DefaultInfo(files = depset(files)),
-#     ]
-
-# nuget_restore = rule(
-#     _nuget_restore_impl,
-#     attrs = {
-#         "target_frameworks": attr.string_list(mandatory = True, allow_empty = False, doc = "The target frameworks to restore."),
-#         "deps": attr.label_list(
-#             providers = [NugetPreRestoreInfo],
-#         ),
-#         "_restore_template": attr.label(
-#             allow_single_file = True,
-#             default = Label("//dotnet/private/rules:nuget_restore.tpl.proj"),
-#         ),
-#     },
-#     executable = False,
-#     toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
-# )
+def _nuget_filegroup_impl(ctx):
+    return [NuGetFilegroupInfo(
+        name = ctx.attr.name,
+        compile = depset(ctx.files.compile),
+        runtime = depset(ctx.files.runtime),
+    )]
 
 nuget_import = rule(
     _nuget_import_impl,
     attrs = {
-        "package_name": attr.string(mandatory = True),
         "version": attr.string(mandatory = True),
-        "is_fake": attr.bool(
-            default = False,
-            mandatory = True,
-            doc = "Indicates whether this is a placeholder import for bootstrapping. After a fetch, this import will be replaced with a 'real' import.",
-        ),
+        "frameworks": attr.label_list(mandatory = True, providers = [NuGetFilegroupInfo]),
+        "all_files": attr.label_list(mandatory = True, allow_files = True),
     },
     executable = False,
     toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
+)
+
+nuget_filegroup = rule(
+    _nuget_filegroup_impl,
+    attrs = {
+        "compile": attr.label_list(doc = "Assemblies that are inputs to the compiler.", allow_files = True),
+        "runtime": attr.label_list(doc = "Files that are copied to the output directory.", allow_files = True),
+    },
 )

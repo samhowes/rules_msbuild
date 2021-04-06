@@ -31,7 +31,7 @@ load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
-load("//:deps.bzl", "py_deps")
+load("//deps:py_deps.bzl", "py_deps")
 
 py_deps()
 
@@ -52,10 +52,6 @@ dotnet_rules_dependencies()
 
 dotnet_register_toolchains(version = "3.1.100")
 
-load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_config")
+load("//deps:nuget_deps.bzl", "nuget_deps")
 
-nuget_config(
-    package_specs = [
-        "CommandLineParser:2.8.0",
-    ],
-)
+nuget_deps()

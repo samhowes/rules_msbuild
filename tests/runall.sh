@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set +e
+set -e
 
 report=""
 exit_status=0
@@ -10,26 +10,24 @@ function run() {
   this_str=$*
   printf -v report "%s%s: %s\n" "$report" "$this_str" "$this_exit"
   ((exit_status = exit_status || this_exit))
+
+  return $this_exit
 }
 
 # if these don't build, nothing will
-run bazel build //tests/sanity //tests/HelloBazel
+bazel build //tests/sanity //tests/examples/HelloBazel
 
-run bazel test //tests/HelloBazel:all \
-  //tests/ClassLibrary:all \
-  //tests/Dependent:all \
-  //tests/Transitive/... \
+bazel test //tests/examples/... \
   //tests/dotnet/...
 
-
 # targets that __must__ be run by itself
-run bazel build //tests/sandboxing/parallel
+bazel build //tests/sandboxing/parallel
 
 # todo(#12) remove this call
-run dotnet test tests/dotnet/tools/builder
-run dotnet test tests/dotnet/tools/runfiles
+dotnet test tests/dotnet/tools/builder
+dotnet test tests/dotnet/tools/runfiles
 
-echo -e "\n\n============================================ TEST REPORT ================================================="
-echo -n "$report"
-echo -e "Exiting with status: $exit_status"
+#echo -e "\n\n============================================ TEST REPORT ================================================="
+#echo -n "$report"
+#echo -e "Exiting with status: $exit_status"
 exit $exit_status

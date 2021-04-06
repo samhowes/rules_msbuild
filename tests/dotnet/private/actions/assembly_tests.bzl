@@ -22,7 +22,7 @@ def _process_deps_fake_rule_impl(ctx):
         NuGetPackageInfo(
             name = name,
             version = version,
-            is_fake = True,
+            frameworks = {},
         )
         for name, version in ctx.attr.packages.items()
     ]
@@ -77,7 +77,7 @@ def _process_deps_fails_fake_package_test_impl(ctx):
 
     target_under_test = analysistest.target_under_test(env)
 
-    asserts.expect_failure(env, "@nuget//:fetch")
+    asserts.expect_failure(env, "was not fetched")
 
     return analysistest.end(env)
 

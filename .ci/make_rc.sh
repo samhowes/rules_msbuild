@@ -4,9 +4,9 @@
 
 cat >.bazelrc <<EOF
 build --announce_rc
-# build --sandbox_debug
+build --sandbox_debug
 build --verbose_failures
-build --keep_going
+# build --keep_going
 test --test_output=all
 try-import %workspace%/buildbuddy.bazelrc
 EOF
