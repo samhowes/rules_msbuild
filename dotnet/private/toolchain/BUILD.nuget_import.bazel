@@ -1,0 +1,16 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_import", "nuget_filegroup")
+
+package(default_visibility = ["//visibility:public"])
+
+nuget_import(
+    name = "{name}",
+    version = "{version}",
+    frameworks = [
+        "{frameworks}",
+    ],
+    all_files = [
+        "{all_files}",
+    ],
+)
+
+{framework_filegroups}

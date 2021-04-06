@@ -1,6 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
-load("//dotnet/private:xml.bzl", "make_compile_file")
+load("//dotnet/private/msbuild:xml.bzl", "make_compile_file")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load(
     "//dotnet/private/actions:common.bzl",
@@ -197,24 +197,20 @@ def process_deps(deps, tfm):
     return references, packages, copied_files
 
 def _collect_files(info, copied_files, tfm, references, packages = None):
-    package = getattr(info, "package_info", None)
-    if package != None:
-        if package.is_fake:
-            # todo(#20): enable JIT NuGet fetch
-            fail("Package dep {} has not been fetched, did you forget to run @nuget//:fetch?".format(package.name + ":" + package.version))
-
-        framework_info = getattr(package.frameworks, tfm, None)
+    pkg = getattr(info, "package_info", None)
+    if pkg != None:
+        framework_info = getattr(pkg.frameworks, tfm, None)
         if framework_info == None:
-            fail("TargetFramework {} was not fetched for package dep {}. Fetched tfms: {}. " +
-                 "Did you forget to run @nuget//:fetch?".format(
+            fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}. " +
+                 "Make sure it is listed in `nuget_fetch` for your workspace.".format(
                      tfm,
-                     package.name + ":" + package.version,
-                     ", ".join([k for k, v in package.frameworks]),
+                     pkg.name + ":" + pkg.version,
+                     ", ".join([k for k, v in pkg.frameworks]),
                  ))
 
-        copied_files.extend(framework_info.assemblies + framework_info.data)
+        copied_files.extend(framework_info.runtime.to_list())
         if packages != None:
-            packages.append(package)
+            packages.append(pkg)
     else:
         copied_files.append(info.assembly)
         if info.pdb != None:

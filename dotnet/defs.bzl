@@ -30,6 +30,11 @@ load(
     _dotnet_tool_binary = "dotnet_tool_binary",
 )
 load(
+    "//dotnet/private/rules:nuget.bzl",
+    _nuget_filegroup = "nuget_filegroup",
+    _nuget_import = "nuget_import",
+)
+load(
     "//dotnet/private/toolchain:nuget.bzl",
     _nuget_fetch = "nuget_fetch",
 )
@@ -39,8 +44,9 @@ dotnet_toolchain = _dotnet_toolchain
 dotnet_sdk = _dotnet_sdk
 
 nuget_fetch = _nuget_fetch
+nuget_import = _nuget_import
+nuget_filegroup = _nuget_filegroup
 
-# See dotnet/providers.md#DotnetSdkInfo for full documentation.
 DotnetSdkInfo = _DotnetSdkInfo
 DotnetLibraryInfo = _DotnetLibraryInfo
 NuGetPackageInfo = _NuGetPackageInfo

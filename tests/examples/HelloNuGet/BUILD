@@ -13,11 +13,13 @@ dotnet_binary(
 binary_test(
     name = "HelloNuGet_test",
     args = ["<3"],
-    expected_files = [
-        "HelloNuGet.pdb",
-        "CommandLineParser.dll",
-        "CommandLineParser.xml",
-    ],
+    expected_files = {
+        "netcoreapp3.1": [
+            "HelloNuGet.dll",
+            "HelloNuGet.pdb",
+            "CommandLine.dll",
+        ],
+    },
     expected_output = "NuGet <3 Bazel",
     target = "HelloNuGet",
 )

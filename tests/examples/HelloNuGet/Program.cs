@@ -27,7 +27,7 @@ namespace Hello
                     HelpText.AutoBuild(parsed);
                     return -1;
                 }
-            )
+            );
             Environment.Exit(result);
         }
     }

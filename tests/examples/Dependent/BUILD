@@ -6,7 +6,7 @@ dotnet_binary(
     srcs = glob(["**/*.cs"]),
     target_framework = "netcoreapp3.1",
     deps = [
-        "//tests/ClassLibrary",
+        "//tests/examples/ClassLibrary",
     ],
 )
 

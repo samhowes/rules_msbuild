@@ -122,16 +122,26 @@ def prepare_restore_file(msbuild_sdk, intermediate_path, references, packages, n
     if tfm != None:
         post_import_msbuild_properties["TargetFramework"] = tfm
 
-    package_references = [
-        inline_element(
-            "PackageReference",
-            {
-                "Include": p.name,
-                "Version": p.version,
-            },
+    package_references = []
+    package_sources = {}
+    for p in packages:
+        package_references.append(
+            inline_element(
+                "PackageReference",
+                {
+                    "Include": p.name,
+                    "Version": p.version,
+                },
+            ),
         )
-        for p in packages
-    ]
+
+        # a package struct won't have workspace_name when we are fetching
+        if hasattr(p, "packages_folder"):
+            if p.packages_folder not in package_sources:
+                package_sources[p.packages_folder] = paths.join(STARTUP_DIR, p.packages_folder)
+
+    if len(package_sources) > 0:
+        post_import_msbuild_properties["RestoreSources"] = ";\n".join(package_sources.values())
 
     props, targets = import_sdk(msbuild_sdk.name, msbuild_sdk.version)
     substitutions = {

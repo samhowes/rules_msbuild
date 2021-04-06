@@ -1,4 +1,4 @@
-load("//dotnet/private/nuget:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
+load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 INTERMEDIATE_BASE = "obj"
@@ -19,7 +19,7 @@ def built_path(ctx, outputs, p, is_directory = False):
 
 def make_dotnet_exec_cmd(ctx, sdk, msbuild_target, proj):
     """Create a command for use during the execution phase"""
-    binlog = False  # todo disable when not debugging the build
+    binlog = False  # todo(#51) disable when not debugging the build
     if True:
         binlog = True
 
@@ -28,13 +28,14 @@ def make_dotnet_exec_cmd(ctx, sdk, msbuild_target, proj):
         sdk.dotnetos,
         proj.path,
         msbuild_target,
+        binlog,
     )
 
     outputs = []
     if binlog_path != None:
-        outputs.append(ctx.actions.declare_file(binlog_path))
+        outputs.append(ctx.actions.declare_file(paths.basename(binlog_path)))
 
-    args = ctx.args()
+    args = ctx.actions.args()
     for arg in arg_list:
         args.add(arg)
     return args, env, outputs
@@ -76,7 +77,7 @@ def make_dotnet_args(msbuild_target, project_path, binlog):
         "-nologo",
     ]
 
-    args_list.append(paths.basename(project_path))
+    args_list.append(project_path)
 
     binlog_path = None
     if binlog:

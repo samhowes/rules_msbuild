@@ -1,5 +1,6 @@
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
-load("sdk_urls.bzl", "DOTNET_SDK_URLS")
+load("//dotnet/private/toolchain:sdk_urls.bzl", "DOTNET_SDK_URLS")
+load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def dotnet_register_toolchains(version = None):
@@ -52,46 +53,23 @@ def _dotnet_download_sdk_impl(ctx):
     if not sdks:
         sdks = DOTNET_SDK_URLS[version]
 
-    #     # If sdks was unspecified, download a full list of files.
-    #     # If version was unspecified, pick the latest version.
-    #     # Even if version was specified, we need to download the file list
-    #     # to find the SHA-256 sum. If we don't have it, Bazel won't cache
-    #     # the downloaded archive.
-    #     if not version:
-    #         ctx.report_progress("Finding latest Go version")
-    #     else:
-    #         ctx.report_progress("Finding Go SHA-256 sums")
-    #     ctx.download(
-    #         url = [
-    #             "https://golang.org/dl/?mode=json&include=all",
-    #             "https://golang.google.cn/dl/?mode=json&include=all",
-    #         ],
-    #         output = "versions.json",
-    #     )
-
-    #     data = ctx.read("versions.json")
-    #     sdks_by_version = _parse_versions_json(data)
-
-    #     if not version:
-    #         highest_version = None
-    #         for v in sdks_by_version.keys():
-    #             pv = _parse_version(v)
-    #             if not pv or _version_is_prerelease(pv):
-    #                 # skip parse errors and pre-release versions
-    #                 continue
-    #             if not highest_version or _version_less(highest_version, pv):
-    #                 highest_version = pv
-    #         if not highest_version:
-    #             fail("did not find any Go versions in https://golang.org/dl/?mode=json")
-    #         version = _version_string(highest_version)
-    #     if version not in sdks_by_version:
-    #         fail("did not find version {} in https://golang.org/dl/?mode=json".format(version))
-    #     sdks = sdks_by_version[version]
-
     if platform not in sdks:
         fail("unsupported platform {}".format(platform))
     filename, sha256 = sdks[platform]
     _remote_sdk(ctx, [filename], ctx.attr.strip_prefix, sha256)
+
+    substitutions = prepare_nuget_config(
+        # This folder won't ever exist, but we'll give NuGet something to point at
+        ".nuget/packages",
+        False,  # no fetch allowed at build time
+        {},  # don't even add sources, just in case
+    )
+    ctx.template(
+        ".nuget/NuGet.Build.Config",
+        Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),
+        executable = False,
+        substitutions = substitutions,
+    )
 
     # create dotnet init files so dotnet doesn't noisily print them out on the first build
     init_files = [
@@ -162,15 +140,6 @@ filegroup(
             "{pack_labels}": ",\n        ".join(pack_labels),
             "{dynamics}": "\n".join(dynamics),
             "{dynamic_targets}": ",\n        ".join(dynamic_targets),
-        },
-    )
-
-    ctx.template(
-        ".nuget/NuGet.Build.config",
-        Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.Build.config"),
-        executable = False,
-        substitutions = {
-            "{package_repository}": ".nuget",  # no restore allowed for the Build Config
         },
     )
 

@@ -26,7 +26,7 @@ namespace bootstrapper_tests
             <label value=""@nuget//commandlineparser:commandlineparser""/>
         </list>
         <rule-input name=""//:dotnet_context_data""/>
-        <rule-input name=""//dotnet/private/rules:compile.tpl.proj""/>
+        <rule-input name=""//dotnet/private/msbuild:compile.tpl.proj""/>
         <rule-input name=""//tests/HelloNuGet:Program.cs""/>
         <rule-input name=""@nuget//commandlineparser""/>
     </rule>

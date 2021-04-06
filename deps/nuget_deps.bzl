@@ -5,6 +5,5 @@ def nuget_deps():
         name = "nuget",
         packages = {
             "CommandLineParser:2.9.0-preview1": ["netcoreapp3.1"],
-            "Newtonsoft.Json:13.0.1": ["netcoreapp3.1", "netstandard2.0"],
         },
     )

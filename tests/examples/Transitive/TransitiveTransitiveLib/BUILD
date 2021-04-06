@@ -4,5 +4,5 @@ dotnet_library(
     name = "TransitiveTransitiveLib",
     srcs = ["TransitiveTransitiveLibClass.cs"],
     target_framework = "netstandard2.1",
-    visibility = ["//tests/Transitive/TransitiveLib:__pkg__"],
+    visibility = ["//tests/examples/Transitive/TransitiveLib:__pkg__"],
 )

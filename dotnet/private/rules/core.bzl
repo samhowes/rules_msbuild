@@ -16,7 +16,7 @@ BASE_ASSEMBLY_ATTRS = {
     "srcs": attr.label_list(allow_files = [".cs"]),
     "target_framework": TFM_ATTR,
     "_compile_template": attr.label(
-        default = Label("//dotnet/private/rules:compile.tpl.proj"),
+        default = Label("//dotnet/private/msbuild:compile.tpl.proj"),
         allow_single_file = True,
     ),
     "_restore_template": attr.label(

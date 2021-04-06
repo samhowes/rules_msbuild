@@ -21,8 +21,8 @@ NuGetPackageInfo = provider(
     doc = "Package restore information",
     fields = {
         "name": "Package name",
+        "packages_folder": "The packages folder to find this package in. <workspace_name>/packages by convention",
         "version": "A nuget version string",
-        "is_fake": "A boolean indicating if this is a placeholder package for bootstrapping",
         "frameworks": (
             "A struct from a cannonical tfm (e.g. netcoreapp3.1) to NuGetFetchedPackageFrameworkInfo providers " +
             "for framework specific package information. The members of this struct are defined by the *package consumers*, not by " +
@@ -30,6 +30,8 @@ NuGetPackageInfo = provider(
             "the key `netcoreapp3.1` will exist in this struct, *not* netstandard2.0. This matches up with the packages.lock.json and " +
             "allows package consumers to easily access the deps specific to their framework."
         ),
+        "all_files": "depset of All the files that comprise the nuget package. NuGet enumerates these for us each time " +
+                     "it does a restore.",
     },
 )
 
@@ -45,14 +47,12 @@ def MSBuildSdk(name, version):
 
 DEFAULT_SDK = MSBuildSdk("Microsoft.NET.Sdk", None)
 
-NuGetFetchedPackageFrameworkInfo = provider(
-    doc = "NuGetPackage info for a specific framework.",
+NuGetFilegroupInfo = provider(
+    doc = "A group of files for a NuGet package.",
     fields = {
-        "tfm": "The canonical tfm that requested this package.",
-        "assemblies": "depset of files used by consumers to compile.",
-        "data": "List of files that are runtime dependencies of this package (these should be copied to the output directory).",
-        "files": "List of *all* files that comprise this package for this framework. Includes .dll, .xml, other?",
-        "deps": "Depset of NuGetPackageInfo that this package depends on for `tfm`.",
+        "name": "the name of this filegroup",
+        "compile": "depset of files used by consumers to compile.",
+        "runtime": "depset of files to be copied to the output directory by MsBuild.",
     },
 )
 

@@ -1,7 +1,7 @@
 """Actions for dotnet restore"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private:xml.bzl", "prepare_restore_file")
+load("//dotnet/private/msbuild:xml.bzl", "STARTUP_DIR", "prepare_restore_file")
 load("//dotnet/private/actions:common.bzl", "make_dotnet_exec_cmd")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
 
@@ -16,8 +16,6 @@ def restore(ctx, sdk, intermediate_path, packages):
     Returns:
         a list of files in the package
     """
-    if len(packages) > 0:
-        fail("fail")
     restore_file = _make_restore_file(ctx, sdk, intermediate_path, packages)
 
     outputs = _declare_files(ctx, restore_file, intermediate_path)
@@ -25,10 +23,14 @@ def restore(ctx, sdk, intermediate_path, packages):
     args, env, cmd_outputs = make_dotnet_exec_cmd(ctx, sdk, "restore", restore_file)
     outputs.extend(cmd_outputs)
 
+    restore_inputs = []
+    for p in packages:
+        restore_inputs.extend(p.all_files.to_list())
+
     ctx.actions.run(
         mnemonic = "NuGetRestore",
         inputs = (
-            [restore_file] +  # todo: maybe include NuSpec files as inputs?
+            [restore_file] + restore_inputs +
             sdk.init_files +
             [sdk.nuget_build_config]
         ),
@@ -66,9 +68,12 @@ def _declare_files(ctx, restore_file, intermediate_path):
 def _make_restore_file(ctx, sdk, intermediate_path, packages):
     build_sdk = DEFAULT_SDK  # todo(#3)
     substitutions = prepare_restore_file(
-        ctx.attr.target_framework,
+        build_sdk,
         intermediate_path,
-        sdk.nuget_build_config.path,
+        [],  # no references needed for the restore
+        packages,
+        paths.join(STARTUP_DIR, sdk.nuget_build_config.path),
+        ctx.attr.target_framework,
     )
 
     restore_file = ctx.actions.declare_file(ctx.attr.name + ".restore.proj")
