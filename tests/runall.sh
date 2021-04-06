@@ -10,6 +10,8 @@ function run() {
   this_str=$*
   printf -v report "%s%s: %s\n" "$report" "$this_str" "$this_exit"
   ((exit_status = exit_status || this_exit))
+
+  return $this_exit
 }
 
 # if these don't build, nothing will
