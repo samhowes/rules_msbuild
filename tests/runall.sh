@@ -25,7 +25,7 @@ run bazel build //tests/sandboxing/parallel
 run dotnet test tests/dotnet/tools/builder
 run dotnet test tests/dotnet/tools/runfiles
 
-tree -l bazel-my_rules_dotnet/external/nuget | tee bazel-out/nuget.txt
+tree -l "bazel-$(basename "$(pwd)")/external/nuget" | tee bazel-out/nuget.txt
 
 echo -e "\n\n============================================ TEST REPORT ================================================="
 echo -n "$report"
