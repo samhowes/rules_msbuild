@@ -317,7 +317,7 @@ nuget_fetch = repository_rule(
     attrs = {
         "packages": attr.string_list_dict(),
         "dotnet_bin": attr.label(
-            default = Label("@dotnet_sdk//:dotnet"),
+            default = Label("@dotnet_sdk//:dotnet_bin"),
             allow_single_file = True,
             executable = True,
             cfg = "exec",
