@@ -56,7 +56,7 @@ def _nuget_fetch_impl(ctx):
     bin_label = ctx.attr.dotnet_bin
 
     print(ctx.os.name)
-    ext = ".exe" if ctx.os.name == "windows" else ""
+    ext = ".exe" if os == "windows" else ""
     dotnet_path = ctx.path(bin_label.relative(":dotnet" + ext))
     args, env, _ = make_dotnet_cmd(
         str(dotnet_path.dirname),
