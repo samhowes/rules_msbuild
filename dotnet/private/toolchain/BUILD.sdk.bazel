@@ -21,7 +21,7 @@ dotnet_sdk(
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
     init_files = ":init_files",
-    nuget_build_config = ".nuget/NuGet.Build.config",
+    nuget_build_config = "{nuget_config}",
     packs = [
         {pack_labels},
     ],

@@ -1,17 +1,3 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "@my_rules_dotnet//dotnet/private/msbuild:xml.bzl",
-    "STARTUP_DIR",
-    "import_sdk",
-    "inline_element",
-    "prepare_nuget_config",
-    "prepare_restore_file",
-    "project_references",
-)
-load("@my_rules_dotnet//dotnet/private/actions:common.bzl", "make_dotnet_cmd")
-load("@my_rules_dotnet//dotnet/private/toolchain:sdk.bzl", "detect_host_platform")
-load("@my_rules_dotnet//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
-
 """
 Definitions: (some are made up)
 - Canonical Name: The PascalCase name of the package as it would be displayed on a web page, i.e. `CommandLineParser`
@@ -42,6 +28,17 @@ Definitions: (some are made up)
 
 """
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load(
+    "@my_rules_dotnet//dotnet/private/msbuild:xml.bzl",
+    "prepare_nuget_config",
+    "prepare_restore_file",
+    "project_references",
+)
+load("@my_rules_dotnet//dotnet/private/actions:common.bzl", "make_dotnet_cmd")
+load("@my_rules_dotnet//dotnet/private/toolchain:sdk.bzl", "detect_host_platform")
+load("@my_rules_dotnet//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
+
 def _nuget_fetch_impl(ctx):
     config = struct(
         intermediate_base = "_obj",
@@ -56,7 +53,10 @@ def _nuget_fetch_impl(ctx):
     fetch_project = _generate_fetch_project(ctx, config)
     os, _ = detect_host_platform(ctx)
 
-    dotnet_path = ctx.path(ctx.attr.dotnet_bin)
+    bin_label = ctx.attr.dotnet_bin
+
+    ext = ".exe" if ctx.os.name == "windows" else ""
+    dotnet_path = ctx.path(bin_label.relative(":dotnet" + ext))
     args, env, _ = make_dotnet_cmd(
         str(dotnet_path.dirname),
         os,
@@ -318,7 +318,6 @@ nuget_fetch = repository_rule(
         "packages": attr.string_list_dict(),
         "dotnet_bin": attr.label(
             default = Label("@dotnet_sdk//:dotnet_bin"),
-            allow_single_file = True,
             executable = True,
             cfg = "exec",
         ),

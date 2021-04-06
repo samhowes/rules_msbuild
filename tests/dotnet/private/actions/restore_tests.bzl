@@ -16,6 +16,7 @@ def _restore_fake_rule_impl(ctx):
     fake_sdk = DotnetSdkInfo(
         root_file = struct(dirname = "fake_sdk"),
         init_files = [],
+        sdk_files = [],
         nuget_build_config = ctx.file._nuget_config,
         dotnetos = "windows",
         dotnet = "fakedotnet",

@@ -43,8 +43,8 @@ def _import_sdk(name, project_type, version = None):
 
 def import_sdk(name, version = None):
     return (
-        _import_sdk(name, "Props", version),
-        _import_sdk(name, "Targets", version),
+        _import_sdk(name, "props", version),
+        _import_sdk(name, "targets", version),
     )
 
 def project_references(project_paths):

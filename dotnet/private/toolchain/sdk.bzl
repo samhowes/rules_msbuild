@@ -1,7 +1,6 @@
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
 load("//dotnet/private/toolchain:sdk_urls.bzl", "DOTNET_SDK_URLS")
 load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def dotnet_register_toolchains(version = None):
     """See /dotnet/toolchains.md#dotnet-register-toolchains for full documentation."""
@@ -58,6 +57,7 @@ def _dotnet_download_sdk_impl(ctx):
     filename, sha256 = sdks[platform]
     _remote_sdk(ctx, [filename], ctx.attr.strip_prefix, sha256)
 
+    nuget_config = ".nuget/NuGet.Build.Config"
     substitutions = prepare_nuget_config(
         # This folder won't ever exist, but we'll give NuGet something to point at
         ".nuget/packages",
@@ -65,7 +65,7 @@ def _dotnet_download_sdk_impl(ctx):
         {},  # don't even add sources, just in case
     )
     ctx.template(
-        ".nuget/NuGet.Build.Config",
+        nuget_config,
         Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),
         executable = False,
         substitutions = substitutions,
@@ -81,7 +81,7 @@ def _dotnet_download_sdk_impl(ctx):
         ]
     ]
 
-    _sdk_build_file(ctx, platform)
+    _sdk_build_file(ctx, platform, nuget_config)
 
 _dotnet_download_sdk = repository_rule(
     implementation = _dotnet_download_sdk_impl,
@@ -105,7 +105,7 @@ def _remote_sdk(ctx, urls, strip_prefix, sha256):
         sha256 = sha256,
     )
 
-def _sdk_build_file(ctx, platform):
+def _sdk_build_file(ctx, platform, nuget_config):
     """Creates the BUILD file for the downloaded dotnet sdk
 
     Assumes there is only one SDK in this directory, this is accurate for an
@@ -137,6 +137,7 @@ filegroup(
             "{dotnetarch}": dotnetarch,
             "{exe}": ".exe" if dotnetos == "windows" else "",
             "{version}": ctx.attr.version,
+            "{nuget_config}": nuget_config,
             "{pack_labels}": ",\n        ".join(pack_labels),
             "{dynamics}": "\n".join(dynamics),
             "{dynamic_targets}": ",\n        ".join(dynamic_targets),
