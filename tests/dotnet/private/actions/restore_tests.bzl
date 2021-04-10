@@ -4,7 +4,8 @@ load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load("//dotnet/private/rules:core.bzl", "ASSEMBLY_ATTRS")
-load("//dotnet/private:providers.bzl", "DotnetSdkInfo", "NuGetPackageInfo")
+load("//dotnet/private:providers.bzl", "DotnetConfigInfo", "DotnetSdkInfo", "NuGetPackageInfo")
+load("//dotnet/private:context.bzl", "dotnet_context")
 
 ### testing support ###
 _RestoreTestInfo = provider(
@@ -17,9 +18,11 @@ def _restore_fake_rule_impl(ctx):
         root_file = struct(dirname = "fake_sdk"),
         init_files = [],
         sdk_files = [],
-        nuget_build_config = ctx.file._nuget_config,
         dotnetos = "windows",
         dotnet = "fakedotnet",
+        config = DotnetConfigInfo(
+            nuget_config = ctx.file._nuget_config,
+        ),
     )
 
     packages = [
@@ -30,7 +33,11 @@ def _restore_fake_rule_impl(ctx):
         )
         for name, version in ctx.attr.packages.items()
     ]
-    restore_file, outputs, cmd_outputs = restore(ctx, fake_sdk, ctx.attr.name + "/intermediate_path", packages)
+    dotnet = dotnet_context(
+        "fake_sdk",
+        "windows",
+    )
+    restore_file, outputs, cmd_outputs = restore(ctx, dotnet, fake_sdk, ctx.attr.name + "/intermediate_path", packages)
     return _RestoreTestInfo(restore_file = restore_file, outputs = outputs)
 
 restore_fake_rule = rule(
