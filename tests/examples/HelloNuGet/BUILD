@@ -16,7 +16,6 @@ binary_test(
     expected_files = {
         "netcoreapp3.1": [
             "HelloNuGet.dll",
-            "HelloNuGet.pdb",
             "CommandLine.dll",
         ],
     },

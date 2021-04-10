@@ -1,5 +1,6 @@
 load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "make_launcher")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo")
+load("//dotnet/private:context.bzl", "dotnet_context")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 TFM_ATTR = attr.string(
@@ -33,7 +34,9 @@ ASSEMBLY_ATTRS = dicts.add(BASE_ASSEMBLY_ATTRS, {
 
 def _dotnet_tool_binary_impl(ctx):
     sdk = ctx.attr.sdk[DotnetSdkInfo]
-    assembly, pdb, outputs = emit_assembly(ctx, sdk, True)
+    dotnet = dotnet_context(sdk.root_file.dirname, sdk.dotnetos, None, sdk)
+
+    assembly, pdb, outputs = emit_assembly(ctx, dotnet, sdk, True)
     return [
         DefaultInfo(
             files = depset(outputs),
@@ -41,15 +44,25 @@ def _dotnet_tool_binary_impl(ctx):
         ),
     ]
 
+def _primary_dotnet_context(toolchain):
+    return dotnet_context(
+        toolchain.sdk.root_file.dirname,
+        toolchain.sdk.dotnetos,
+        toolchain._builder,
+        toolchain.sdk,
+    )
+
 def _dotnet_binary_impl(ctx):
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-    assembly, pdb, outputs = emit_assembly(ctx, toolchain.sdk, True)
+    sdk = toolchain.sdk
+    dotnet = _primary_dotnet_context(toolchain)
+    assembly, pdb, outputs = emit_assembly(ctx, dotnet, sdk, True)
 
-    launcher = make_launcher(ctx, toolchain, assembly)
+    launcher = make_launcher(ctx, dotnet, toolchain, assembly)
 
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(files = (
-        toolchain.sdk.all_files +
+        sdk.all_files +
         outputs +
         ctx.files.data
     ))
@@ -64,7 +77,10 @@ def _dotnet_binary_impl(ctx):
 
 def _dotnet_library_impl(ctx):
     toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-    library, pdb, outputs = emit_assembly(ctx, toolchain.sdk, False)
+    sdk = toolchain.sdk
+    dotnet = _primary_dotnet_context(toolchain)
+
+    library, pdb, outputs = emit_assembly(ctx, dotnet, sdk, False)
     return [
         DefaultInfo(
             files = depset(outputs),

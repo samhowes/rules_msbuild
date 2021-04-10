@@ -1,6 +1,10 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
-TAGS = ["manual", "no-cache", "no-remote"]
+TAGS = [
+    "manual",
+    "no-cache",
+    "no-remote",
+]
 
 # BUILD THIS TARGET
 filegroup(
@@ -9,15 +13,15 @@ filegroup(
         ":foo",
         ":run_foo",
     ],
-    tags = TAGS + ["exclusive"]
+    tags = TAGS + ["exclusive"],
 )
 
 # DO NOT BUILD THIS TARGET
 dotnet_binary(
     name = "foo",
     srcs = ["foo.cs"],
+    tags = TAGS,
     target_framework = "netcoreapp3.1",
-    tags = TAGS
 )
 
 # DO NOT BUILD THIS TARGET
@@ -27,7 +31,7 @@ genrule(
     outs = ["run_foo.txt"],
     cmd = "$(location :foo) > $@",
     exec_tools = [":foo"],
-    tags = TAGS
+    tags = TAGS,
 )
 
 # DO NOT ADD ANY OTHER TARGETS

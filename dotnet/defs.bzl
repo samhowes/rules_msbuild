@@ -21,6 +21,7 @@ load(
 )
 load(
     "//dotnet/private/rules:sdk.bzl",
+    _dotnet_config = "dotnet_config",
     _dotnet_sdk = "dotnet_sdk",
 )
 load(
@@ -42,6 +43,7 @@ load(
 declare_toolchains = _declare_toolchains
 dotnet_toolchain = _dotnet_toolchain
 dotnet_sdk = _dotnet_sdk
+dotnet_config = _dotnet_config
 
 nuget_fetch = _nuget_fetch
 nuget_import = _nuget_import

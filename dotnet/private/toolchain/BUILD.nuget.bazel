@@ -1,3 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["{nuget_build_config}"])
+
 exports_files(glob(["packages/**/*"]))

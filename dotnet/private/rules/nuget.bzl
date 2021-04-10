@@ -16,7 +16,6 @@ def _nuget_import_impl(ctx):
         deps = depset(),
         package_info = NuGetPackageInfo(
             name = ctx.attr.name,
-            packages_folder = paths.join(ctx.label.workspace_root, "packages"),
             version = ctx.attr.version,
             frameworks = struct(**tfms),
             all_files = depset(ctx.files.all_files),

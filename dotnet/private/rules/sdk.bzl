@@ -2,6 +2,7 @@
 
 load(
     "//dotnet/private:providers.bzl",
+    "DotnetConfigInfo",
     "DotnetSdkInfo",
 )
 
@@ -11,7 +12,6 @@ def _dotnet_sdk_impl(ctx):
         dotnetos = ctx.attr.dotnetos,
         dotnetarch = ctx.attr.dotnetarch,
         root_file = ctx.file.root_file,
-        nuget_build_config = ctx.file.nuget_build_config,
         sdk_root = ctx.file.sdk_root,
         sdk_files = ctx.files.sdk_files,
         fxr = ctx.files.fxr,
@@ -19,10 +19,20 @@ def _dotnet_sdk_impl(ctx):
         packs = ctx.files.packs,
         init_files = ctx.files.init_files,
         all_files = ctx.files.all_files,
+        config = ctx.attr.config[DotnetConfigInfo],
     )]
+
+def _dotnet_config_impl(ctx):
+    return DotnetConfigInfo(
+        nuget_config = ctx.file.nuget_config,
+        trim_path = ctx.attr.trim_path,
+    )
 
 dotnet_sdk = rule(
     _dotnet_sdk_impl,
+    doc = ("Collects information about a Dotnet SDK. The SDK must have a normal " +
+           "dotnet sdk directory structure."),
+    provides = [DotnetSdkInfo],
     attrs = {
         "dotnetos": attr.string(
             mandatory = True,
@@ -41,10 +51,6 @@ dotnet_sdk = rule(
             mandatory = True,
             allow_files = True,
             doc = "The dotnet init files, these prevent noisy welcome messages on first build",
-        ),
-        "nuget_build_config": attr.label(
-            mandatory = True,
-            allow_single_file = True,
         ),
         "sdk_root": attr.label(
             mandatory = True,
@@ -88,8 +94,27 @@ dotnet_sdk = rule(
             cfg = "exec",
             doc = "The dotnet binary",
         ),
+        "config": attr.label(
+            mandatory = True,
+            providers = [DotnetConfigInfo],
+            doc = "The dotnet_config object for this sdk.",
+        ),
     },
-    doc = ("Collects information about a Dotnet SDK. The SDK must have a normal " +
-           "dotnet sdk directory structure."),
-    provides = [DotnetSdkInfo],
+)
+
+dotnet_config = rule(
+    _dotnet_config_impl,
+    doc = ("Collects configuration information to build a dotnet assembly."),
+    provides = [DotnetConfigInfo],
+    attrs = {
+        "nuget_config": attr.label(
+            mandatory = True,
+            allow_single_file = True,
+            doc = "Build-time nuget.config, configures nuget to not fetch any packages on the internet.",
+        ),
+        "trim_path": attr.string(
+            mandatory = True,
+            doc = "Used by the builder, a path to trim from msbuild outputs.",
+        ),
+    },
 )
