@@ -1,99 +1,69 @@
-
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Linq;
 
 namespace MyRulesDotnet.Tools.Builder
 {
-    class Program
+    public class Program
     {
+        public static bool DebugEnabled = false;
+        public static void Fail(string message)
+        {
+            Console.Error.WriteLine("[Builder] " + message);
+            Environment.Exit(1);
+        }
+
+        public static void Debug(string message)
+        {
+            if (!DebugEnabled) return;
+            Console.WriteLine("[Debug] " + message);
+        }
+        
         static void Main(string[] args)
         {
-            // var r = Runfiles.Create();
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BUILDER_DEBUG")))
+                DebugEnabled = true;
+            
+            var command = args[0];
+            var commandArgsEnd = 1;
+            for (; commandArgsEnd < args.Length; commandArgsEnd++)
+                if (args[commandArgsEnd] == "--") break;
+
+            var commandArgs = args[1..commandArgsEnd];
+            var passthroughArgs = args[(commandArgsEnd + 1)..];
+            
+            switch (command)
+            {
+                case "launcher":
+                    MakeLauncher(commandArgs);
+                    return;
+                case "restore":
+                    PostProcess(commandArgs, passthroughArgs);
+                    return;
+                case "build":
+                    PreProcess(commandArgs, passthroughArgs);
+                    return;
+                default:
+                    Fail($"Unknown command: {command}");
+                    return;
+            }
+        }
+
+        private static void PreProcess(string[] commandArgs, string[] passthroughArgs)
+        {
+            var processor = new OutputProcessor(commandArgs, passthroughArgs);
+            processor.PreProcess();
+        }
+
+        private static void PostProcess(string[] commandArgs, string[] passthroughArgs)
+        {
+            var processor = new OutputProcessor(commandArgs, passthroughArgs);
+            processor.PostProcess();
+        }
+
+        private static void MakeLauncher(string[] args)
+        {
             var factory = new LauncherFactory();
             factory.Create(args);
-        }
-    }
-
-    /// <summary>
-    /// https://docs.google.com/document/d/1z6Xv95CJYNYNYylcRklA6xBeesNLc54dqXfri0z0e14/edit#heading=h.ehp217t4xp3w
-    /// </summary>
-    public class LauncherFactory
-    {
-        // private readonly Runfiles _runfiles;
-
-        public LauncherFactory()
-        {
-            // _runfiles = runfiles;
-        }
-
-        public void Create(string[] args)
-        {
-            var launcherTemplate = new FileInfo(args[0]);
-            if (!launcherTemplate.Exists)
-                throw new Exception($"Launcher template does not exist at '{args[0]}'");
-
-            using var output = new FileInfo(args[1]).OpenWrite();
-            using (var input = launcherTemplate.OpenRead())
-            {
-                input.CopyTo(output);
-            }
-
-            var writer = new LaunchDataWriter()
-                // see: //dotnet/tools/launcher/windows:launcher_main.cc
-                .Add("binary_type", "Dotnet");
-
-            for (int i = 2; i + 1 < args.Length; i++)
-            {
-                writer.Add(args[i], args[i + 1]);
-            }
-
-            writer.Write(output);
-        }
-    }
-
-    public class LaunchDataWriter
-    {
-        private List<(string, string)> _data;
-
-        public LaunchDataWriter()
-        {
-            _data = new List<(string, string)>();
-        }
-
-        public LaunchDataWriter Add(string key, string value)
-        {
-            _data.Add((key,value));
-            return this;
-        }
-
-        public void Write(Stream stream)
-        {
-            var launchDataStart = stream.Position;
-
-            // see @bazel_tools//src/tools/launcher/util/data_parser.cc
-            // a single key-value pair is stored as single set of non-null bytes
-            // the '{key}=' segment is read into a single-byte `char` (ascii)
-            // the '{value}' segment is read into a two-byte "wide char" `wchar_t`
-            // https://docs.microsoft.com/en-us/cpp/cpp/char-wchar-t-char16-t-char32-t?view=msvc-160
-            // https://stackoverflow.com/a/402918/2524934
-            var encoding = Encoding.UTF8;
-
-            foreach (var (key, value) in _data)
-            {
-                var builder = new StringBuilder(key.Length + 1 + value.Length)
-                    .Append(key)
-                    .Append('=')
-                    .Append(value)
-                    .Append('\0');
-
-                stream.Write(encoding.GetBytes(builder.ToString()));
-            }
-
-            Int64 launchDataLength = stream.Position - launchDataStart;
-            stream.Write(BitConverter.GetBytes(launchDataLength));
-            stream.Flush();
         }
     }
 }

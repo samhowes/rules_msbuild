@@ -21,7 +21,6 @@ NuGetPackageInfo = provider(
     doc = "Package restore information",
     fields = {
         "name": "Package name",
-        "packages_folder": "The packages folder to find this package in. <workspace_name>/packages by convention",
         "version": "A nuget version string",
         "frameworks": (
             "A struct from a cannonical tfm (e.g. netcoreapp3.1) to NuGetFetchedPackageFrameworkInfo providers " +
@@ -63,7 +62,6 @@ DotnetSdkInfo = provider(
         "dotnetarch": "The host architecture the SDK was built for.",
         "root_file": "A file in the SDK root directory",
         "init_files": "The init files for dotnet, these prevent dotnet from printing noisy welcome messages",
-        "nuget_build_config": "Build-time nuget.config, should not have network packages. ",
         "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the " +
                      "extracted folder"),
         "sdk_files": ("The files under sdk_root"),
@@ -74,5 +72,14 @@ DotnetSdkInfo = provider(
                   "the execution platform, excluding the dotnet binary file"),
         "dotnet": "The dotnet binary file",
         "all_files": "all sdk files",
+        "config": "the dotnet_config.",
+    },
+)
+
+DotnetConfigInfo = provider(
+    doc = "Provider for dotnet_config",
+    fields = {
+        "nuget_config": "Build-time nuget.config, configures nuget to not fetch any packages on the internet.",
+        "trim_path": "path for the builder to trim to bazelify and unbazelify inputs and outputs of msbuild.",
     },
 )

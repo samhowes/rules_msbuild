@@ -1,8 +1,10 @@
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
 load("//dotnet/private/toolchain:sdk_urls.bzl", "DOTNET_SDK_URLS")
 load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
+load("//dotnet/private/toolchain:nuget.bzl", "NUGET_BUILD_CONFIG")
+load("//dotnet/private/toolchain:common.bzl", "detect_host_platform")
 
-def dotnet_register_toolchains(version = None):
+def dotnet_register_toolchains(version = None, nuget_repo = "nuget"):
     """See /dotnet/toolchains.md#dotnet-register-toolchains for full documentation."""
     sdk_kinds = ("_dotnet_download_sdk")
     existing_rules = native.existing_rules()
@@ -29,6 +31,7 @@ def dotnet_register_toolchains(version = None):
             dotnet_download_sdk(
                 name = "dotnet_sdk",
                 version = version,
+                nuget_repo = nuget_repo,
             )
 
 def dotnet_download_sdk(name, **kwargs):
@@ -57,20 +60,6 @@ def _dotnet_download_sdk_impl(ctx):
     filename, sha256 = sdks[platform]
     _remote_sdk(ctx, [filename], ctx.attr.strip_prefix, sha256)
 
-    nuget_config = ".nuget/NuGet.Build.Config"
-    substitutions = prepare_nuget_config(
-        # This folder won't ever exist, but we'll give NuGet something to point at
-        ".nuget/packages",
-        False,  # no fetch allowed at build time
-        {},  # don't even add sources, just in case
-    )
-    ctx.template(
-        nuget_config,
-        Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),
-        executable = False,
-        substitutions = substitutions,
-    )
-
     # create dotnet init files so dotnet doesn't noisily print them out on the first build
     init_files = [
         ctx.file(".dotnet/{}.{}".format(version, f), "")
@@ -81,7 +70,7 @@ def _dotnet_download_sdk_impl(ctx):
         ]
     ]
 
-    _sdk_build_file(ctx, platform, nuget_config)
+    _sdk_build_file(ctx, platform)
 
 _dotnet_download_sdk = repository_rule(
     implementation = _dotnet_download_sdk_impl,
@@ -92,6 +81,7 @@ _dotnet_download_sdk = repository_rule(
         "urls": attr.string_list(default = ["https://dl.google.com/go/{}"]),  # todo fis this url for dotnet
         "version": attr.string(),
         "strip_prefix": attr.string(default = ""),
+        "nuget_repo": attr.string(mandatory = True),
     },
 )
 
@@ -105,7 +95,7 @@ def _remote_sdk(ctx, urls, strip_prefix, sha256):
         sha256 = sha256,
     )
 
-def _sdk_build_file(ctx, platform, nuget_config):
+def _sdk_build_file(ctx, platform):
     """Creates the BUILD file for the downloaded dotnet sdk
 
     Assumes there is only one SDK in this directory, this is accurate for an
@@ -128,6 +118,9 @@ filegroup(
     srcs = glob(["packs/{pack}/**/*"]),
 )""".format(pack = pack_name))
 
+    # assumes this will be put in <output_base>/external/<sdk_name>
+    this_path = str(ctx.path("").dirname.dirname)
+
     ctx.template(
         "BUILD.bazel",
         Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),
@@ -137,62 +130,18 @@ filegroup(
             "{dotnetarch}": dotnetarch,
             "{exe}": ".exe" if dotnetos == "windows" else "",
             "{version}": ctx.attr.version,
-            "{nuget_config}": nuget_config,
             "{pack_labels}": ",\n        ".join(pack_labels),
+            # sdk deps
             "{dynamics}": "\n".join(dynamics),
             "{dynamic_targets}": ",\n        ".join(dynamic_targets),
+            # dotnet_config
+            "{trim_path}": this_path,
+            # the sdk has an execution time dependency on the primary nuget repo
+            # all nuget repos have a loading time dependency on the dotnet binary that is downloaded with the sdk.
+            # It's almost a circular dependency, but not quite.
+            "{nuget_config}": "@{}//:{}".format(ctx.attr.nuget_repo, NUGET_BUILD_CONFIG),
         },
     )
-
-def detect_host_platform(ctx):
-    if ctx.os.name == "linux":
-        # untested
-        dotnetos, dotnetarch = "linux", "amd64"
-        res = ctx.execute(["uname", "-p"])
-        if res.return_code == 0:
-            uname = res.stdout.strip()
-            if uname == "s390x":
-                dotnetarch = "s390x"
-            elif uname == "i686":
-                dotnetarch = "386"
-
-        # uname -p is not working on Aarch64 boards
-        # or for ppc64le on some distros
-        res = ctx.execute(["uname", "-m"])
-        if res.return_code == 0:
-            uname = res.stdout.strip()
-            if uname == "aarch64":
-                dotnetarch = "arm64"
-            elif uname == "armv6l":
-                dotnetarch = "arm"
-            elif uname == "armv7l":
-                dotnetarch = "arm"
-            elif uname == "ppc64le":
-                dotnetarch = "ppc64le"
-
-        # Default to amd64 when uname doesn't return a known value.
-
-    elif ctx.os.name == "mac os x":
-        #untested
-        dotnetos, dotnetarch = "darwin", "amd64"
-
-        res = ctx.execute(["uname", "-m"])
-        if res.return_code == 0:
-            uname = res.stdout.strip()
-            if uname == "arm64":
-                dotnetarch = "arm64"
-
-        # Default to amd64 when uname doesn't return a known value.
-
-    elif ctx.os.name.startswith("windows"):
-        dotnetos, dotnetarch = "windows", "amd64"
-    elif ctx.os.name == "freebsd":
-        #untested
-        dotnetos, dotnetarch = "freebsd", "amd64"
-    else:
-        fail("Unsupported operating system: " + ctx.os.name)
-
-    return dotnetos, dotnetarch
 
 def _register_toolchains(repo):
     labels = [

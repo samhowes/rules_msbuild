@@ -35,15 +35,18 @@ load(
     "prepare_restore_file",
     "project_references",
 )
-load("@my_rules_dotnet//dotnet/private/actions:common.bzl", "make_dotnet_cmd")
-load("@my_rules_dotnet//dotnet/private/toolchain:sdk.bzl", "detect_host_platform")
+load("//dotnet/private/toolchain:common.bzl", "detect_host_platform")
 load("@my_rules_dotnet//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
+load("@my_rules_dotnet//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
+
+NUGET_BUILD_CONFIG = "NuGet.Build.Config"
 
 def _nuget_fetch_impl(ctx):
     config = struct(
+        fetch_base = "fetch",
         intermediate_base = "_obj",
         packages_folder = "packages",
-        fetch_config = "NuGet.Fetch.Config",
+        fetch_config = ctx.path("NuGet.Fetch.Config"),
         packages_by_tfm = {},  # {tfm:package_list} of requested packages
         packages = {},  # {pkg_name/version:package_info} where keys are in all lowercase
         all_files = [],
@@ -51,25 +54,24 @@ def _nuget_fetch_impl(ctx):
 
     _generate_nuget_configs(ctx, config)
     fetch_project = _generate_fetch_project(ctx, config)
+
     os, _ = detect_host_platform(ctx)
-
-    bin_label = ctx.attr.dotnet_bin
-
-    print(ctx.os.name)
-    ext = ".exe" if os == "windows" else ""
-    dotnet_path = ctx.path(bin_label.relative(":dotnet" + ext))
-    args, env, _ = make_dotnet_cmd(
-        str(dotnet_path.dirname),
+    dotnet = dotnet_context(
+        str(ctx.path(ctx.attr.dotnet_sdk_root).dirname),
         os,
+    )
+
+    args, _ = make_cmd(
+        dotnet,
         paths.basename(str(fetch_project)),
         "restore",
         True,  # todo(#51) determine when to binlog
     )
-    args = [dotnet_path] + args
+    args = [dotnet.path] + args
     ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
     result = ctx.execute(
         args,
-        environment = env,
+        environment = dotnet.env,
         quiet = False,
         working_directory = str(fetch_project.dirname),
     )
@@ -97,6 +99,18 @@ def _generate_nuget_configs(ctx, config):
         substitutions = substitutions,
     )
 
+    substitutions = prepare_nuget_config(
+        config.packages_folder,
+        False,  # no fetch allowed at build time
+        {},  # don't even add sources, just in case
+    )
+    ctx.template(
+        ctx.path(NUGET_BUILD_CONFIG),
+        Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),
+        executable = False,
+        substitutions = substitutions,
+    )
+
 def _generate_fetch_project(ctx, config):
     build_traversal = MSBuildSdk(name = "Microsoft.Build.Traversal", version = "3.0.3")
 
@@ -115,7 +129,7 @@ def _generate_fetch_project(ctx, config):
             tfm,
         )
         ctx.template(
-            ctx.path(proj_name),
+            ctx.path(paths.join(config.fetch_base, proj_name)),
             ctx.attr._tfm_template,
             substitutions = substitutions,
         )
@@ -128,7 +142,7 @@ def _generate_fetch_project(ctx, config):
         config.fetch_config,
         None,  # no tfm for the traversal project
     )
-    fetch_project = ctx.path("nuget.fetch.proj")
+    fetch_project = ctx.path(paths.join(config.fetch_base, "nuget.fetch.proj"))
     ctx.template(
         fetch_project,
         ctx.attr._master_template,
@@ -184,7 +198,7 @@ def _get_filegroup(desc, name):
 def _process_assets_json(ctx, config):
     for tfm, pkg_dict in config.packages_by_tfm.items():
         # reminder: pkg_dict is {pkg_id_lower:struct}
-        path = paths.join(config.intermediate_base, tfm, "project.assets.json")
+        path = paths.join(config.fetch_base, config.intermediate_base, tfm, "project.assets.json")
         assets = json.decode(ctx.read(path))
 
         version = _get(assets, "version")
@@ -290,7 +304,9 @@ def _nuget_file_group(name, groups):
     )
 
 def _generate_build_files(ctx, config):
+    all_all_files = []
     for pkg in config.packages.values():
+        all_all_files.append(pkg.all_files)
         ctx.template(
             ctx.path(paths.join(pkg.name, "BUILD.bazel")),
             ctx.attr._nuget_import_template,
@@ -309,7 +325,9 @@ def _generate_build_files(ctx, config):
         ctx.path("BUILD.bazel"),
         ctx.attr._root_template,
         substitutions = {
+            # todo(#61) explicitly develop the file list.
             "{file_list}": "",
+            "{nuget_build_config}": NUGET_BUILD_CONFIG,
         },
     )
 
@@ -317,8 +335,9 @@ nuget_fetch = repository_rule(
     implementation = _nuget_fetch_impl,
     attrs = {
         "packages": attr.string_list_dict(),
-        "dotnet_bin": attr.label(
-            default = Label("@dotnet_sdk//:dotnet_bin"),
+        # todo(#63) link this to the primary nuget folder if it is not the primary nuget folder
+        "dotnet_sdk_root": attr.label(
+            default = Label("@dotnet_sdk//:ROOT"),
             executable = True,
             cfg = "exec",
         ),

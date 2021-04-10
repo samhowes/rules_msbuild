@@ -1,15 +1,13 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
-load("//dotnet/private/msbuild:xml.bzl", "make_compile_file")
+load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "make_compile_file")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load(
-    "//dotnet/private/actions:common.bzl",
-    "INTERMEDIATE_BASE",
-    "make_dotnet_env",
-    "make_dotnet_exec_cmd",
+    "//dotnet/private:context.bzl",
+    "make_exec_cmd",
 )
 
-def make_launcher(ctx, toolchain, assembly):
+def make_launcher(ctx, dotnet, toolchain, assembly):
     sdk = toolchain.sdk
 
     ext = ".exe" if toolchain.default_dotnetos == "windows" else ""
@@ -18,7 +16,6 @@ def make_launcher(ctx, toolchain, assembly):
         sibling = assembly,
     )
 
-    dotnet_env = make_dotnet_env(sdk.root_file, sdk.dotnetos)
     launch_data = {
         "dotnet_root": sdk.root_file.dirname,
         "dotnet_bin_path": sdk.dotnet.short_path.split("/", 1)[1],  # ctx.workspace_name + "/" + sdk.dotnet.path,
@@ -30,6 +27,7 @@ def make_launcher(ctx, toolchain, assembly):
     if toolchain.default_dotnetos == "windows":
         args = ctx.actions.args()
         args.add(toolchain._builder)
+        args.add("launcher")
         args.add(launcher_template)
         args.add(launcher)
 
@@ -39,7 +37,7 @@ def make_launcher(ctx, toolchain, assembly):
         args.add("dotnet_env")
         args.add(";".join([
             "{}={}".format(k, v)
-            for k, v in dotnet_env.items()
+            for k, v in dotnet.env.items()
         ]))
 
         for k, v in launch_data.items():
@@ -51,6 +49,7 @@ def make_launcher(ctx, toolchain, assembly):
             outputs = [launcher],
             executable = sdk.dotnet,
             arguments = [args],
+            env = dotnet.env,
             tools = [
                 toolchain._builder,
             ],
@@ -62,7 +61,7 @@ def make_launcher(ctx, toolchain, assembly):
         ])
         substitutions["%dotnet_env%"] = "\n".join([
             "export {}=\"{}\"".format(k, v)
-            for k, v in dotnet_env.items()
+            for k, v in dotnet.env.items()
         ])
 
         ctx.actions.expand_template(
@@ -73,7 +72,7 @@ def make_launcher(ctx, toolchain, assembly):
         )
     return launcher
 
-def emit_assembly(ctx, sdk, is_executable):
+def emit_assembly(ctx, dotnet, sdk, is_executable):
     """Compile a dotnet assembly with the provided project template
 
     Args:
@@ -90,7 +89,7 @@ def emit_assembly(ctx, sdk, is_executable):
     all_outputs = []
     msbuild_outputs = []
 
-    deps = getattr(ctx.attr, "deps", [])  # dotnet_tool_binary doesn't have any deps
+    deps = getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
     references, packages, copied_files = process_deps(deps, tfm)
     assembly, pdb, assembly_files, intermediate_files = _declare_assembly_files(ctx, output_path, intermediate_path)
     msbuild_outputs += assembly_files
@@ -103,7 +102,7 @@ def emit_assembly(ctx, sdk, is_executable):
         msbuild_outputs.append(f)
         all_outputs.append(f)
 
-    restore_file, restore_outputs, cmd_outputs = restore(ctx, sdk, intermediate_path, packages)
+    restore_file, restore_outputs, cmd_outputs = restore(ctx, dotnet, sdk, intermediate_path, packages)
     all_outputs += cmd_outputs
 
     compile_file = make_compile_file(ctx, is_executable, restore_file, references)
@@ -114,16 +113,19 @@ def emit_assembly(ctx, sdk, is_executable):
         msbuild_outputs += executable_files
         all_outputs += executable_files
 
-    args, env, cmd_outputs = make_dotnet_exec_cmd(ctx, sdk, "build", compile_file)
+    args, cmd_outputs = make_exec_cmd(dotnet, ctx, "build", compile_file, intermediate_path)
     msbuild_outputs += cmd_outputs
     all_outputs += cmd_outputs
 
-    inputs = (
-        [compile_file, restore_file] +
-        restore_outputs +
-        ctx.files.srcs +
-        copied_files +
-        sdk.init_files
+    inputs = depset(
+        direct = (
+            [compile_file, restore_file] +
+            restore_outputs +
+            ctx.files.srcs +
+            copied_files +
+            sdk.init_files
+        ),
+        transitive = [p.all_files for p in packages],
     )
 
     ctx.actions.run(
@@ -132,7 +134,8 @@ def emit_assembly(ctx, sdk, is_executable):
         outputs = msbuild_outputs,
         executable = sdk.dotnet,
         arguments = [args],
-        env = env,
+        env = dotnet.env,
+        tools = dotnet.tools,
     )
 
     return assembly, pdb, all_outputs

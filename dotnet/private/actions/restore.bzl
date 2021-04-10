@@ -2,11 +2,13 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private/msbuild:xml.bzl", "STARTUP_DIR", "prepare_restore_file")
-load("//dotnet/private/actions:common.bzl", "make_dotnet_exec_cmd")
+load("//dotnet/private:context.bzl", "make_exec_cmd")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
 
-def restore(ctx, sdk, intermediate_path, packages):
+def restore(ctx, dotnet, sdk, intermediate_path, packages):
     """Emits an action for generating files necessary for a nuget restore
+
+    https://docs.microsoft.com/en-us/nuget/concepts/package-installation-process
 
     Args:
         ctx: the ctx of the dotnet rule
@@ -18,9 +20,9 @@ def restore(ctx, sdk, intermediate_path, packages):
     """
     restore_file = _make_restore_file(ctx, sdk, intermediate_path, packages)
 
-    outputs = _declare_files(ctx, restore_file, intermediate_path)
+    outputs = _declare_files(dotnet, ctx, restore_file, intermediate_path)
 
-    args, env, cmd_outputs = make_dotnet_exec_cmd(ctx, sdk, "restore", restore_file)
+    args, cmd_outputs = make_exec_cmd(dotnet, ctx, "restore", restore_file, intermediate_path)
     outputs.extend(cmd_outputs)
 
     restore_inputs = []
@@ -32,17 +34,18 @@ def restore(ctx, sdk, intermediate_path, packages):
         inputs = (
             [restore_file] + restore_inputs +
             sdk.init_files +
-            [sdk.nuget_build_config]
+            [sdk.config.nuget_config]
         ),
         outputs = outputs,
         executable = sdk.dotnet,
         arguments = [args],
-        env = env,
+        env = dotnet.env,
+        tools = dotnet.tools,
     )
 
     return restore_file, outputs + [restore_file], cmd_outputs
 
-def _declare_files(ctx, restore_file, intermediate_path):
+def _declare_files(dotnet, ctx, restore_file, intermediate_path):
     file_names = []
 
     nuget_file_extensions = [
@@ -58,6 +61,22 @@ def _declare_files(ctx, restore_file, intermediate_path):
         "project.assets.json",
     ])
 
+    if dotnet.builder != None:
+        # the builder needs to interpret the paths so our output files can be moved between sandboxes, build machines,
+        # etc. the next invocation will preprocess this path, and remove the ".p" extension, so MsBuild will be none
+        # the wiser. Do nothing if we don't have a builder.
+        for i in range(0, len(file_names)):
+            f = file_names[i]
+
+            dirname = paths.dirname(f)
+            basename = paths.basename(f)
+
+            file_names[i] = paths.join(paths.join(
+                dirname,
+                dotnet.builder_output_dir,
+                basename,
+            ))
+
     files = [
         ctx.actions.declare_file(paths.join(intermediate_path, file_name))
         for file_name in file_names
@@ -72,7 +91,7 @@ def _make_restore_file(ctx, sdk, intermediate_path, packages):
         intermediate_path,
         [],  # no references needed for the restore
         packages,
-        paths.join(STARTUP_DIR, sdk.nuget_build_config.path),
+        paths.join(STARTUP_DIR, sdk.config.nuget_config.path),
         ctx.attr.target_framework,
     )
 
