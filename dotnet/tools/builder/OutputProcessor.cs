@@ -8,6 +8,30 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class ProcessorContext
     {
+        // bazel always sends us POSIX paths
+        private const char BazelPathChar = '/';
+        private readonly bool _normalizePath;
+
+
+        private string NormalizePath(string input)
+        {
+            if (!_normalizePath) return input;
+            return input.Replace('/', Path.DirectorySeparatorChar);
+        }
+
+        // for testing
+        public ProcessorContext() { }
+        public ProcessorContext(string[] commandArgs, string[] passthroughArgs)
+        {
+            _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
+            TargetDirectory = NormalizePath(commandArgs[0]);
+            OutputDirectory = NormalizePath(commandArgs[1]);
+            OutputBase = NormalizePath(commandArgs[2]);
+            ChildCommand = passthroughArgs;
+            // assumes bazel invokes actions at ExecRoot
+            ExecRoot = Directory.GetCurrentDirectory();
+        }
+
         public string TargetDirectory { get; set; }
         public string OutputBase { get; set; }
         public string[] ChildCommand { get; set; }
@@ -15,26 +39,25 @@ namespace MyRulesDotnet.Tools.Builder
         public string ExecRoot { get; set; }
         public string OutputDirectory { get; set; }
     }
-    
+
     public class OutputProcessor
     {
         private readonly ProcessorContext _context;
+
         private const string ExecRoot = "$exec_root$";
         private const string OutputBase = "$output_base$";
 
-        public OutputProcessor(string[] commandArgs, string[] passthroughArgs)
+        protected virtual void Fail(string message)
         {
-            Program.Debug(string.Join("; ", commandArgs));
-            Program.Debug(string.Join("; ", passthroughArgs));
-            _context = new ProcessorContext()
-            {
-                TargetDirectory = commandArgs[0],
-                OutputDirectory = commandArgs[1],
-                OutputBase = commandArgs[2],
-                ChildCommand = passthroughArgs
-            };
+            Program.Fail(message);
         }
-        
+
+        public OutputProcessor(ProcessorContext context)
+        {
+            _context = context;
+        }
+
+
         /// <summary>
         /// Bazelifies the file contents in a target directory from MsBuild by trimming absolute paths.
         /// </summary>
@@ -46,39 +69,52 @@ namespace MyRulesDotnet.Tools.Builder
 
             Directory.CreateDirectory(_context.OutputDirectory);
 
-            var regex = new Regex($"({Regex.Escape(_context.OutputBase)}({Regex.Escape(_context.Suffix)})?)",
+            var regexString = $"(?<output_base>{Regex.Escape(_context.OutputBase)}(?<exec_root>{Regex.Escape(_context.Suffix)})?)";
+
+            // to support files on windows that escape backslashes i.e. json.
+            regexString = regexString.Replace(@"\\", @"\\(\\)?");
+
+            var regex = new Regex(regexString,
                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
             Program.Debug($"Using regex: '{regex}'");
-            
+
             ProcessFiles(_context.TargetDirectory, (info, contents) =>
             {
                 var replaced = regex.Replace(contents,
-                    (match) => match.Groups[2].Success ? ExecRoot : OutputBase);
+                    (match) => match.Groups["exec_root"].Success ? ExecRoot : OutputBase);
                 File.WriteAllText(info.FullName, replaced);
-                
+
                 info.MoveTo(Path.Combine(_context.OutputDirectory, info.Name));
             });
-            
         }
-        
+
         /// <summary>
         /// Debazelifies the file contents in a directory assuming that the files were bazelified by
         /// <see cref="PostProcess"/>.
         /// </summary>
         public void PreProcess()
         {
-             Prepare();
+            Prepare();
 
             var regex = new Regex($@"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})", RegexOptions.Compiled);
+            var escapedOutputBase = _context.OutputBase.Replace(@"\", @"\\");
+            var escapedExecRoot = _context.ExecRoot.Replace(@"\", @"\\");
             ProcessFiles(_context.OutputDirectory, (info, contents) =>
             {
                 var replaced = regex.Replace(contents,
-                    (match) => match.Groups[1].Success ? _context.OutputBase : _context.ExecRoot);
+                    (match) =>
+                    {
+                        var execRoot = match.Groups[2].Success;
+                        return info.Extension switch
+                        {
+                            ".json" => execRoot ? escapedExecRoot : escapedOutputBase,
+                            _ => execRoot ? _context.ExecRoot : _context.OutputBase
+                        };
+                    });
 
                 File.WriteAllText(Path.Combine(_context.TargetDirectory, info.Name), replaced);
-                
             });
-            
+
             RunCommand();
         }
 
@@ -97,24 +133,23 @@ namespace MyRulesDotnet.Tools.Builder
         private void Prepare()
         {
             if (!_context.TargetDirectory.EndsWith("obj"))
-                Program.Fail($"Refusing to process unexpected directory {_context.TargetDirectory}");
+                Fail($"Refusing to process unexpected directory {_context.TargetDirectory}");
 
-            Program.Debug(Directory.GetCurrentDirectory());
             if (Program.DebugEnabled)
+            {
+                Program.Debug(Directory.GetCurrentDirectory());
                 foreach (var entry in Directory.EnumerateDirectories("."))
                     Console.WriteLine(entry);
-
-            // assumes bazel invokes actions at ExecRoot
-            _context.ExecRoot = Directory.GetCurrentDirectory();
+            }
 
             if (!_context.ExecRoot.StartsWith(_context.OutputBase))
-                Program.Fail($"Refusing to process trim_path {_context.OutputBase} that is not a prefix of" +
+                Fail($"Refusing to process trim_path {_context.OutputBase} that is not a prefix of" +
                              $" cwd {_context.ExecRoot}");
 
             _context.Suffix = _context.ExecRoot[_context.OutputBase.Length..];
         }
 
-        private  void RunCommand()
+        protected virtual void RunCommand()
         {
             using var child = new Process
             {
@@ -134,7 +169,7 @@ namespace MyRulesDotnet.Tools.Builder
             child.StartInfo.RedirectStandardError = false;
 
             if (!child.Start())
-                Program.Fail("Failed to start child.");
+                Fail("Failed to start child.");
             child.WaitForExit();
         }
     }
