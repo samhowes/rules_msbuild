@@ -27,12 +27,15 @@ namespace MyRulesDotnet.Tests.Tools
 
     public class OutputProcessorTests : IDisposable
     {
-        private string _contents = @"C:\foo\bar\bam";
+        private readonly string _outputBase = @"C:\foo\bar"; 
         private readonly string _assetsFilepathBase;
         private readonly string _testDir;
         private readonly ProcessorContext _context;
-        private OutputProcessor _processor;
+        private readonly OutputProcessor _processor;
+        private string _contents;
 
+        private string Combine(params string[] parts) => string.Join('\\', parts);
+        
         public OutputProcessorTests()
         {
             _testDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "obj");
@@ -43,9 +46,11 @@ namespace MyRulesDotnet.Tests.Tools
             {
                 TargetDirectory = _testDir,
                 OutputDirectory = Path.Combine(_testDir, "processed"),
-                OutputBase = Path.GetDirectoryName(_contents),
-                ExecRoot = Path.Combine(_contents, "baz")
+                OutputBase = _outputBase,
+                ExecRoot = Combine(_outputBase, "baz")
             };
+            
+            _contents = Combine(_outputBase, "bam");
             _processor = new FakeCommandOutputProcessor(_context);
         }
 
