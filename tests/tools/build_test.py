@@ -45,6 +45,9 @@ class TestBuild(BuildTestCase):
 
                 rpath = "/".join(prefix + [f])
                 fpath = self.location(rpath, external)
+                if fpath is None and not should_exist:
+                    continue
+
                 assert fpath is not None, f'Missing runfile item for {rpath}'
                 message_base = f"\n name: {f}\n runfiles path: {rpath}\n file path: {fpath}"
                 if should_exist:

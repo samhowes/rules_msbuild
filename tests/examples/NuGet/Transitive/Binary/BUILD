@@ -15,7 +15,7 @@ binary_test(
     expected_files = {
         "netcoreapp3.1": [
             "Library.dll",
-            "NewtonSoft.Json.dll",
+            "Newtonsoft.Json.dll",
         ],
     },
     expected_output = "bar",
