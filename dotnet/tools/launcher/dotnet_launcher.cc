@@ -75,6 +75,7 @@ ExitCode DotnetBinaryLauncher::Launch() {
         args[i] = this->EscapeArg(args[i]);
     }
 
+    // todo(#12) prepend args with "exec" or "test"
     return this->LaunchProcess(dotnet_binary, args);
 }
 

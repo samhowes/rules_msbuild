@@ -17,6 +17,8 @@ Definitions: (some are made up)
 - NuGet File Group: A grouping of files in a NuGet package. The group name, i.e. `compile` or `runtime` indicates what
     phase of the build the files are used in.
     https://docs.microsoft.com/en-us/nuget/create-packages/creating-a-package#from-a-convention-based-working-directory
+    Background on reference assemblies vs implementation assemblies:
+    https://github.com/dotnet/standard/blob/master/docs/history/evolution-of-design-time-assemblies.md
     group names:
         - compile: files needed at compile time. Folders seen: `ref`, `lib`. I assume `ref` files are reference
             assemblies that are not needed at runtime.
@@ -25,21 +27,75 @@ Definitions: (some are made up)
             Note: these are not "runfiles", but instead assemblies loaded at runtime i.e. implementation assemblies.
         - build: this group can contain .targets, .props, and other files. These files are used by the project build
             system.
+        - runtimeTargets: files for specific runtimes that are being targeted. Items in this group are identified by
+            runtimes/<rid>/<group>/<tfm>/Package.Name.dll. Tfm in this case is the tfm of the package that supports
+            the tfm being built. i.e. if netcoreapp3.1 is being built, then tfm could refer to netstandard1.6.
+            Example file references:
+                runtimes/opensuse.42.1-x64/native/System.Security.Cryptography.Native.OpenSsl.so
+                runtimes/osx.10.10-x64/native/System.Security.Cryptography.Native.Apple.dylib
 
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
-    "@my_rules_dotnet//dotnet/private/msbuild:xml.bzl",
+    "//dotnet/private/msbuild:xml.bzl",
     "prepare_nuget_config",
-    "prepare_restore_file",
-    "project_references",
+    "prepare_project_file",
 )
 load("//dotnet/private/toolchain:common.bzl", "detect_host_platform")
-load("@my_rules_dotnet//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
-load("@my_rules_dotnet//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
+load("//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
+load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
 NUGET_BUILD_CONFIG = "NuGet.Build.Config"
+
+def _compare_versions(a, b):
+    length = min(len(a.number_parts), len(b.number_parts))
+    for i in range(length):
+        diff = a.number_parts[i] - b.number_parts[i]
+        if diff != 0:
+            return diff
+
+    if len(a.number_parts) == len(b.number_parts):
+        if a.suffix != None:
+            return 1
+        if b.suffix != None:
+            return -1
+        return 0
+
+    return len(a.number_parts) - len(b.number_parts)
+
+def _semantic_version(version_string):
+    version_parts = version_string.split("-")
+    number_parts = [int(p) for p in version_parts[0].split(".")]
+    suffix = None
+    if len(version_parts) > 1:
+        suffix = version_parts[1]
+
+    return struct(
+        string = version_string,
+        number_parts = number_parts,
+        suffix = suffix,
+    )
+
+def _pkg(name, version, pkg_id = None):
+    name_lower = name.lower()
+    version_lower = version.lower()
+    if pkg_id == None:
+        pkg_id = name_lower + "/" + version_lower
+
+    return struct(
+        name = name,
+        name_lower = name_lower,
+        # this field has to be compatible with the NuGetPackageInfo struct
+        version = version,
+        semver = _semantic_version(version_lower),
+        label = "//{}".format(name),
+        pkg_id = pkg_id,
+        frameworks = {},  # dict[tfm: string] string is a filegroup to be written into a build file
+        all_files = [],  # list[str]
+        deps = {},  # dict[tfm: list[pkg]]
+        filegroups = [],
+    )
 
 def _nuget_fetch_impl(ctx):
     config = struct(
@@ -47,8 +103,8 @@ def _nuget_fetch_impl(ctx):
         intermediate_base = "_obj",
         packages_folder = "packages",
         fetch_config = ctx.path("NuGet.Fetch.Config"),
-        packages_by_tfm = {},  # {tfm:package_list} of requested packages
-        packages = {},  # {pkg_name/version:package_info} where keys are in all lowercase
+        packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
+        packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
         all_files = [],
     )
 
@@ -80,7 +136,7 @@ def _nuget_fetch_impl(ctx):
 
     # first we have to collect all the target framework information for each package
     ctx.report_progress("Processing packages")
-    _process_assets_json(ctx, config)
+    _process_assets_json(ctx, dotnet, config)
 
     # once we have the full information for each package, we can write the build file for that package
     ctx.report_progress("Generating build files")
@@ -120,7 +176,7 @@ def _generate_fetch_project(ctx, config):
     for tfm, pkgs in config.packages_by_tfm.items():
         proj_name = tfm + ".proj"
         project_names.append(proj_name)
-        substitutions = prepare_restore_file(
+        substitutions = prepare_project_file(
             DEFAULT_SDK,
             paths.join(config.intermediate_base, tfm),
             [],
@@ -134,10 +190,10 @@ def _generate_fetch_project(ctx, config):
             substitutions = substitutions,
         )
 
-    substitutions = prepare_restore_file(
+    substitutions = prepare_project_file(
         build_traversal,
         paths.join(config.intermediate_base, "traversal"),
-        project_references(project_names),
+        project_names,
         [],
         config.fetch_config,
         None,  # no tfm for the traversal project
@@ -159,25 +215,20 @@ def _process_packages(ctx, config):
 
         requested_name = parts[0]
         version_spec = parts[1]
-        requested_name_lower = requested_name.lower()
-        if requested_name_lower in seen_names:
+
+        # todo(#53) don't count on the Version Spec being a precise version
+        pkg = _pkg(requested_name, version_spec)
+
+        if pkg.name_lower in seen_names:
             # todo(#47)
             fail("Multiple package versions are not supported.")
-        seen_names[requested_name_lower] = True
+        seen_names[pkg.name_lower] = True
 
-        pkg = struct(
-            name = requested_name,
-            version = version_spec,
-            # todo(#53) don't count on the Version Spec being a precise version
-            pkg_id = requested_name_lower + "/" + version_spec.lower(),
-            frameworks = {},
-            all_files = [],
-        )
         config.packages[pkg.pkg_id] = pkg
 
         for tfm in frameworks:
             tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
-            tfm_dict[pkg.name] = pkg
+            tfm_dict[pkg.name_lower] = pkg
 
 def _get(obj, name):
     value = obj.get(name, None)
@@ -195,15 +246,22 @@ def _get_filegroup(desc, name):
     #   `resources` group.
     return None
 
-def _process_assets_json(ctx, config):
-    for tfm, pkg_dict in config.packages_by_tfm.items():
-        # reminder: pkg_dict is {pkg_id_lower:struct}
+def _process_assets_json(ctx, dotnet, config):
+    for tfm, tfm_dict in config.packages_by_tfm.items():
+        # reminder: tfm_dict is {pkg_id_lower:struct}
         path = paths.join(config.fetch_base, config.intermediate_base, tfm, "project.assets.json")
         assets = json.decode(ctx.read(path))
 
         version = _get(assets, "version")
         if version != 3:  # no idea how often this changes
             fail("Unsupported project.assets.json version: {}.".format(version))
+
+        # tfm = netcoreap3.1; tfn = Microsoft.NETCore.App;
+        anchor = assets
+        for part in ["project", "frameworks", tfm, "frameworkReferences"]:
+            anchor = _get(anchor, part)
+        tfn = anchor.keys()[0]
+        overrides = _get_overrides(ctx, dotnet, tfn)
 
         # dict[pkg_id: Object]
         # sha512
@@ -219,19 +277,59 @@ def _process_assets_json(ctx, config):
                 path,
                 "'; '".join(targets.keys()),
             ))
+
+        discovered_deps = {}
+        missing_deps = {}
+        unused_deps = {}
         tfm_pkgs = targets.values()[0]
         for pkg_id, desc in tfm_pkgs.items():
             pkg_id_lower = pkg_id.lower()
-            pkg = config.packages.get(pkg_id_lower, None)
-            if pkg == None:
-                # todo(#52) handle package dependencies
-                # todo(#53) support non-precise version specs
-                fail("[{}] User unspecified packages are not supported.".format(pkg_id))
 
+            pkg_type = desc.pop("type", None)
+            if pkg_type != "package":
+                fail("[{}] Unexpected dependency type {}.".format(pkg_id, pkg_type))
+
+            # todo(#53) support non-precise version specs
+            pkg = config.packages.get(pkg_id_lower, None)
+
+            if pkg == None:
+                # nuspec files can specify version specs, not exact versions, so we'll have to index by package name
+                # and hope for the best.
+                pkg_name, pkg_version = pkg_id.split("/")
+                pkg = _pkg(pkg_name, pkg_version, pkg_id_lower)
+
+                if pkg.name_lower in discovered_deps:
+                    fail("[{}] Multiple versions of the same package in package deps is not supported. " +
+                         "Package name: {}.".format(pkg_id, pkg_name))
+
+                if pkg.name_lower in tfm_dict:
+                    # this isn't very accurate since the user can use whatever casing they want in tfm_dict
+                    # it will help detect automated names though
+                    fail("[{}] Multiple versions of the same package is not supported. " +
+                         "Package name: {}.".format(pkg_id, pkg_name))
+
+                tfm_dict[pkg.name_lower] = pkg
+                config.packages[pkg.pkg_id] = pkg
+                discovered_deps[pkg.name_lower] = pkg
+
+                expecting = missing_deps.pop(pkg.name_lower, [])
+                if len(expecting) > 0:
+                    for expecting_pkg in expecting:
+                        expecting_pkg.deps.setdefault(tfm, []).append(pkg)
+                else:
+                    unused_deps[pkg.name_lower] = True
+
+            # dict[ CanonicalName: VersionString ]
             pkg_deps = desc.pop("dependencies", None)
             if pkg_deps != None:
-                # todo(#52) handle package dependencies
-                fail("[{}] Package dependencies are not supported.".format(pkg_id))
+                for canonical_name, pkg_version in pkg_deps.items():
+                    name_lower = canonical_name.lower()
+                    dep = discovered_deps.get(name_lower, None)
+                    unused_deps.pop(name_lower, None)
+                    if dep == None:
+                        missing_deps.setdefault(name_lower, []).append(pkg)
+                        continue
+                    pkg.deps.setdefault(tfm, []).append(dep)
 
             # list of all files in the package. NuGet needs these to generate downstream project.assets.json files
             # during restore of projects we are actually compiling.
@@ -244,29 +342,37 @@ def _process_assets_json(ctx, config):
                 _package_file_path(config, pkg_id, pkg_id_lower.replace("/", ".") + ".nupkg"),
             )
 
-            pkg_filegroups = []
-            _accumulate_files(pkg_filegroups, config, desc, pkg_id, "compile")
-            _accumulate_files(pkg_filegroups, config, desc, pkg_id, "runtime")
+            if _get_override(overrides, pkg) != None:
+                # we don't need any of these files because they will be present in the sdk itself
+                continue
 
-            build = _get_filegroup(desc, "build")
-            if build != None:
-                # todo(#54)
-                fail("[{}] Packages with a `build` filegroup are not supported.".format(pkg_id))
+            _accumulate_files(pkg.filegroups, config, desc, pkg_id, "compile")
+            _accumulate_files(pkg.filegroups, config, desc, pkg_id, "runtime")
+            _accumulate_files(pkg.filegroups, config, desc, pkg_id, "build", "buildMultiTargeting")
 
             # resource = _get_filegroup(desc, "resource")  # todo(#48)
 
-            desc.pop("type", None)
             remaining = desc.keys()
             if len(remaining) > 0:
                 # todo(#49): support other file groups
                 fail("[{}] Unknown filegroups: {}".format(pkg_id, ", ".join(remaining)))
 
-            pkg.frameworks[tfm] = _nuget_file_group(tfm, pkg_filegroups)
+        if len(unused_deps) > 0:
+            fail("Found unused deps for target framework {}: {}".format(tfm, ", ".join(unused_deps.keys())))
+        if len(missing_deps) > 0:
+            fail("Found packages expecting deps, but didn't find the dep: {}".format("; ".join([
+                "{}: {}".format(pkg_name, ", ".join(expecting))
+                for pkg_name, expecting in missing_deps.items()
+            ])))
+
+        for pkg in tfm_dict.values():
+            override = _get_override(overrides, pkg)
+            pkg.frameworks[tfm] = _nuget_file_group(tfm, pkg.deps.get(tfm, []), pkg.filegroups, override)
 
 def _package_file_path(config, pkg_id, file_path):
     return "//:" + "/".join([config.packages_folder, pkg_id.lower(), file_path])
 
-def _accumulate_files(filegroups_list, config, desc, pkg_id, name):
+def _accumulate_files(filegroups_list, config, desc, pkg_id, *names):
     """Collect a NuGetFileGroup (see definitions).
 
     Args:
@@ -274,16 +380,27 @@ def _accumulate_files(filegroups_list, config, desc, pkg_id, name):
             for `resource` it appears to be a list of locales
     Returns a `_nuget_file_list` fragment for substitution into a BUILD file.
     """
-    parsed_files = _get_filegroup(desc, name)
-    if parsed_files == None:
-        return
-
     labels = []
-    for file in parsed_files:
-        label = _package_file_path(config, pkg_id, file)
-        labels.append(label)
-        config.all_files.append(label)
-    filegroups_list.append(_nuget_file_list(name, labels))
+    primary_name = names[0]
+    for name in names:
+        parsed_files = _get_filegroup(desc, name)
+        if parsed_files == None:
+            continue
+
+        for file in parsed_files:
+            if file.endswith("_._"):
+                # https://stackoverflow.com/a/36338215/2524934
+                # we'll need to include these if we no longer use all_files as an input to the restore target in
+                # assembly.bzl, we might do that for #67
+                continue
+
+            label = _package_file_path(config, pkg_id, file)
+            labels.append(label)
+            config.all_files.append(label)
+
+    if len(labels) == 0:
+        return
+    filegroups_list.append(_nuget_file_list(primary_name, labels))
 
 def _nuget_file_list(name, files):
     return "{name} = [\n        \"{items}\",\n    ],".format(
@@ -292,16 +409,63 @@ def _nuget_file_list(name, files):
     )
 
 # this name is confusing
-def _nuget_file_group(name, groups):
+
+def _nuget_file_group(name, deps, groups, override):
+    deps_string = "\",\n        \"".join([
+        dep.label
+        for dep in deps
+    ])
     format_string = """nuget_filegroup(
     name = "{name}",
+    override_version = {override_version},
+    deps = [{deps}],
     {items}
 )
 """
     return format_string.format(
         name = name,
+        override_version = "\"{}\"".format(override.semver.string) if override != None else None,
+        deps = "\n        \"{}\",\n    ".format(deps_string) if len(deps) > 0 else "",
         items = "\n    ".join(groups),
     )
+
+def _get_override(overrides, pkg):
+    override = overrides.get(pkg.name_lower, None)
+    if override != None and _compare_versions(override.semver, pkg.semver) >= 0:
+        return override
+    return None
+
+def _get_overrides(ctx, dotnet, tfn):
+    """Return a dict[ pkg_id, bool] indicating that pkg_id is overridden by the particular framework.
+
+    PackageOverrides.txt contains a list of packages for a framework that override NuGet packages. This means that if
+    a particular package is requested, and it is listed in PackageOverrides.txt, then NuGet will not restore that
+    package because it is implemented/included by the framework itself.
+    """
+    base_fail = "Cannot find package overrides for tfn {}: ".format(tfn)
+    ref_dir = ctx.path(paths.join(dotnet.sdk_root, "packs", tfn + ".Ref"))
+    dirs = ref_dir.readdir()
+    if len(dirs) != 1:
+        fail(base_fail + "unexpected packs contents: {}".format(tfn, ", ".join(dirs)))
+
+    data_dir = dirs[0].get_child("data")
+    if data_dir.exists != True:
+        fail(base_fail + "data dir does not exist: {}".format(str(data_dir)))
+
+    overrides_file = data_dir.get_child("PackageOverrides.txt")
+    overrides = {}
+    if overrides_file.exists != True:
+        return overrides
+
+    contents = ctx.read(overrides_file)
+    for line in contents.splitlines():
+        # line is CanonicalName|version i.e. System.Net.Http|4.3.0
+        canonical_name, version = line.split("|")
+        pkg_id = canonical_name.lower() + "/" + version.lower()
+        pkg = _pkg(canonical_name, version, pkg_id)
+        overrides[pkg.name.lower()] = pkg
+
+    return overrides
 
 def _generate_build_files(ctx, config):
     all_all_files = []
@@ -342,10 +506,10 @@ nuget_fetch = repository_rule(
             cfg = "exec",
         ),
         "_master_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/msbuild:restore.tpl.proj"),
+            default = Label("@my_rules_dotnet//dotnet/private/msbuild:project.tpl.proj"),
         ),
         "_tfm_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/msbuild:restore.tpl.proj"),
+            default = Label("@my_rules_dotnet//dotnet/private/msbuild:project.tpl.proj"),
         ),
         "_config_template": attr.label(
             default = Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),

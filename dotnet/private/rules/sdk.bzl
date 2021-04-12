@@ -16,9 +16,9 @@ def _dotnet_sdk_impl(ctx):
         sdk_files = ctx.files.sdk_files,
         fxr = ctx.files.fxr,
         shared = ctx.files.shared,
-        packs = ctx.files.packs,
-        init_files = ctx.files.init_files,
-        all_files = ctx.files.all_files,
+        packs = depset(ctx.files.packs),
+        init_files = depset(ctx.files.init_files),
+        all_files = depset(ctx.files.all_files),
         config = ctx.attr.config[DotnetConfigInfo],
     )]
 

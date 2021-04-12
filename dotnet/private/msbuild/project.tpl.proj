@@ -15,7 +15,10 @@
     {post_import_msbuild_properties}
   </PropertyGroup>
 
-  <ItemGroup><Compile Remove="**/*" /></ItemGroup>
+  <ItemGroup>
+    <Compile Remove="**/*" />
+    {compile_srcs}
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Projects/Assemblies -->

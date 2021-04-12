@@ -2,23 +2,22 @@ load("//tests/tools:build_test.bzl", "binary_test")
 load("//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
-    name = "HelloNuGet",
+    name = "Binary",
     srcs = ["Program.cs"],
     target_framework = "netcoreapp3.1",
     deps = [
-        "@nuget//CommandLineParser",
+        "//tests/examples/NuGet/Transitive/Library",
     ],
 )
 
 binary_test(
-    name = "HelloNuGet_test",
-    args = ["<3"],
+    name = "Binary_test",
     expected_files = {
         "netcoreapp3.1": [
-            "HelloNuGet.dll",
-            "CommandLine.dll",
+            "Library.dll",
+            "NewtonSoft.Json.dll",
         ],
     },
-    expected_output = "NuGet <3 Bazel",
-    target = "HelloNuGet",
+    expected_output = "bar",
+    target = "Binary",
 )

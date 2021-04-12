@@ -38,11 +38,19 @@ class TestBuild(BuildTestCase):
             for f in expected_dict[dirname]:
                 assert f is not None
 
+                should_exist = True
+                if f[0] == "!":
+                    should_exist = False
+                    f = f[1:]
+
                 rpath = "/".join(prefix + [f])
                 fpath = self.location(rpath, external)
                 assert fpath is not None, f'Missing runfile item for {rpath}'
-                assert path.exists(fpath), (
-                    f"Missing file: '{f}'\n name: {f}\n runfiles path: {rpath}\n file path: {fpath}")
+                message_base = f"\n name: {f}\n runfiles path: {rpath}\n file path: {fpath}"
+                if should_exist:
+                    assert path.exists(fpath), f"Missing expected file: '{f}'" + message_base
+                else:
+                    assert not path.exists(fpath), f"Expected not to find file: '{f}'" + message_base
 
 
 if __name__ == "__main__":

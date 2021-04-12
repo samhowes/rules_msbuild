@@ -28,6 +28,8 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 def dotnet_context(sdk_root, os, builder = None, sdk = None):
     ext = ".exe" if os == "windows" else ""
     return struct(
+        sdk_root = sdk_root,
+        os = os,
         path = paths.join(sdk_root, "dotnet" + ext),
         env = _make_env(sdk_root, os),
         builder = builder,
@@ -62,7 +64,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_exec_cmd(dotnet, ctx, msbuild_target, proj, intermediate_path):
+def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path):
     """Create a command for use during the execution phase"""
     binlog = False  # todo(#51) disable when not debugging the build
     if True:
@@ -74,6 +76,10 @@ def make_exec_cmd(dotnet, ctx, msbuild_target, proj, intermediate_path):
         msbuild_target,
         binlog,
     )
+
+    # we'll take care of making sure references are built, don't traverse them unnecessarily
+    arg_list.append("/p:BuildProjectReferences=false")
+    arg_list.append("/p:RestoreRecursive=false")
 
     outputs = []
     if binlog_path != None:
@@ -106,11 +112,7 @@ def make_cmd(dotnet, project_path, msbuild_target, binlog = False):
 
     binlog_path = None
     if binlog:
-        binlog_path = project_path + ".binlog"
+        binlog_path = project_path + ".{}.binlog".format(msbuild_target)
         args_list.append("-bl:{}".format(binlog_path))
-
-    # todo
-    # if msbuild_target != "restore":
-    #     args.add("--no-restore")
 
     return args_list, binlog_path
