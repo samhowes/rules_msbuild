@@ -1,6 +1,8 @@
 """Xml Helpers"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
 
 INTERMEDIATE_BASE = "obj"
 STARTUP_DIR = "$(MSBuildStartupDirectory)"
@@ -48,62 +50,49 @@ def import_sdk(name, version = None):
         _import_sdk(name, "targets", version),
     )
 
-def project_references(project_paths):
-    return [
-        inline_element("ProjectReference", {"Include": path})
-        for path in project_paths
-    ]
-
-def make_compile_file(ctx, is_executable, restore_file, libraries):
-    msbuild_properties = [
-    ]
-
+def make_project_file(ctx, intermediate_path, nuget_config, is_executable, dep_files):
+    build_sdk = DEFAULT_SDK  # todo(#3)
+    post_sdk_properties = {}
     if is_executable:
-        msbuild_properties.extend([
-            element("OutputType", "Exe"),
-            element("UseAppHost", "False"),
-        ])
+        post_sdk_properties["OutputType"] = "Exe"
+        post_sdk_properties["UseAppHost"] = "false"
 
-    compile_srcs = [
-        inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
-        for src in depset(ctx.files.srcs).to_list()
-    ]
-
-    references = [
-        element(
-            "Reference",
-            element(
-                "HintPath",
-                paths.join(STARTUP_DIR, f.path),
-            ),
-            {
-                "Include": paths.split_extension(
-                    f.basename,
-                )[0],
-            },
-        )
-        for f in libraries
-    ]
-
-    # todo(#4) add package references
-
-    compile_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
-    sep = "\n    "  # two indents of size 2
-    ctx.actions.expand_template(
-        template = ctx.file._compile_template,
-        output = compile_file,
-        is_executable = False,
-        substitutions = {
-            "{msbuild_properties}": sep.join(msbuild_properties),
-            "{imports}": inline_element("Import", {"Project": restore_file.basename}),
-            "{compile_srcs}": sep.join(compile_srcs),
-            "{references}": sep.join(references),
+    substitutions = prepare_project_file(
+        build_sdk,
+        intermediate_path,
+        [paths.join(STARTUP_DIR, r.path) for r in dep_files.references],
+        dep_files.packages,
+        paths.join(STARTUP_DIR, nuget_config.path),
+        tfm = ctx.attr.target_framework,
+        pre_sdk_properties = {
+            # we'll take care of making sure deps are built, no need to traverse
+            "BuildProjectReferences": "false",
+            "RestoreRecursive": "false",
         },
+        post_sdk_properties = post_sdk_properties,
+        srcs = ctx.files.srcs,
     )
-    return compile_file
 
-def prepare_restore_file(msbuild_sdk, intermediate_path, references, packages, nuget_config_path, tfm = None):
-    pre_import_msbuild_properties = {
+    project_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
+    ctx.actions.expand_template(
+        template = ctx.file._project_template,
+        output = project_file,
+        is_executable = False,
+        substitutions = substitutions,
+    )
+    return project_file
+
+def prepare_project_file(
+        msbuild_sdk,
+        intermediate_path,
+        references,
+        packages,
+        nuget_config_path,
+        tfm = None,
+        pre_sdk_properties = {},
+        post_sdk_properties = {},
+        srcs = []):
+    pre_import_msbuild_properties = dicts.add(pre_sdk_properties, {
         "RestoreConfigFile": nuget_config_path,
         # this is where nuget creates project.assets.json (and other files) during a restore
         "BaseIntermediateOutputPath": THIS_DIR + intermediate_path,
@@ -115,33 +104,43 @@ def prepare_restore_file(msbuild_sdk, intermediate_path, references, packages, n
         "OutputPath": THIS_DIR + paths.dirname(intermediate_path),
         "ImportDirectoryBuildProps": "false",
         "UseSharedCompilation": "false",
-    }
+    })
 
-    post_import_msbuild_properties = {
-    }
+    post_import_msbuild_properties = dicts.add(post_sdk_properties, {})
 
     if tfm != None:
         post_import_msbuild_properties["TargetFramework"] = tfm
 
-    package_references = []
-    for p in packages:
-        package_references.append(
-            inline_element(
-                "PackageReference",
-                {
-                    "Include": p.name,
-                    "Version": p.version,
-                },
-            ),
+    compile_srcs = [
+        inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
+        for src in srcs
+    ]
+
+    project_references = [
+        inline_element("ProjectReference", {"Include": path})
+        for path in references
+    ]
+
+    package_references = [
+        inline_element(
+            "PackageReference",
+            {
+                "Include": p.name,
+                "Version": p.version,
+            },
         )
+        for p in packages
+    ]
 
     props, targets = import_sdk(msbuild_sdk.name, msbuild_sdk.version)
+    sep = "\n    "
     substitutions = {
         "{pre_import_msbuild_properties}": properties(pre_import_msbuild_properties),
         "{sdk_props}": props,
         "{post_import_msbuild_properties}": properties(post_import_msbuild_properties),
-        "{references}": "\n    ".join(references),
-        "{package_references}": "\n    ".join(package_references),
+        "{compile_srcs}": sep.join(compile_srcs),
+        "{references}": sep.join(project_references),
+        "{package_references}": sep.join(package_references),
         "{sdk_targets}": targets,
     }
 

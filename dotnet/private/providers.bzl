@@ -5,13 +5,24 @@ DotnetLibraryInfo = provider(
     doc = "Contains information about a Dotnet library",
     fields = {
         "assembly": "The primary assembly that was compiled",
-        "pdb": "The pdb debug information, if available",
-        "deps": "A depset of DotnetLibraryInfo for this library's dependencies",
-        "package_info": "A NuGetPackageInfo provider if this is a nuget package.",
+        "project_file": "",
+        "runtime": "files (dlls) needed in the output directory for the assembly to run",
+        "package_runtimes": "nuget packages needed in the output directory of a binary at runtime",
+        "build": "files that are inputs to the build process",
     },
 )
 
-# See dotnet/providers.md#DotnetContextInfo for full documentation.
+NuGetFilegroupInfo = provider(
+    doc = "A group of files for a NuGet package.",
+    fields = {
+        "tfm": "the tfm of this filegroup",
+        "override_version": "true if this filegroup has an override",
+        "runtime": "depset of files to be copied to the output directory by MsBuild.",
+        "build": "depset of files that are inputs to the build",
+        "all_dep_files": "depset of all the files that this filegroup depends on",
+    },
+)
+
 DotnetContextInfo = provider(
     doc = "A dotnet context",
     fields = {},
@@ -46,15 +57,6 @@ def MSBuildSdk(name, version):
 
 DEFAULT_SDK = MSBuildSdk("Microsoft.NET.Sdk", None)
 
-NuGetFilegroupInfo = provider(
-    doc = "A group of files for a NuGet package.",
-    fields = {
-        "name": "the name of this filegroup",
-        "compile": "depset of files used by consumers to compile.",
-        "runtime": "depset of files to be copied to the output directory by MsBuild.",
-    },
-)
-
 DotnetSdkInfo = provider(
     doc = "Contains information about the Dotnet SDK used in the toolchain",
     fields = {
@@ -71,7 +73,7 @@ DotnetSdkInfo = provider(
         "tools": ("List of executable files in the SDK built for " +
                   "the execution platform, excluding the dotnet binary file"),
         "dotnet": "The dotnet binary file",
-        "all_files": "all sdk files",
+        "all_files": "depset of all sdk files",
         "config": "the dotnet_config.",
     },
 )

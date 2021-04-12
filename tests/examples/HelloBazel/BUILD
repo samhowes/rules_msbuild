@@ -12,8 +12,8 @@ binary_test(
     name = "HelloBazel_test",
     expected_files = {
         "": [
-            "HelloBazel.csproj.binlog",
-            "HelloBazel.restore.proj.binlog",
+            "HelloBazel.csproj.build.binlog",
+            "HelloBazel.csproj.restore.binlog",
         ],
         "netcoreapp3.1": [
             "HelloBazel.pdb",

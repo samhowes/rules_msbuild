@@ -115,4 +115,6 @@ fi
 # environment variables for the dotnet executable
 %dotnet_env%
 
-$dotnet_bin_path exec "$target_bin_path" "$@"
+dotnet_args="%dotnet_args%"
+# todo(#12) conditionally replace exec with test
+$dotnet_bin_path "$dotnet_args" "$target_bin_path" "$@"

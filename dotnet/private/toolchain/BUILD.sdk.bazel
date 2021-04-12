@@ -56,10 +56,9 @@ filegroup(
 # included because bazel sandboxes these away
 filegroup(
     name = "init_files",
-    srcs = glob(
-        [".dotnet/**/*"],
-        allow_empty = False,
-    ),
+    srcs = [
+        "{init_files}",
+    ],
 )
 
 filegroup(

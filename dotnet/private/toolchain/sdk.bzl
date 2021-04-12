@@ -60,16 +60,6 @@ def _dotnet_download_sdk_impl(ctx):
     filename, sha256 = sdks[platform]
     _remote_sdk(ctx, [filename], ctx.attr.strip_prefix, sha256)
 
-    # create dotnet init files so dotnet doesn't noisily print them out on the first build
-    init_files = [
-        ctx.file(".dotnet/{}.{}".format(version, f), "")
-        for f in [
-            "aspNetCertificateSentinel",
-            "dotnetFirstUseSentinel",
-            "toolpath.sentinel",
-        ]
-    ]
-
     _sdk_build_file(ctx, platform)
 
 _dotnet_download_sdk = repository_rule(
@@ -121,6 +111,19 @@ filegroup(
     # assumes this will be put in <output_base>/external/<sdk_name>
     this_path = str(ctx.path("").dirname.dirname)
 
+    # create dotnet init files so dotnet doesn't noisily print them out on the first build
+    init_files = [
+        ".dotnet/{}.{}".format(ctx.attr.version, f)
+        for f in [
+            "aspNetCertificateSentinel",
+            "dotnetFirstUseSentinel",
+            "toolpath.sentinel",
+        ]
+    ]
+
+    for f in init_files:
+        ctx.file(f, "")
+
     ctx.template(
         "BUILD.bazel",
         Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),
@@ -140,6 +143,7 @@ filegroup(
             # all nuget repos have a loading time dependency on the dotnet binary that is downloaded with the sdk.
             # It's almost a circular dependency, but not quite.
             "{nuget_config}": "@{}//:{}".format(ctx.attr.nuget_repo, NUGET_BUILD_CONFIG),
+            "{init_files}": "\",\n        \"".join(init_files),
         },
     )
 
