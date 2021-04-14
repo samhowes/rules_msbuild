@@ -87,6 +87,9 @@ def emit_assembly(ctx, dotnet, is_executable):
     tfm = ctx.attr.target_framework
     sdk = dotnet.sdk
 
+    #    if not is_precise:
+    output_dir = ctx.actions.declare_directory(output_path)
+
     ### declare and prepare all the build inputs/outputs
     deps = getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
     dep_files = process_deps(deps, ctx.attr.target_framework, is_executable)
@@ -107,7 +110,7 @@ def emit_assembly(ctx, dotnet, is_executable):
         for f in dep_files.copied_files.to_list()
     ]
 
-    outputs = runtime + private + copied_dep_files + cmd_outputs
+    outputs = runtime + private + copied_dep_files + cmd_outputs + [output_dir]
 
     ctx.actions.run(
         mnemonic = "DotnetBuild",
@@ -120,13 +123,13 @@ def emit_assembly(ctx, dotnet, is_executable):
     )
 
     info = DotnetLibraryInfo(
-        assembly = assembly,
+        assembly = output_dir,
         project_file = project_file,
         runtime = depset(runtime + copied_dep_files),
         package_runtimes = dep_files.package_runtimes,
         build = depset(runtime + [project_file], transitive = [dep_files.inputs]),
     )
-    return info, outputs + restore_outputs
+    return info, outputs + restore_outputs, private
 
 def _declare_assembly_files(ctx, output_dir, is_executable):
     name = ctx.attr.name

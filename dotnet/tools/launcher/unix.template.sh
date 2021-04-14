@@ -108,8 +108,8 @@ target_bin_path="$(rlocation %target_bin_path%)"
 dotnet_bin_path="$(rlocation %dotnet_bin_path%)"
 
 if [[ "${DOTNET_LAUNCHER_DEBUG:-}" == 1 ]]; then
-  echo "INFO[dotnet.launcher]: target_bin=target_bin_path"
-  echo "INFO[dotnet.launcher]: dotnet_bin=dotnet_bin_path"
+  echo "INFO[dotnet.launcher]: target_bin=$target_bin_path"
+  echo "INFO[dotnet.launcher]: dotnet_bin=$dotnet_bin_path"
 fi
 
 # environment variables for the dotnet executable

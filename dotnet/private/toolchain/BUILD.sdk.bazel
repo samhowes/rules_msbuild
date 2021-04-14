@@ -24,7 +24,7 @@ dotnet_sdk(
     root_file = "ROOT",
     sdk_files = ":sdk_files",
     sdk_root = "sdk/{version}",
-    shared = ":shared",
+    shared = {shared},
     config = ":dotnet_config",
 )
 
@@ -32,6 +32,7 @@ dotnet_config(
     name = "dotnet_config",
     trim_path = "{trim_path}",
     nuget_config = "{nuget_config}",
+    tfm_mapping = "{tfm_mapping}",
 )
 
 dotnet_tool_binary(

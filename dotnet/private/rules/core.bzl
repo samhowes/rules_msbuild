@@ -42,7 +42,7 @@ def _dotnet_tool_binary_impl(ctx):
     sdk = ctx.attr.sdk[DotnetSdkInfo]
     dotnet = dotnet_context(sdk.root_file.dirname, sdk.dotnetos, None, sdk)
 
-    info, outputs = emit_assembly(ctx, dotnet, True)
+    info, outputs, private = emit_assembly(ctx, dotnet, True)
     return [DefaultInfo(
         files = depset(outputs),
         executable = info.assembly,
@@ -61,16 +61,19 @@ def _primary_dotnet_context(ctx):
 def _make_executable(ctx, test):
     dotnet = _primary_dotnet_context(ctx)
 
-    info, outputs = emit_assembly(ctx, dotnet, True)
+    info, outputs, private = emit_assembly(ctx, dotnet, True)
 
     dotnet_args = ["test"] if test else ["exec"]
     launcher = make_launcher(ctx, dotnet, info.assembly, dotnet_args)
 
+    tfm_runtime = dotnet.sdk.shared[dotnet.sdk.config.tfm_mapping[ctx.attr.target_framework]]
+
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(
-        files = ctx.files.data,
+        files = ctx.files.data + private,
         transitive_files = depset(
             transitive = [
+                tfm_runtime,
                 dotnet.sdk.all_files,
                 info.runtime,
             ],
@@ -93,7 +96,7 @@ def _dotnet_test_impl(ctx):
 
 def _dotnet_library_impl(ctx):
     dotnet = _primary_dotnet_context(ctx)
-    info, outputs = emit_assembly(ctx, dotnet, False)
+    info, outputs, private = emit_assembly(ctx, dotnet, False)
     return [
         DefaultInfo(
             files = depset(outputs),

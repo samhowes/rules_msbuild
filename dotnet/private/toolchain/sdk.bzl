@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
 load("//dotnet/private/toolchain:sdk_urls.bzl", "DOTNET_SDK_URLS")
 load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
@@ -85,6 +86,13 @@ def _remote_sdk(ctx, urls, strip_prefix, sha256):
         sha256 = sha256,
     )
 
+def _make_filegroup(name, glob_path):
+    return """
+filegroup(
+   name = "{name}",
+   srcs = glob(["{path}/**/*"]),
+)""".format(name = name, path = glob_path)
+
 def _sdk_build_file(ctx, platform):
     """Creates the BUILD file for the downloaded dotnet sdk
 
@@ -102,11 +110,7 @@ def _sdk_build_file(ctx, platform):
     for p in packs.readdir():
         pack_name = p.basename
         pack_labels.append("\":{}\"".format(pack_name))
-        dynamics.append("""
-filegroup(
-    name = "{pack}",
-    srcs = glob(["packs/{pack}/**/*"]),
-)""".format(pack = pack_name))
+        dynamics.append(_make_filegroup(pack_name, "packs/" + pack_name))
 
     # assumes this will be put in <output_base>/external/<sdk_name>
     this_path = str(ctx.path("").dirname.dirname)
@@ -124,6 +128,12 @@ filegroup(
     for f in init_files:
         ctx.file(f, "")
 
+    shared = []
+    for d in ctx.path("shared").readdir():
+        # not multi-version safe
+        dynamics.append(_make_filegroup(d.basename, paths.join("shared", d.basename)))
+        shared.append(":" + d.basename)
+
     ctx.template(
         "BUILD.bazel",
         Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),
@@ -134,6 +144,7 @@ filegroup(
             "{exe}": ".exe" if dotnetos == "windows" else "",
             "{version}": ctx.attr.version,
             "{pack_labels}": ",\n        ".join(pack_labels),
+            "{shared}": json.encode_indent(shared, prefix = "    ", indent = "    "),
             # sdk deps
             "{dynamics}": "\n".join(dynamics),
             "{dynamic_targets}": ",\n        ".join(dynamic_targets),
@@ -144,6 +155,7 @@ filegroup(
             # It's almost a circular dependency, but not quite.
             "{nuget_config}": "@{}//:{}".format(ctx.attr.nuget_repo, NUGET_BUILD_CONFIG),
             "{init_files}": "\",\n        \"".join(init_files),
+            "{tfm_mapping}": "@{}//:tfm_mapping".format(ctx.attr.nuget_repo),
         },
     )
 

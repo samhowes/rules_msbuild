@@ -33,6 +33,8 @@ Definitions: (some are made up)
             Example file references:
                 runtimes/opensuse.42.1-x64/native/System.Security.Cryptography.Native.OpenSsl.so
                 runtimes/osx.10.10-x64/native/System.Security.Cryptography.Native.Apple.dylib
+        - resource: appears to be resource dlls for different locales. The value of the dictionary is a dictionary of
+            locales supported.
 
 """
 
@@ -47,6 +49,9 @@ load("//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
 load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
 NUGET_BUILD_CONFIG = "NuGet.Build.Config"
+
+def _pkg_fail(pkg_id, message):
+    fail("[{}] ".format(pkg_id), message)
 
 def _compare_versions(a, b):
     length = min(len(a.number_parts), len(b.number_parts))
@@ -106,6 +111,7 @@ def _nuget_fetch_impl(ctx):
         packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
         packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
         all_files = [],
+        tfm_mapping = {},
     )
 
     _generate_nuget_configs(ctx, config)
@@ -261,6 +267,7 @@ def _process_assets_json(ctx, dotnet, config):
         for part in ["project", "frameworks", tfm, "frameworkReferences"]:
             anchor = _get(anchor, part)
         tfn = anchor.keys()[0]
+        config.tfm_mapping[tfm] = tfn
         overrides = _get_overrides(ctx, dotnet, tfn)
 
         # dict[pkg_id: Object]
@@ -292,6 +299,7 @@ def _process_assets_json(ctx, dotnet, config):
             # todo(#53) support non-precise version specs
             pkg = config.packages.get(pkg_id_lower, None)
 
+            transitive = False
             if pkg == None:
                 # nuspec files can specify version specs, not exact versions, so we'll have to index by package name
                 # and hope for the best.
@@ -308,16 +316,17 @@ def _process_assets_json(ctx, dotnet, config):
                     fail("[{}] Multiple versions of the same package is not supported. " +
                          "Package name: {}.".format(pkg_id, pkg_name))
 
+                transitive = True
                 tfm_dict[pkg.name_lower] = pkg
                 config.packages[pkg.pkg_id] = pkg
-                discovered_deps[pkg.name_lower] = pkg
 
-                expecting = missing_deps.pop(pkg.name_lower, [])
-                if len(expecting) > 0:
-                    for expecting_pkg in expecting:
-                        expecting_pkg.deps.setdefault(tfm, []).append(pkg)
-                else:
-                    unused_deps[pkg.name_lower] = True
+            discovered_deps[pkg.name_lower] = pkg
+            expecting = missing_deps.pop(pkg.name_lower, [])
+            if len(expecting) > 0:
+                for expecting_pkg in expecting:
+                    expecting_pkg.deps.setdefault(tfm, []).append(pkg)
+            elif transitive:
+                unused_deps[pkg.name_lower] = True
 
             # dict[ CanonicalName: VersionString ]
             pkg_deps = desc.pop("dependencies", None)
@@ -350,6 +359,8 @@ def _process_assets_json(ctx, dotnet, config):
             _accumulate_files(pkg.filegroups, config, desc, pkg_id, "runtime")
             _accumulate_files(pkg.filegroups, config, desc, pkg_id, "build", "buildMultiTargeting")
 
+            _accumulate_resources(pkg, config, desc)
+
             # resource = _get_filegroup(desc, "resource")  # todo(#48)
 
             remaining = desc.keys()
@@ -359,10 +370,10 @@ def _process_assets_json(ctx, dotnet, config):
 
         if len(unused_deps) > 0:
             fail("Found unused deps for target framework {}: {}".format(tfm, ", ".join(unused_deps.keys())))
-        if len(missing_deps) > 0:
+        if len(missing_deps) > 0 or False:
             fail("Found packages expecting deps, but didn't find the dep: {}".format("; ".join([
-                "{}: {}".format(pkg_name, ", ".join(expecting))
-                for pkg_name, expecting in missing_deps.items()
+                "{}: {}".format(pkg_name, ", ".join([expecting_pkg.pkg_id for expecting_pkg in expecting_pkg_list]))
+                for pkg_name, expecting_pkg_list in missing_deps.items()
             ])))
 
         for pkg in tfm_dict.values():
@@ -407,6 +418,22 @@ def _nuget_file_list(name, files):
         name = name,
         items = "\",\n        \"".join(files),
     )
+
+def _accumulate_resources(pkg, config, desc):
+    resource = desc.pop("resource", None)
+    if resource == None:
+        return
+
+    files = {}
+    for file, file_desc in resource.items():
+        locale = file_desc.pop("locale", None)
+        if locale == None:
+            _pkg_fail(pkg.pkg_id, "No locale listed for resource file {}".format(file))
+        if len(file_desc.keys()) > 0:
+            _pkg_fail(pkg.pkg_id, "Unkown metadata for resource file {}: {}".format(file, file_desc.keys()))
+
+        files[_package_file_path(config, pkg.pkg_id, file)] = locale
+    pkg.filegroups.append("resource = " + json.encode_indent(files, prefix = "    ", indent = "    "))
 
 # this name is confusing
 
@@ -492,6 +519,7 @@ def _generate_build_files(ctx, config):
             # todo(#61) explicitly develop the file list.
             "{file_list}": "",
             "{nuget_build_config}": NUGET_BUILD_CONFIG,
+            "{tfm_mapping}": json.encode_indent(config.tfm_mapping, prefix = "    ", indent = "    "),
         },
     )
 

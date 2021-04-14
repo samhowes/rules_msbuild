@@ -62,6 +62,7 @@ def _build_test(name, target, expected_files, env):
     native.filegroup(
         name = artifacts,
         srcs = [":" + target],
+        testonly = True,
     )
 
     env = dicts.add(env, {

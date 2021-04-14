@@ -1,4 +1,11 @@
+load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "tfm_mapping")
+
 package(default_visibility = ["//visibility:public"])
+
+tfm_mapping(
+    name = "tfm_mapping",
+    tfm_mapping = {tfm_mapping}
+)
 
 exports_files(["{nuget_build_config}"])
 

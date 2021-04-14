@@ -1,7 +1,7 @@
 """Rules for importing nuget packages"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetFilegroupInfo", "NuGetPackageInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetFilegroupInfo", "NuGetPackageInfo", "TfmMappingInfo")
 
 def _nuget_import_impl(ctx):
     tfms = {}
@@ -27,6 +27,7 @@ def _nuget_filegroup_impl(ctx):
     dep_files = []
     runtime = []
     build_files = []
+    resource_files = []
     for target in ctx.attr.deps:
         pkg = target[NuGetPackageInfo]
         dep_files.append(pkg.all_files)
@@ -36,6 +37,7 @@ def _nuget_filegroup_impl(ctx):
             fail("Package {} has not been restored for target framework {}.".format(target, tfm))
         build_files.append(group.build)
         runtime.append(group.runtime)
+        resource_files.append(group.resource)
 
     override_version = ctx.attr.override_version
     override_version = None if override_version == None or len(override_version) == 0 else override_version
@@ -52,11 +54,18 @@ def _nuget_filegroup_impl(ctx):
             direct = ctx.files.runtime if override_version == None else [],
             transitive = runtime,
         ),
+        resource = depset(
+            direct = ctx.attr.resource.items(),
+            transitive = resource_files,
+        ),
         all_dep_files = depset(
             direct = [],
             transitive = dep_files,
         ),
     )]
+
+def _tfm_mapping_impl(ctx):
+    return [TfmMappingInfo(dict = ctx.attr.tfm_mapping)]
 
 nuget_import = rule(
     _nuget_import_impl,
@@ -83,5 +92,13 @@ nuget_filegroup = rule(
         "build": attr.label_list(doc = "Assemblies that are imported into the project.", allow_files = True),
         "compile": attr.label_list(doc = "Assemblies that are inputs to the compiler.", allow_files = True),
         "runtime": attr.label_list(doc = "Files that are copied to the output directory.", allow_files = True),
+        "resource": attr.label_keyed_string_dict(doc = "Resource files in the form label: locale", allow_files = True),
+    },
+)
+
+tfm_mapping = rule(
+    _tfm_mapping_impl,
+    attrs = {
+        "tfm_mapping": attr.string_dict(mandatory = True),
     },
 )
