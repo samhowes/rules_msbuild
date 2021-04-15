@@ -373,8 +373,9 @@ def _process_assets_json(ctx, dotnet, config):
 
             remaining = desc.keys()
             if len(remaining) > 0:
-                # todo(#49): support other file groups
-                fail("[{}] Unknown filegroups: {}".format(pkg_id, ", ".join(remaining)))
+                # todo(#49): decide if we want to do anything here.
+                # fail("[{}] Unknown filegroups: {}".format(pkg_id, ", ".join(remaining)))
+                pass
 
         if len(unused_deps) > 0:
             fail("Found unused deps for target framework {}: {}".format(tfm, ", ".join(unused_deps.keys())))

@@ -1,12 +1,11 @@
 load("//dotnet:defs.bzl", "dotnet_test")
 
 dotnet_test(
-    name = "RunfilesTest",
+    name = "BuilderTest",
     size = "small",
     srcs = glob(["*.cs"]),
     target_framework = "netcoreapp3.1",
     deps = [
-        "//dotnet/tools/runfiles",
         "@dotnet_sdk//:builder",
         "@nuget//FluentAssertions",
         "@nuget//Microsoft.NET.Test.Sdk",

@@ -42,12 +42,16 @@ def _dotnet_tool_binary_impl(ctx):
     dotnet = dotnet_exec_context(ctx, True)
 
     info, outputs, private = emit_assembly(ctx, dotnet)
-    return [DefaultInfo(
-        files = depset([info.assembly]),
-        executable = info.assembly,
-    ), OutputGroupInfo(
-        all = depset(outputs + private),
-    )]
+    return [
+        DefaultInfo(
+            files = depset([info.assembly]),
+            executable = info.assembly,
+        ),
+        info,
+        OutputGroupInfo(
+            all = depset(outputs + private),
+        ),
+    ]
 
 def _make_executable(ctx, test):
     dotnet = dotnet_exec_context(ctx, True, test)
@@ -75,6 +79,7 @@ def _make_executable(ctx, test):
             runfiles = assembly_runfiles,
             executable = launcher,
         ),
+        info,
         OutputGroupInfo(
             all = depset(outputs + private),
         ),

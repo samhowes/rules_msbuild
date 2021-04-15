@@ -23,10 +23,6 @@ bazel test //tests/examples/... \
 # targets that __must__ be run by itself
 bazel build //tests/sandboxing/parallel
 
-# todo(#12) remove this call
-dotnet test tests/dotnet/tools/builder
-dotnet test tests/dotnet/tools/runfiles
-
 #echo -e "\n\n============================================ TEST REPORT ================================================="
 #echo -n "$report"
 #echo -e "Exiting with status: $exit_status"
