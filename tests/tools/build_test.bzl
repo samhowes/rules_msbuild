@@ -62,6 +62,7 @@ def _build_test(name, target, expected_files, env):
     native.filegroup(
         name = artifacts,
         srcs = [":" + target],
+        output_group = "all",
         testonly = True,
     )
 
@@ -79,6 +80,7 @@ def _build_test(name, target, expected_files, env):
             ":" + target,
             ":" + artifacts,
         ],
+        size = "small",
         deps = [
             "//tests/tools:mypytest",
             "//tests/tools:executable",

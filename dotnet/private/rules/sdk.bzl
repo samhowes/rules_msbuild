@@ -32,6 +32,7 @@ def _dotnet_config_impl(ctx):
         nuget_config = ctx.file.nuget_config,
         trim_path = ctx.attr.trim_path,
         tfm_mapping = ctx.attr.tfm_mapping[TfmMappingInfo].dict,
+        test_logger = ctx.attr.test_logger,
     )
 
 dotnet_sdk = rule(
@@ -124,6 +125,10 @@ dotnet_config = rule(
         "tfm_mapping": attr.label(
             mandatory = True,
             doc = "Used to locate runtime files in the dotnet sdk.",
+        ),
+        "test_logger": attr.label(
+            mandatory = True,
+            doc = "Bazel compatible test logger nuget package",
         ),
     },
 )

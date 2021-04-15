@@ -11,6 +11,8 @@ class BuildTestCase:
     def setup_class(cls):
         cls.target = os.environ.get("TARGET_EXECUTABLE")
         cls.args = os.environ.get("TARGET_EXECUTABLE_ARGS")
+        if cls.args is not None and len(cls.args) == 0:
+            cls.args = None
         if cls.args is not None:
             cls.args = cls.args.split(";")
 

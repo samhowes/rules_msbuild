@@ -75,7 +75,6 @@ nuget_import = rule(
         "all_files": attr.label_list(mandatory = True, allow_files = True),
     },
     executable = False,
-    toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
 )
 
 nuget_filegroup = rule(

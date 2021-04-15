@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetPackageInfo")
 load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "make_project_file")
 load("//dotnet/private/actions:restore.bzl", "restore")
@@ -7,21 +8,30 @@ load(
     "make_exec_cmd",
 )
 
-def make_launcher(ctx, dotnet, assembly, dotnet_args):
+def make_launcher(ctx, dotnet, info):
     sdk = dotnet.sdk
 
     launcher = ctx.actions.declare_file(
         ctx.attr.name + dotnet.ext,
-        sibling = assembly,
+        sibling = info.output_dir,
     )
 
     launch_data = {
         "dotnet_root": sdk.root_file.dirname,
         "dotnet_bin_path": sdk.dotnet.short_path.split("/", 1)[1],
-        "dotnet_args": " ".join(dotnet_args),
-        "target_bin_path": ctx.workspace_name + "/" + assembly.short_path,
+        "dotnet_args": _format_launcher_args([]),
+        "assembly_args": _format_launcher_args([]),
+        "target_bin_path": ctx.workspace_name + "/" + info.assembly.short_path,
         "workspace_name": ctx.workspace_name,
+        "dotnet_cmd": "exec",
+        "dotnet_logger": "junit",
+        "log_path_arg_name": "LogFilePath",
     }
+
+    if getattr(dotnet.config, "is_test", False):
+        launch_data = dicts.add(launch_data, {
+            "dotnet_cmd": "test",
+        })
 
     launcher_template = ctx.file._launcher_template
     if dotnet.os == "windows":
@@ -72,7 +82,10 @@ def make_launcher(ctx, dotnet, assembly, dotnet_args):
         )
     return launcher
 
-def emit_assembly(ctx, dotnet, is_executable):
+def _format_launcher_args(args):
+    return " ".join(["\"{}\"".format(a) for a in args])
+
+def emit_assembly(ctx, dotnet):
     """Compile a dotnet assembly with the provided project template
 
     Args:
@@ -84,19 +97,19 @@ def emit_assembly(ctx, dotnet, is_executable):
     compiliation_mode = ctx.var["COMPILATION_MODE"]
     output_path = ctx.attr.target_framework
     intermediate_path = INTERMEDIATE_BASE
-    tfm = ctx.attr.target_framework
     sdk = dotnet.sdk
 
-    #    if not is_precise:
-    output_dir = ctx.actions.declare_directory(output_path)
+    output_dir = None
+    if not dotnet.config.is_precise:
+        output_dir = ctx.actions.declare_directory(output_path)
 
     ### declare and prepare all the build inputs/outputs
-    deps = getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
-    dep_files = process_deps(deps, ctx.attr.target_framework, is_executable)
-    project_file = make_project_file(ctx, intermediate_path, sdk.config.nuget_config, is_executable, dep_files)
+    deps = dotnet.config.implicit_deps + getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
+    dep_files = process_deps(dotnet, deps)
+    project_file = make_project_file(ctx, intermediate_path, sdk.config.nuget_config, dotnet.config.is_executable, dep_files)
 
     restore_outputs = restore(ctx, dotnet, intermediate_path, project_file, dep_files)
-    assembly, runtime, private = _declare_assembly_files(ctx, output_path, is_executable)
+    assembly, runtime, private = _declare_assembly_files(ctx, output_path, dotnet.config.is_executable)
     args, cmd_outputs = make_exec_cmd(ctx, dotnet, "build", project_file, intermediate_path)
 
     ### collect build inputs/outputs
@@ -110,7 +123,9 @@ def emit_assembly(ctx, dotnet, is_executable):
         for f in dep_files.copied_files.to_list()
     ]
 
-    outputs = runtime + private + copied_dep_files + cmd_outputs + [output_dir]
+    outputs = runtime + private + copied_dep_files + cmd_outputs
+    if output_dir != None:
+        outputs.append(output_dir)
 
     ctx.actions.run(
         mnemonic = "DotnetBuild",
@@ -123,7 +138,8 @@ def emit_assembly(ctx, dotnet, is_executable):
     )
 
     info = DotnetLibraryInfo(
-        assembly = output_dir,
+        assembly = assembly,
+        output_dir = output_dir,
         project_file = project_file,
         runtime = depset(runtime + copied_dep_files),
         package_runtimes = dep_files.package_runtimes,
@@ -154,7 +170,7 @@ def _declare_assembly_files(ctx, output_dir, is_executable):
 
     return assembly, runtime, private
 
-def process_deps(deps, tfm, copy_packages):
+def process_deps(dotnet, deps):
     """Split deps into assembly references and packages
 
     Args:
@@ -165,6 +181,10 @@ def process_deps(deps, tfm, copy_packages):
     Returns:
         references, packages, copied_files
     """
+
+    copy_packages = dotnet.config.is_executable
+    tfm = dotnet.config.tfm
+
     references = []
     packages = []
     package_runtimes = []

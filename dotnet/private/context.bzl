@@ -21,11 +21,38 @@ still want to perform the same fundamental actions with the dotnet binary.
     arguments, the other contexts need an "args" object produced by ctx.actions.args()
 """
 
+load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
 load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
-def dotnet_context(sdk_root, os, builder = None, sdk = None):
+def dotnet_exec_context(ctx, is_executable, is_test = False):
+    toolchain = None
+    implicit_deps = []
+    sdk = getattr(ctx.attr, "sdk", None)  # builder
+    if sdk != None:
+        sdk = sdk[DotnetSdkInfo]
+    else:
+        toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
+        sdk = toolchain.sdk
+
+    if is_test:
+        implicit_deps.append(sdk.config.test_logger)
+
+    return dotnet_context(
+        sdk.root_file.dirname,
+        sdk.dotnetos,
+        None if toolchain == None else toolchain._builder,
+        sdk,
+        tfm = ctx.attr.target_framework,
+        is_executable = is_executable,
+        # todo(73) remove this
+        is_precise = True if toolchain == None else False,
+        implicit_deps = implicit_deps,
+        is_test = is_test,
+    )
+
+def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
     ext = ".exe" if os == "windows" else ""
     return struct(
         sdk_root = sdk_root,
@@ -37,6 +64,9 @@ def dotnet_context(sdk_root, os, builder = None, sdk = None):
         sdk = sdk,
         tools = [builder] if builder != None else [],
         ext = ext,
+        config = struct(
+            **kwargs
+        ),
     )
 
 def _make_env(dotnet_sdk_root, os):
@@ -89,7 +119,7 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path):
     if dotnet.builder != None:
         intermediate_path_full = paths.join(str(proj.dirname), intermediate_path)
         processed_path = paths.join(intermediate_path_full, dotnet.builder_output_dir)
-        args.add(dotnet.builder)
+        args.add(dotnet.builder.path)
         args.add(msbuild_target)
         args.add(intermediate_path_full)
         args.add(processed_path)

@@ -1,6 +1,6 @@
 load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "make_launcher")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo", "NuGetPackageInfo")
-load("//dotnet/private:context.bzl", "dotnet_context")
+load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 TFM_ATTR = attr.string(
@@ -39,32 +39,21 @@ EXECUTABLE_ATTRS = dicts.add(ASSEMBLY_ATTRS, {
 })
 
 def _dotnet_tool_binary_impl(ctx):
-    sdk = ctx.attr.sdk[DotnetSdkInfo]
-    dotnet = dotnet_context(sdk.root_file.dirname, sdk.dotnetos, None, sdk)
+    dotnet = dotnet_exec_context(ctx, True)
 
-    info, outputs, private = emit_assembly(ctx, dotnet, True)
+    info, outputs, private = emit_assembly(ctx, dotnet)
     return [DefaultInfo(
-        files = depset(outputs),
+        files = depset([info.assembly]),
         executable = info.assembly,
+    ), OutputGroupInfo(
+        all = depset(outputs + private),
     )]
 
-def _primary_dotnet_context(ctx):
-    toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
-
-    return dotnet_context(
-        toolchain.sdk.root_file.dirname,
-        toolchain.sdk.dotnetos,
-        toolchain._builder,
-        toolchain.sdk,
-    )
-
 def _make_executable(ctx, test):
-    dotnet = _primary_dotnet_context(ctx)
+    dotnet = dotnet_exec_context(ctx, True, test)
 
-    info, outputs, private = emit_assembly(ctx, dotnet, True)
-
-    dotnet_args = ["test"] if test else ["exec"]
-    launcher = make_launcher(ctx, dotnet, info.assembly, dotnet_args)
+    info, outputs, private = emit_assembly(ctx, dotnet)
+    launcher = make_launcher(ctx, dotnet, info)
 
     tfm_runtime = dotnet.sdk.shared[dotnet.sdk.config.tfm_mapping[ctx.attr.target_framework]]
 
@@ -72,19 +61,22 @@ def _make_executable(ctx, test):
     assembly_runfiles = ctx.runfiles(
         files = ctx.files.data + private,
         transitive_files = depset(
+            [info.output_dir],
             transitive = [
                 tfm_runtime,
                 dotnet.sdk.all_files,
-                info.runtime,
             ],
         ),
     )
     assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
     return [
         DefaultInfo(
-            files = depset(outputs),
+            files = depset([launcher]),
             runfiles = assembly_runfiles,
             executable = launcher,
+        ),
+        OutputGroupInfo(
+            all = depset(outputs + private),
         ),
     ]
 
@@ -95,11 +87,14 @@ def _dotnet_test_impl(ctx):
     return _make_executable(ctx, True)
 
 def _dotnet_library_impl(ctx):
-    dotnet = _primary_dotnet_context(ctx)
-    info, outputs, private = emit_assembly(ctx, dotnet, False)
+    dotnet = dotnet_exec_context(ctx, False)
+    info, outputs, private = emit_assembly(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset(outputs),
+            files = depset([info.assembly]),
+        ),
+        OutputGroupInfo(
+            all = depset(outputs + private),
         ),
         info,
     ]

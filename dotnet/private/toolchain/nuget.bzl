@@ -50,6 +50,52 @@ load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
 NUGET_BUILD_CONFIG = "NuGet.Build.Config"
 
+def _nuget_fetch_impl(ctx):
+    config = struct(
+        fetch_base = "fetch",
+        intermediate_base = "_obj",
+        packages_folder = "packages",
+        fetch_config = ctx.path("NuGet.Fetch.Config"),
+        packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
+        packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
+        all_files = [],
+        tfm_mapping = {},
+    )
+
+    _generate_nuget_configs(ctx, config)
+    fetch_project = _generate_fetch_project(ctx, config)
+
+    os, _ = detect_host_platform(ctx)
+    dotnet = dotnet_context(
+        str(ctx.path(ctx.attr.dotnet_sdk_root).dirname),
+        os,
+    )
+
+    args, _ = make_cmd(
+        dotnet,
+        paths.basename(str(fetch_project)),
+        "restore",
+        True,  # todo(#51) determine when to binlog
+    )
+    args = [dotnet.path] + args
+    ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
+    result = ctx.execute(
+        args,
+        environment = dotnet.env,
+        quiet = False,
+        working_directory = str(fetch_project.dirname),
+    )
+    if result.return_code != 0:
+        fail(result.stdout)
+
+    # first we have to collect all the target framework information for each package
+    ctx.report_progress("Processing packages")
+    _process_assets_json(ctx, dotnet, config)
+
+    # once we have the full information for each package, we can write the build file for that package
+    ctx.report_progress("Generating build files")
+    _generate_build_files(ctx, config)
+
 def _pkg_fail(pkg_id, message):
     fail("[{}] ".format(pkg_id), message)
 
@@ -101,52 +147,6 @@ def _pkg(name, version, pkg_id = None):
         deps = {},  # dict[tfm: list[pkg]]
         filegroups = [],
     )
-
-def _nuget_fetch_impl(ctx):
-    config = struct(
-        fetch_base = "fetch",
-        intermediate_base = "_obj",
-        packages_folder = "packages",
-        fetch_config = ctx.path("NuGet.Fetch.Config"),
-        packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
-        packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
-        all_files = [],
-        tfm_mapping = {},
-    )
-
-    _generate_nuget_configs(ctx, config)
-    fetch_project = _generate_fetch_project(ctx, config)
-
-    os, _ = detect_host_platform(ctx)
-    dotnet = dotnet_context(
-        str(ctx.path(ctx.attr.dotnet_sdk_root).dirname),
-        os,
-    )
-
-    args, _ = make_cmd(
-        dotnet,
-        paths.basename(str(fetch_project)),
-        "restore",
-        True,  # todo(#51) determine when to binlog
-    )
-    args = [dotnet.path] + args
-    ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
-    result = ctx.execute(
-        args,
-        environment = dotnet.env,
-        quiet = False,
-        working_directory = str(fetch_project.dirname),
-    )
-    if result.return_code != 0:
-        fail(result.stdout)
-
-    # first we have to collect all the target framework information for each package
-    ctx.report_progress("Processing packages")
-    _process_assets_json(ctx, dotnet, config)
-
-    # once we have the full information for each package, we can write the build file for that package
-    ctx.report_progress("Generating build files")
-    _generate_build_files(ctx, config)
 
 def _generate_nuget_configs(ctx, config):
     substitutions = prepare_nuget_config(
@@ -222,19 +222,27 @@ def _process_packages(ctx, config):
         requested_name = parts[0]
         version_spec = parts[1]
 
-        # todo(#53) don't count on the Version Spec being a precise version
-        pkg = _pkg(requested_name, version_spec)
+        _record_package(config, seen_names, requested_name, version_spec, frameworks)
 
-        if pkg.name_lower in seen_names:
-            # todo(#47)
-            fail("Multiple package versions are not supported.")
-        seen_names[pkg.name_lower] = True
+    tfms = config.packages_by_tfm.keys()
 
-        config.packages[pkg.pkg_id] = pkg
+    pkg_name, version, tfm = ctx.attr.test_logger.split(":")
+    _record_package(config, seen_names, pkg_name, version, frameworks)
 
-        for tfm in frameworks:
-            tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
-            tfm_dict[pkg.name_lower] = pkg
+def _record_package(config, seen_names, requested_name, version_spec, frameworks):
+    # todo(#53) don't count on the Version Spec being a precise version
+    pkg = _pkg(requested_name, version_spec)
+
+    if pkg.name_lower in seen_names:
+        # todo(#47)
+        fail("Multiple package versions are not supported.")
+    seen_names[pkg.name_lower] = True
+
+    config.packages[pkg.pkg_id] = pkg
+
+    for tfm in frameworks:
+        tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
+        tfm_dict[pkg.name_lower] = pkg
 
 def _get(obj, name):
     value = obj.get(name, None)
@@ -512,10 +520,13 @@ def _generate_build_files(ctx, config):
                 "{all_files}": "\",\n        \"".join(pkg.all_files),
             },
         )
+
+    test_logger = ctx.attr.test_logger.split(":")[0]
     ctx.template(
         ctx.path("BUILD.bazel"),
         ctx.attr._root_template,
         substitutions = {
+            "{test_logger}": test_logger,
             # todo(#61) explicitly develop the file list.
             "{file_list}": "",
             "{nuget_build_config}": NUGET_BUILD_CONFIG,
@@ -527,6 +538,9 @@ nuget_fetch = repository_rule(
     implementation = _nuget_fetch_impl,
     attrs = {
         "packages": attr.string_list_dict(),
+        "test_logger": attr.string(
+            default = "JunitXml.TestLogger:3.0.87:netstandard2.0",
+        ),
         # todo(#63) link this to the primary nuget folder if it is not the primary nuget folder
         "dotnet_sdk_root": attr.label(
             default = Label("@dotnet_sdk//:ROOT"),

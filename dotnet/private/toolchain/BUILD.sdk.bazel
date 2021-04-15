@@ -33,6 +33,7 @@ dotnet_config(
     trim_path = "{trim_path}",
     nuget_config = "{nuget_config}",
     tfm_mapping = "{tfm_mapping}",
+    test_logger = "@{nuget_repo}//:test_logger",
 )
 
 dotnet_tool_binary(

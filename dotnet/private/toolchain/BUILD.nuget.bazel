@@ -7,6 +7,11 @@ tfm_mapping(
     tfm_mapping = {tfm_mapping}
 )
 
+alias(
+    name = "test_logger",
+    actual = "//{test_logger}",
+)
+
 exports_files(["{nuget_build_config}"])
 
 exports_files(glob(["packages/**/*"]))

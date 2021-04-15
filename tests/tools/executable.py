@@ -13,7 +13,7 @@ class Executable(object):
         args = [self.binpath] + (args if args is not None else [])
 
         if env is None:
-            env = {'foo': 'bar'}  # env has to be non-empty otherwise Windows error 87 will be thrown
+            env = {'foo': 'bar'}  # env has to be non-empty otherwise Windows error 87 will be thrown by python
 
         completed = None
         try:

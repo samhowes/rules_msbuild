@@ -16,10 +16,14 @@ binary_test(
     name = "HelloTest_test",
     expected_files = {
         "netcoreapp3.1": [
-            "HelloTest_test.dll",
+            "HelloTest.dll",
             "xunit.assert.dll",
             "xunit.runner.visualstudio.dotnetcore.testadapter.dll",
         ],
+        "netcoreapp3.1/cs": [
+            "Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
+        ],
     },
+    expected_output = "%Total tests: 1\n\\s+Passed: 1",
     target = "HelloTest",
 )

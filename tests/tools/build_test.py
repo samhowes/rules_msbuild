@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from os import environ, path
 
 import pytest
@@ -17,7 +18,12 @@ class TestBuild(BuildTestCase):
     def test_output(self):
         expected_output = EXPECTED_OUTPUT + os.linesep
         code, out, err = self.get_output()
-        assert (code, out, err) == (0, expected_output, '')
+        if expected_output[0] == "%":
+            assert (code, err) == (0, ''), out
+            match = re.search(expected_output[1:], out)
+            assert match is not None, out
+        else:
+            assert (code, out, err) == (0, expected_output, '')
 
     def test_files(self):
         expected: str = environ.get("EXPECTED_FILES")

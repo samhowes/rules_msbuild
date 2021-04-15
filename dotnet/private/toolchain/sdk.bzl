@@ -156,6 +156,7 @@ def _sdk_build_file(ctx, platform):
             "{nuget_config}": "@{}//:{}".format(ctx.attr.nuget_repo, NUGET_BUILD_CONFIG),
             "{init_files}": "\",\n        \"".join(init_files),
             "{tfm_mapping}": "@{}//:tfm_mapping".format(ctx.attr.nuget_repo),
+            "{nuget_repo}": ctx.attr.nuget_repo,
         },
     )
 
