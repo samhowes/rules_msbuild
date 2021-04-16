@@ -127,13 +127,14 @@ class TestLauncher(object):
             env[k] = v
 
         assert "RUNFILES_DIR" in env.keys()
-        assert "RUNFILES_MANIFEST_FILE" in env.keys()
         assert "DOTNET_MULTILEVEL_LOOKUP" in env.keys()
 
         assert env["RUNFILES_DIR"].endswith(BINNAME + ".runfiles")
 
-        # the launcher apparently always uses forward slashes for this one
-        assert env["RUNFILES_MANIFEST_FILE"].endswith("/".join([BINNAME + ".runfiles", "MANIFEST"]))
+        if IsWindows():
+            assert "RUNFILES_MANIFEST_FILE" in env.keys()
+            # the launcher apparently always uses forward slashes for this one
+            assert env["RUNFILES_MANIFEST_FILE"].endswith("/".join([BINNAME + ".runfiles", "MANIFEST"]))
 
     def assert_success(self, executable, env, cwd=None, args=None):
         args = ["LauncherTest"] if args is None else args

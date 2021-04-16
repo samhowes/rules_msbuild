@@ -91,6 +91,7 @@ if [[ -z "${RUNFILES_DIR:-}" ]]; then
     die 'Cannot locate runfiles directory. (Set $RUNFILES_DIR to inhibit searching.)'
   fi
 fi
+
 export RUNFILES_DIR
 export RUNFILES_MANIFEST_FILE="${RUNFILES_DIR}/MANIFEST"
 
@@ -104,8 +105,8 @@ set -e
 # --- end runfiles.bash initialization v2 ---
 
 # --- begin my_rules_dotnet code
-target_bin_path="$(rlocation %target_bin_path%)"
-dotnet_bin_path="$(rlocation %dotnet_bin_path%)"
+target_bin_path="$(rlocation %workspace_name%/%target_bin_path%)"
+dotnet_bin_path="$(rlocation %workspace_name%/%dotnet_bin_path%)"
 
 if [[ "${DOTNET_LAUNCHER_DEBUG:-}" == 1 ]]; then
   set -x
@@ -116,13 +117,13 @@ fi
 # environment variables for the dotnet executable
 %dotnet_env%
 
-assembly_args=( "$target_bin_path" %assembly_args% )
-assembly_args+=( "$@" )
+assembly_args=("$target_bin_path" %assembly_args%)
+assembly_args+=("$@")
 dotnet_cmd="%dotnet_cmd%"
 if [[ $dotnet_cmd == "test" ]]; then
-  assembly_args+=( "--logger" "%dotnet_logger%;%log_path_arg_name%=${XML_OUTPUT_FILE:-"TestResults.xml"}" )
+  assembly_args+=("--logger" "%dotnet_logger%;%log_path_arg_name%=${XML_OUTPUT_FILE:-"TestResults.xml"}")
 fi
 
-dotnet_args=( "$dotnet_cmd" %dotnet_args% )
+dotnet_args=("$dotnet_cmd" %dotnet_args%)
 
 $dotnet_bin_path "${dotnet_args[@]}" "${assembly_args[@]}"

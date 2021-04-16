@@ -34,7 +34,7 @@ namespace MyRulesDotnet.Tools.Builder
 
             foreach (var (key, value) in _data)
             {
-                var builder = new StringBuilder(key.Length + 1 + value.Length)
+                var builder = new StringBuilder(key.Length + 2 + value.Length)
                     .Append(key)
                     .Append('=')
                     .Append(value)

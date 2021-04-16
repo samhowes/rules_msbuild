@@ -28,7 +28,7 @@ namespace MyRulesDotnet.Tools.Builder
                 // see: //dotnet/tools/launcher/windows:launcher_main.cc
                 .Add("binary_type", "Dotnet");
 
-            for (int i = 2; i + 1 < args.Length; i++)
+            for (int i = 2; i + 1 < args.Length; i+=2)
             {
                 writer.Add(args[i], args[i + 1]);
             }

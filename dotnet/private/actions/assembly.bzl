@@ -17,11 +17,13 @@ def make_launcher(ctx, dotnet, info):
     )
 
     launch_data = {
+        #        "dotnet_bin_path": sdk.dotnet.short_path.split("/", 1)[1],
+        #        "target_bin_path": ctx.workspace_name + "/" + info.assembly.short_path,
+        "dotnet_bin_path": sdk.dotnet.path,
+        "target_bin_path": info.assembly.short_path,
         "dotnet_root": sdk.root_file.dirname,
-        "dotnet_bin_path": sdk.dotnet.short_path.split("/", 1)[1],
         "dotnet_args": _format_launcher_args([]),
         "assembly_args": _format_launcher_args([]),
-        "target_bin_path": ctx.workspace_name + "/" + info.assembly.short_path,
         "workspace_name": ctx.workspace_name,
         "dotnet_cmd": "exec",
         "dotnet_logger": "junit",
