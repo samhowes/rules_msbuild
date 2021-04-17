@@ -90,12 +90,16 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 
 		_ = os.Setenv(bazel.RUNFILES_DIR, runfilesDir)
 		if runtime.GOOS == "windows" {
-			fi, err := os.Stat(path.Join(runfilesDir, "MANIFEST"))
+			manifestPath := path.Join(runfilesDir, "MANIFEST")
+			_, err := os.Stat(manifestPath)
 			if err != nil {
 				panic(fmt.Errorf("failed to find manifest file path: %v", err))
 			}
 			// just assume we need to set the value for windows
-			_ = os.Setenv(bazel.RUNFILES_MANIFEST_FILE, fi.Name())
+			if err := os.Setenv(bazel.RUNFILES_MANIFEST_FILE, manifestPath); err != nil {
+				panic(fmt.Errorf("failed to set the manifest file path: %v", err))
+			}
+			diag(func() { fmt.Printf("located manifest file: %s\n", manifestPath) })
 		}
 	}
 
