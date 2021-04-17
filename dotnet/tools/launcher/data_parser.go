@@ -58,10 +58,7 @@ func GetLaunchInfo(binaryPath string) (LaunchInfo, error) {
 	launchInfo := make(LaunchInfo)
 	start := 0
 
-	debugEnabled := os.Getenv("DOTNET_LAUNCHER_DEBUG") != ""
-	if debugEnabled {
-		fmt.Println(string(launchBytes))
-	}
+	diag(func() { fmt.Println("==> launch data") })
 
 	var key string
 	for start < len(launchBytes) {
@@ -81,15 +78,12 @@ func GetLaunchInfo(binaryPath string) (LaunchInfo, error) {
 		value := string(launchBytes[start:end])
 		start = end + 1 // skip the separator character
 		if key == "" {
-			if debugEnabled {
-				fmt.Printf("%s=", value)
-			}
+			diag(func() { fmt.Printf("  %s=", value) })
+
 			key = value
 		} else {
 			launchInfo[key] = value
-			if debugEnabled {
-				fmt.Println(value)
-			}
+			diag(func() { fmt.Println(value) })
 			key = ""
 		}
 	}

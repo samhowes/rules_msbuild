@@ -7,10 +7,27 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 )
 
 const runfilesSuffix = ".runfiles"
+
+var ctx = struct {
+	once  sync.Once
+	debug bool
+}{}
+
+func diag(msg func()) {
+	ctx.once.Do(initDiag)
+	if ctx.debug {
+		msg()
+	}
+}
+
+func initDiag() {
+	ctx.debug = os.Getenv("DOTNET_LAUNCHER_DEBUG") != ""
+}
 
 func getItem(l LaunchInfo, key string) string {
 	value, present := l[key]
@@ -27,6 +44,14 @@ func getPathItem(l LaunchInfo, key string) string {
 		panic(fmt.Sprintf("missing required runfile path item %s, %v", value, err))
 	}
 	return fPath
+}
+
+func getListItem(l LaunchInfo, key string) []string {
+	value := getItem(l, key)
+	if value == "" {
+		return []string{}
+	}
+	return strings.Split(value, "*~*")
 }
 
 func LaunchDotnet(args []string, info LaunchInfo) {
@@ -74,8 +99,6 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 		}
 	}
 
-	dotnetBinPath := getPathItem(info, "dotnet_bin_path")
-	targetBinPath := getPathItem(info, "target_bin_path")
 	dotnetEnv := getItem(info, "dotnet_env")
 
 	for _, line := range strings.Split(dotnetEnv, ";") {
@@ -86,7 +109,29 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 		_ = os.Setenv(line[0:equals], line[equals+1:])
 	}
 
-	newArgs := append([]string{dotnetBinPath, "exec", targetBinPath}, args[1:]...)
+	dotnetBinPath := getPathItem(info, "dotnet_bin_path")
+	dotnetCmd := getItem(info, "dotnet_cmd")
+	dotnetArgs := append([]string{dotnetBinPath, dotnetCmd}, getListItem(info, "dotnet_args")...)
+	targetBinPath := getPathItem(info, "target_bin_path")
+	assemblyArgs := append([]string{targetBinPath}, getListItem(info, "assembly_args")...)
+	assemblyArgs = append(assemblyArgs, args[1:]...)
+
+	if dotnetCmd == "test" {
+		xmlFile := os.Getenv("XML_OUTPUT_FILE")
+		if xmlFile == "" {
+			xmlFile = "test.xml"
+		}
+		loggerArg := fmt.Sprintf("%s;%s=%s",
+			getItem(info, "dotnet_logger"),
+			getItem(info, "log_path_arg_name"),
+			xmlFile,
+		)
+		assemblyArgs = append(assemblyArgs, "--logger", loggerArg)
+	}
+
+	newArgs := append(dotnetArgs, assemblyArgs...)
+
+	diag(func() { fmt.Printf("==> launching: \"%s\"\n", strings.Join(newArgs, "\" \"")) })
 
 	newEnv := os.Environ()
 	if err := syscall.Exec(newArgs[0], newArgs, newEnv); err != nil {

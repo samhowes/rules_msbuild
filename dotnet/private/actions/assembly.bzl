@@ -16,14 +16,14 @@ def make_launcher(ctx, dotnet, info):
         sibling = info.output_dir,
     )
 
+    bin_launcher = dotnet.os == "windows"
+
     launch_data = {
-        #        "dotnet_bin_path": sdk.dotnet.short_path.split("/", 1)[1],
-        #        "target_bin_path": ctx.workspace_name + "/" + info.assembly.short_path,
         "dotnet_bin_path": sdk.dotnet.path,
         "target_bin_path": info.assembly.short_path,
         "dotnet_root": sdk.root_file.dirname,
-        "dotnet_args": _format_launcher_args([]),
-        "assembly_args": _format_launcher_args([]),
+        "dotnet_args": _format_launcher_args([], bin_launcher),
+        "assembly_args": _format_launcher_args([], bin_launcher),
         "workspace_name": ctx.workspace_name,
         "dotnet_cmd": "exec",
         "dotnet_logger": "junit",
@@ -36,7 +36,7 @@ def make_launcher(ctx, dotnet, info):
         })
 
     launcher_template = ctx.file._launcher_template
-    if dotnet.os == "windows":
+    if bin_launcher:
         args = ctx.actions.args()
         args.add(dotnet.builder)
         args.add("launcher")
@@ -84,8 +84,11 @@ def make_launcher(ctx, dotnet, info):
         )
     return launcher
 
-def _format_launcher_args(args):
-    return " ".join(["\"{}\"".format(a) for a in args])
+def _format_launcher_args(args, bin_launcher):
+    if not bin_launcher:
+        return " ".join(["\"{}\"".format(a) for a in args])
+    else:
+        return "*~*".join(args)
 
 def emit_assembly(ctx, dotnet):
     """Compile a dotnet assembly with the provided project template

@@ -5,9 +5,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
+	diag(func() { fmt.Printf("launcher args: %s\n", strings.Join(os.Args, ",")) })
 	launchInfo, err := GetLaunchInfo(os.Args[0])
 	if err != nil {
 		panic(fmt.Sprintf("failed to get launch info: %s", err))

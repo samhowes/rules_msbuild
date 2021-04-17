@@ -3,6 +3,7 @@ load("//tests/tools:build_test.bzl", "binary_test")
 
 dotnet_test(
     name = "HelloTest",
+    size = "small",
     srcs = ["HelloTest.cs"],
     target_framework = "netcoreapp3.1",
     deps = [

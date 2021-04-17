@@ -21,7 +21,7 @@ class TestBuild(BuildTestCase):
         if expected_output[0] == "%":
             assert (code, err) == (0, ''), out
             match = re.search(expected_output[1:], out)
-            assert match is not None, out
+            assert match is not None, f"Expected to match '{expected_output}', but got: '{out}'"
         else:
             assert (code, out, err) == (0, expected_output, '')
 

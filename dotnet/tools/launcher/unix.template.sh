@@ -121,7 +121,7 @@ assembly_args=("$target_bin_path" %assembly_args%)
 assembly_args+=("$@")
 dotnet_cmd="%dotnet_cmd%"
 if [[ $dotnet_cmd == "test" ]]; then
-  assembly_args+=("--logger" "%dotnet_logger%;%log_path_arg_name%=${XML_OUTPUT_FILE:-"TestResults.xml"}")
+  assembly_args+=("--logger" "%dotnet_logger%;%log_path_arg_name%=${XML_OUTPUT_FILE:-"test.xml"}")
 fi
 
 dotnet_args=("$dotnet_cmd" %dotnet_args%)
