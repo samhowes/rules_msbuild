@@ -8,9 +8,13 @@ http_archive(
     sha256 = "b6d46438523a3ec0f3cead544190ee13223a52f6a6765a29eae7b7cc24cc83a0",
     url = "https://github.com/bazelbuild/rules_python/releases/download/0.1.0/rules_python-0.1.0.tar.gz",
 )
+
+load("//deps:py_deps.bzl", "py_deps")
+
+py_deps()
 ###
 
-### Sanity ###
+### golang ###
 http_archive(
     name = "io_bazel_rules_go",
     sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
@@ -37,26 +41,13 @@ go_rules_dependencies()
 go_register_toolchains(version = "1.16")
 
 gazelle_dependencies()
-### end sanity ###
 
+### bzl ###
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
 bazel_skylib_workspace()
 
-load("//deps:py_deps.bzl", "py_deps")
-
-py_deps()
-
-### temporary setup for windows launcher ###
-# todo(#43) remove this configuration
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "bazel_tools_public",
-    branch = "public_launcher",
-    remote = "https://github.com/samhowes/bazel",
-)
-###
+### dotnet ###
 
 load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
