@@ -28,15 +28,19 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def dotnet_exec_context(ctx, is_executable, is_test = False):
     toolchain = None
-    implicit_deps = []
-    sdk = getattr(ctx.attr, "sdk", None)  # builder
-    if sdk != None:
-        sdk = sdk[DotnetSdkInfo]
+    sdk = None
+
+    # the builder doesn't have a toolchain: it is part of the toolchain
+    sdk_attr = getattr(ctx.attr, "dotnet_sdk", None)
+    if sdk_attr != None:
+        sdk = sdk_attr[DotnetSdkInfo]
     else:
         toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
         sdk = toolchain.sdk
 
+    implicit_deps = []
     if is_test:
+        # for out-of-the-box bazel-compatible test logging
         implicit_deps.append(sdk.config.test_logger)
 
     return dotnet_context(

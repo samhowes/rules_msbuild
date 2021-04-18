@@ -3,41 +3,6 @@ load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo", "Nu
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
-TFM_ATTR = attr.string(
-    mandatory = True,
-    doc = ("Target Framework Monikor (TFM) for the target .NET Framework i.e. netcoreapp3.1" +
-           " https://docs.microsoft.com/en-us/dotnet/standard/frameworks"),
-)
-DEPS_ATTR = attr.label_list(
-    providers = [
-        [DotnetLibraryInfo],
-        [NuGetPackageInfo],
-    ],
-)
-
-# Used by dotnet_tool_binary
-BASE_ASSEMBLY_ATTRS = {
-    "srcs": attr.label_list(allow_files = [".cs"]),
-    "target_framework": TFM_ATTR,
-    "_project_template": attr.label(
-        default = Label("//dotnet/private/msbuild:project.tpl.proj"),
-        allow_single_file = True,
-    ),
-}
-
-ASSEMBLY_ATTRS = dicts.add(BASE_ASSEMBLY_ATTRS, {
-    "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
-    "data": attr.label_list(allow_files = True),
-    "deps": DEPS_ATTR,
-})
-
-EXECUTABLE_ATTRS = dicts.add(ASSEMBLY_ATTRS, {
-    "_launcher_template": attr.label(
-        default = Label("//dotnet/tools/launcher"),
-        allow_single_file = True,
-    ),
-})
-
 def _dotnet_tool_binary_impl(ctx):
     dotnet = dotnet_exec_context(ctx, True)
 
@@ -103,10 +68,34 @@ def _dotnet_library_impl(ctx):
         info,
     ]
 
+# Used by dotnet_tool_binary
+BASE_ASSEMBLY_ATTRS = {
+    "srcs": attr.label_list(allow_files = [".cs"]),
+    "target_framework": attr.string(
+        mandatory = True,
+        doc = ("Target Framework Monikor (TFM) for the target .NET Framework i.e. netcoreapp3.1" +
+               " https://docs.microsoft.com/en-us/dotnet/standard/frameworks"),
+    ),
+    "sdk": attr.string(
+        default = "Microsoft.NET.Sdk",
+        doc = """The dotnet sdk to use, normally found in the project element like `<Project Sdk="{sdk}">`. Most common
+        values are `Microsoft.NET.Sdk` (the default) and `Microsoft.NET.Sdk.Web`. This string will be substituted
+        directly into the `Sdk` attribute.
+
+        If sandboxing is enabled, and the specified sdk has not been specified for download as a NuGet package, then it
+        may not be available at compile time. See https://github.com/samhowes/my_rules_dotnet/issues/78 for updates.
+         """,
+    ),
+    "_project_template": attr.label(
+        default = Label("//dotnet/private/msbuild:project.tpl.proj"),
+        allow_single_file = True,
+    ),
+}
+
 dotnet_tool_binary = rule(
     implementation = _dotnet_tool_binary_impl,
     attrs = dicts.add(BASE_ASSEMBLY_ATTRS, {
-        "sdk": attr.label(
+        "dotnet_sdk": attr.label(
             mandatory = True,
             providers = [DotnetSdkInfo],
         ),
@@ -117,17 +106,37 @@ dotnet_tool_binary = rule(
 dotnet_tool_binaries cannot have any dependencies and are used to build other dotnet_* targets.""",
 )
 
-dotnet_binary = rule(
-    implementation = _dotnet_binary_impl,
-    attrs = EXECUTABLE_ATTRS,
-    executable = True,
-    toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
-)
+# used by end-user assemblies
+ASSEMBLY_ATTRS = dicts.add(BASE_ASSEMBLY_ATTRS, {
+    "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
+    "data": attr.label_list(allow_files = True),
+    "deps": attr.label_list(
+        providers = [
+            [DotnetLibraryInfo],
+            [NuGetPackageInfo],
+        ],
+    ),
+})
 
 dotnet_library = rule(
     _dotnet_library_impl,
     attrs = ASSEMBLY_ATTRS,
     executable = False,
+    toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
+)
+
+# used only by executables i.e. tests and standard binaries
+EXECUTABLE_ATTRS = dicts.add(ASSEMBLY_ATTRS, {
+    "_launcher_template": attr.label(
+        default = Label("//dotnet/tools/launcher"),
+        allow_single_file = True,
+    ),
+})
+
+dotnet_binary = rule(
+    implementation = _dotnet_binary_impl,
+    attrs = EXECUTABLE_ATTRS,
+    executable = True,
     toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
 )
 

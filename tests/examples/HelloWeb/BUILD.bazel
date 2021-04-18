@@ -1,0 +1,31 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+
+dotnet_binary(
+    name = "HelloWeb",
+    srcs = [
+        "Program.cs",
+        "Startup.cs",
+    ],
+    sdk = "Microsoft.NET.Sdk.Web",
+    target_framework = "netcoreapp3.1",
+)
+
+build_test(
+    name = "HelloWeb_test",
+    expected_files = {
+        "netcoreapp3.1": [
+            "HelloWeb.pdb",
+            "HelloWeb.dll",
+            "HelloWeb.deps.json",
+            "HelloWeb.runtimeconfig.json",
+            "HelloWeb.runtimeconfig.dev.json",
+            # todo(#77) settings.json files are implicitly copied
+            # "appsettings.json",
+            # "appsettings.Development.json",
+        ],
+    },
+    # todo(#77) figure out how to properly run this
+    #    expected_output = "Hello Bazel!\n",
+    target = "HelloWeb",
+)
