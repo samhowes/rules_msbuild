@@ -5,6 +5,7 @@ DotnetLibraryInfo = provider(
     doc = "Contains information about a Dotnet library",
     fields = {
         "assembly": "The primary assembly that was compiled",
+        "output_dir": "The msbuild output directory as a declared file",
         "project_file": "",
         "runtime": "files (dlls) needed in the output directory for the assembly to run",
         "package_runtimes": "nuget packages needed in the output directory of a binary at runtime",
@@ -19,6 +20,7 @@ NuGetFilegroupInfo = provider(
         "override_version": "true if this filegroup has an override",
         "runtime": "depset of files to be copied to the output directory by MsBuild.",
         "build": "depset of files that are inputs to the build",
+        "resource": "depset of resource files",
         "all_dep_files": "depset of all the files that this filegroup depends on",
     },
 )
@@ -57,6 +59,13 @@ def MSBuildSdk(name, version):
 
 DEFAULT_SDK = MSBuildSdk("Microsoft.NET.Sdk", None)
 
+TfmMappingInfo = provider(
+    doc = "Mapping from tfm to canonical name, i.e. netcoreapp3.1 to Microsoft.NetCore.App",
+    fields = {
+        "dict": "the mapping",
+    },
+)
+
 DotnetSdkInfo = provider(
     doc = "Contains information about the Dotnet SDK used in the toolchain",
     fields = {
@@ -68,7 +77,7 @@ DotnetSdkInfo = provider(
                      "extracted folder"),
         "sdk_files": ("The files under sdk_root"),
         "fxr": ("The hstfxr.dll"),
-        "shared": ("The shared sdk libraries"),
+        "shared": ("The shared sdk libraries in a dict from canonical name i.e. Microsoft.NETCore.App"),
         "packs": ("NuGet packages included with the SDK"),
         "tools": ("List of executable files in the SDK built for " +
                   "the execution platform, excluding the dotnet binary file"),
@@ -83,5 +92,7 @@ DotnetConfigInfo = provider(
     fields = {
         "nuget_config": "Build-time nuget.config, configures nuget to not fetch any packages on the internet.",
         "trim_path": "path for the builder to trim to bazelify and unbazelify inputs and outputs of msbuild.",
+        "tfm_mapping": "The dict from TfmMappingInfo.",
+        "test_logger": "The default JUnit compatible test logger to output bazel compatible test logs",
     },
 )

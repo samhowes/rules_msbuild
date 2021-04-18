@@ -1,5 +1,5 @@
 load("//dotnet:defs.bzl", "dotnet_binary")
-load("//tests/tools:build_test.bzl", "binary_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 
 dotnet_binary(
     name = "PackageDeps",
@@ -10,7 +10,7 @@ dotnet_binary(
     ],
 )
 
-binary_test(
+build_test(
     name = "PackageDeps_test",
     expected_files = {
         "netcoreapp3.1": [
@@ -21,6 +21,6 @@ binary_test(
             "xunit.execution.dotnet.dll",
         ],
     },
-    expected_output = "hello",
+    expected_output = "hello\n",
     target = "PackageDeps",
 )

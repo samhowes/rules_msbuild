@@ -1,5 +1,5 @@
 load("//dotnet:defs.bzl", "dotnet_library")
-load("//tests/tools:build_test.bzl", "library_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 
 dotnet_library(
     name = "Library",
@@ -11,7 +11,7 @@ dotnet_library(
     ],
 )
 
-library_test(
+build_test(
     name = "Library_test",
     expected_files = {
         "netcoreapp3.1": [

@@ -1,3 +1,4 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
@@ -14,20 +15,18 @@ genrule(
     exec_tools = [":Greeter"],
 )
 
-py_test(
+go_test(
     name = "launcher_test",
-    srcs = ["launcher_test.py"],
+    srcs = ["launcher_test.go"],
     data = [
         ":Greeter",
         ":run_greeter",
     ],
-    env = {
-        "TARGET_PATH": "$(location :Greeter)",
-        "TXT_RESULT": "$(location :run_greeter)",
-    },
     deps = [
-        "//tests/tools:executable",
-        "//tests/tools:mypytest",
-        "@rules_python//python/runfiles",
+        "//tests/tools/executable",
+        "//tests/tools/files",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_termie_go_shutil//:go-shutil",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )

@@ -33,6 +33,8 @@ Definitions: (some are made up)
             Example file references:
                 runtimes/opensuse.42.1-x64/native/System.Security.Cryptography.Native.OpenSsl.so
                 runtimes/osx.10.10-x64/native/System.Security.Cryptography.Native.Apple.dylib
+        - resource: appears to be resource dlls for different locales. The value of the dictionary is a dictionary of
+            locales supported.
 
 """
 
@@ -47,6 +49,55 @@ load("//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
 load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
 NUGET_BUILD_CONFIG = "NuGet.Build.Config"
+
+def _nuget_fetch_impl(ctx):
+    config = struct(
+        fetch_base = "fetch",
+        intermediate_base = "_obj",
+        packages_folder = "packages",
+        fetch_config = ctx.path("NuGet.Fetch.Config"),
+        packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
+        packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
+        all_files = [],
+        tfm_mapping = {},
+    )
+
+    _generate_nuget_configs(ctx, config)
+    fetch_project = _generate_fetch_project(ctx, config)
+
+    os, _ = detect_host_platform(ctx)
+    dotnet = dotnet_context(
+        str(ctx.path(ctx.attr.dotnet_sdk_root).dirname),
+        os,
+    )
+
+    args, _ = make_cmd(
+        dotnet,
+        paths.basename(str(fetch_project)),
+        "restore",
+        True,  # todo(#51) determine when to binlog
+    )
+    args = [dotnet.path] + args
+    ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
+    result = ctx.execute(
+        args,
+        environment = dotnet.env,
+        quiet = False,
+        working_directory = str(fetch_project.dirname),
+    )
+    if result.return_code != 0:
+        fail(result.stdout)
+
+    # first we have to collect all the target framework information for each package
+    ctx.report_progress("Processing packages")
+    _process_assets_json(ctx, dotnet, config)
+
+    # once we have the full information for each package, we can write the build file for that package
+    ctx.report_progress("Generating build files")
+    _generate_build_files(ctx, config)
+
+def _pkg_fail(pkg_id, message):
+    fail("[{}] ".format(pkg_id), message)
 
 def _compare_versions(a, b):
     length = min(len(a.number_parts), len(b.number_parts))
@@ -96,51 +147,6 @@ def _pkg(name, version, pkg_id = None):
         deps = {},  # dict[tfm: list[pkg]]
         filegroups = [],
     )
-
-def _nuget_fetch_impl(ctx):
-    config = struct(
-        fetch_base = "fetch",
-        intermediate_base = "_obj",
-        packages_folder = "packages",
-        fetch_config = ctx.path("NuGet.Fetch.Config"),
-        packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
-        packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
-        all_files = [],
-    )
-
-    _generate_nuget_configs(ctx, config)
-    fetch_project = _generate_fetch_project(ctx, config)
-
-    os, _ = detect_host_platform(ctx)
-    dotnet = dotnet_context(
-        str(ctx.path(ctx.attr.dotnet_sdk_root).dirname),
-        os,
-    )
-
-    args, _ = make_cmd(
-        dotnet,
-        paths.basename(str(fetch_project)),
-        "restore",
-        True,  # todo(#51) determine when to binlog
-    )
-    args = [dotnet.path] + args
-    ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
-    result = ctx.execute(
-        args,
-        environment = dotnet.env,
-        quiet = False,
-        working_directory = str(fetch_project.dirname),
-    )
-    if result.return_code != 0:
-        fail(result.stdout)
-
-    # first we have to collect all the target framework information for each package
-    ctx.report_progress("Processing packages")
-    _process_assets_json(ctx, dotnet, config)
-
-    # once we have the full information for each package, we can write the build file for that package
-    ctx.report_progress("Generating build files")
-    _generate_build_files(ctx, config)
 
 def _generate_nuget_configs(ctx, config):
     substitutions = prepare_nuget_config(
@@ -216,19 +222,27 @@ def _process_packages(ctx, config):
         requested_name = parts[0]
         version_spec = parts[1]
 
-        # todo(#53) don't count on the Version Spec being a precise version
-        pkg = _pkg(requested_name, version_spec)
+        _record_package(config, seen_names, requested_name, version_spec, frameworks)
 
-        if pkg.name_lower in seen_names:
-            # todo(#47)
-            fail("Multiple package versions are not supported.")
-        seen_names[pkg.name_lower] = True
+    tfms = config.packages_by_tfm.keys()
 
-        config.packages[pkg.pkg_id] = pkg
+    pkg_name, version, tfm = ctx.attr.test_logger.split(":")
+    _record_package(config, seen_names, pkg_name, version, frameworks)
 
-        for tfm in frameworks:
-            tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
-            tfm_dict[pkg.name_lower] = pkg
+def _record_package(config, seen_names, requested_name, version_spec, frameworks):
+    # todo(#53) don't count on the Version Spec being a precise version
+    pkg = _pkg(requested_name, version_spec)
+
+    if pkg.name_lower in seen_names:
+        # todo(#47)
+        fail("Multiple package versions are not supported.")
+    seen_names[pkg.name_lower] = True
+
+    config.packages[pkg.pkg_id] = pkg
+
+    for tfm in frameworks:
+        tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
+        tfm_dict[pkg.name_lower] = pkg
 
 def _get(obj, name):
     value = obj.get(name, None)
@@ -261,6 +275,7 @@ def _process_assets_json(ctx, dotnet, config):
         for part in ["project", "frameworks", tfm, "frameworkReferences"]:
             anchor = _get(anchor, part)
         tfn = anchor.keys()[0]
+        config.tfm_mapping[tfm] = tfn
         overrides = _get_overrides(ctx, dotnet, tfn)
 
         # dict[pkg_id: Object]
@@ -292,6 +307,7 @@ def _process_assets_json(ctx, dotnet, config):
             # todo(#53) support non-precise version specs
             pkg = config.packages.get(pkg_id_lower, None)
 
+            transitive = False
             if pkg == None:
                 # nuspec files can specify version specs, not exact versions, so we'll have to index by package name
                 # and hope for the best.
@@ -308,16 +324,17 @@ def _process_assets_json(ctx, dotnet, config):
                     fail("[{}] Multiple versions of the same package is not supported. " +
                          "Package name: {}.".format(pkg_id, pkg_name))
 
+                transitive = True
                 tfm_dict[pkg.name_lower] = pkg
                 config.packages[pkg.pkg_id] = pkg
-                discovered_deps[pkg.name_lower] = pkg
 
-                expecting = missing_deps.pop(pkg.name_lower, [])
-                if len(expecting) > 0:
-                    for expecting_pkg in expecting:
-                        expecting_pkg.deps.setdefault(tfm, []).append(pkg)
-                else:
-                    unused_deps[pkg.name_lower] = True
+            discovered_deps[pkg.name_lower] = pkg
+            expecting = missing_deps.pop(pkg.name_lower, [])
+            if len(expecting) > 0:
+                for expecting_pkg in expecting:
+                    expecting_pkg.deps.setdefault(tfm, []).append(pkg)
+            elif transitive:
+                unused_deps[pkg.name_lower] = True
 
             # dict[ CanonicalName: VersionString ]
             pkg_deps = desc.pop("dependencies", None)
@@ -350,19 +367,22 @@ def _process_assets_json(ctx, dotnet, config):
             _accumulate_files(pkg.filegroups, config, desc, pkg_id, "runtime")
             _accumulate_files(pkg.filegroups, config, desc, pkg_id, "build", "buildMultiTargeting")
 
+            _accumulate_resources(pkg, config, desc)
+
             # resource = _get_filegroup(desc, "resource")  # todo(#48)
 
             remaining = desc.keys()
             if len(remaining) > 0:
-                # todo(#49): support other file groups
-                fail("[{}] Unknown filegroups: {}".format(pkg_id, ", ".join(remaining)))
+                # todo(#49): decide if we want to do anything here.
+                # fail("[{}] Unknown filegroups: {}".format(pkg_id, ", ".join(remaining)))
+                pass
 
         if len(unused_deps) > 0:
             fail("Found unused deps for target framework {}: {}".format(tfm, ", ".join(unused_deps.keys())))
-        if len(missing_deps) > 0:
+        if len(missing_deps) > 0 or False:
             fail("Found packages expecting deps, but didn't find the dep: {}".format("; ".join([
-                "{}: {}".format(pkg_name, ", ".join(expecting))
-                for pkg_name, expecting in missing_deps.items()
+                "{}: {}".format(pkg_name, ", ".join([expecting_pkg.pkg_id for expecting_pkg in expecting_pkg_list]))
+                for pkg_name, expecting_pkg_list in missing_deps.items()
             ])))
 
         for pkg in tfm_dict.values():
@@ -407,6 +427,22 @@ def _nuget_file_list(name, files):
         name = name,
         items = "\",\n        \"".join(files),
     )
+
+def _accumulate_resources(pkg, config, desc):
+    resource = desc.pop("resource", None)
+    if resource == None:
+        return
+
+    files = {}
+    for file, file_desc in resource.items():
+        locale = file_desc.pop("locale", None)
+        if locale == None:
+            _pkg_fail(pkg.pkg_id, "No locale listed for resource file {}".format(file))
+        if len(file_desc.keys()) > 0:
+            _pkg_fail(pkg.pkg_id, "Unkown metadata for resource file {}: {}".format(file, file_desc.keys()))
+
+        files[_package_file_path(config, pkg.pkg_id, file)] = locale
+    pkg.filegroups.append("resource = " + json.encode_indent(files, prefix = "    ", indent = "    "))
 
 # this name is confusing
 
@@ -485,13 +521,17 @@ def _generate_build_files(ctx, config):
                 "{all_files}": "\",\n        \"".join(pkg.all_files),
             },
         )
+
+    test_logger = ctx.attr.test_logger.split(":")[0]
     ctx.template(
         ctx.path("BUILD.bazel"),
         ctx.attr._root_template,
         substitutions = {
+            "{test_logger}": test_logger,
             # todo(#61) explicitly develop the file list.
             "{file_list}": "",
             "{nuget_build_config}": NUGET_BUILD_CONFIG,
+            "{tfm_mapping}": json.encode_indent(config.tfm_mapping, prefix = "    ", indent = "    "),
         },
     )
 
@@ -499,6 +539,9 @@ nuget_fetch = repository_rule(
     implementation = _nuget_fetch_impl,
     attrs = {
         "packages": attr.string_list_dict(),
+        "test_logger": attr.string(
+            default = "JunitXml.TestLogger:3.0.87:netstandard2.0",
+        ),
         # todo(#63) link this to the primary nuget folder if it is not the primary nuget folder
         "dotnet_sdk_root": attr.label(
             default = Label("@dotnet_sdk//:ROOT"),

@@ -8,7 +8,7 @@ namespace tests.launcher
         {
             if (args.Length > 1)
             {
-                Console.WriteLine($"Expected 0 or 1 args, got {args.Length}");
+                Console.WriteLine($"Expected 0 or 1 args, got {args.Length}: {string.Join(",", args)}");
                 return;
             }
             if (args.Length == 1) {

@@ -1,4 +1,4 @@
-load("//tests/tools:build_test.bzl", "binary_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 load("//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
@@ -10,7 +10,7 @@ dotnet_binary(
     ],
 )
 
-binary_test(
+build_test(
     name = "HelloNuGet_test",
     args = ["<3"],
     expected_files = {
@@ -19,6 +19,6 @@ binary_test(
             "CommandLine.dll",
         ],
     },
-    expected_output = "NuGet <3 Bazel",
+    expected_output = "NuGet <3 Bazel\n",
     target = "HelloNuGet",
 )

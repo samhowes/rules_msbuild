@@ -4,9 +4,14 @@ load(
     "//dotnet/private:providers.bzl",
     "DotnetConfigInfo",
     "DotnetSdkInfo",
+    "TfmMappingInfo",
 )
 
 def _dotnet_sdk_impl(ctx):
+    shared_dict = {}
+    for shared in ctx.attr.shared:
+        shared_dict[shared.label.name] = shared[DefaultInfo].files
+
     return [DotnetSdkInfo(
         dotnet = ctx.executable.dotnet,
         dotnetos = ctx.attr.dotnetos,
@@ -15,7 +20,7 @@ def _dotnet_sdk_impl(ctx):
         sdk_root = ctx.file.sdk_root,
         sdk_files = ctx.files.sdk_files,
         fxr = ctx.files.fxr,
-        shared = ctx.files.shared,
+        shared = shared_dict,
         packs = depset(ctx.files.packs),
         init_files = depset(ctx.files.init_files),
         all_files = depset(ctx.files.all_files),
@@ -26,6 +31,8 @@ def _dotnet_config_impl(ctx):
     return DotnetConfigInfo(
         nuget_config = ctx.file.nuget_config,
         trim_path = ctx.attr.trim_path,
+        tfm_mapping = ctx.attr.tfm_mapping[TfmMappingInfo].dict,
+        test_logger = ctx.attr.test_logger,
     )
 
 dotnet_sdk = rule(
@@ -71,9 +78,8 @@ dotnet_sdk = rule(
             allow_files = True,
             doc = ("The hstfxr.dll"),
         ),
-        "shared": attr.label(
+        "shared": attr.label_list(
             mandatory = True,
-            allow_files = True,
             doc = "The shared sdk libraries",
         ),
         "packs": attr.label_list(
@@ -115,6 +121,14 @@ dotnet_config = rule(
         "trim_path": attr.string(
             mandatory = True,
             doc = "Used by the builder, a path to trim from msbuild outputs.",
+        ),
+        "tfm_mapping": attr.label(
+            mandatory = True,
+            doc = "Used to locate runtime files in the dotnet sdk.",
+        ),
+        "test_logger": attr.label(
+            mandatory = True,
+            doc = "Bazel compatible test logger nuget package",
         ),
     },
 )
