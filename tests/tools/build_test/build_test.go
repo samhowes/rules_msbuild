@@ -1,10 +1,11 @@
-package main
+package build_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/samhowes/my_rules_dotnet/tests/tools/lib"
+	"github.com/samhowes/my_rules_dotnet/tests/tools/executable"
+	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
 	"os"
 	"path"
 	"strings"
@@ -17,14 +18,15 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 	config.Once.Do(func() {
 		var data interface{}
 
-		jsonText := `%config_json%`
-		err := json.Unmarshal([]byte(jsonText), &data)
+		config.JsonText = files.Endings(`%config_json%`)
+		config.ExpectedOutput = files.Endings(`%expected_output%`)
+
+		err := json.Unmarshal([]byte(config.JsonText), &data)
 		if err != nil {
 			t.Fatalf("failed to get test config: %v", err)
 		}
-		config.JsonText = jsonText
+
 		config.Data = data.(map[string]interface{})
-		config.ExpectedOutput = `%expected_output%`
 
 		var args []string
 		argText := `%args%`
@@ -38,14 +40,15 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		for k := range config.Data {
 			fmt.Println(k)
 		}
-		config.JsonText = jsonText
-		config.Target = "%target%"
+		config.Target = files.Path(path.Base("%target%"))
+		fmt.Println(config.Target)
 	})
 }
 
 func TestBuildOutput(t *testing.T) {
 	initConfig(t, &config)
-
+	cwd, _ := os.Getwd()
+	fmt.Printf("Current working directory: \n%s\n", cwd)
 	fmt.Printf("target: %s\n", config.Target)
 	// go_test starts us in our runfiles_tree (on unix) so we can base our assertions off of the current directory
 	for dir, filesA := range config.Data["expectedFiles"].(map[string]interface{}) {
@@ -64,8 +67,8 @@ func TestBuildOutput(t *testing.T) {
 		}
 
 		fmt.Printf("%s\n", dir)
-		files := filesA.([]interface{})
-		for _, fA := range files {
+		expectedFiles := filesA.([]interface{})
+		for _, fA := range expectedFiles {
 			f := fA.(string)
 
 			shouldExist := true

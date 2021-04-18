@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/samhowes/my_rules_dotnet/tests/tools/lib"
+	"github.com/samhowes/my_rules_dotnet/tests/tools/executable"
+	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
 	"github.com/stretchr/testify/assert"
 	"github.com/termie/go-shutil"
 	"io/ioutil"
@@ -13,31 +15,31 @@ import (
 	"testing"
 )
 
+const GREETER = "Greeter"
+
 func TestRunGenrule(t *testing.T) {
-	contentBytes, err := ioutil.ReadFile("run_greeter.txt")
+	es := os.Environ()
+	for _, e := range es {
+		fmt.Println(e)
+	}
+
+	contentBytes, err := ioutil.ReadFile(files.Path("run_greeter.txt"))
 	if err != nil {
 		t.Fatalf("failed to read genrule result: %v", err)
 	}
-	actual := string(contentBytes)
-	expected := "Hello: genrule!\n"
-	if actual != expected {
-		t.Errorf("Wrong file contents:\nExpected: '%s'\nActual: '%s'", expected, actual)
-	}
+	actual := files.Endings(string(contentBytes))
+	assert.Equal(t, "Hello: genrule!\n", actual)
 }
 
 func greeterName() string {
-	name := "Greeter"
-	if runtime.GOOS == "windows" {
-		name = name + ".exe"
-	}
-	return name
+	return files.BinName("Greeter")
 }
 
 func TestRunDataDep(t *testing.T) {
 	config := lib.TestConfig{
 		Args:           []string{"data dep"},
 		ExpectedOutput: "Hello: data dep!\n",
-		Target:         greeterName(),
+		Target:         files.BinPath(GREETER),
 	}
 	lib.CheckExecutableOutput(t, &config)
 }
@@ -60,8 +62,8 @@ func TestRunDirect(t *testing.T) {
 		t.Fatalf("failed to create new runfiles tree: %v", err)
 	}
 
-	binPath := path.Join(path.Dir(fakeRunfilesDir), greeterName())
-	newPath, err := shutil.Copy(greeterName(), binPath, true)
+	binPath := path.Join(path.Dir(fakeRunfilesDir), files.BinName(GREETER))
+	newPath, err := shutil.Copy(files.BinPath(GREETER), binPath, true)
 	if err != nil {
 		t.Fatalf("failed to copy executable: %v", err)
 	}
@@ -85,7 +87,7 @@ func TestBootstrapEnvVars(t *testing.T) {
 	config := lib.TestConfig{
 		Args:           []string{},
 		ExpectedOutput: "",
-		Target:         greeterName(),
+		Target:         files.BinPath(GREETER),
 	}
 	lib.CheckExecutableOutput(t, &config)
 	env := make(map[string]string)
@@ -102,9 +104,11 @@ func TestBootstrapEnvVars(t *testing.T) {
 	_ = checkEnv(t, env, "DOTNET_MULTILEVEL_LOOKUP")
 
 	actualRunfiles := checkEnv(t, env, "RUNFILES_DIR")
-	expectedRunfiles := os.Args[0]
-	endIndex := strings.Index(expectedRunfiles, ".runfiles") + len(".runfiles")
-	expectedRunfiles = expectedRunfiles[0:endIndex]
+
+	expectedRunfiles := files.ComputeRunfilesDir(os.Args[0])
+
+	fmt.Println(expectedRunfiles)
+
 	assert.Equal(t, expectedRunfiles, actualRunfiles)
 
 	if runtime.GOOS == "windows" {

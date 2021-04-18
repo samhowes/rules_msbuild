@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sys/execabs"
 	"os"
@@ -24,7 +25,7 @@ type TestConfig struct {
 }
 
 func CheckExecutableOutput(t *testing.T, config *TestConfig) {
-	abspath, err := filepath.Abs(path.Base(config.Target))
+	abspath, err := filepath.Abs(config.Target)
 	if err != nil {
 		t.Fatalf("bad executable path %s:%v", path.Base(config.Target), err)
 	}
@@ -54,7 +55,7 @@ func CheckExecutableOutput(t *testing.T, config *TestConfig) {
 		t.Errorf("command did not complete successfully: %s\n", state.String())
 	}
 
-	actualOut := stdout.String()
+	actualOut := files.Endings(stdout.String())
 	config.Result = actualOut
 	if config.ExpectedOutput == "" {
 		return
@@ -69,7 +70,7 @@ func CheckExecutableOutput(t *testing.T, config *TestConfig) {
 		assert.Equal(t, config.ExpectedOutput, actualOut, "incorrect command output")
 	}
 
-	actualErr := stderr.String()
+	actualErr := files.Endings(stderr.String())
 	assert.Empty(t, actualErr, "command had errors")
 
 	t.Logf("Stdout: \n'%s'", actualOut)

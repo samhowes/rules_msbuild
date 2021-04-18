@@ -1,4 +1,4 @@
-load("//tests/tools:build_test.bzl", "build_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 load("//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(

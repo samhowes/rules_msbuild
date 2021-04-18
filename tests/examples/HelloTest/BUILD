@@ -1,5 +1,5 @@
 load("//dotnet:defs.bzl", "dotnet_test")
-load("//tests/tools:build_test.bzl", "build_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 
 dotnet_test(
     name = "HelloTest",

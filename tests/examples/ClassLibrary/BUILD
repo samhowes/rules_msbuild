@@ -1,4 +1,4 @@
-load("//tests/tools:build_test.bzl", "build_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 
 package(default_visibility = ["//tests:__subpackages__"])

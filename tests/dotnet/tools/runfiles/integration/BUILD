@@ -24,5 +24,9 @@ go_test(
         ":dotnet_cat",
         ":run_dotnet_cat",
     ],
-    deps = ["//tests/tools/lib"],
+    deps = [
+        "//tests/tools/executable",
+        "//tests/tools/files",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

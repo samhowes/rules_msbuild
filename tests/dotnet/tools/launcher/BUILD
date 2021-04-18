@@ -23,7 +23,8 @@ go_test(
         ":run_greeter",
     ],
     deps = [
-        "//tests/tools/lib",
+        "//tests/tools/executable",
+        "//tests/tools/files",
         "@com_github_stretchr_testify//assert",
         "@com_github_termie_go_shutil//:go-shutil",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
