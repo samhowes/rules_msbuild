@@ -2,7 +2,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
+load("//dotnet/private:providers.bzl", "MSBuildSdk")
 
 INTERMEDIATE_BASE = "obj"
 STARTUP_DIR = "$(MSBuildStartupDirectory)"
@@ -51,14 +51,13 @@ def import_sdk(name, version = None):
     )
 
 def make_project_file(ctx, intermediate_path, nuget_config, is_executable, dep_files):
-    build_sdk = DEFAULT_SDK  # todo(#3)
     post_sdk_properties = {}
     if is_executable:
         post_sdk_properties["OutputType"] = "Exe"
         post_sdk_properties["UseAppHost"] = "false"
 
     substitutions = prepare_project_file(
-        build_sdk,
+        MSBuildSdk(ctx.attr.sdk, None),
         intermediate_path,
         [paths.join(STARTUP_DIR, r.path) for r in dep_files.references],
         dep_files.packages,
