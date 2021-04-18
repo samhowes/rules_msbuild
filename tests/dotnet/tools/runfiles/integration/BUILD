@@ -1,16 +1,10 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 load("//dotnet:defs.bzl", "dotnet_binary")
-
-genrule(
-    name = "foo",
-    srcs = [],
-    outs = ["foo.txt"],
-    cmd = "echo \"Hello Runfiles!\" > $@",
-)
 
 dotnet_binary(
     name = "dotnet_cat",
     srcs = ["DotnetCat.cs"],
-    data = [":foo"],
+    data = ["foo.txt"],
     target_framework = "netcoreapp3.1",
     deps = ["//dotnet/tools/runfiles"],
 )
@@ -23,21 +17,12 @@ genrule(
     tools = [":dotnet_cat"],
 )
 
-py_test(
-    name = "dotnet_cat_test",
-    size = "small",
-    srcs = ["dotnet_cat_test.py"],
+go_test(
+    name = "integration_test",
+    srcs = ["dotnet_cat_test.go"],
     data = [
         ":dotnet_cat",
         ":run_dotnet_cat",
     ],
-    env = {
-        "RUN_RESULT": "$(location :run_dotnet_cat)",
-        "TARGET_BINARY": "$(location :dotnet_cat)",
-    },
-    deps = [
-        "//tests/tools:executable",
-        "//tests/tools:mypytest",
-        "@rules_python//python/runfiles",
-    ],
+    deps = ["//tests/tools/lib"],
 )

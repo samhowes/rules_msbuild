@@ -49,5 +49,5 @@ go_test(
     size = "small",
     srcs = ["data_parser_test.go"],
     embed = [":launcher_lib"],
-    deps = ["@io_bazel_rules_go//go/tools/bazel"],
+    deps = ["@io_bazel_rules_go//go/tools/bazel:go_default_library"],
 )

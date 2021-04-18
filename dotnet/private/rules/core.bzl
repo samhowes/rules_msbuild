@@ -71,7 +71,7 @@ def _make_executable(ctx, test):
             ],
         ),
     )
-#    assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
+    assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
     return [
         DefaultInfo(
             files = depset([launcher, info.output_dir]),

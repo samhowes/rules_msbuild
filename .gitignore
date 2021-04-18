@@ -10,5 +10,3 @@ obj
 *.bazelrc
 .vscode/c_cpp_properties.json
 .idea
-**/go.mod
-**/go.sum

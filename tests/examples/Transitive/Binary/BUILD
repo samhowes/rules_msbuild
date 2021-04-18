@@ -1,4 +1,4 @@
-load("//tests/tools:build_test.bzl", "binary_test")
+load("//tests/tools:build_test.bzl", "build_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
@@ -10,7 +10,7 @@ dotnet_binary(
     ],
 )
 
-binary_test(
+build_test(
     name = "Binary_test",
     expected_files = {
         "netcoreapp3.1": [
@@ -23,6 +23,6 @@ binary_test(
             "TransitiveTransitiveLib.pdb",
         ],
     },
-    expected_output = "Hello Transitive: Transitive Transitive Value!",
+    expected_output = "Hello Transitive: Transitive Transitive Value!\n",
     target = "Binary",
 )

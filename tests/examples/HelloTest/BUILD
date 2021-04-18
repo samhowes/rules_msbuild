@@ -1,5 +1,5 @@
 load("//dotnet:defs.bzl", "dotnet_test")
-load("//tests/tools:build_test.bzl", "binary_test")
+load("//tests/tools:build_test.bzl", "build_test")
 
 dotnet_test(
     name = "HelloTest",
@@ -13,7 +13,7 @@ dotnet_test(
     ],
 )
 
-binary_test(
+build_test(
     name = "HelloTest_test",
     expected_files = {
         "netcoreapp3.1": [

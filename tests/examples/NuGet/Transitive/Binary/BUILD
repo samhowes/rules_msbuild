@@ -1,4 +1,4 @@
-load("//tests/tools:build_test.bzl", "binary_test")
+load("//tests/tools:build_test.bzl", "build_test")
 load("//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
@@ -10,7 +10,7 @@ dotnet_binary(
     ],
 )
 
-binary_test(
+build_test(
     name = "Binary_test",
     expected_files = {
         "netcoreapp3.1": [
@@ -18,6 +18,6 @@ binary_test(
             "Newtonsoft.Json.dll",
         ],
     },
-    expected_output = "bar",
+    expected_output = "bar\n",
     target = "Binary",
 )

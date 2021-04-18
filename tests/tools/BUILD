@@ -1,29 +1,17 @@
-load("@rules_python//python:defs.bzl", "py_library")
-load("@pip//:requirements.bzl", "requirement")
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
-py_library(
-    name = "mypytest",
-    srcs = ["mypytest.py"],
-    visibility = ["//visibility:public"],
+exports_files([
+    "build_test.go",
+])
+
+go_test(
+    name = "tools_test",
+    srcs = ["build_test.go"],
+    # this test won't pass, but I'l leave it here because gazelle generates it
+    # and it is useful for debugging, hence the manual tag
+    tags = ["manual"],
     deps = [
-        requirement("pytest"),
+        "//tests/tools/lib",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )
-
-py_library(
-    name = "build_test_case",
-    srcs = ["build_test_case.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@rules_python//python/runfiles",
-    ],
-)
-
-py_library(
-    name = "executable",
-    srcs = ["executable.py"],
-    visibility = ["//visibility:public"],
-    deps = [],
-)
-
-exports_files(["build_test.py"])

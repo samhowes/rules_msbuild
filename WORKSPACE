@@ -15,12 +15,15 @@ py_deps()
 ###
 
 ### golang ###
-# todo(#75) change this back to official repo
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-git_repository(
+
+http_archive(
     name = "io_bazel_rules_go",
-    branch = "python-runfiles-windows",
-    remote = "https://github.com/samhowes/rules_go",
+    sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+    ],
 )
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
@@ -39,6 +42,10 @@ http_archive(
 )
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("//:go_deps.bzl", "go_dependencies")
+
+# gazelle:repository_macro go_deps.bzl%go_dependencies
+go_dependencies()
 
 gazelle_dependencies()
 
@@ -59,15 +66,17 @@ load("//deps:nuget_deps.bzl", "nuget_deps")
 
 nuget_deps()
 
-
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 http_archive(
     name = "rules_pkg",
+    sha256 = "038f1caa773a7e35b3663865ffb003169c6a71dc995e39bf4815792f385d837d",
     urls = [
         "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.4.0/rules_pkg-0.4.0.tar.gz",
         "https://github.com/bazelbuild/rules_pkg/releases/download/0.4.0/rules_pkg-0.4.0.tar.gz",
     ],
-    sha256 = "038f1caa773a7e35b3663865ffb003169c6a71dc995e39bf4815792f385d837d",
 )
+
 load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
+
 rules_pkg_dependencies()

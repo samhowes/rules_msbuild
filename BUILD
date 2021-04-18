@@ -8,4 +8,20 @@ dotnet_context_data(
 )
 
 # gazelle:prefix github.com/samhowes/my_rules_dotnet
-gazelle(name = "gazelle")
+gazelle(
+    name = "gazelle_repos",
+    args = [
+        "-from_file=go.mod",
+        "-to_macro=go_deps.bzl%go_dependencies",
+        "--go_naming_convention=import",
+    ],
+    command = "update-repos",
+)
+
+# gazelle:go_naming_convention import
+gazelle(
+    name = "gazelle",
+    args = [
+        "--go_naming_convention=import",
+    ],
+)

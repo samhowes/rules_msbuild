@@ -1,4 +1,4 @@
-load("//tests/tools:build_test.bzl", "binary_test")
+load("//tests/tools:build_test.bzl", "build_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
@@ -7,8 +7,7 @@ dotnet_binary(
     target_framework = "netcoreapp3.1",
 )
 
-# checks the compilation output from :HelloBazel
-binary_test(
+build_test(
     name = "HelloBazel_test",
     expected_files = {
         "": [
@@ -22,9 +21,7 @@ binary_test(
             "HelloBazel.runtimeconfig.json",
             "HelloBazel.runtimeconfig.dev.json",
         ],
-        "@dotnet_sdk": [
-            "sdk/3.1.100/dotnet.dll",
-        ],
     },
+    expected_output = "Hello Bazel!\n",
     target = "HelloBazel",
 )
