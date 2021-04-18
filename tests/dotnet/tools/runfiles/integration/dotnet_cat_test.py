@@ -26,6 +26,15 @@ class TestLauncher(object):
         assert "Hello Runfiles!\n" == contents
 
     def test_run_data_dep_works(self):
+        startpath = os.getcwd()
+        print(startpath)
+        for root, dirs, files in os.walk(startpath):
+            level = root.replace(startpath, '').count(os.sep)
+            indent = ' ' * 4 * (level)
+            print('{}{}/'.format(indent, os.path.basename(root)))
+            subindent = ' ' * 4 * (level + 1)
+            for f in files:
+                print('{}{}'.format(subindent, f))
         env = self.r.EnvVars()
         executable = Executable(self.location(os.environ.get("TARGET_BINARY")))
         contents = self.assert_success(executable, env)

@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
-	"syscall"
+
+	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"golang.org/x/sys/execabs"
 )
 
 const runfilesSuffix = ".runfiles"
@@ -37,13 +39,37 @@ func getItem(l LaunchInfo, key string) string {
 	return value
 }
 
+func trimWorkspaceName(value string) string {
+	// trim the workspace: go runfiles indexes the manifest by shortpath, which go defines as not including the
+	// workspace
+	ind := strings.IndexByte(value, '/')
+	value = value[ind+1:]
+	return value
+}
+
 func getPathItem(l LaunchInfo, key string) string {
-	value := getItem(l, key)
-	fPath, err := bazel.Runfile(value)
+	value := trimWorkspaceName(getItem(l, key))
+	return getRunfile(value)
+}
+
+func getRunfile(p string) string {
+	fPath, err := bazel.Runfile(p)
 	if err != nil {
-		panic(fmt.Sprintf("missing required runfile path item %s, %v", value, err))
+		panic(fmt.Sprintf("missing required runfile path item %s, %v", p, err))
 	}
 	return fPath
+}
+
+// getBuiltPath assumes that key is a short_path to the output directory of an assembly built by my_rules_dotnet
+// this means that the output directory is listed in the runfiles manifest, and since the output directory is a prefix
+// of all the items in the output directory, the actual output items are not listed explicitly in the manifest
+func getBuiltPath(l LaunchInfo, key string) string {
+	outputDir := getItem(l, "output_dir")
+	value := trimWorkspaceName(getItem(l, key))
+	diag(func(){fmt.Printf("findng built path: %s using prefix %s\n", value, outputDir)})
+	value = value[len(outputDir)+1:]
+	outputDirPath := getRunfile(outputDir)
+	return path.Join(outputDirPath, value)
 }
 
 func getListItem(l LaunchInfo, key string) []string {
@@ -99,7 +125,10 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 			if err := os.Setenv(bazel.RUNFILES_MANIFEST_FILE, manifestPath); err != nil {
 				panic(fmt.Errorf("failed to set the manifest file path: %v", err))
 			}
-			diag(func() { fmt.Printf("located manifest file: %s\n", manifestPath) })
+			diag(func() { 
+				abs, _ := filepath.Abs(manifestPath)
+				fmt.Printf("located manifest file: %s\n", abs) 
+			})
 		}
 	}
 
@@ -116,7 +145,7 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 	dotnetBinPath := getPathItem(info, "dotnet_bin_path")
 	dotnetCmd := getItem(info, "dotnet_cmd")
 	dotnetArgs := append([]string{dotnetBinPath, dotnetCmd}, getListItem(info, "dotnet_args")...)
-	targetBinPath := getPathItem(info, "target_bin_path")
+	targetBinPath := getBuiltPath(info, "target_bin_path")
 	assemblyArgs := append([]string{targetBinPath}, getListItem(info, "assembly_args")...)
 	assemblyArgs = append(assemblyArgs, args[1:]...)
 
@@ -136,9 +165,40 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 	newArgs := append(dotnetArgs, assemblyArgs...)
 
 	diag(func() { fmt.Printf("==> launching: \"%s\"\n", strings.Join(newArgs, "\" \"")) })
+	launch(info, newArgs)
+}
 
-	newEnv := os.Environ()
-	if err := syscall.Exec(newArgs[0], newArgs, newEnv); err != nil {
-		panic(fmt.Errorf("failed to exec: %w", err))
+func launch(info LaunchInfo, args []string) {
+	launchMode, ok := info["launch_mode"]
+	if !ok {
+		launchMode = "wait"
+	}
+	cmd := execabs.Command(args[0], args[1:]...)
+
+	cmd.Env = os.Environ()
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+
+	if err := cmd.Start(); err != nil {
+		panic(fmt.Errorf("failed to launch command: %s\n%v", cmd.String(), err))
+	}
+
+	diag(func(){fmt.Printf("Started PID %d\n", cmd.Process.Pid)})
+	if launchMode == "wait" {
+		// when bazel runs a command, it will only pay attention to the parent process, not the child, so we need to
+		// wait on the cmd for bazel to report out on it
+		diag(func(){fmt.Printf("waiting...\n")})
+		state, err := cmd.Process.Wait()
+		if err != nil {
+			panic(fmt.Errorf("failed to wait on cmd %s\n%v",cmd.String(), err))
+		}
+		diag(func(){fmt.Printf("cmd completed: %s\n", state.String())})
+	} else {
+		if err := cmd.Process.Release(); err != nil {
+			panic(fmt.Errorf("failed to detach from launched command %s\n%v", cmd.String(), err))
+		}
+		diag(func(){fmt.Printf("released\n")})
 	}
 }

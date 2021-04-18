@@ -1,6 +1,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@rules_python//python:defs.bzl", "py_test")
 load("@pip//:requirements.bzl", "requirement")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 def py_build_test(target):
     name = target + "_test"
@@ -33,8 +34,7 @@ def binary_test(name, target, args = [], expected_output = "", expected_files = 
             relative to the output base i.e. {'netcoreapp3.1': 'Binary.pdb'}
     """
     env = {
-        "TARGET_EXECUTABLE": "$(rootpath :{})".format(target),
-        "TARGET_EXECUTABLE_ARGS": ";".join(args),
+        "TARGET_ASSEMBLY_ARGS": ";".join(args),
         "EXPECTED_OUTPUT": expected_output,
     }
 
@@ -59,15 +59,27 @@ def library_test(name, target, expected_files = {}):
 
 def _build_test(name, target, expected_files, env):
     artifacts = target + "_artifacts"
-    native.filegroup(
+#    native.filegroup(
+#        name = artifacts,
+#        srcs = [":" + target],
+#        output_group = "all",
+#        testonly = True,
+#    )
+
+    # on windows the python zipper doesn't zip directories. Use a tar instead
+    pkg_tar(
         name = artifacts,
         srcs = [":" + target],
-        output_group = "all",
         testonly = True,
+        #    package_dir = "/usr/bin",
+        #        srcs = [":dotnet_cat"],
     )
 
     env = dicts.add(env, {
+        "TARGET_ASSEMBLY": "$(rootpath :{})".format(target),
+        "TARBALL": "$(location :{})".format(artifacts),
         "EXPECTED_FILES": json.encode(expected_files),
+        "DOTNET_LAUNCHER_DEBUG": "1",
     })
 
     src = "//tests/tools:build_test.py"

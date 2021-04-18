@@ -105,8 +105,8 @@ set -e
 # --- end runfiles.bash initialization v2 ---
 
 # --- begin my_rules_dotnet code
-target_bin_path="$(rlocation %workspace_name%/%target_bin_path%)"
-dotnet_bin_path="$(rlocation %workspace_name%/%dotnet_bin_path%)"
+target_bin_path="$(rlocation %target_bin_path%)"
+dotnet_bin_path="$(rlocation %dotnet_bin_path%)"
 
 if [[ "${DOTNET_LAUNCHER_DEBUG:-}" == 1 ]]; then
   set -x

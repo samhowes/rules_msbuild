@@ -63,19 +63,18 @@ def _make_executable(ctx, test):
 
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(
-        files = ctx.files.data + private,
+        files = [info.output_dir] + ctx.files.data,
         transitive_files = depset(
-            [info.output_dir],
+            [dotnet.sdk.dotnet],
             transitive = [
-                tfm_runtime,
-                dotnet.sdk.all_files,
+                #                tfm_runtime
             ],
         ),
     )
-    assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
+#    assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
     return [
         DefaultInfo(
-            files = depset([launcher]),
+            files = depset([launcher, info.output_dir]),
             runfiles = assembly_runfiles,
             executable = launcher,
         ),

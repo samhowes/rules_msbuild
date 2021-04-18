@@ -18,9 +18,13 @@ def make_launcher(ctx, dotnet, info):
 
     bin_launcher = dotnet.os == "windows"
 
+    # ../dotnet_sdk/dotnet => dotnet_sdk/dotnet
+    dotnet_path = sdk.dotnet.short_path.split("/", 1)[1]
+
     launch_data = {
-        "dotnet_bin_path": sdk.dotnet.path,
-        "target_bin_path": info.assembly.short_path,
+        "dotnet_bin_path": dotnet_path,
+        "target_bin_path": paths.join(ctx.workspace_name, info.assembly.short_path),
+        "output_dir": info.output_dir.short_path,
         "dotnet_root": sdk.root_file.dirname,
         "dotnet_args": _format_launcher_args([], bin_launcher),
         "assembly_args": _format_launcher_args([], bin_launcher),

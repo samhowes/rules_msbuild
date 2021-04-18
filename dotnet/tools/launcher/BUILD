@@ -31,7 +31,10 @@ go_library(
     ],
     importpath = "github.com/samhowes/my_rules_dotnet/dotnet/tools/launcher",
     visibility = ["//visibility:private"],
-    deps = ["@io_bazel_rules_go//go/tools/bazel"],
+    deps = [
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+        "@org_golang_x_sys//execabs",
+    ],
 )
 
 # todo(#41) precompile this into an exe and publish as an artifact
