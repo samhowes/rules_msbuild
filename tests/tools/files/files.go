@@ -32,7 +32,7 @@ func Path(packageRelative string) string {
 }
 
 func BinName(maybeExe string) string {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" && !strings.HasSuffix(maybeExe, ".exe") {
 		return maybeExe + ".exe"
 	}
 	return maybeExe

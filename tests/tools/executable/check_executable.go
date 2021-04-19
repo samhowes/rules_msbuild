@@ -11,7 +11,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync"
 	"testing"
 )
@@ -35,10 +34,7 @@ func SetupFakeRunfiles(t *testing.T, binName string) string {
 	}
 
 	fakeRunfilesDir := path.Join(tmpDir, binName+".runfiles")
-	cwd, _ := os.Getwd()
-	runfilesIndex := strings.Index(cwd, ".runfiles")
-	thisRunfilesDir := cwd[0 : runfilesIndex+len(".runfiles")]
-
+	thisRunfilesDir := files.ComputeRunfilesDir(os.Args[0])
 	err = shutil.CopyTree(thisRunfilesDir, fakeRunfilesDir, nil)
 	t.Logf("created runfiles tree at: %s\n", fakeRunfilesDir)
 	if err != nil {
@@ -46,7 +42,9 @@ func SetupFakeRunfiles(t *testing.T, binName string) string {
 	}
 
 	binPath := path.Join(path.Dir(fakeRunfilesDir), files.BinName(binName))
-	newPath, err := shutil.Copy(files.BinPath(binName), binPath, true)
+	srcBin := files.BinPath(binName)
+	t.Logf("srcBin %s\n", srcBin)
+	newPath, err := shutil.Copy(srcBin, binPath, true)
 	if err != nil {
 		t.Fatalf("failed to copy executable: %v", err)
 	}
