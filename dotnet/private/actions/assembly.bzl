@@ -104,7 +104,7 @@ def emit_assembly(ctx, dotnet):
         Tuple: the emitted assembly and all outputs
     """
     compiliation_mode = ctx.var["COMPILATION_MODE"]
-    output_path = ctx.attr.target_framework
+    output_path = dotnet.config.output_dir_name
     intermediate_path = INTERMEDIATE_BASE
     sdk = dotnet.sdk
 
@@ -119,11 +119,13 @@ def emit_assembly(ctx, dotnet):
 
     restore_outputs = restore(ctx, dotnet, intermediate_path, project_file, dep_files)
     assembly, runtime, private = _declare_assembly_files(ctx, output_path, dotnet.config.is_executable)
-    args, cmd_outputs = make_exec_cmd(ctx, dotnet, "build", project_file, intermediate_path)
+    args, cmd_outputs = make_exec_cmd(ctx, dotnet, "build", project_file, intermediate_path, output_dir)
+
+    content = getattr(ctx.files, "content", [])
 
     ### collect build inputs/outputs
     inputs = depset(
-        direct = ctx.files.srcs + [project_file] + restore_outputs,
+        direct = ctx.files.srcs + content + [project_file] + restore_outputs,
         transitive = [dep_files.inputs, sdk.init_files],
     )
 

@@ -70,3 +70,10 @@ func ComputeRunfilesDir(arg0 string) string {
 	endIndex := strings.Index(arg0, ".runfiles") + len(".runfiles")
 	return arg0[0:endIndex]
 }
+
+func ComputeStartingDir(arg0 string) string {
+	initInfo()
+	runfilesDir := PosixPath(arg0) + ".runfiles"
+	startingDir := path.Join(runfilesDir, Info.workspace)
+	return startingDir
+}

@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Builder", "dotnet\tools\builder\Builder.csproj", "{B0EDC808-A512-4283-957F-46EE355998C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderTest", "tests\dotnet\tools\builder\BuilderTest.csproj", "{32778C6E-06E6-46F6-ACDC-D36605E0FEE9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0EDC808-A512-4283-957F-46EE355998C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0EDC808-A512-4283-957F-46EE355998C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0EDC808-A512-4283-957F-46EE355998C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0EDC808-A512-4283-957F-46EE355998C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32778C6E-06E6-46F6-ACDC-D36605E0FEE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32778C6E-06E6-46F6-ACDC-D36605E0FEE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32778C6E-06E6-46F6-ACDC-D36605E0FEE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32778C6E-06E6-46F6-ACDC-D36605E0FEE9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

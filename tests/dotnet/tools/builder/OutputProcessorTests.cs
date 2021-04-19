@@ -42,10 +42,15 @@ namespace MyRulesDotnet.Tests.Tools
             Directory.CreateDirectory(_testDir);
             _assetsFilepathBase = Path.Combine(_testDir, "project.assets");
 
+            var command = new Command()
+            {
+
+            };
             _context = new ProcessorContext()
             {
+                Command = {},
                 TargetDirectory = _testDir,
-                OutputDirectory = Path.Combine(_testDir, "processed"),
+                IntermediateBase = Path.Combine(_testDir, "processed"),
                 OutputBase = _outputBase,
                 ExecRoot = Combine(_outputBase, "baz")
             };

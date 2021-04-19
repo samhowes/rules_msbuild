@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
-def build_test(name, target, expected_files, args = [], expected_output = ""):
+def build_test(name, target, expected_files, run_location = "", args = [], expected_output = ""):
     artifacts = target + "_artifacts"
     native.filegroup(
         name = artifacts,
@@ -16,6 +16,7 @@ def build_test(name, target, expected_files, args = [], expected_output = ""):
         expected_output = expected_output,
         args = args,
         target = target,
+        run_location = run_location,
         json = json.encode({"expectedFiles": expected_files}),
         deps = [":" + target],
         visibility = ["//visibility:public"],
@@ -38,7 +39,6 @@ def build_test(name, target, expected_files, args = [], expected_output = ""):
             "@bazel_tools//src/conditions:host_windows": "../../..",
             # unix has a symlink farm and the default is nice: its the artifact directory
             "//conditions:default": "",
-
         }),
         deps = [
             "//tests/tools/executable",
@@ -60,6 +60,7 @@ def _test_config_impl(ctx):
             "%expected_output%": ctx.attr.expected_output,
             "%config_json%": ctx.attr.json,
             "%exec_path%": ctx.expand_location("$(execpath {})".format(ctx.attr.target.label)),
+            "%run_location%": ctx.attr.run_location,
         },
     )
 
@@ -71,6 +72,7 @@ test_config = rule(
         "target": attr.label(),
         "args": attr.string_list(),
         "expected_output": attr.string(),
+        "run_location": attr.string(),
         "json": attr.string(),
         "deps": attr.label_list(),
         "_test_template": attr.label(

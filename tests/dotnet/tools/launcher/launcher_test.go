@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/samhowes/my_rules_dotnet/tests/tools/executable"
 	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
 	"github.com/stretchr/testify/assert"
-	"github.com/termie/go-shutil"
 	"io/ioutil"
 	"os"
 	"path"
@@ -46,32 +44,7 @@ func TestRunDataDep(t *testing.T) {
 
 // Simulate the user executing the binary directly given that they have built it directly
 func TestRunDirect(t *testing.T) {
-	tmpDir, err := bazel.NewTmpDir("direct")
-	if err != nil {
-		t.Fatalf("failed to create tmp dir: %v", err)
-	}
-
-	fakeRunfilesDir := path.Join(tmpDir, greeterName()+".runfiles")
-	cwd, _ := os.Getwd()
-	runfilesIndex := strings.Index(cwd, ".runfiles")
-	thisRunfilesDir := cwd[0 : runfilesIndex+len(".runfiles")]
-
-	err = shutil.CopyTree(thisRunfilesDir, fakeRunfilesDir, nil)
-	t.Logf("created runfiles tree at: %s\n", fakeRunfilesDir)
-	if err != nil {
-		t.Fatalf("failed to create new runfiles tree: %v", err)
-	}
-
-	binPath := path.Join(path.Dir(fakeRunfilesDir), files.BinName(GREETER))
-	newPath, err := shutil.Copy(files.BinPath(GREETER), binPath, true)
-	if err != nil {
-		t.Fatalf("failed to copy executable: %v", err)
-	}
-	if newPath != binPath {
-		t.Fatalf("incorrect copy:\nexpected: '%s'\nactual: '%s'", binPath, newPath)
-	}
-
-	t.Logf("%s\n", newPath)
+	binPath := lib.SetupFakeRunfiles(t, GREETER)
 
 	config := lib.TestConfig{
 		Args:           []string{"direct"},

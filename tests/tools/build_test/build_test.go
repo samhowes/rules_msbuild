@@ -41,6 +41,7 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 			fmt.Println(k)
 		}
 		config.Target = files.Path(path.Base("%target%"))
+		config.RunLocation = `%run_location%`
 		fmt.Println(config.Target)
 	})
 }
@@ -101,6 +102,12 @@ func TestExecutableOutput(t *testing.T) {
 	initConfig(t, &config)
 	if config.ExpectedOutput == "" {
 		t.Skip("No output requested")
+	}
+
+	if config.RunLocation == "standard" {
+		config.Target = lib.SetupFakeRunfiles(t, path.Base(config.Target))
+		config.Cwd = files.ComputeStartingDir(config.Target)
+		t.Logf("Computed starting dir to: \n%s", config.Cwd)
 	}
 
 	lib.CheckExecutableOutput(t, &config)

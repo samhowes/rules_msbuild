@@ -8,6 +8,8 @@ go_library(
     deps = [
         "//tests/tools/files",
         "@com_github_stretchr_testify//assert",
+        "@com_github_termie_go_shutil//:go-shutil",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
         "@org_golang_x_sys//execabs",
     ],
 )
