@@ -8,6 +8,20 @@
     {pre_import_msbuild_properties}
   </PropertyGroup>
 
+  <!--
+    Disable the default items because we are not in a normal project directory
+    Also, disable them because if bazel doesn't explicitly know about input files, MSBuild won't be able to access
+    these files in a sandbox.
+    https://aka.ms/sdkimplicititems
+    https://github.com/dotnet/sdk/blob/main/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.DefaultItems.targets#L15
+  -->
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+  </PropertyGroup>
+
   <!--  https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview -->
   {sdk_props}
 
@@ -16,7 +30,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="**/*" />
     {compile_srcs}
   </ItemGroup>
 
