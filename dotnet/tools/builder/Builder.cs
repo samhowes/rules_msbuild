@@ -42,7 +42,7 @@ namespace MyRulesDotnet.Tools.Builder
             for (; thisArgsEnd < args.Length; thisArgsEnd++)
             {
                 var arg = args[thisArgsEnd];
-                if (arg[0] != '-')
+                if (arg.Length == 0 || arg[0] != '-')
                 {
                     command.PositionalArgs.Add(arg);
                     continue;
