@@ -2,27 +2,28 @@ load("//tests/tools/build_test:build_test.bzl", "build_test")
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
-    name = "HelloWeb",
+    name = "Configuration",
     srcs = [
         "Program.cs",
         "Startup.cs",
+    ],
+    content = [
+        ":appsettings.json",
+        ":appsettings.Development.json",
     ],
     sdk = "Microsoft.NET.Sdk.Web",
     target_framework = "netcoreapp3.1",
 )
 
 build_test(
-    name = "HelloWeb_test",
+    name = "Configuration_test",
     expected_files = {
         "netcoreapp3.1": [
-            "HelloWeb.pdb",
-            "HelloWeb.dll",
-            "HelloWeb.deps.json",
-            "HelloWeb.runtimeconfig.json",
-            "HelloWeb.runtimeconfig.dev.json",
+            "appsettings.json",
+            "appsettings.Development.json",
         ],
     },
-    # todo(#77) figure out how to properly run this
-    #    expected_output = "Hello Bazel!\n",
-    target = "HelloWeb",
+    expected_output = "The special value is: 42!\n",
+    run_location = "standard",
+    target = "Configuration",
 )

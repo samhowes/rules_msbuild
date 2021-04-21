@@ -1,9 +1,7 @@
 bazel-*
 bin
 obj
-*.csproj
-*.sln
-*.user
+ *.user
 .vs
 .ijwb
 .clwb

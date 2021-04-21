@@ -2,8 +2,10 @@ package lib
 
 import (
 	"bytes"
+	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
 	"github.com/stretchr/testify/assert"
+	"github.com/termie/go-shutil"
 	"golang.org/x/sys/execabs"
 	"os"
 	"path"
@@ -22,6 +24,36 @@ type TestConfig struct {
 	Once           sync.Once
 	Cwd            string
 	Result         string
+	RunLocation    string
+}
+
+func SetupFakeRunfiles(t *testing.T, binName string) string {
+	tmpDir, err := bazel.NewTmpDir(t.Name())
+	if err != nil {
+		t.Fatalf("failed to create tmp dir: %v", err)
+	}
+
+	fakeRunfilesDir := path.Join(tmpDir, binName+".runfiles")
+	thisRunfilesDir := files.ComputeRunfilesDir(os.Args[0])
+	err = shutil.CopyTree(thisRunfilesDir, fakeRunfilesDir, nil)
+	t.Logf("created runfiles tree at: %s\n", fakeRunfilesDir)
+	if err != nil {
+		t.Fatalf("failed to create new runfiles tree: %v", err)
+	}
+
+	binPath := path.Join(path.Dir(fakeRunfilesDir), files.BinName(binName))
+	srcBin := files.BinPath(binName)
+	t.Logf("srcBin %s\n", srcBin)
+	newPath, err := shutil.Copy(srcBin, binPath, true)
+	if err != nil {
+		t.Fatalf("failed to copy executable: %v", err)
+	}
+	if newPath != binPath {
+		t.Fatalf("incorrect copy:\nexpected: '%s'\nactual: '%s'", binPath, newPath)
+	}
+
+	t.Logf("%s\n", newPath)
+	return binPath
 }
 
 func CheckExecutableOutput(t *testing.T, config *TestConfig) {

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using FluentAssertions;
+ using MyRulesDotnet.Tools.Bazel;
 using Xunit;
 
 namespace MyRulesDotnet.Tools.RunfilesTests

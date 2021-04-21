@@ -20,7 +20,7 @@ def restore(ctx, dotnet, intermediate_path, project_file, dep_files):
     """
     outputs = _declare_files(ctx, dotnet, project_file, intermediate_path)
 
-    args, cmd_outputs = make_exec_cmd(ctx, dotnet, "restore", project_file, intermediate_path)
+    args, cmd_outputs = make_exec_cmd(ctx, dotnet, "restore", project_file, intermediate_path, None)
     outputs.extend(cmd_outputs)
 
     inputs = depset(

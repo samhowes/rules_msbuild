@@ -2,12 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace MyRulesDotnet.Tools
+namespace MyRulesDotnet.Tools.Bazel
 {
     /// <summary>
     /// Runfiles lookup library for Bazel-built Dotnet binaries and tests.
@@ -61,7 +59,15 @@ namespace MyRulesDotnet.Tools
     public abstract class Runfiles
     {
         // internal constructor, so only classes in this assembly may extend it.
-        internal Runfiles() { }
+        internal Runfiles()
+        {
+        }
+
+        public static LabelRunfiles Create(string defaultWorkSpace)
+        {
+            return new LabelRunfiles(Create(), defaultWorkSpace);
+        }
+
 
         /// <summary>
         /// Returns a new <see cref="Runfiles"/> instance.
@@ -125,11 +131,11 @@ namespace MyRulesDotnet.Tools
             Check.Argument(path != null);
             Check.Argument(!string.IsNullOrEmpty(path));
             Check.Argument(!path.StartsWith("../")
-                    && !path.Contains("/..")
-                    && !path.StartsWith("./")
-                    && !path.Contains("/./")
-                    && !path.EndsWith("/.")
-                    && !path.Contains("//"),
+                           && !path.Contains("/..")
+                           && !path.StartsWith("./")
+                           && !path.Contains("/./")
+                           && !path.EndsWith("/.")
+                           && !path.Contains("//"),
                 "path is not normalized: \"%s\"",
                 path);
 
@@ -139,6 +145,7 @@ namespace MyRulesDotnet.Tools
             {
                 return path;
             }
+
             return RlocationChecked(path);
         }
 
@@ -165,7 +172,7 @@ namespace MyRulesDotnet.Tools
             {
                 throw new IOException(
                     "Cannot load runfiles manifest: $RUNFILES_MANIFEST_ONLY is 1 but"
-                        + " $RUNFILES_MANIFEST_FILE is empty or undefined");
+                    + " $RUNFILES_MANIFEST_FILE is empty or undefined");
             }
 
             return value;
@@ -218,7 +225,8 @@ namespace MyRulesDotnet.Tools
             {
                 var result = new Dictionary<string, string>();
 
-                using (var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read), Encoding.UTF8))
+                using (var reader =
+                    new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read), Encoding.UTF8))
                 {
                     while (true)
                     {
@@ -246,6 +254,7 @@ namespace MyRulesDotnet.Tools
                         return path;
                     }
                 }
+
                 return null;
             }
 
@@ -290,6 +299,14 @@ namespace MyRulesDotnet.Tools
             {
                 var result = new Dictionary<string, string>(1) {["RUNFILES_DIR"] = _runfilesRoot};
                 return result;
+            }
+        }
+
+        public void SetEnvVars(IDictionary<string,string> env)
+        {
+            foreach (var (key, value) in GetEnvVars())
+            {
+                env[key] = value;
             }
         }
     }

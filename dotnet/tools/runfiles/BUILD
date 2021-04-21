@@ -7,6 +7,8 @@ dotnet_library(
     srcs = [
         "BazelEnvironment.cs",
         "Check.cs",
+        "Label.cs",
+        "LabelRunfiles.cs",
         "Runfiles.cs",
     ],
     target_framework = "netstandard2.1",

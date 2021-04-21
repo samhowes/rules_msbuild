@@ -49,6 +49,7 @@ def dotnet_exec_context(ctx, is_executable, is_test = False):
         None if toolchain == None else toolchain._builder,
         sdk,
         tfm = ctx.attr.target_framework,
+        output_dir_name = ctx.attr.target_framework,
         is_executable = is_executable,
         # todo(73) remove this
         is_precise = True if toolchain == None else False,
@@ -98,7 +99,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path):
+def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path, output_dir):
     """Create a command for use during the execution phase"""
     binlog = False  # todo(#51) disable when not debugging the build
     if True:
@@ -128,6 +129,9 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path):
         args.add(intermediate_path_full)
         args.add(processed_path)
         args.add(dotnet.sdk.config.trim_path)
+        if msbuild_target == "build":
+            args.add_joined("--content", ctx.files.content, join_with = ";")
+            args.add("--output_directory", output_dir.path)
         args.add("--")
         args.add(dotnet.path)
 

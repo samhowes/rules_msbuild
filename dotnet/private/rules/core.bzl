@@ -106,10 +106,23 @@ dotnet_tool_binary = rule(
 dotnet_tool_binaries cannot have any dependencies and are used to build other dotnet_* targets.""",
 )
 
-# used by end-user assemblies
+# used by all end-user assemblies (libraries, tests & binaries)
 ASSEMBLY_ATTRS = dicts.add(BASE_ASSEMBLY_ATTRS, {
     "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
-    "data": attr.label_list(allow_files = True),
+    "data": attr.label_list(
+        allow_files = True,
+        doc = """Standard bazel runfiles data. These files will be made available in the runfiles tree at the location
+        bazel normally places runfiles.""",
+    ),
+    "content": attr.label_list(
+        allow_files = True,
+        allow_empty = True,
+        doc = """Data items that will be copied to the output directory directly adjacent to the application assembly.
+        Items in this list are equivalent to specifying
+        `<Content Include="..."><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` in the project file.
+        These files will be available in a sandbox, but MSBuild will not be made aware of their existence.
+        """,
+    ),
     "deps": attr.label_list(
         providers = [
             [DotnetLibraryInfo],

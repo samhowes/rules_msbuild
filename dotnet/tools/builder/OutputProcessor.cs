@@ -8,11 +8,14 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class ProcessorContext
     {
+        public Command Command { get; }
+
         // bazel always sends us POSIX paths
         private const char BazelPathChar = '/';
         private readonly bool _normalizePath;
 
-
+        private const string OutputDirectoryKey = "output_directory";
+        
         private string NormalizePath(string input)
         {
             if (!_normalizePath) return input;
@@ -20,16 +23,24 @@ namespace MyRulesDotnet.Tools.Builder
         }
 
         // for testing
-        public ProcessorContext() { }
-        public ProcessorContext(string[] commandArgs, string[] passthroughArgs)
+        public ProcessorContext()
         {
+            Command = new Command();
+        }
+        public ProcessorContext(Command command)
+        {
+            Command = command;
+
+            var commandArgs = command.PositionalArgs;
             _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
             TargetDirectory = NormalizePath(commandArgs[0]);
-            OutputDirectory = NormalizePath(commandArgs[1]);
+            IntermediateBase = NormalizePath(commandArgs[1]);
             OutputBase = NormalizePath(commandArgs[2]);
-            ChildCommand = passthroughArgs;
+            ChildCommand = command.PassThroughArgs;
             // assumes bazel invokes actions at ExecRoot
             ExecRoot = Directory.GetCurrentDirectory();
+            if (command.NamedArgs.TryGetValue(OutputDirectoryKey, out var outputDirectory))
+                OutputDirectory = outputDirectory;
         }
 
         public string TargetDirectory { get; set; }
@@ -37,12 +48,14 @@ namespace MyRulesDotnet.Tools.Builder
         public string[] ChildCommand { get; set; }
         public string Suffix { get; set; }
         public string ExecRoot { get; set; }
+        public string IntermediateBase { get; set; }
         public string OutputDirectory { get; set; }
     }
 
     public class OutputProcessor
     {
         private readonly ProcessorContext _context;
+        private const string ContentKey = "content";
 
         private const string ExecRoot = "$exec_root$";
         private const string OutputBase = "$output_base$";
@@ -67,7 +80,7 @@ namespace MyRulesDotnet.Tools.Builder
 
             RunCommand();
 
-            Directory.CreateDirectory(_context.OutputDirectory);
+            Directory.CreateDirectory(_context.IntermediateBase);
 
             var regexString = $"(?<output_base>{Regex.Escape(_context.OutputBase)}(?<exec_root>{Regex.Escape(_context.Suffix)})?)";
 
@@ -84,7 +97,7 @@ namespace MyRulesDotnet.Tools.Builder
                     (match) => match.Groups["exec_root"].Success ? ExecRoot : OutputBase);
                 File.WriteAllText(info.FullName, replaced);
 
-                info.MoveTo(Path.Combine(_context.OutputDirectory, info.Name));
+                info.MoveTo(Path.Combine(_context.IntermediateBase, info.Name));
             });
         }
 
@@ -99,7 +112,7 @@ namespace MyRulesDotnet.Tools.Builder
             var regex = new Regex($@"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})", RegexOptions.Compiled);
             var escapedOutputBase = _context.OutputBase.Replace(@"\", @"\\");
             var escapedExecRoot = _context.ExecRoot.Replace(@"\", @"\\");
-            ProcessFiles(_context.OutputDirectory, (info, contents) =>
+            ProcessFiles(_context.IntermediateBase, (info, contents) =>
             {
                 var replaced = regex.Replace(contents,
                     (match) =>
@@ -116,6 +129,20 @@ namespace MyRulesDotnet.Tools.Builder
             });
 
             RunCommand();
+
+            if (!_context.Command.NamedArgs.TryGetValue(ContentKey, out var contentListString)) return;
+            
+            var contentList = contentListString.Split(";");
+            foreach (var filePath in contentList)
+            {
+                var src = new FileInfo(filePath);
+                var dest = new FileInfo(Path.Combine(_context.OutputDirectory, Path.GetFileName(src.Name)));
+
+                if (!dest.Exists || src.LastWriteTime > dest.LastWriteTime)
+                {
+                    src.CopyTo(dest.FullName, true);
+                }
+            }
         }
 
         private void ProcessFiles(string directoryPath, Action<FileInfo, string> modifyFile)

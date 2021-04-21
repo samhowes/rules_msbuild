@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using MyRulesDotnet.Tools.Bazel;
 
 namespace MyRulesDotnet.Tools.RunfilesTests
 {
