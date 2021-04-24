@@ -98,7 +98,9 @@ func testPath(t *testing.T, name string, files []bazel.RunfileEntry) {
 		}
 
 		dir, cleanup := testtools.CreateFiles(t, inputs)
-		defer cleanup()
+		if false {
+			defer cleanup()
+		}
 
 		cmd := exec.Command(gazellePath, "-build_file_name=BUILD")
 		cmd.Stdout = os.Stdout
