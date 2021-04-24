@@ -109,32 +109,50 @@ func (d dotnetLang) Loads() []rule.LoadInfo {
 func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	var rules []*rule.Rule
 	var imports []interface{}
+	var projectFile string
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
-		if !strings.HasSuffix(f, "proj") {
-			continue
+		if strings.HasSuffix(f, "proj") {
+			projectFile = f
+			// one project file per directory
+			break
 		}
-		baseName := path.Base(f)
-		ext := path.Ext(baseName)
-		name := baseName[0 : len(baseName)-len(ext)]
-		r := rule.NewRule("dotnet_library", name)
-
-		lang := strings.TrimSuffix(ext, "proj")
-		r.SetAttr("srcs", makeGlob(
-			[]string{fmt.Sprintf("**/*%s", lang)},
-			[]string{"bin/**", "obj/**"},
-		))
-
-		project, err := Load(f)
-		if err != nil {
-			log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build definitions. Parsing error: %v", f, err)
-			continue
-		}
-
-		r.SetAttr("target_framework", project.TargetFramework)
-
-		rules = append(rules, r)
-		imports = append(imports, "interface{}")
 	}
+	if projectFile == "" {
+		// must be subdirectory of a project
+		return language.GenerateResult{}
+	}
+
+	baseName := path.Base(projectFile)
+	ext := path.Ext(baseName)
+	name := baseName[0 : len(baseName)-len(ext)]
+	r := rule.NewRule("dotnet_library", name)
+
+	lang := strings.TrimSuffix(ext, "proj")
+	globs := []string{fmt.Sprintf("*%s", lang)}
+	for _, d := range args.Subdirs {
+		ignoreValue := d
+		if len(d) > 3 && d[len(d)-1] == '/' {
+			ignoreValue = d[len(d)-3:]
+		}
+		if len(ignoreValue) == 3 && (ignoreValue == "bin" || ignoreValue == "obj") {
+			continue
+		}
+		globs = append(globs, fmt.Sprintf("%s/*%s", d, lang))
+	}
+
+	r.SetAttr("srcs", makeGlob(globs, []string{}))
+
+	project, err := Load(projectFile)
+	if err != nil {
+		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build definitions. Parsing error: %v", projectFile, err)
+		return language.GenerateResult{}
+	}
+
+	r.SetAttr("target_framework", project.TargetFramework)
+
+	rules = append(rules, r)
+	imports = append(imports, "interface{}")
+
 	return language.GenerateResult{
 		Gen:     rules,
 		Imports: imports,

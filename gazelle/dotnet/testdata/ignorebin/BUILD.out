@@ -1,7 +1,10 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 
 dotnet_library(
-    name = "nobuildfiles",
-    srcs = glob(["*.cs"]),
+    name = "ignorebin",
+    srcs = glob([
+        "*.cs",
+        "subdir/*.cs",
+    ]),
     target_framework = "netstandard2.1",
 )
