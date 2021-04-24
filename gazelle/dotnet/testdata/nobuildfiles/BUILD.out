@@ -1,0 +1,13 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+
+dotnet_library(
+    name = "nobuildfiles",
+    srcs = glob(
+        ["**/*.cs"],
+        exclude = [
+            "bin/**",
+            "obj/**",
+        ],
+    ),
+    target_framework = "netstandard2.1",
+)
