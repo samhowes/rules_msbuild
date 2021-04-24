@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace MyRulesDotnet.Tools.Builder
 {
@@ -15,12 +17,14 @@ namespace MyRulesDotnet.Tools.Builder
 
     public class Program
     {
+        private static Regex MsBuildVariableRegex = new Regex(@"\$\((\w+)\)", RegexOptions.Compiled);
         public static bool DebugEnabled = Environment.GetEnvironmentVariable("DOTNET_BUILDER_DEBUG") != null;
 
-        public static void Fail(string message)
+        public static int Fail(string message)
         {
             Console.Error.WriteLine("[Builder] " + message);
             Environment.Exit(1);
+            return 1; // weird. Oh well.
         }
 
         public static void Debug(string message)
@@ -29,71 +33,109 @@ namespace MyRulesDotnet.Tools.Builder
             Console.WriteLine("[Debug] " + message);
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BUILDER_DEBUG")))
+            if (DebugEnabled)
             {
-                DebugEnabled = true;
                 Debug($"Received {args.Length} arguments: {string.Join(" ", args)}");
             }
 
-            var command = new Command {Action = args[0]};
-            var thisArgsEnd = 1;
-            for (; thisArgsEnd < args.Length; thisArgsEnd++)
+            var command = ParseArgs(args);
+
+            switch (command.Action)
             {
-                var arg = args[thisArgsEnd];
+                case "launcher":
+                    return MakeLauncher(command);
+                    
+                case "restore":
+                    return PostProcess(command);
+                    
+                case "publish":
+                case "build":
+                    return PreProcess(command);
+                    
+                default:
+                    return Fail($"Unknown command: {command.Action}");
+                    
+            }
+        }
+
+        private static Command ParseArgs(string[] args)
+        {
+            var command = new Command {Action = args[0]};
+            ParseArgsImpl(args, 1, command);
+            if (command.PassThroughArgs == null) return command;
+            
+            var startupDirectory = Environment.CurrentDirectory;
+            for (var i = 0; i < command.PassThroughArgs.Length; i++)
+            {
+                var arg = command.PassThroughArgs[i];
+                
+                command.PassThroughArgs[i] = MsBuildVariableRegex.Replace(arg, (match) =>
+                {
+                    if (match.Groups[1].Value == "MSBuildStartupDirectory")
+                    {
+                        return startupDirectory;
+                    }
+
+                    return match.Value;
+                });
+
+            }
+            return command;
+        }
+
+        private static void ParseArgsImpl(string[] args, int start, Command command)
+        {
+            for (var i = start; i < args.Length; i++)
+            {
+                var arg = args[i];
+                if (arg == "@file")
+                {
+                    var fileArgs = File.ReadAllLines(args[i + 1])
+                        .SelectMany(l => l.Split(' '))
+                        .ToArray();
+                    ParseArgsImpl(fileArgs, 0, command);
+                    i++;
+                    continue;
+                }
+                
                 if (arg.Length == 0 || arg[0] != '-')
                 {
                     command.PositionalArgs.Add(arg);
                     continue;
                 }
-                
+
                 if (arg == "--")
                 {
-                    command.PassThroughArgs = args[(thisArgsEnd + 1)..];
+                    command.PassThroughArgs = args[(i + 1)..];
                     break;
                 }
 
                 // assume a well formed array of args in the form [`--name` `value`]
                 var name = arg[2..];
-                var value = args[thisArgsEnd + 1];
+                var value = args[i + 1];
                 command.NamedArgs[name] = value;
-                thisArgsEnd++;
-            }
-
-            switch (command.Action)
-            {
-                case "launcher":
-                    MakeLauncher(command);
-                    return;
-                case "restore":
-                    PostProcess(command);
-                    return;
-                case "build":
-                    PreProcess(command);
-                    return;
-                default:
-                    Fail($"Unknown command: {command}");
-                    return;
+                i++;
             }
         }
 
-        private static void PreProcess(Command command)
+        private static int PreProcess(Command command)
         {
             var processor = new OutputProcessor(new ProcessorContext(command));
-            processor.PreProcess();
+            return processor.PreProcess();
         }
 
-        private static void PostProcess(Command command)
+        private static int PostProcess(Command command)
         {
             var processor = new OutputProcessor(new ProcessorContext(command));
-            processor.PostProcess();
+            return processor.PostProcess();
         }
 
-        private static void MakeLauncher(Command command)
+        private static int MakeLauncher(Command command)
         {
             var factory = new LauncherFactory();
-            factory.Create(command.PositionalArgs.ToArray());
+            return factory.Create(command.PositionalArgs.ToArray());
         }
     }
 }

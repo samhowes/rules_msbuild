@@ -1,4 +1,5 @@
 load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "make_launcher")
+load("//dotnet/private/actions:publish.bzl", "publish")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -29,13 +30,9 @@ def _make_executable(ctx, test):
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(
         files = [info.output_dir] + ctx.files.data,
-        transitive_files = depset(
-            [dotnet.sdk.dotnet],
-            transitive = [
-                #                tfm_runtime
-            ],
-        ),
+        transitive_files = depset([dotnet.sdk.dotnet]),
     )
+
     assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
     return [
         DefaultInfo(
@@ -67,6 +64,9 @@ def _dotnet_library_impl(ctx):
         ),
         info,
     ]
+
+def _dotnet_publish_impl(ctx):
+    return publish(ctx)
 
 # Used by dotnet_tool_binary
 BASE_ASSEMBLY_ATTRS = {
@@ -150,6 +150,17 @@ dotnet_binary = rule(
     implementation = _dotnet_binary_impl,
     attrs = EXECUTABLE_ATTRS,
     executable = True,
+    toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
+)
+
+dotnet_publish = rule(
+    implementation = _dotnet_publish_impl,
+    attrs = {
+        "target": attr.label(
+            doc = "The dotnet_* target to publish.",
+            mandatory = True,
+        ),
+    },
     toolchains = ["@my_rules_dotnet//dotnet:toolchain"],
 )
 

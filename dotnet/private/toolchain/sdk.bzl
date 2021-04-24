@@ -134,6 +134,14 @@ def _sdk_build_file(ctx, platform):
         dynamics.append(_make_filegroup(d.basename, paths.join("shared", d.basename)))
         shared.append(":" + d.basename)
 
+    if dotnetos == "windows":
+        # only on windows, on non-windows, there won't be an exe extension and it registers as a self edge
+        # dependency loop
+        dynamics.append("""filegroup(
+   name = "dotnet",
+   srcs = ["dotnet.exe"],
+)""")
+
     ctx.template(
         "BUILD.bazel",
         Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),

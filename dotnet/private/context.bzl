@@ -23,10 +23,11 @@ still want to perform the same fundamental actions with the dotnet binary.
 
 load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
-load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE")
+load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "STARTUP_DIR")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
-def dotnet_exec_context(ctx, is_executable, is_test = False):
+def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = None):
     toolchain = None
     sdk = None
 
@@ -43,18 +44,20 @@ def dotnet_exec_context(ctx, is_executable, is_test = False):
         # for out-of-the-box bazel-compatible test logging
         implicit_deps.append(sdk.config.test_logger)
 
+    tfm = getattr(ctx.attr, "target_framework", target_framework)
     return dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,
         None if toolchain == None else toolchain._builder,
         sdk,
-        tfm = ctx.attr.target_framework,
-        output_dir_name = ctx.attr.target_framework,
+        tfm = tfm,
+        output_dir_name = tfm,
         is_executable = is_executable,
         # todo(73) remove this
         is_precise = True if toolchain == None else False,
         implicit_deps = implicit_deps,
         is_test = is_test,
+        intermediate_path = INTERMEDIATE_BASE,
     )
 
 def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
@@ -99,7 +102,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path, output_dir):
+def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
     """Create a command for use during the execution phase"""
     binlog = False  # todo(#51) disable when not debugging the build
     if True:
@@ -112,32 +115,76 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, intermediate_path, output_d
         binlog,
     )
 
-    # we'll take care of making sure references are built, don't traverse them unnecessarily
-    arg_list.append("/p:BuildProjectReferences=false")
-    arg_list.append("/p:RestoreRecursive=false")
+    msbuild_properties = {
+        # we'll take care of making sure references are built, don't traverse them unnecessarily
+        "BuildProjectReferences": "false",
+        "RestoreRecursive": "false",
+    }
+
+    if msbuild_target == "publish":
+        msbuild_properties = dicts.add(msbuild_properties, {
+            "PublishDir": paths.join(STARTUP_DIR, files.output_dir.path),
+            "NoBuild": "true",
+            "TreatWarningsAsErrors": "true",
+        })
+
+    for k, v in msbuild_properties.items():
+        arg_list.append("/p:{}={}".format(k, v))
 
     outputs = []
     if binlog_path != None:
         outputs.append(ctx.actions.declare_file(paths.basename(binlog_path)))
 
     args = ctx.actions.args()
+    inputs = []
     if dotnet.builder != None:
-        intermediate_path_full = paths.join(str(proj.dirname), intermediate_path)
+        intermediate_path_full = paths.join(str(proj.dirname), dotnet.config.intermediate_path)
         processed_path = paths.join(intermediate_path_full, dotnet.builder_output_dir)
         args.add(dotnet.builder.path)
         args.add(msbuild_target)
-        args.add(intermediate_path_full)
-        args.add(processed_path)
-        args.add(dotnet.sdk.config.trim_path)
-        if msbuild_target == "build":
-            args.add_joined("--content", ctx.files.content, join_with = ";")
-            args.add("--output_directory", output_dir.path)
+
+        # these args specify lists of files, which could get very long. We can't take advantage of
+        # params files because the dotnet cli needs to execute the builder, and the dotnet cli doesn't have
+        # support for params files. Instead, we'll just write our own params file manually
+        builder_args = [
+            ["--package", ctx.label.package],
+            ["--intermediate_base", intermediate_path_full],
+            ["--tfm", dotnet.config.tfm],
+            ["--bazel_output_base", dotnet.sdk.config.trim_path],
+            ["--project_file", proj.path],
+            ["--workspace", ctx.workspace_name],
+        ]
+
+        if msbuild_target == "build" or msbuild_target == "publish":
+            builder_args.extend([
+                ["--content", ";".join([f.path for f in files.content.to_list()])],
+                ["--output_directory", files.output_dir.path],
+            ])
+
+        if msbuild_target == "publish":
+            runfiles_directory = paths.replace_extension(paths.basename(proj.path), ".dll") + ".runfiles"
+            builder_args.extend([
+                ["--runfiles", ";".join([f.path for f in files.data.to_list()])],
+                ["--runfiles_directory", runfiles_directory],
+            ])
+
+        params_file = ctx.actions.declare_file(paths.basename(proj.path) + "." + msbuild_target + ".params")
+        ctx.actions.write(
+            params_file,
+            "\n".join([
+                " ".join(a)
+                for a in builder_args
+            ]),
+        )
+        inputs.append(params_file)
+
+        args.add("@file", params_file.path)
         args.add("--")
         args.add(dotnet.path)
 
     for arg in arg_list:
         args.add(arg)
-    return args, outputs
+    return args, outputs, inputs
 
 def make_cmd(dotnet, project_path, msbuild_target, binlog = False):
     args_list = [

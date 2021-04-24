@@ -19,9 +19,10 @@ namespace MyRulesDotnet.Tests.Tools
             Assert.False(true, message);
         }
 
-        protected override void RunCommand()
+        protected override int RunCommand()
         {
             // don't run the command
+            return 0;
         }
     }
 
@@ -49,9 +50,9 @@ namespace MyRulesDotnet.Tests.Tools
             _context = new ProcessorContext()
             {
                 Command = {},
-                TargetDirectory = _testDir,
-                IntermediateBase = Path.Combine(_testDir, "processed"),
-                OutputBase = _outputBase,
+                IntermediateBase = _testDir,
+                Tfm = "foo",
+                BazelOutputBase = _outputBase,
                 ExecRoot = Combine(_outputBase, "baz")
             };
             
@@ -77,24 +78,23 @@ namespace MyRulesDotnet.Tests.Tools
                 separator = @"\\";
             }
 
-            var testFileInput = _assetsFilepathBase + fileExtension;
-            File.WriteAllText(testFileInput, _contents);
+            var testFileInput = new FileInfo(_assetsFilepathBase + fileExtension);
+            File.WriteAllText(testFileInput.FullName, _contents);
 
             _processor.PostProcess();
 
-            var outputFile = Path.Combine(Path.GetDirectoryName(testFileInput)!, "processed",
-                Path.GetFileName(testFileInput)!);
+            var outputFile = Path.Combine(testFileInput.DirectoryName!, "processed", testFileInput.Name);
 
             var postProcessedContents = File.ReadAllText(outputFile);
 
             postProcessedContents.Should().Be(string.Join(separator, "$output_base$", "bam"));
-
-            _context.TargetDirectory = Path.Combine(_context.TargetDirectory, "preprocessed", "obj");
-            Directory.CreateDirectory(_context.TargetDirectory);
-
+            
+            // delete the original, the preprocessor should replace it
+            testFileInput.Delete();
+            
             _processor.PreProcess();
 
-            outputFile = Path.Combine(_context.TargetDirectory, Path.GetFileName(testFileInput)!);
+            outputFile = Path.Combine(_context.IntermediateBase, testFileInput.Name);
 
             var preProcessedContents = File.ReadAllText(outputFile);
 

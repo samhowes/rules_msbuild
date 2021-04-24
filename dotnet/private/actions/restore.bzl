@@ -5,7 +5,7 @@ load("//dotnet/private/msbuild:xml.bzl", "STARTUP_DIR", "element", "prepare_proj
 load("//dotnet/private:context.bzl", "make_exec_cmd")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
 
-def restore(ctx, dotnet, intermediate_path, project_file, dep_files):
+def restore(ctx, dotnet, project_file, dep_files):
     """Emits an action for generating files necessary for a nuget restore
 
     https://docs.microsoft.com/en-us/nuget/concepts/package-installation-process
@@ -13,18 +13,17 @@ def restore(ctx, dotnet, intermediate_path, project_file, dep_files):
     Args:
         ctx: the ctx of the dotnet rule
         sdk: the dotnet sdk
-        intermediate_path: the path to the obj directory
         packages: a list of NuGetPackageInfo providers to restore
     Returns:
         a list of files in the package
     """
-    outputs = _declare_files(ctx, dotnet, project_file, intermediate_path)
+    outputs = _declare_files(ctx, dotnet, project_file)
 
-    args, cmd_outputs = make_exec_cmd(ctx, dotnet, "restore", project_file, intermediate_path, None)
+    args, cmd_outputs, cmd_inputs = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
     outputs.extend(cmd_outputs)
 
     inputs = depset(
-        direct = [project_file, dotnet.sdk.config.nuget_config],
+        direct = [project_file, dotnet.sdk.config.nuget_config] + cmd_inputs,
         transitive = [dep_files.inputs, dotnet.sdk.init_files],
     )
 
@@ -40,7 +39,7 @@ def restore(ctx, dotnet, intermediate_path, project_file, dep_files):
 
     return outputs
 
-def _declare_files(ctx, dotnet, project_file, intermediate_path):
+def _declare_files(ctx, dotnet, project_file):
     file_names = []
 
     nuget_file_extensions = [
@@ -73,7 +72,7 @@ def _declare_files(ctx, dotnet, project_file, intermediate_path):
             ))
 
     files = [
-        ctx.actions.declare_file(paths.join(intermediate_path, file_name))
+        ctx.actions.declare_file(paths.join(dotnet.config.intermediate_path, file_name))
         for file_name in file_names
     ]
 

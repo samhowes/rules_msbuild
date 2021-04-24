@@ -1,10 +1,13 @@
 bazel-*
 bin
 obj
- *.user
+*.user
 .vs
 .ijwb
 .clwb
 *.bazelrc
 .vscode/c_cpp_properties.json
 .idea
+
+
+

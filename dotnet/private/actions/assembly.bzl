@@ -104,28 +104,32 @@ def emit_assembly(ctx, dotnet):
         Tuple: the emitted assembly and all outputs
     """
     compiliation_mode = ctx.var["COMPILATION_MODE"]
-    output_path = dotnet.config.output_dir_name
-    intermediate_path = INTERMEDIATE_BASE
     sdk = dotnet.sdk
 
     output_dir = None
     if not dotnet.config.is_precise:
-        output_dir = ctx.actions.declare_directory(output_path)
+        output_dir = ctx.actions.declare_directory(dotnet.config.output_dir_name)
 
     ### declare and prepare all the build inputs/outputs
     deps = dotnet.config.implicit_deps + getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
     dep_files = process_deps(dotnet, deps)
-    project_file = make_project_file(ctx, intermediate_path, sdk.config.nuget_config, dotnet.config.is_executable, dep_files)
+    project_file = make_project_file(ctx, dotnet.config.intermediate_path, sdk.config.nuget_config, dotnet.config.is_executable, dep_files)
 
-    restore_outputs = restore(ctx, dotnet, intermediate_path, project_file, dep_files)
-    assembly, runtime, private = _declare_assembly_files(ctx, output_path, dotnet.config.is_executable)
-    args, cmd_outputs = make_exec_cmd(ctx, dotnet, "build", project_file, intermediate_path, output_dir)
+    restore_outputs = restore(ctx, dotnet, project_file, dep_files)
+    assembly, runtime, private = _declare_assembly_files(ctx, dotnet.config.output_dir_name, dotnet.config.is_executable)
+    files = struct(
+        output_dir = output_dir,
+        # todo(#6) make this a full depset including dependencies
+        content = depset(getattr(ctx.files, "content", [])),
+        data = depset(getattr(ctx.files, "data", [])),
+    )
+    args, cmd_outputs, cmd_inputs = make_exec_cmd(ctx, dotnet, "build", project_file, files)
 
     content = getattr(ctx.files, "content", [])
 
     ### collect build inputs/outputs
     inputs = depset(
-        direct = ctx.files.srcs + content + [project_file] + restore_outputs,
+        direct = ctx.files.srcs + content + [project_file] + restore_outputs + cmd_inputs,
         transitive = [dep_files.inputs, sdk.init_files],
     )
 
@@ -134,7 +138,9 @@ def emit_assembly(ctx, dotnet):
         for f in dep_files.copied_files.to_list()
     ]
 
-    outputs = runtime + private + copied_dep_files + cmd_outputs
+    intermediate_dir = ctx.actions.declare_directory(paths.join(dotnet.config.intermediate_path, dotnet.config.tfm))
+
+    outputs = runtime + private + copied_dep_files + cmd_outputs + [intermediate_dir]
     if output_dir != None:
         outputs.append(output_dir)
 
@@ -150,11 +156,15 @@ def emit_assembly(ctx, dotnet):
 
     info = DotnetLibraryInfo(
         assembly = assembly,
+        intermediate_dir = intermediate_dir,
         output_dir = output_dir,
         project_file = project_file,
         runtime = depset(runtime + copied_dep_files),
         package_runtimes = dep_files.package_runtimes,
         build = depset(runtime + [project_file], transitive = [dep_files.inputs]),
+        target_framework = ctx.attr.target_framework,
+        data = files.data,
+        content = files.content,
     )
     return info, outputs + restore_outputs, private
 
