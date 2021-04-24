@@ -10,8 +10,14 @@ import (
 
 func TestRunPublishOutput(t *testing.T) {
 	dotnetPath := files.BinPath("@dotnet")
+	publishDir := files.Path("publish/netcoreapp3.1")
+	if publishDir == "" {
+		t.Fatalf("can't locate publish directory")
+	}
+	assemblyPath := path.Join(publishDir, "HelloWeb.dll")
+
 	config := lib.TestConfig{
-		Args:           []string{files.Path("publish/netcoreapp3.1/HelloWeb.dll")},
+		Args:           []string{assemblyPath},
 		ExpectedOutput: "The special value is: 42!\n",
 		Target:         dotnetPath,
 	}
