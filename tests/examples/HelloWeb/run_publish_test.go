@@ -17,6 +17,8 @@ func TestRunPublishOutput(t *testing.T) {
 	}
 	os.Setenv("DOTNET_CLI_HOME", path.Dir(dotnetPath))
 	os.Setenv("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
+	os.Setenv("DOTNET_MULTILEVEL_LOOKUP", "0")
+	os.Setenv("DOTNET_NOLOGO", "0")
 	t.Logf("dotnet path: %s\n", config.Target)
 	lib.CheckExecutableOutput(t, &config)
 }

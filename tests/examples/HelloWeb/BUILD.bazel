@@ -61,6 +61,7 @@ go_test(
     data = [
         ":publish",
         "@dotnet_sdk//:dotnet",
+        "@dotnet_sdk//:init_files",
     ],
     deps = [
         "//tests/tools/executable",
