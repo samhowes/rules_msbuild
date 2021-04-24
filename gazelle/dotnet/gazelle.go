@@ -89,9 +89,17 @@ var kinds = map[string]rule.KindInfo{
 func (d dotnetLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{{
 		Name:    "@my_rules_dotnet//dotnet:defs.bzl",
-		Symbols: []string{"dotnet_library"},
+		Symbols: []string{"dotnet_library", "dotnet_binary"},
 	}}
 }
+
+type directoryInfo struct {
+	extensions map[string]bool
+}
+
+var accumulator = struct {
+	directories map[string]directoryInfo
+}{directories: map[string]directoryInfo{}}
 
 // GenerateRules extracts build metadata from source files in a directory.
 // GenerateRules is called in each directory where an update is requested
@@ -110,37 +118,27 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	var rules []*rule.Rule
 	var imports []interface{}
 	var projectFile string
+	info := directoryInfo{extensions: map[string]bool{}}
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
 			projectFile = f
 			// one project file per directory
-			break
-		}
-	}
-	if projectFile == "" {
-		// must be subdirectory of a project
-		return language.GenerateResult{}
-	}
-
-	baseName := path.Base(projectFile)
-	ext := path.Ext(baseName)
-	name := baseName[0 : len(baseName)-len(ext)]
-	r := rule.NewRule("dotnet_library", name)
-
-	lang := strings.TrimSuffix(ext, "proj")
-	globs := []string{fmt.Sprintf("*%s", lang)}
-	for _, d := range args.Subdirs {
-		ignoreValue := d
-		if len(d) > 3 && d[len(d)-1] == '/' {
-			ignoreValue = d[len(d)-3:]
-		}
-		if len(ignoreValue) == 3 && (ignoreValue == "bin" || ignoreValue == "obj") {
 			continue
 		}
-		globs = append(globs, fmt.Sprintf("%s/*%s", d, lang))
+
+		switch strings.ToLower(path.Base(f)) {
+		case "launchsettings.json":
+			continue
+		}
+
+		info.extensions[path.Ext(f)] = true
 	}
 
-	r.SetAttr("srcs", makeGlob(globs, []string{}))
+	if projectFile == "" {
+		// must be subdirectory of a project
+		accumulator.directories[args.Rel] = info
+		return language.GenerateResult{}
+	}
 
 	project, err := Load(projectFile)
 	if err != nil {
@@ -148,7 +146,51 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		return language.GenerateResult{}
 	}
 
+	baseName := path.Base(projectFile)
+	ext := path.Ext(baseName)
+	name := baseName[0 : len(baseName)-len(ext)]
+
+	var kind string
+	if project.Executable {
+		kind = "dotnet_binary"
+	} else {
+		kind = "dotnet_library"
+	}
+
+	r := rule.NewRule(kind, name)
+
+	project.CollectFiles(info, "")
+
+	var data []string
+	for _, d := range args.Subdirs {
+		// https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes
+		// https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/host-and-deploy/visual-studio-publish-profiles.md#compute-project-items
+		switch d {
+		case "wwwroot":
+			data = append(data, "wwwroot/**")
+			continue
+		case "bin":
+			continue
+		case "obj":
+			continue
+		}
+
+		rel := path.Join(args.Rel, d)
+		dInfo := accumulator.directories[rel]
+		project.CollectFiles(dInfo, fmt.Sprintf("%s/", d))
+	}
+
+	for key, value := range project.Files {
+		r.SetAttr(key, makeGlob(value, []string{}))
+	}
+
 	r.SetAttr("target_framework", project.TargetFramework)
+	if project.Sdk != "" {
+		r.SetAttr("sdk", project.Sdk)
+	}
+	if len(data) > 0 {
+		r.SetAttr("data", makeGlob(data, []string{}))
+	}
 
 	rules = append(rules, r)
 	imports = append(imports, "interface{}")

@@ -1,7 +1,8 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 
 dotnet_library(
-    name = "nobuildfiles",
+    name = "simple",
     srcs = glob(["*.cs"]),
+    sdk = "Microsoft.NET.Sdk",
     target_framework = "netstandard2.1",
 )

@@ -6,5 +6,6 @@ dotnet_library(
         "*.cs",
         "subdir/*.cs",
     ]),
+    sdk = "Microsoft.NET.Sdk",
     target_framework = "netstandard2.1",
 )
