@@ -42,23 +42,6 @@ namespace MyRulesDotnet.Tools.Builder
 
             var command = ParseArgs(args);
 
-            var startupDirectory = Environment.CurrentDirectory;
-            for (var i = 0; i < command.PassThroughArgs.Length; i++)
-            {
-                var arg = command.PassThroughArgs[i];
-                
-                command.PassThroughArgs[i] = MsBuildVariableRegex.Replace(arg, (match) =>
-                {
-                    if (match.Groups[1].Value == "MSBuildStartupDirectory")
-                    {
-                        return startupDirectory;
-                    }
-
-                    return match.Value;
-                });
-
-            }
-            
             switch (command.Action)
             {
                 case "launcher":
@@ -81,7 +64,24 @@ namespace MyRulesDotnet.Tools.Builder
         {
             var command = new Command {Action = args[0]};
             ParseArgsImpl(args, 1, command);
+            if (command.PassThroughArgs == null) return command;
+            
+            var startupDirectory = Environment.CurrentDirectory;
+            for (var i = 0; i < command.PassThroughArgs.Length; i++)
+            {
+                var arg = command.PassThroughArgs[i];
+                
+                command.PassThroughArgs[i] = MsBuildVariableRegex.Replace(arg, (match) =>
+                {
+                    if (match.Groups[1].Value == "MSBuildStartupDirectory")
+                    {
+                        return startupDirectory;
+                    }
 
+                    return match.Value;
+                });
+
+            }
             return command;
         }
 
