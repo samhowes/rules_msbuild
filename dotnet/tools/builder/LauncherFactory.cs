@@ -12,7 +12,7 @@ namespace MyRulesDotnet.Tools.Builder
         {
         }
 
-        public void Create(string[] args)
+        public int Create(string[] args)
         {
             var launcherTemplate = new FileInfo(args[0]);
             if (!launcherTemplate.Exists)
@@ -34,6 +34,7 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             writer.Write(output);
+            return 0;
         }
     }
 }

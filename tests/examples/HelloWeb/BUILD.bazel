@@ -1,5 +1,6 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
 
 dotnet_binary(
     name = "HelloWeb",
@@ -7,6 +8,11 @@ dotnet_binary(
         "Program.cs",
         "Startup.cs",
     ],
+    content = [
+        ":appsettings.json",
+        ":appsettings.Development.json",
+    ],
+    data = glob(["wwwroot/**/*"]),
     sdk = "Microsoft.NET.Sdk.Web",
     target_framework = "netcoreapp3.1",
 )
@@ -15,14 +21,49 @@ build_test(
     name = "HelloWeb_test",
     expected_files = {
         "netcoreapp3.1": [
-            "HelloWeb.pdb",
-            "HelloWeb.dll",
-            "HelloWeb.deps.json",
-            "HelloWeb.runtimeconfig.json",
-            "HelloWeb.runtimeconfig.dev.json",
+            "appsettings.json",
+            "appsettings.Development.json",
         ],
     },
-    # todo(#77) figure out how to properly run this
-    #    expected_output = "Hello Bazel!\n",
+    expected_output = "The special value is: 42!\n",
+    run_location = "standard",
     target = "HelloWeb",
+)
+
+dotnet_publish(
+    name = "publish",
+    target = "HelloWeb",
+)
+
+build_test(
+    name = "publish_test",
+    expected_files = {
+        "publish/netcoreapp3.1": [
+            "appsettings.json",
+            "appsettings.Development.json",
+            "HelloWeb.deps.json",
+            "HelloWeb.dll",
+            "HelloWeb.pdb",
+            "HelloWeb.runtimeconfig.json",
+            "web.config",
+        ],
+        "publish/netcoreapp3.1/HelloWeb.dll.runfiles/my_rules_dotnet/tests/examples/HelloWeb/wwwroot": [
+            "foo.txt",
+        ],
+    },
+    target = "publish",
+)
+
+go_test(
+    name = "run_publish_test",
+    size = "small",
+    srcs = ["run_publish_test.go"],
+    data = [
+        ":publish",
+        "@dotnet_sdk//:dotnet",
+    ],
+    deps = [
+        "//tests/tools/executable",
+        "//tests/tools/files",
+    ],
 )

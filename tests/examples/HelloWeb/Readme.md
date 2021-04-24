@@ -1,4 +1,4 @@
-# //tests/examples/Web/Configuration
+# //tests/examples/HelloWeb
 
 This package tests the loading of configuration files using the standard WebApplication template. `Program.cs` configures everything with the defaults and attempts to print out a value from its `appsettings.json`. This test makes sure the running executable has access to its configuration files.
 

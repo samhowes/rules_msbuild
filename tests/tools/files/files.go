@@ -26,7 +26,13 @@ func initInfo() {
 
 func Path(packageRelative string) string {
 	initInfo()
-	rpath := path.Join(Info.pkg, packageRelative)
+	var rpath string
+	if packageRelative[0] == '@' {
+		rpath = packageRelative[1:]
+	} else {
+		rpath = path.Join(Info.pkg, packageRelative)
+	}
+
 	fpath, _ := bazel.Runfile(rpath) // yolo on the err, totally won't regret
 	return fpath
 }

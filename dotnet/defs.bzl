@@ -28,6 +28,7 @@ load(
     "//dotnet/private/rules:core.bzl",
     _dotnet_binary = "dotnet_binary",
     _dotnet_library = "dotnet_library",
+    _dotnet_publish = "dotnet_publish",
     _dotnet_test = "dotnet_test",
     _dotnet_tool_binary = "dotnet_tool_binary",
 )
@@ -56,5 +57,6 @@ NuGetPackageInfo = _NuGetPackageInfo
 
 dotnet_tool_binary = _dotnet_tool_binary
 dotnet_binary = _dotnet_binary
+dotnet_publish = _dotnet_publish
 dotnet_library = _dotnet_library
 dotnet_test = _dotnet_test
