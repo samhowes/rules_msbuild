@@ -1,0 +1,23 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+
+# gazelle: unsupported project element: Target
+# gazelle: unsupported project element: Target
+# gazelle: unsupported item type PackageReference
+# gazelle: unsupported item type Content
+# gazelle: unsupported item type None
+# gazelle: unsupported item type None
+dotnet_binary(
+    name = "clientapp",
+    srcs = glob([
+        "*.cs",
+        "Controllers/*.cs",
+        "Pages/*.cs",
+    ]),
+    content = glob([
+        "*.json",
+        "ClientApp/*.json",
+        "ClientApp/public/*.json",
+    ]),
+    sdk = "Microsoft.NET.Sdk.Web",
+    target_framework = "net5.0",
+)

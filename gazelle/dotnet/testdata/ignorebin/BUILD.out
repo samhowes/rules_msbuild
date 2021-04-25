@@ -5,6 +5,7 @@ dotnet_library(
     srcs = glob([
         "*.cs",
         "subdir/*.cs",
+        "subdir/bin/*.cs",
     ]),
     sdk = "Microsoft.NET.Sdk",
     target_framework = "netstandard2.1",

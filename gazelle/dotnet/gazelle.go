@@ -20,6 +20,8 @@ const languageName = "dotnet"
 
 type dotnetLang struct{}
 
+type dotnetExt struct{}
+
 // NewLanguage is called by gazelle to install this language extension in a binary
 func NewLanguage() language.Language {
 	return &dotnetLang{}
@@ -41,7 +43,25 @@ func (d dotnetLang) KnownDirectives() []string {
 }
 
 func (d dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
-	// todo(#84)
+	base := path.Base(rel)
+	if base == "node_modules" {
+		delete(c.Exts, languageName)
+		return
+	}
+	parent, exists := c.Exts[languageName].(directoryInfo)
+	if !exists && rel != "" {
+		return
+	}
+
+	self := directoryInfo{
+		base:     base,
+		children: map[string]directoryInfo{},
+		exts:     map[string]bool{},
+	}
+	if exists {
+		parent.children[base] = self
+	}
+	c.Exts[languageName] = self
 }
 
 // Name returns the name of the language. This should be a prefix of the
@@ -94,12 +114,14 @@ func (d dotnetLang) Loads() []rule.LoadInfo {
 }
 
 type directoryInfo struct {
-	extensions map[string]bool
+	children map[string]directoryInfo
+	exts     map[string]bool
+	base     string
 }
 
 var accumulator = struct {
-	directories map[string]directoryInfo
-}{directories: map[string]directoryInfo{}}
+	dirs map[string]directoryInfo
+}{dirs: map[string]directoryInfo{}}
 
 // GenerateRules extracts build metadata from source files in a directory.
 // GenerateRules is called in each directory where an update is requested
@@ -115,10 +137,14 @@ var accumulator = struct {
 // Any non-fatal errors this function encounters should be logged using
 // log.Print.
 func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
+	info, ok := args.Config.Exts[languageName].(directoryInfo)
+	if !ok {
+		return language.GenerateResult{}
+	}
 	var rules []*rule.Rule
 	var imports []interface{}
 	var projectFile string
-	info := directoryInfo{extensions: map[string]bool{}}
+
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
 			projectFile = f
@@ -131,12 +157,11 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 			continue
 		}
 
-		info.extensions[path.Ext(f)] = true
+		info.exts[path.Ext(f)] = true
 	}
 
 	if projectFile == "" {
 		// must be subdirectory of a project
-		accumulator.directories[args.Rel] = info
 		return language.GenerateResult{}
 	}
 
@@ -147,8 +172,8 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 
 	baseName := path.Base(projectFile)
-	ext := path.Ext(baseName)
-	name := baseName[0 : len(baseName)-len(ext)]
+	projExt := path.Ext(baseName)
+	name := baseName[0 : len(baseName)-len(projExt)]
 
 	var kind string
 	if project.Executable {
@@ -159,26 +184,17 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 
 	r := rule.NewRule(kind, name)
 
-	project.CollectFiles(info, "")
-
-	var data []string
-	for _, d := range args.Subdirs {
-		// https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes
-		// https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/host-and-deploy/visual-studio-publish-profiles.md#compute-project-items
-		switch d {
-		case "wwwroot":
-			data = append(data, "wwwroot/**")
-			continue
-		case "bin":
-			continue
-		case "obj":
-			continue
-		}
-
-		rel := path.Join(args.Rel, d)
-		dInfo := accumulator.directories[rel]
-		project.CollectFiles(dInfo, fmt.Sprintf("%s/", d))
+	for _, u := range project.Unsupported {
+		r.AddComment(fmt.Sprintf("# gazelle: unsupported project element: %s", u.XMLName.Local))
 	}
+
+	for _, ig := range project.ItemGroups {
+		for _, u := range ig.Unsupported {
+			r.AddComment(fmt.Sprintf("# gazelle: unsupported item type %s", u.XMLName.Local))
+		}
+	}
+
+	project.CollectFiles(info, "")
 
 	for key, value := range project.Files {
 		r.SetAttr(key, makeGlob(value, []string{}))
@@ -188,8 +204,8 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	if project.Sdk != "" {
 		r.SetAttr("sdk", project.Sdk)
 	}
-	if len(data) > 0 {
-		r.SetAttr("data", makeGlob(data, []string{}))
+	if len(project.Data) > 0 {
+		r.SetAttr("data", makeGlob(project.Data, []string{}))
 	}
 
 	rules = append(rules, r)

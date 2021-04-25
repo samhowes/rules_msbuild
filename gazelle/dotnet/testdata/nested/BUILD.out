@@ -1,0 +1,11 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+
+dotnet_binary(
+    name = "nested",
+    srcs = glob([
+        "*.cs",
+        "a/b/c/*.cs",
+    ]),
+    sdk = "Microsoft.NET.Sdk",
+    target_framework = "net5.0",
+)

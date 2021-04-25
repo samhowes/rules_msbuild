@@ -9,15 +9,23 @@ import (
 )
 
 type Project struct {
-	XMLName         xml.Name `xml:"Project"`
-	Sdk             string   `xml:"Sdk,attr"`
-	PropertyGroup   []PropertyGroup
+	XMLName        xml.Name        `xml:"Project"`
+	Sdk            string          `xml:"Sdk,attr"`
+	PropertyGroups []PropertyGroup `xml:"PropertyGroup"`
+	ItemGroups     []ItemGroup     `xml:"ItemGroup"`
+	Unsupported    []ProjectItem   `xml:",any"`
+
 	Properties      map[string]string
 	TargetFramework string
 	IsWeb           bool
 	Executable      bool
 	LangExt         string
 	Files           map[string][]string
+	Data            []string
+}
+
+type ProjectItem struct {
+	XMLName xml.Name
 }
 
 type PropertyGroup struct {
@@ -29,25 +37,59 @@ type Property struct {
 	Value   string `xml:",chardata"`
 }
 
-type ProjectFileInfo struct {
-	Ext   string
-	IsWeb bool
+type ItemGroup struct {
+	Unsupported []Item `xml:",any"`
 }
 
-func (p *Project) appendFiles(dir directoryInfo, key, prefix, ext string) {
-	_, exists := dir.extensions[ext]
+type Item struct {
+	XMLName               xml.Name
+	UnsupportedAttrs      []xml.Attr     `xml:",attr,any"`
+	UnsupportedProperties []ItemProperty `xml:",any"`
+}
+
+type ItemProperty struct {
+	XMLName xml.Name
+}
+
+func (p *Project) appendFiles(dir directoryInfo, key, rel, ext string) {
+	_, exists := dir.exts[ext]
 	if exists {
 		fileList := p.Files[key]
-		p.Files[key] = append(fileList, fmt.Sprintf("%s*%s", prefix, ext))
+		if rel != "" {
+			rel = fmt.Sprintf("%s/", rel)
+		}
+		p.Files[key] = append(fileList, fmt.Sprintf("%s*%s", rel, ext))
 	}
 }
 
-func (p *Project) CollectFiles(dir directoryInfo, prefix string) {
-	p.appendFiles(dir, "srcs", prefix, p.LangExt)
+func (p *Project) CollectFiles(dir directoryInfo, rel string) {
+	// https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes
+	// https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/host-and-deploy/visual-studio-publish-profiles.md#compute-project-items
+	switch rel {
+	case "wwwroot":
+		p.Data = append(p.Data, "wwwroot/**")
+		return
+	case "bin":
+		return
+	case "obj":
+		return
+	}
+
+	p.appendFiles(dir, "srcs", rel, p.LangExt)
 	if p.IsWeb {
 		for _, ext := range []string{".json", ".config"} {
-			p.appendFiles(dir, "content", prefix, ext)
+			p.appendFiles(dir, "content", rel, ext)
 		}
+	}
+
+	for _, c := range dir.children {
+		var cRel string
+		if rel == "" {
+			cRel = c.base
+		} else {
+			cRel = path.Join(rel, c.base)
+		}
+		p.CollectFiles(c, cRel)
 	}
 }
 
@@ -65,7 +107,7 @@ func Load(projectFile string) (*Project, error) {
 	proj.LangExt = strings.TrimSuffix(path.Ext(projectFile), "proj")
 	proj.Properties = make(map[string]string)
 
-	for _, pg := range proj.PropertyGroup {
+	for _, pg := range proj.PropertyGroups {
 		for _, p := range pg.Properties {
 			proj.Properties[p.XMLName.Local] = p.Value
 		}
