@@ -1,11 +1,10 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
-# gazelle: unsupported project element: Target
-# gazelle: unsupported project element: Target
-# gazelle: unsupported item type PackageReference
-# gazelle: unsupported item type Content
-# gazelle: unsupported item type None
-# gazelle: unsupported item type None
+# gazelle-err: unsupported project element: Target
+# gazelle-err: unsupported project element: Target
+# gazelle-err: unsupported item element: Content
+# gazelle-err: unsupported item element: None
+# gazelle-err: unsupported item element: None
 dotnet_binary(
     name = "clientapp",
     srcs = glob([
@@ -21,4 +20,5 @@ dotnet_binary(
     sdk = "Microsoft.NET.Sdk.Web",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
+    deps = ["@nuget//Microsoft.AspNetCore.SpaServices.Extensions"],
 )

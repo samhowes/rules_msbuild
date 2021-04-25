@@ -2,6 +2,7 @@ package project
 
 import (
 	"encoding/xml"
+	"fmt"
 	"github.com/bazelbuild/bazel-gazelle/label"
 )
 
@@ -10,7 +11,7 @@ type Project struct {
 	Sdk            string          `xml:"Sdk,attr"`
 	PropertyGroups []PropertyGroup `xml:"PropertyGroup"`
 	ItemGroups     []ItemGroup     `xml:"ItemGroup"`
-	Unsupported    []ProjectItem   `xml:",any"`
+	Unsupported
 
 	Properties      map[string]string
 	TargetFramework string
@@ -27,35 +28,78 @@ type Project struct {
 	FileLabel label.Label
 }
 
-type ProjectItem struct {
-	XMLName xml.Name
+func (p *Project) GetUnsupported() []string {
+	var messages []string
+	messages = p.Unsupported.Append(messages, "project")
+	for _, pg := range p.PropertyGroups {
+		messages = pg.Unsupported.Append(messages, "property")
+		for _, prop := range pg.Properties {
+			messages = prop.Unsupported.Append(messages, "property")
+		}
+	}
+	for _, ig := range p.ItemGroups {
+		messages = ig.Unsupported.Append(messages, "item")
+	}
+	return messages
+}
+
+func (u Unsupported) Append(messages []string, prefix string) []string {
+	if prefix != "" {
+		prefix = fmt.Sprintf(" %s ", prefix)
+	}
+	apnd := func(t, value string) {
+		msg := fmt.Sprintf("unsupported%s%s: %s", prefix, t, value)
+		messages = append(messages, msg)
+	}
+	for _, a := range u.UnsupportedAttrs {
+		apnd("attribute", a.Name.Local)
+	}
+	for _, a := range u.UnsupportedElements {
+		apnd("element", a.XMLName.Local)
+	}
+
+	return messages
 }
 
 type PropertyGroup struct {
 	Properties []Property `xml:",any"`
+	Unsupported
 }
 
 type Property struct {
 	XMLName xml.Name
 	Value   string `xml:",chardata"`
+	Unsupported
 }
 
 type ItemGroup struct {
 	ProjectReferences []ProjectReference `xml:"ProjectReference"`
-	Unsupported       []Item             `xml:",any"`
+	PackageReferences []PackageReference `xml:"PackageReference"`
+	Unsupported
 }
 
 type ProjectReference struct {
 	XMLName xml.Name
 	Include string `xml:",attr"`
+	Unsupported
+}
+
+type PackageReference struct {
+	XMLName xml.Name
+	Include string `xml:",attr"`
+	Unsupported
 }
 
 type Item struct {
-	XMLName               xml.Name
-	UnsupportedAttrs      []xml.Attr     `xml:",attr,any"`
-	UnsupportedProperties []ItemProperty `xml:",any"`
+	XMLName xml.Name
+	Unsupported
 }
 
-type ItemProperty struct {
+type Unsupported struct {
+	UnsupportedAttrs    []xml.Attr   `xml:",attr,any"`
+	UnsupportedElements []AnyElement `xml:",any"`
+}
+
+type AnyElement struct {
 	XMLName xml.Name
 }

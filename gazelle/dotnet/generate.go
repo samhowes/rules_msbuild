@@ -2,6 +2,7 @@ package dotnet
 
 import (
 	"fmt"
+	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	bzl "github.com/bazelbuild/buildtools/build"
@@ -72,11 +73,11 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 
 	r := rule.NewRule(kind, proj.Name)
 
-	for _, u := range proj.Unsupported {
-		r.AddComment(fmt.Sprintf("# gazelle: unsupported project element: %s", u.XMLName.Local))
+	for _, u := range proj.GetUnsupported() {
+		r.AddComment(fmt.Sprintf("# gazelle-err: %s", u))
 	}
 
-	deps := processDeps(args, proj, r)
+	deps := processDeps(args, proj)
 	proj.CollectFiles(info, "")
 
 	for key, value := range proj.Files {
@@ -102,30 +103,34 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 }
 
-func processDeps(args language.GenerateArgs, proj *project.Project, r *rule.Rule) []interface{} {
-	var comments []string
+func processDeps(args language.GenerateArgs, proj *project.Project) []interface{} {
 	var deps []interface{}
 	for _, ig := range proj.ItemGroups {
 		for _, ref := range ig.ProjectReferences {
-			l, err := project.NormalizePath(path.Join(args.Dir, ref.Include), args.Config.RepoRoot)
+			dep := projectDep{}
 
+			dep.Comments = ig.Unsupported.Append(dep.Comments, "")
+
+			l, err := project.NormalizePath(path.Join(args.Dir, ref.Include), args.Config.RepoRoot)
 			if err != nil {
-				comments = append(comments, fmt.Sprintf("# gazelle: could not add project reference: %v", err))
+				dep.Label = label.NoLabel
+				dep.Comments = append(dep.Comments, fmt.Sprintf("# gazelle: could not add project reference: %v", err))
 				continue
 			}
-			deps = append(deps, l)
+			dep.Label = l
+			deps = append(deps, dep)
 		}
-		for _, u := range ig.Unsupported {
-			r.AddComment(fmt.Sprintf("# gazelle: unsupported item type %s", u.XMLName.Local))
+		for _, ref := range ig.PackageReferences {
+			dep := projectDep{IsPackage: true}
+			dep.Comments = ig.Unsupported.Append(dep.Comments, "")
+			dep.Label = label.Label{
+				Repo: "nuget",
+				Pkg:  ref.Include,
+				Name: ref.Include,
+			}
+			deps = append(deps, dep)
 		}
-	}
 
-	if len(comments) > 0 {
-		dAttr := ensureAttr(r, "deps", []string{})
-		dComments := dAttr.Comment()
-		for _, c := range comments {
-			dComments.Before = append(dComments.Before, bzl.Comment{Token: c})
-		}
 	}
 	return deps
 }
