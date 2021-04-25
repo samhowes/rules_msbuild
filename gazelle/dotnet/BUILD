@@ -6,12 +6,15 @@ load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
 go_library(
     name = "dotnet",
     srcs = [
+        "configure.go",
         "gazelle.go",
-        "project.go",
+        "generate.go",
+        "resolve.go",
     ],
     importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet",
     visibility = ["//visibility:public"],
     deps = [
+        "//gazelle/dotnet/project",
         "@bazel_gazelle//config:go_default_library",
         "@bazel_gazelle//label:go_default_library",
         "@bazel_gazelle//language:go_default_library",

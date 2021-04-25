@@ -14,4 +14,5 @@ dotnet_binary(
     data = glob(["wwwroot/**"]),
     sdk = "Microsoft.NET.Sdk.Web",
     target_framework = "net5.0",
+    visibility = ["//visibility:public"],
 )

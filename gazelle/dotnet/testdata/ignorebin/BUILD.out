@@ -9,4 +9,5 @@ dotnet_library(
     ]),
     sdk = "Microsoft.NET.Sdk",
     target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
 )
