@@ -8,12 +8,50 @@ import (
 	"path"
 )
 
+type dotnetConfig struct {
+	packageReportFile string
+	packages          map[string]*project.NugetSpec
+}
+
+func (c *dotnetConfig) recordPackage(ref project.PackageReference, tfm string) {
+	if c.packageReportFile == "" {
+		return
+	}
+	spec, exists := c.packages[ref.Include]
+	v := project.ParseVersion(ref.Version)
+	if !exists {
+		c.packages[ref.Include] = &project.NugetSpec{
+			Name:    ref.Include,
+			Version: v,
+			Tfms:    map[string]bool{tfm: true},
+		}
+		return
+	}
+
+	spec.Version = project.Best(spec.Version, v)
+	spec.Tfms[tfm] = true
+}
+
 func (d dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {
-	// todo(#84)
+	dc := &dotnetConfig{packages: map[string]*project.NugetSpec{}}
+	c.Exts[dotnetName] = dc
+	switch cmd {
+	case "update", "update-repos":
+		fs.StringVar(
+			&dc.packageReportFile,
+			"package_report",
+			"",
+			"Gazelle will save a report of packages that this repository depends on to this file. This file is "+
+				"required to run `update-repos`.")
+	}
 }
 
 func (d dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
-	// todo(#84)
+	//f := fs.Lookup("package_report")
+	//if f == nil {
+	//	return nil
+	//}
+	//_ = fs.Set("from_file", f.Value.String())
 	return nil
 }
 
@@ -36,7 +74,7 @@ func (d dotnetLang) KnownDirectives() []string {
 func (d dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
 	base := path.Base(rel)
 	if base == "node_modules" {
-		delete(c.Exts, languageName)
+		delete(c.Exts, dotnetDirName)
 		return
 	}
 	parent := getInfo(c)
@@ -52,5 +90,5 @@ func (d dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
 	if parent != nil {
 		parent.Children[base] = &self
 	}
-	c.Exts[languageName] = &self
+	c.Exts[dotnetDirName] = &self
 }

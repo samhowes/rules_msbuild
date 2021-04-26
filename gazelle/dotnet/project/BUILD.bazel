@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "methods.go",
         "model.go",
+        "nuget.go",
     ],
     importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project",
     visibility = ["//visibility:public"],

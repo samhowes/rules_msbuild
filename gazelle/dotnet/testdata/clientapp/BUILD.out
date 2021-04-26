@@ -2,9 +2,9 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
 
 # gazelle-err: unsupported project element: Target
 # gazelle-err: unsupported project element: Target
-# gazelle-err: unsupported item element: Content
-# gazelle-err: unsupported item element: None
-# gazelle-err: unsupported item element: None
+# gazelle-err: unsupported item group element: Content
+# gazelle-err: unsupported item group element: None
+# gazelle-err: unsupported item group element: None
 dotnet_binary(
     name = "clientapp",
     srcs = glob([

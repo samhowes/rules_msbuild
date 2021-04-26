@@ -2,14 +2,15 @@ package dotnet
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/repo"
 	"github.com/bazelbuild/bazel-gazelle/resolve"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	bzl "github.com/bazelbuild/buildtools/build"
-	"log"
-	"strings"
 )
 
 // ============ resolve.Resolver implementation ============
@@ -22,9 +23,8 @@ import (
 func (d dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	info := getInfo(c)
 	l := fmt.Sprintf(info.Project.FileLabel.String())
-	log.Printf("imports: %s", l)
 	return []resolve.ImportSpec{{
-		Lang: languageName,
+		Lang: dotnetName,
 		Imp:  l,
 	}}
 }
@@ -42,21 +42,24 @@ type projectDep struct {
 // the appropriate language-specific equivalent) for each import according to
 // language-specific rules and heuristics.
 func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.RemoteCache, r *rule.Rule, importsRaw interface{}, from label.Label) {
-	var missing [][]bzl.Comment
+	var missing []bzl.Comment
 	var deps []bzl.Expr
 	for _, depRaw := range importsRaw.([]interface{}) {
 		dep := depRaw.(projectDep)
-		var comments []bzl.Comment
+		comments := make([]bzl.Comment, len(dep.Comments))
 
-		for _, c := range dep.Comments {
-			comments = append(comments, bzl.Comment{Token: c})
+		for i, c := range dep.Comments {
+			comments[i] = bzl.Comment{Token: commentErr(c)}
 		}
 		l, comments := findDep(c, ix, dep, comments)
 
 		if l == nil {
-			missing = append(missing, comments)
+			missing = append(missing, comments...)
 		} else {
-			dExpr := bzl.StringExpr{Value: l.String()}
+			dExpr := bzl.StringExpr{
+				Value:    l.String(),
+				Comments: bzl.Comments{Before: comments},
+			}
 			deps = append(deps, &dExpr)
 		}
 	}
@@ -70,11 +73,10 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		var commented *bzl.Comments
 		if len(deps) > 0 {
 			commented = deps[0].Comment()
+			commented.Before = append(missing, commented.Before...)
 		} else {
 			commented = expr.End.Comment()
-		}
-		for _, cl := range missing {
-			commented.Before = append(commented.Before, cl...)
+			commented.Before = append(commented.Before, missing...)
 		}
 	}
 
@@ -88,8 +90,8 @@ func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments [
 	if dep.IsPackage {
 		return &dep.Label, comments
 	}
-	spec := resolve.ImportSpec{Lang: languageName, Imp: dep.Label.String()}
-	results := ix.FindRulesByImportWithConfig(c, spec, languageName)
+	spec := resolve.ImportSpec{Lang: dotnetName, Imp: dep.Label.String()}
+	results := ix.FindRulesByImportWithConfig(c, spec, dotnetName)
 	if len(results) > 1 {
 		labels := make([]string, len(results))
 		for i, r := range results {
@@ -99,8 +101,8 @@ func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments [
 			"project path: %s\n"+
 			"results: %s", dep.Label.String(), strings.Join(labels, "\n"))
 	} else if len(results) == 0 {
-		c := fmt.Sprintf("# gazelle: could not find project file at %s", dep.Label.String())
-		comments = append(comments, bzl.Comment{Token: c})
+		c := fmt.Sprintf("could not find project file at %s", dep.Label.String())
+		comments = append(comments, bzl.Comment{Token: commentErr(c)})
 		return nil, comments
 	}
 	return &results[0].Label, comments

@@ -135,3 +135,36 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		p.CollectFiles(c, cRel)
 	}
 }
+
+func (p *Project) GetUnsupported() []string {
+	var messages []string
+	messages = p.Unsupported.Append(messages, "project")
+	for _, pg := range p.PropertyGroups {
+		messages = pg.Unsupported.Append(messages, "property group")
+		for _, prop := range pg.Properties {
+			messages = prop.Unsupported.Append(messages, "property")
+		}
+	}
+	for _, ig := range p.ItemGroups {
+		messages = ig.Unsupported.Append(messages, "item group")
+	}
+	return messages
+}
+
+func (u *Unsupported) Append(messages []string, prefix string) []string {
+	if prefix != "" {
+		prefix = fmt.Sprintf(" %s", prefix)
+	}
+	apnd := func(t, value string) {
+		msg := fmt.Sprintf("unsupported%s %s: %s", prefix, t, value)
+		messages = append(messages, msg)
+	}
+	for _, a := range u.UnsupportedAttrs {
+		apnd("attribute", a.Name.Local)
+	}
+	for _, a := range u.UnsupportedElements {
+		apnd("element", a.XMLName.Local)
+	}
+
+	return messages
+}

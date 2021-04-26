@@ -10,6 +10,7 @@ go_library(
         "gazelle.go",
         "generate.go",
         "resolve.go",
+        "update-repos.go",
     ],
     importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet",
     visibility = ["//visibility:public"],

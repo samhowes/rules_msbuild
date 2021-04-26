@@ -1,16 +1,21 @@
 package dotnet
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/bazelbuild/bazel-gazelle/config"
+	"io/fs"
+	"io/ioutil"
+	"log"
+	"path"
+	"sort"
+	"strings"
+
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	bzl "github.com/bazelbuild/buildtools/build"
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
-	"log"
-	"path"
-	"sort"
-	"strings"
 )
 
 // GenerateRules extracts build metadata from source files in a directory.
@@ -47,6 +52,10 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		info.Exts[path.Ext(f)] = true
 	}
 
+	if args.Rel == "" {
+		writePackageReport(args.Config)
+	}
+
 	if projectFile == "" {
 		// must be subdirectory of a project
 		return language.GenerateResult{}
@@ -58,7 +67,8 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	l, _ := project.NormalizePath(dirtyPath, args.Config.RepoRoot)
 	proj, err := project.Load(dirtyPath)
 	if err != nil {
-		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build definitions. Parsing error: %v", projectFile, err)
+		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build "+
+			"definitions. Parsing error: %v", projectFile, err)
 		return language.GenerateResult{}
 	}
 	proj.FileLabel = l
@@ -74,7 +84,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	r := rule.NewRule(kind, proj.Name)
 
 	for _, u := range proj.GetUnsupported() {
-		r.AddComment(fmt.Sprintf("# gazelle-err: %s", u))
+		r.AddComment(commentErr(u))
 	}
 
 	deps := processDeps(args, proj)
@@ -96,25 +106,41 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 
 	rules = append(rules, r)
 
-	log.Println(r.Name())
 	return language.GenerateResult{
 		Gen:     rules,
 		Imports: []interface{}{deps},
 	}
 }
 
+func writePackageReport(config *config.Config) {
+	dc := getConfig(config)
+	if dc.packageReportFile == "" {
+		return
+	}
+
+	c, err := json.MarshalIndent(dc.packages, "", "    ")
+	if err == nil {
+		err = ioutil.WriteFile(dc.packageReportFile, c, fs.ModePerm)
+	}
+	if err != nil {
+		log.Panicf("failed to write package report: %v", err)
+	}
+
+}
+
 func processDeps(args language.GenerateArgs, proj *project.Project) []interface{} {
+	dc := getConfig(args.Config)
 	var deps []interface{}
 	for _, ig := range proj.ItemGroups {
 		for _, ref := range ig.ProjectReferences {
 			dep := projectDep{}
 
-			dep.Comments = ig.Unsupported.Append(dep.Comments, "")
+			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
 
 			l, err := project.NormalizePath(path.Join(args.Dir, ref.Include), args.Config.RepoRoot)
 			if err != nil {
 				dep.Label = label.NoLabel
-				dep.Comments = append(dep.Comments, fmt.Sprintf("# gazelle: could not add project reference: %v", err))
+				dep.Comments = append(dep.Comments, fmt.Sprintf("could not add project reference: %v", err))
 				continue
 			}
 			dep.Label = l
@@ -122,7 +148,10 @@ func processDeps(args language.GenerateArgs, proj *project.Project) []interface{
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
-			dep.Comments = ig.Unsupported.Append(dep.Comments, "")
+			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
+
+			dc.recordPackage(ref, proj.TargetFramework)
+
 			dep.Label = label.Label{
 				Repo: "nuget",
 				Pkg:  ref.Include,
@@ -130,18 +159,8 @@ func processDeps(args language.GenerateArgs, proj *project.Project) []interface{
 			}
 			deps = append(deps, dep)
 		}
-
 	}
 	return deps
-}
-
-func ensureAttr(r *rule.Rule, name string, defaultValue interface{}) bzl.Expr {
-	attr := r.Attr(name)
-	if attr == nil {
-		r.SetAttr(name, defaultValue)
-		attr = r.Attr(name)
-	}
-	return attr
 }
 
 // makeGlob returns a `glob([], exclude=[])` expression

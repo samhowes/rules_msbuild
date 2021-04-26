@@ -13,7 +13,6 @@ gazelle(
     args = [
         "-from_file=go.mod",
         "-to_macro=go_deps.bzl%go_dependencies",
-        "--go_naming_convention=import",
     ],
     command = "update-repos",
 )

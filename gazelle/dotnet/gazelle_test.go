@@ -21,6 +21,9 @@ const testDataPath = "gazelle/dotnet/testdata/"
 // information on each test.
 func TestGazelleBinary(t *testing.T) {
 	tests := map[string][]bazel.RunfileEntry{}
+	repo_tests := map[string][]bazel.RunfileEntry{}
+
+	testTypeMap := map[string]map[string][]bazel.RunfileEntry{}
 
 	files, err := bazel.ListRunfiles()
 	if err != nil {
@@ -39,19 +42,41 @@ func TestGazelleBinary(t *testing.T) {
 			continue
 		}
 
-		tests[parts[0]] = append(tests[parts[0]], f)
+		d := parts[0]
 
+		tMap, exists := testTypeMap[d]
+		if !exists {
+			testTypeMap[d] = tests
+			tMap = tests
+		}
+
+		if strings.HasSuffix(f.Path, "WORKSPACE.out") {
+			testTypeMap[d] = repo_tests
+			tMap = repo_tests
+			// unless all the files happen to be after "W" or the iteration isn't in alphabetical order, then we will
+			// have accumulated test files in tests, move them to repo_tests
+			tArray := tests[d]
+			delete(tests, d)
+			repo_tests[d] = tArray
+		}
+
+		tMap[d] = append(tMap[d], f)
 	}
-	if len(tests) == 0 {
-		t.Fatal("no tests found")
+
+	if len(tests) == 0 || len(repo_tests) == 0 {
+		t.Fatal("one of tests or repo tests not found")
 	}
 
 	for testName, files := range tests {
-		testPath(t, testName, files)
+		testPath(t, testName, false, files)
+	}
+
+	for testName, files := range repo_tests {
+		testPath(t, testName, true, files)
 	}
 }
 
-func testPath(t *testing.T, name string, files []bazel.RunfileEntry) {
+func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry) {
 	t.Run(name, func(t *testing.T) {
 		var inputs []testtools.FileSpec
 		var goldens []testtools.FileSpec
@@ -102,12 +127,12 @@ func testPath(t *testing.T, name string, files []bazel.RunfileEntry) {
 			defer cleanup()
 		}
 
-		cmd := exec.Command(gazellePath, "-build_file_name=BUILD")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Dir = dir
-		if err := cmd.Run(); err != nil {
-			t.Fatal(err)
+		if !repos {
+			runCommand(t, dir)
+		} else {
+			report := "-package_report=package_report.json"
+			runCommand(t, dir, report)
+			runCommand(t, dir, "update-repos", "-from_file=package_report.json")
 		}
 
 		testtools.CheckFiles(t, dir, goldens)
@@ -121,6 +146,17 @@ func testPath(t *testing.T, name string, files []bazel.RunfileEntry) {
 			})
 		}
 	})
+}
+
+func runCommand(t *testing.T, dir string, args ...string) {
+	args = append(args, "-build_file_name=BUILD")
+	cmd := exec.Command(gazellePath, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func findGazelle() string {
