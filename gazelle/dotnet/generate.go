@@ -32,11 +32,11 @@ import (
 // Any non-fatal errors this function encounters should be logged using
 // log.Print.
 func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
+	res := language.GenerateResult{}
 	info := getInfo(args.Config)
 	if info == nil {
-		return language.GenerateResult{}
+		return res
 	}
-	var rules []*rule.Rule
 	var projectFile string
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
@@ -58,7 +58,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 
 	if projectFile == "" {
 		// must be subdirectory of a project
-		return language.GenerateResult{}
+		return res
 	}
 
 	dirtyPath := path.Join(args.Dir, projectFile)
@@ -69,11 +69,11 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	if err != nil {
 		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build "+
 			"definitions. Parsing error: %v", projectFile, err)
-		return language.GenerateResult{}
+		return res
 	}
 	proj.FileLabel = l
 	info.Project = proj
-	deps := processDeps(args, proj)
+	res.Imports = append(res.Imports, processDeps(args, proj))
 	proj.CollectFiles(info, "")
 
 	var kind string
@@ -86,6 +86,13 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 
 	r := rule.NewRule(kind, proj.Name)
+	res.Gen = append(res.Gen, r)
+	if proj.IsExe {
+		p := rule.NewRule("dotnet_publish", "publish")
+		p.SetAttr("target", ":"+proj.Name)
+		res.Gen = append(res.Gen, p)
+		res.Imports = append(res.Imports, []interface{}{})
+	}
 
 	for _, u := range proj.GetUnsupported() {
 		r.AddComment(commentErr(u))
@@ -105,12 +112,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		r.SetAttr("data", makeGlob(proj.Data, []string{}))
 	}
 
-	rules = append(rules, r)
-
-	return language.GenerateResult{
-		Gen:     rules,
-		Imports: []interface{}{deps},
-	}
+	return res
 }
 
 func writePackageReport(config *config.Config) {

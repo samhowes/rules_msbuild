@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
 
 dotnet_binary(
     name = "binary",
@@ -7,4 +7,9 @@ dotnet_binary(
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = ["//lib"],
+)
+
+dotnet_publish(
+    name = "publish",
+    target = ":binary",
 )

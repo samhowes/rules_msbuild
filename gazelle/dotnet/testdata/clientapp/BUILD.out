@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
 
 # gazelle-err: unsupported project element: Target
 # gazelle-err: unsupported project element: Target
@@ -21,4 +21,9 @@ dotnet_binary(
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = ["@nuget//Microsoft.AspNetCore.SpaServices.Extensions"],
+)
+
+dotnet_publish(
+    name = "publish",
+    target = ":clientapp",
 )

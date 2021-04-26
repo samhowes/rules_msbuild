@@ -50,10 +50,6 @@ func (d dotnetLang) Loads() []rule.LoadInfo {
 	}}
 }
 
-func (d dotnetLang) Fix(c *config.Config, f *rule.File) {
-	// todo(#84)
-}
-
 var kinds = map[string]rule.KindInfo{
 	"dotnet_library": {
 		NonEmptyAttrs: map[string]bool{"srcs": true},
@@ -61,12 +57,19 @@ var kinds = map[string]rule.KindInfo{
 	"dotnet_binary": {
 		NonEmptyAttrs: map[string]bool{"srcs": true},
 	},
+	"dotnet_publish": {
+		NonEmptyAttrs: map[string]bool{"target": true},
+	},
 	"dotnet_test": {
 		NonEmptyAttrs: map[string]bool{"srcs": true},
 	},
 	"nuget_fetch": {
 		NonEmptyAttrs: map[string]bool{"packages": true},
 	},
+}
+
+func (d dotnetLang) Fix(c *config.Config, f *rule.File) {
+	// todo(#84)
 }
 
 func getInfo(c *config.Config) *project.DirectoryInfo {
