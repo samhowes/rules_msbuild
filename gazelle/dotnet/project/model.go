@@ -28,6 +28,7 @@ type Project struct {
 	Name      string
 	FileLabel label.Label
 	Rule      *rule.Rule
+	Deps      []interface{}
 }
 
 type PropertyGroup struct {

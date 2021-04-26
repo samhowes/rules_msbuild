@@ -48,7 +48,7 @@ dotnet_rules_dependencies()
 
 dotnet_register_toolchains(version = "3.1.100")
 
-load("//deps:nuget_deps.bzl", "nuget_deps")
+load("//deps:nuget.bzl", "nuget_deps")
 
 nuget_deps()
 

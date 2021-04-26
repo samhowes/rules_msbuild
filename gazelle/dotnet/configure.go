@@ -2,19 +2,23 @@ package dotnet
 
 import (
 	"flag"
+	"fmt"
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
 	"path"
+	"strings"
 )
 
 type dotnetConfig struct {
+	macroFileName     string
+	macroDefName      string
 	packageReportFile string
 	packages          map[string]*project.NugetSpec
 }
 
 func (c *dotnetConfig) recordPackage(ref project.PackageReference, tfm string) {
-	if c.packageReportFile == "" {
+	if c.macroFileName == "" {
 		return
 	}
 	spec, exists := c.packages[ref.Include]
@@ -32,17 +36,41 @@ func (c *dotnetConfig) recordPackage(ref project.PackageReference, tfm string) {
 	spec.Tfms[tfm] = true
 }
 
+type macroFlag struct {
+	macroFileName *string
+	macroDefName  *string
+}
+
+func (f macroFlag) Set(value string) error {
+	args := strings.Split(value, "%")
+	if len(args) != 2 {
+		return fmt.Errorf("Failure parsing to_macro: %s, expected format is macroFile%%defName", value)
+	}
+	if strings.HasPrefix(args[0], "..") {
+		return fmt.Errorf("Failure parsing to_macro: %s, macro file path %s should not start with \"..\"", value, args[0])
+	}
+	*f.macroFileName = args[0]
+	*f.macroDefName = args[1]
+	return nil
+}
+
+func (f macroFlag) String() string {
+	return ""
+}
+
 func (d dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {
 	dc := &dotnetConfig{packages: map[string]*project.NugetSpec{}}
 	c.Exts[dotnetName] = dc
 	switch cmd {
 	case "update", "update-repos":
-		fs.StringVar(
-			&dc.packageReportFile,
-			"package_report",
-			"",
-			"Gazelle will save a report of packages that this repository depends on to this file. This file is "+
-				"required to run `update-repos`.")
+		fs.Var(macroFlag{
+			macroFileName: &dc.macroFileName,
+			macroDefName:  &dc.macroDefName,
+		},
+			"deps_macro",
+			"Record nuget package versions and tfms in a macro after parsing all the project files. "+
+				"Strongly recommended for managing nuget packages.")
+
 	}
 }
 
@@ -51,7 +79,6 @@ func (d dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
 }
 
 func (d dotnetLang) KnownDirectives() []string {
-	// todo(#84)
 	return []string{}
 }
 

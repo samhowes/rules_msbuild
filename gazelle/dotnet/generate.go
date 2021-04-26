@@ -1,11 +1,7 @@
 package dotnet
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/bazelbuild/bazel-gazelle/config"
-	"io/fs"
-	"io/ioutil"
 	"log"
 	"path"
 	"sort"
@@ -34,13 +30,16 @@ import (
 func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	res := language.GenerateResult{}
 	info := getInfo(args.Config)
+	var proj *project.Project
 	if info == nil {
 		return res
 	}
-	var projectFile string
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
-			projectFile = f
+			proj = loadProject(args, f, info)
+			if proj != nil {
+				res.Imports = append(res.Imports, proj.Deps)
+			}
 			continue
 		}
 
@@ -52,29 +51,14 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		info.Exts[path.Ext(f)] = true
 	}
 
-	if args.Rel == "" {
-		writePackageReport(args.Config)
+	dc := getConfig(args.Config)
+	if args.Rel == "" && dc.macroFileName != "" {
+		// we've collected all the package information by now, we can store it in the macro
+		d.customUpdateRepos(args.Config)
 	}
-
-	if projectFile == "" {
-		// must be subdirectory of a project
+	if proj == nil {
 		return res
 	}
-
-	dirtyPath := path.Join(args.Dir, projectFile)
-
-	// squash the error, we know we're under the repo root
-	l, _ := project.NormalizePath(dirtyPath, args.Config.RepoRoot)
-	proj, err := project.Load(dirtyPath)
-	if err != nil {
-		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build "+
-			"definitions. Parsing error: %v", projectFile, err)
-		return res
-	}
-	proj.FileLabel = l
-	info.Project = proj
-	res.Imports = append(res.Imports, processDeps(args, proj))
-	proj.CollectFiles(info, "")
 
 	var kind string
 	if proj.IsTest {
@@ -116,25 +100,26 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	return res
 }
 
-func writePackageReport(config *config.Config) {
-	dc := getConfig(config)
-	if dc.packageReportFile == "" {
-		return
-	}
+func loadProject(args language.GenerateArgs, projectFile string, info *project.DirectoryInfo) *project.Project {
+	dirtyPath := path.Join(args.Dir, projectFile)
 
-	c, err := json.MarshalIndent(dc.packages, "", "    ")
-	if err == nil {
-		err = ioutil.WriteFile(dc.packageReportFile, c, fs.ModePerm)
-	}
+	// squash the error, we know we're under the repo root
+	l, _ := project.NormalizePath(dirtyPath, args.Config.RepoRoot)
+	proj, err := project.Load(dirtyPath)
 	if err != nil {
-		log.Panicf("failed to write package report: %v", err)
+		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build "+
+			"definitions. Parsing error: %v", projectFile, err)
+		return nil
 	}
-
+	proj.FileLabel = l
+	info.Project = proj
+	processDeps(args, proj)
+	proj.CollectFiles(info, "")
+	return proj
 }
 
-func processDeps(args language.GenerateArgs, proj *project.Project) []interface{} {
+func processDeps(args language.GenerateArgs, proj *project.Project) {
 	dc := getConfig(args.Config)
-	var deps []interface{}
 	for _, ig := range proj.ItemGroups {
 		for _, ref := range ig.ProjectReferences {
 			dep := projectDep{}
@@ -148,7 +133,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) []interface{
 				continue
 			}
 			dep.Label = l
-			deps = append(deps, dep)
+			proj.Deps = append(proj.Deps, dep)
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
@@ -166,10 +151,9 @@ func processDeps(args language.GenerateArgs, proj *project.Project) []interface{
 				Pkg:  ref.Include,
 				Name: ref.Include,
 			}
-			deps = append(deps, dep)
+			proj.Deps = append(proj.Deps, dep)
 		}
 	}
-	return deps
 }
 
 // makeGlob returns a `glob([], exclude=[])` expression

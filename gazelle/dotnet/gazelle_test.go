@@ -50,7 +50,7 @@ func TestGazelleBinary(t *testing.T) {
 			tMap = tests
 		}
 
-		if strings.HasSuffix(f.Path, "WORKSPACE.out") {
+		if strings.HasSuffix(f.Path, "WORKSPACE.out") || strings.HasSuffix(f.Path, ".bzl.out") {
 			testTypeMap[d] = repo_tests
 			tMap = repo_tests
 			// unless all the files happen to be after "W" or the iteration isn't in alphabetical order, then we will
@@ -130,9 +130,7 @@ func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry)
 		if !repos {
 			runCommand(t, dir)
 		} else {
-			report := "-package_report=package_report.json"
-			runCommand(t, dir, report)
-			runCommand(t, dir, "update-repos", "-from_file=package_report.json", "-to_macro=deps/nuget.bzl%nuget_deps")
+			runCommand(t, dir, "-deps_macro=deps/nuget.bzl%nuget_deps")
 		}
 
 		testtools.CheckFiles(t, dir, goldens)

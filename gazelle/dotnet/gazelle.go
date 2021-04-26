@@ -25,7 +25,6 @@ const dotnetDirName = "dotnet_dir"
 func (d dotnetLang) Name() string { return dotnetName }
 
 func (d dotnetLang) Embeds(r *rule.Rule, from label.Label) []label.Label {
-	// todo(#84)
 	return []label.Label{}
 }
 
@@ -69,7 +68,6 @@ var kinds = map[string]rule.KindInfo{
 }
 
 func (d dotnetLang) Fix(c *config.Config, f *rule.File) {
-	// todo(#84)
 }
 
 func getInfo(c *config.Config) *project.DirectoryInfo {
