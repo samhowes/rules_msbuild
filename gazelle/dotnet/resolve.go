@@ -22,6 +22,12 @@ import (
 // returned, including an empty slice, the rule will be indexed.
 func (d dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	info := getInfo(c)
+	if info.Project == nil {
+		return []resolve.ImportSpec{{
+			Lang: dotnetName,
+			Imp:  label.Label{Name: r.Name(), Pkg: f.Pkg}.String(),
+		}}
+	}
 	l := fmt.Sprintf(info.Project.FileLabel.String())
 	return []resolve.ImportSpec{{
 		Lang: dotnetName,

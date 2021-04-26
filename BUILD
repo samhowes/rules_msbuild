@@ -24,3 +24,8 @@ gazelle(
         "--go_naming_convention=import",
     ],
 )
+
+gazelle(
+    name = "gazelle-dotnet",
+    gazelle = "//gazelle/dotnet:gazelle-dotnet",
+)
