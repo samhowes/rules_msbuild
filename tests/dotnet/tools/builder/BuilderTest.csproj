@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <UseAppHost>false</UseAppHost>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>

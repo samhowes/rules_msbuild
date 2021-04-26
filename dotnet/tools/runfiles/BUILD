@@ -1,7 +1,5 @@
 load("//dotnet:defs.bzl", "dotnet_library")
 
-package(default_visibility = ["//visibility:public"])
-
 dotnet_library(
     name = "runfiles",
     srcs = [
@@ -11,5 +9,7 @@ dotnet_library(
         "LabelRunfiles.cs",
         "Runfiles.cs",
     ],
+    sdk = "Microsoft.NET.Sdk",
     target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
 )
