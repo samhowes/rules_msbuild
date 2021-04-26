@@ -14,6 +14,8 @@ function run() {
   return $this_exit
 }
 
+export MSYS2_ARG_CONV_EXCL=*
+
 # if these don't build, nothing will
 bazel build //tests/sanity //tests/examples/HelloBazel
 
