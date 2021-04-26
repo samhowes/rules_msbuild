@@ -18,7 +18,8 @@ function run() {
 bazel build //tests/sanity //tests/examples/HelloBazel
 
 bazel test //tests/examples/... \
-  //tests/dotnet/...
+  //tests/dotnet/... \
+  //gazelle/...
 
 # targets that __must__ be run by itself
 bazel build //tests/sandboxing/parallel
