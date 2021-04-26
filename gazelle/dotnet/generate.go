@@ -85,8 +85,9 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		kind = "dotnet_library"
 	}
 
-	r := rule.NewRule(kind, proj.Name)
-	res.Gen = append(res.Gen, r)
+	proj.Rule = rule.NewRule(kind, proj.Name)
+	r := proj.Rule
+	res.Gen = append(res.Gen, proj.Rule)
 	if proj.IsExe {
 		p := rule.NewRule("dotnet_publish", "publish")
 		p.SetAttr("target", ":"+proj.Name)

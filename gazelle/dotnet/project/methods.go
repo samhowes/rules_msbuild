@@ -75,7 +75,7 @@ func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 		return label.NoLabel, err
 	}
 
-	rPath := strings.TrimPrefix(cleaned, repoRoot)
+	rPath := cleaned[len(repoRoot)+1:]
 
 	if filepath.Separator == '\\' {
 		rPath = strings.Replace(rPath, "\\", "/", -1)

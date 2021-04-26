@@ -3,6 +3,7 @@ package project
 import (
 	"encoding/xml"
 	"github.com/bazelbuild/bazel-gazelle/label"
+	"github.com/bazelbuild/bazel-gazelle/rule"
 )
 
 type Project struct {
@@ -26,6 +27,7 @@ type Project struct {
 	Rel       string
 	Name      string
 	FileLabel label.Label
+	Rule      *rule.Rule
 }
 
 type PropertyGroup struct {

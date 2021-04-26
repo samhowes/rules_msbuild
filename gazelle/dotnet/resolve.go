@@ -22,16 +22,18 @@ import (
 // returned, including an empty slice, the rule will be indexed.
 func (d dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	info := getInfo(c)
-	if info.Project == nil {
+
+	if info.Project != nil && info.Project.Rule == r {
+		l := fmt.Sprintf(info.Project.FileLabel.String())
 		return []resolve.ImportSpec{{
 			Lang: dotnetName,
-			Imp:  label.Label{Name: r.Name(), Pkg: f.Pkg}.String(),
+			Imp:  l,
 		}}
 	}
-	l := fmt.Sprintf(info.Project.FileLabel.String())
+
 	return []resolve.ImportSpec{{
 		Lang: dotnetName,
-		Imp:  l,
+		Imp:  label.Label{Name: r.Name(), Pkg: f.Pkg}.String(),
 	}}
 }
 
@@ -57,7 +59,7 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		for i, c := range dep.Comments {
 			comments[i] = bzl.Comment{Token: commentErr(c)}
 		}
-		l, comments := findDep(c, ix, dep, comments)
+		l, comments := findDep(c, ix, dep, comments, from)
 
 		if l == nil {
 			missing = append(missing, comments...)
@@ -89,23 +91,26 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 	r.SetAttr("deps", &expr)
 }
 
-func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments []bzl.Comment) (*label.Label, []bzl.Comment) {
+func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments []bzl.Comment, from label.Label) (*label.Label, []bzl.Comment) {
 	if dep.Label == label.NoLabel {
 		return nil, comments
 	}
 	if dep.IsPackage {
 		return &dep.Label, comments
 	}
-	spec := resolve.ImportSpec{Lang: dotnetName, Imp: dep.Label.String()}
+	spec := resolve.ImportSpec{
+		Lang: dotnetName,
+		Imp:  dep.Label.String(),
+	}
 	results := ix.FindRulesByImportWithConfig(c, spec, dotnetName)
 	if len(results) > 1 {
 		labels := make([]string, len(results))
 		for i, r := range results {
 			labels[i] = r.Label.String()
 		}
-		log.Panicf("ambigous project path detected. This should not happen, please file an issue. \n"+
-			"project path: %s\n"+
-			"results: %s", dep.Label.String(), strings.Join(labels, "\n"))
+		log.Panicf("ambigous project path found resolving import for %s.\nThis should not happen, please file an issue. \n"+
+			"  requested import: %s\n"+
+			"  results: %s", from.String(), dep.Label.String(), strings.Join(labels, "\n    "))
 	} else if len(results) == 0 {
 		c := fmt.Sprintf("could not find project file at %s", dep.Label.String())
 		comments = append(comments, bzl.Comment{Token: commentErr(c)})
