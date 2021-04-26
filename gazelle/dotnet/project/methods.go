@@ -42,7 +42,7 @@ func Load(projectFile string) (*Project, error) {
 
 	outputType, exists := proj.Properties["OutputType"]
 	if exists && strings.EqualFold(outputType, "exe") || proj.IsWeb {
-		proj.Executable = true
+		proj.IsExe = true
 	}
 
 	proj.TargetFramework, _ = proj.Properties["TargetFramework"]

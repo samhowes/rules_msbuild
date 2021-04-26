@@ -1,0 +1,19 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_test")
+
+dotnet_test(
+    name = "test",
+    srcs = glob(["*.cs"]),
+    sdk = "Microsoft.NET.Sdk",
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@nuget//Microsoft.NET.Test.Sdk",
+        # gazelle-err: unsupported element: IncludeAssets
+        # gazelle-err: unsupported element: PrivateAssets
+        "@nuget//coverlet.collector",
+        "@nuget//xunit",
+        # gazelle-err: unsupported element: IncludeAssets
+        # gazelle-err: unsupported element: PrivateAssets
+        "@nuget//xunit.runner.visualstudio",
+    ],
+)

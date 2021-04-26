@@ -3,14 +3,14 @@ package dotnet
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bazelbuild/bazel-gazelle/rule"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
 	"log"
 	"os"
 	"path"
 	"sort"
 
 	"github.com/bazelbuild/bazel-gazelle/language"
+	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
 )
 
 // RepoUpdater may be implemented by languages that support updating

@@ -14,8 +14,9 @@ type Project struct {
 
 	Properties      map[string]string
 	TargetFramework string
+	IsExe           bool
 	IsWeb           bool
-	Executable      bool
+	IsTest          bool
 	LangExt         string
 	Files           map[string][]string
 	Data            []string

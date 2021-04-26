@@ -73,9 +73,13 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 	proj.FileLabel = l
 	info.Project = proj
+	deps := processDeps(args, proj)
+	proj.CollectFiles(info, "")
 
 	var kind string
-	if proj.Executable {
+	if proj.IsTest {
+		kind = "dotnet_test"
+	} else if proj.IsExe {
 		kind = "dotnet_binary"
 	} else {
 		kind = "dotnet_library"
@@ -86,9 +90,6 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	for _, u := range proj.GetUnsupported() {
 		r.AddComment(commentErr(u))
 	}
-
-	deps := processDeps(args, proj)
-	proj.CollectFiles(info, "")
 
 	for key, value := range proj.Files {
 		sort.Strings(value)
@@ -149,6 +150,11 @@ func processDeps(args language.GenerateArgs, proj *project.Project) []interface{
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
 			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
+
+			switch strings.ToLower(ref.Include) {
+			case "microsoft.net.test.sdk":
+				proj.IsTest = true
+			}
 
 			dc.recordPackage(ref, proj.TargetFramework)
 

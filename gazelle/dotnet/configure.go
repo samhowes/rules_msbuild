@@ -47,11 +47,6 @@ func (d dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config
 }
 
 func (d dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
-	//f := fs.Lookup("package_report")
-	//if f == nil {
-	//	return nil
-	//}
-	//_ = fs.Set("from_file", f.Value.String())
 	return nil
 }
 

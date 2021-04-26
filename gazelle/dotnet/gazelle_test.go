@@ -132,7 +132,7 @@ func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry)
 		} else {
 			report := "-package_report=package_report.json"
 			runCommand(t, dir, report)
-			runCommand(t, dir, "update-repos", "-from_file=package_report.json")
+			runCommand(t, dir, "update-repos", "-from_file=package_report.json", "-to_macro=deps/nuget.bzl%nuget_deps")
 		}
 
 		testtools.CheckFiles(t, dir, goldens)

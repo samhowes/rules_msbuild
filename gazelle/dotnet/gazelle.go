@@ -61,6 +61,9 @@ var kinds = map[string]rule.KindInfo{
 	"dotnet_binary": {
 		NonEmptyAttrs: map[string]bool{"srcs": true},
 	},
+	"dotnet_test": {
+		NonEmptyAttrs: map[string]bool{"srcs": true},
+	},
 	"nuget_fetch": {
 		NonEmptyAttrs: map[string]bool{"packages": true},
 	},
