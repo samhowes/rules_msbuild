@@ -1,13 +1,13 @@
 package project
 
 import (
-	"encoding/xml"
-	"fmt"
-	"github.com/bazelbuild/bazel-gazelle/label"
-	"io/ioutil"
-	"path"
-	"path/filepath"
-	"strings"
+    "encoding/xml"
+    "fmt"
+    "github.com/bazelbuild/bazel-gazelle/label"
+    "io/ioutil"
+    "os"
+    "path"
+    "strings"
 )
 
 type DirectoryInfo struct {
@@ -58,28 +58,23 @@ func Load(projectFile string) (*Project, error) {
 // The path may contain any combination of `.`, `..`, `/` and `\`
 // Constructing a label is not strictly necessary, but this is bazel, and a label is a convenient notation
 func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
-	var old string
-	switch filepath.Separator {
-	case '/':
-		old = "\\"
-	case '\\':
-		old = "/"
-	}
 	// even on non-windows, dotnet still uses paths with backslashes in project files
-	dirtyProjectPath = strings.Replace(dirtyProjectPath, old, string(filepath.Separator), -1)
+    // even on windows, go uses '/' for path cleaning
+	dirtyProjectPath = strings.Replace(dirtyProjectPath, "\\", "/", -1)
 
 	// project files use relative paths, clean them to get the absolute path
 	cleaned := path.Clean(dirtyProjectPath)
+	// path.Clean will exclusively work with forward slashes
+	// repoRoot will be an actual windows path with backslashes on windows though
+	if os.PathSeparator == '\\' {
+        repoRoot = strings.Replace(repoRoot, "\\", "/", -1)
+    }
 	if !strings.HasPrefix(cleaned, repoRoot) {
 		err := fmt.Errorf("project path is not rooted in the repository: %s", cleaned)
 		return label.NoLabel, err
 	}
 
 	rPath := cleaned[len(repoRoot)+1:]
-
-	if filepath.Separator == '\\' {
-		rPath = strings.Replace(rPath, "\\", "/", -1)
-	}
 
 	lastSlash := strings.LastIndex(rPath, "/")
 
