@@ -27,5 +27,8 @@ gazelle(
 
 gazelle(
     name = "gazelle-dotnet",
+    args = [
+        "-deps_macro=deps/nuget.bzl%nuget_deps",
+    ],
     gazelle = "//gazelle/dotnet:gazelle-dotnet",
 )

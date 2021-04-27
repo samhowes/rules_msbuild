@@ -49,22 +49,23 @@ func (d dotnetLang) Loads() []rule.LoadInfo {
 	}}
 }
 
+var commonInfo = rule.KindInfo{
+	MergeableAttrs: map[string]bool{
+		//"srcs":             true,
+		"target_framework": true,
+		"sdk":              true,
+	},
+	ResolveAttrs: map[string]bool{"deps": true},
+}
+
 var kinds = map[string]rule.KindInfo{
-	"dotnet_library": {
-		NonEmptyAttrs: map[string]bool{"srcs": true},
-	},
-	"dotnet_binary": {
-		NonEmptyAttrs: map[string]bool{"srcs": true},
-	},
+	"dotnet_library": commonInfo,
+	"dotnet_binary":  commonInfo,
+	"dotnet_test":    commonInfo,
 	"dotnet_publish": {
-		NonEmptyAttrs: map[string]bool{"target": true},
+		MergeableAttrs: map[string]bool{"target": true},
 	},
-	"dotnet_test": {
-		NonEmptyAttrs: map[string]bool{"srcs": true},
-	},
-	"nuget_fetch": {
-		NonEmptyAttrs: map[string]bool{"packages": true},
-	},
+	"nuget_fetch": {},
 }
 
 func (d dotnetLang) Fix(c *config.Config, f *rule.File) {

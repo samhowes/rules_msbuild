@@ -8,8 +8,8 @@ dotnet_test(
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
     deps = [
-        "//dotnet/tools/runfiles",
-        "@dotnet_sdk//:builder",
+        "//dotnet/tools/runfiles",  # keep
+        "@dotnet_sdk//:builder",  # keep
         "@nuget//FluentAssertions",
         "@nuget//Microsoft.NET.Test.Sdk",
         "@nuget//xunit",

@@ -1,0 +1,18 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_fetch")
+
+def nuget_deps():
+    nuget_fetch(
+        name = "nuget",
+        packages = {
+            "foo:1": [
+                "bar",
+            ],
+            "CommandLineParser:2.8.0": [
+                "net5.0",
+                "netstandard2.0",
+            ],
+            # keep
+            "bar:3": [
+            ],
+        },
+    )
