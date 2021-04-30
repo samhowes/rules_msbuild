@@ -1,5 +1,5 @@
 load("@my_rules_dotnet//dotnet/private/rules:context.bzl", "dotnet_context_data")
-load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
 
 # dotnet_context_data collects build options and is depended on by all Dotnet targets.
 dotnet_context_data(
@@ -22,6 +22,15 @@ gazelle(
     name = "gazelle",
     args = [
         "--go_naming_convention=import",
+        "-deps_macro=deps/nuget.bzl%nuget_deps",
+    ],
+    gazelle = ":gazelle_local",
+)
+
+gazelle_binary(
+    name = "gazelle_local",
+    languages = DEFAULT_LANGUAGES + [
+        "//gazelle/dotnet",
     ],
 )
 
