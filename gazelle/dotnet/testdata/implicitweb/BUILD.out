@@ -1,0 +1,23 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+
+dotnet_binary(
+    name = "implicitweb",
+    srcs = glob([
+        "*.cs",
+        "Properties/*.cs",
+    ]),
+    content = glob([
+        "*.json",
+        "othersubdir/*.json",
+        "subdir/*.config",
+    ]),
+    data = glob(["wwwroot/**"]),
+    sdk = "Microsoft.NET.Sdk.Web",
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+)
+
+dotnet_publish(
+    name = "publish",
+    target = ":implicitweb",
+)

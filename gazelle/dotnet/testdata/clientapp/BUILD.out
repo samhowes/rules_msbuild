@@ -1,0 +1,29 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+
+# gazelle-err: unsupported project element: Target
+# gazelle-err: unsupported project element: Target
+# gazelle-err: unsupported item group element: Content
+# gazelle-err: unsupported item group element: None
+# gazelle-err: unsupported item group element: None
+dotnet_binary(
+    name = "clientapp",
+    srcs = glob([
+        "*.cs",
+        "Controllers/*.cs",
+        "Pages/*.cs",
+    ]),
+    content = glob([
+        "*.json",
+        "ClientApp/*.json",
+        "ClientApp/public/*.json",
+    ]),
+    sdk = "Microsoft.NET.Sdk.Web",
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+    deps = ["@nuget//Microsoft.AspNetCore.SpaServices.Extensions"],
+)
+
+dotnet_publish(
+    name = "publish",
+    target = ":clientapp",
+)

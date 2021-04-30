@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <UseAppHost>false</UseAppHost>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JunitXml.TestLogger" Version="3.0.87"/>
     <PackageReference Include="FluentAssertions" Version="5.10.3"/>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1"/>
     <PackageReference Include="xunit" Version="2.4.1"/>

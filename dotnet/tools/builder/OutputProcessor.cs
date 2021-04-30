@@ -112,7 +112,7 @@ namespace MyRulesDotnet.Tools.Builder
                     (match) => match.Groups["exec_root"].Success ? ExecRoot : OutputBase);
                 File.WriteAllText(info.FullName, replaced);
 
-                info.MoveTo(Path.Combine(_context.IntermediateBase, "processed", info.Name));
+                info.MoveTo(Path.Combine(_context.IntermediateBase, "processed", info.Name), true);
             });
 
             return 0;
@@ -232,8 +232,16 @@ namespace MyRulesDotnet.Tools.Builder
                 Program.Debug($"Processing file: {info}");
                 // assumes buffering the whole file into memory is okay. This should be a safe assumption. 
                 // might be better to make sure we don't open a file we aren't supposed to.
-                var contents = File.ReadAllText(info.FullName);
-                modifyFile(info, contents);
+                try
+                {
+                    var contents = File.ReadAllText(info.FullName);
+                    modifyFile(info, contents);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Failed to process file: {info.FullName} see inner exception for details", ex);
+                }
+
             }
         }
 

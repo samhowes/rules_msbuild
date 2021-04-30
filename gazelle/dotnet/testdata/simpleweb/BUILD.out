@@ -1,0 +1,15 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+
+dotnet_binary(
+    name = "simpleweb",
+    srcs = glob(["*.cs"]),
+    content = glob(["*.json"]),
+    sdk = "Microsoft.NET.Sdk.Web",
+    target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
+)
+
+dotnet_publish(
+    name = "publish",
+    target = ":simpleweb",
+)
