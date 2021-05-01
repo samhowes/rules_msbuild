@@ -75,7 +75,7 @@ func loadProject(args language.GenerateArgs, projectFile string) *project.Projec
 			"definitions. Parsing error: %v", projectFile, err)
 		return nil
 	}
-	proj.FileLabel = l
+	proj.FileLabel = &l
 
 	processDeps(args, proj)
 	return proj

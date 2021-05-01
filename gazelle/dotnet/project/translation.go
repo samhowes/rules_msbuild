@@ -27,8 +27,8 @@ func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
 		rules = append(rules, pub)
 	}
 
-	p.ProcessItemGroup(func(ig ItemGroup) []Item { return ig.Compile })
-	p.ProcessItemGroup(func(ig ItemGroup) []Item { return ig.Content })
+	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Compile })
+	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Content })
 
 	p.CollectFiles(info, "")
 
@@ -72,9 +72,10 @@ func (p *Project) SetProperties() {
 	}
 }
 
-func (p *Project) ProcessItemGroup(getItems func(ig ItemGroup) []Item) {
+func (p *Project) ProcessItemGroup(getItems func(ig *ItemGroup) []*Item) {
 	for _, ig := range p.ItemGroups {
 		for _, i := range getItems(ig) {
+			p.EvaluateItem(i)
 			itemType := i.XMLName.Local
 			fg := p.GetFileGroup(itemType)
 			comments := util.CommentErrs(i.Unsupported.Messages(itemType))

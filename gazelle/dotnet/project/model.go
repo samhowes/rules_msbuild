@@ -13,10 +13,10 @@ var SpecialProperties = map[string]bool{
 }
 
 type Project struct {
-	XMLName        xml.Name        `xml:"Project"`
-	Sdk            string          `xml:"Sdk,attr"`
-	PropertyGroups []PropertyGroup `xml:"PropertyGroup"`
-	ItemGroups     []ItemGroup     `xml:"ItemGroup"`
+	XMLName        xml.Name         `xml:"Project"`
+	Sdk            string           `xml:"Sdk,attr"`
+	PropertyGroups []*PropertyGroup `xml:"PropertyGroup"`
+	ItemGroups     []*ItemGroup     `xml:"ItemGroup"`
 	Unsupported
 
 	Properties      map[string]string
@@ -32,18 +32,9 @@ type Project struct {
 	// Other projects will import this project with this path
 	Rel       string
 	Name      string
-	FileLabel label.Label
+	FileLabel *label.Label
 	Rule      *rule.Rule
 	Deps      []interface{}
-}
-
-func (p *Project) GetFileGroup(key string) *FileGroup {
-	fg, exists := p.Files[key]
-	if !exists {
-		fg = &FileGroup{ItemType: key}
-		p.Files[key] = fg
-	}
-	return fg
 }
 
 type FileGroup struct {
@@ -68,10 +59,11 @@ type Property struct {
 }
 
 type ItemGroup struct {
-	Compile           []Item             `xml:"Compile"`
-	Content           []Item             `xml:"Content"`
-	ProjectReferences []ProjectReference `xml:"ProjectReference"`
-	PackageReferences []PackageReference `xml:"PackageReference"`
+	Compile           []*Item             `xml:"Compile"`
+	Content           []*Item             `xml:"Content"`
+	None              []*Item             `xml:"None"`
+	ProjectReferences []*ProjectReference `xml:"ProjectReference"`
+	PackageReferences []*PackageReference `xml:"PackageReference"`
 	Unsupported
 }
 
@@ -92,15 +84,9 @@ type Item struct {
 	XMLName xml.Name
 	Include string `xml:"Include,attr"`
 	Exclude string `xml:"Exclude,attr"`
-	Ignored
-	Unsupported
-}
-
-// Ignored contains explicitly ignored attributes and elements.
-// Properties of this struct are not translated to Starlark code. They may be used when collecting files for a project
-type Ignored struct {
-	// Remove is ignored because the project template disables all default item includes
+	// Remove is not directly output to starlark, but is used to filter globbed files
 	Remove string `xml:"Remove,attr"`
+	Unsupported
 }
 
 type Unsupported struct {

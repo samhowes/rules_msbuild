@@ -5,4 +5,7 @@
     <Foo>Bar</Foo>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="$(Foo)/item.json"/>
+  </ItemGroup>
 </Project>

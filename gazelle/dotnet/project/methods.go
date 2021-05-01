@@ -9,8 +9,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 )
+
+var variableRegex = regexp.MustCompile(`\$\((\w+)\)`)
 
 type DirectoryInfo struct {
 	Children map[string]*DirectoryInfo
@@ -54,6 +57,38 @@ func Load(projectFile string) (*Project, error) {
 	proj.Name = baseName[0 : len(baseName)-len(projExt)]
 
 	return &proj, nil
+}
+
+func (p *Project) GetFileGroup(key string) *FileGroup {
+	fg, exists := p.Files[key]
+	if !exists {
+		fg = &FileGroup{ItemType: key}
+		p.Files[key] = fg
+	}
+	return fg
+}
+
+func (p *Project) EvaluateItem(i *Item) {
+	i.Include = p.Evaluate(i.Include)
+	i.Exclude = p.Evaluate(i.Exclude)
+	i.Remove = p.Evaluate(i.Remove)
+}
+
+func (p *Project) Evaluate(s string) string {
+	if s == "" || len(s) < 4 {
+		return s
+	}
+
+	replaced := variableRegex.ReplaceAllStringFunc(s, func(match string) string {
+		// there has to be a better way, but oh well
+		variableName := match[len("$(") : len(match)-len(")")]
+		variableValue, exists := p.Properties[variableName]
+		if exists {
+			return variableValue
+		}
+		return match
+	})
+	return replaced
 }
 
 // NormalizePath takes an unclean absolute path to a project file and constructs a bazel label for it

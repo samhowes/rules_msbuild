@@ -9,9 +9,7 @@ dotnet_binary(
         "Controllers/*.cs",
         "Pages/*.cs",
     ]),
-    content = glob([
-        "*.json",
-    ]),
+    content = glob(["*.json"]),
     msbuild_properties = {
         "TypeScriptCompileBlocked": "true",
         "TypeScriptToolsVersion": "Latest",
