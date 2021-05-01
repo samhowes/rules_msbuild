@@ -85,7 +85,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 
 	for key, value := range proj.Files {
 		sort.Strings(value)
-		r.SetAttr(key, makeGlob(value, []string{}))
+		r.SetAttr(key, makeGlob(makeStringExprs(value), nil))
 	}
 
 	processItemGroup(proj, r)
@@ -96,31 +96,70 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		r.SetAttr("sdk", proj.Sdk)
 	}
 	if len(proj.Data) > 0 {
-		r.SetAttr("data", makeGlob(proj.Data, []string{}))
+		r.SetAttr("data", makeGlob(makeStringExprs(proj.Data), nil))
 	}
 
 	return res
 }
 
 func processItemGroup(proj *project.Project, r *rule.Rule) {
-	var commentItems []bzl.Comment
-	var content []bzl.Expr
+	var invalidComments []bzl.Comment
+	var contentItems []bzl.Expr
+	var includeGlobs []bzl.Expr
+	var globs []bzl.Expr
 	for _, ig := range proj.ItemGroups {
 		for _, i := range ig.Content {
 			comments := commentErrs(i.Unsupported.Messages("Content"))
 			if i.Include == "" {
-				commentItems = append(commentItems, comments...)
+				invalidComments = append(invalidComments, comments...)
 				continue
 			}
 
-			e := bzl.StringExpr{Value: i.Include}
-			e.Comment().Before = comments
-			content = append(content, &e)
+			if strings.Contains(i.Include, "*") {
+				if i.Exclude != "" {
+					// Exclude attributes only apply to include attributes on the same element, Exclude on its own
+					// element produces the following error:
+					// MSB4232: items outside Target elements must have one of the following operations: Include, Update, or Remove
+					g := makeGlob(makeStringExprs([]string{i.Include}), makeStringExprs([]string{i.Exclude}))
+					g.Comment().Before = comments
+					globs = append(globs, g)
+				} else {
+					e := &bzl.StringExpr{Value: i.Include}
+					e.Comment().Before = comments
+					includeGlobs = append(includeGlobs, e)
+				}
+			} else {
+				e := &bzl.StringExpr{Value: i.Include}
+				e.Comment().Before = comments
+				contentItems = append(contentItems, e)
+			}
 		}
 	}
-	if expr := listWithComments(content, commentItems); expr != nil {
-		r.SetAttr("content", expr)
+
+	var exprs []bzl.Expr
+	if len(includeGlobs) > 0 {
+		exprs = append(exprs, makeGlob(includeGlobs, nil))
 	}
+	exprs = append(exprs, globs...)
+	if expr := listWithComments(contentItems, invalidComments); expr != nil {
+		exprs = append(exprs, expr)
+	}
+
+	if len(exprs) <= 0 {
+		return
+	}
+
+	expr := exprs[0]
+	if len(exprs) > 1 {
+		for _, e := range exprs[1:] {
+			expr = &bzl.BinaryExpr{
+				X:  expr,
+				Op: "+",
+				Y:  e,
+			}
+		}
+	}
+	r.SetAttr("content", expr)
 }
 
 func commentErrs(messages []string) []bzl.Comment {
@@ -187,17 +226,23 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 	}
 }
 
+func makeStringExprs(values []string) []bzl.Expr {
+	list := make([]bzl.Expr, len(values))
+	for i, v := range values {
+		list[i] = &bzl.StringExpr{Value: v}
+	}
+	return list
+}
+
 // makeGlob returns a `glob([], exclude=[])` expression
 // the default ExprFromValue produces a `glob([], "excludes": [])` expression
-func makeGlob(include, exclude []string) bzl.Expr {
-	patternsValue := rule.ExprFromValue(include)
-	globArgs := []bzl.Expr{patternsValue}
+func makeGlob(include, exclude []bzl.Expr) bzl.Expr {
+	globArgs := []bzl.Expr{&bzl.ListExpr{List: include}}
 	if len(exclude) > 0 {
-		excludesValue := rule.ExprFromValue(exclude)
 		globArgs = append(globArgs, &bzl.AssignExpr{
 			LHS: &bzl.Ident{Name: "exclude"},
 			Op:  "=",
-			RHS: excludesValue,
+			RHS: &bzl.ListExpr{List: exclude},
 		})
 	}
 	return &bzl.CallExpr{

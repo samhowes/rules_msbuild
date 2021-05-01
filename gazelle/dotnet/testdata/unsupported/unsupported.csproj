@@ -1,14 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk" foo="">
 
-  <PropertyGroup PGCondition="">
-    <TargetFramework PCondition="">net5.0</TargetFramework>
+  <PropertyGroup Condition="">
+    <TargetFramework Condition="">net5.0</TargetFramework>
+    <CustomDir>bar\</CustomDir>
   </PropertyGroup>
 
-  <ItemGroup IGCondition="">
+  <ItemGroup Condition="">
     <Unkown />
+    <Content Foo="foo.txt"/>
     <Content Include="foo.txt">
       <CopyToOutputDirectory>always</CopyToOutputDirectory>
     </Content>
+    <Content Remove="$(CustomDir)**"/>
+    <None Remove="$(CustomDir)**"/>
   </ItemGroup>
 
   <ItemGroup>

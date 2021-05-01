@@ -2,14 +2,20 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 
 # gazelle-err: unsupported project attribute: foo
 # gazelle-err: unsupported project element: Target
-# gazelle-err: unsupported property group attribute: PGCondition
-# gazelle-err: unsupported property attribute: PCondition
-# gazelle-err: unsupported item group attribute: IGCondition
+# gazelle-err: unsupported property group attribute: Condition
+# gazelle-err: unsupported property attribute: Condition
+# gazelle-err: unsupported item group attribute: Condition
 # gazelle-err: unsupported item group element: Unkown
-# gazelle-err: unsupported item group element: Content
+# gazelle-err: unsupported item group element: None
 dotnet_library(
     name = "unsupported",
     srcs = glob(["*.cs"]),
+    content = [
+        # gazelle-err: unsupported Content attribute: Foo
+        # gazelle-err: unsupported Content attribute: Remove
+        # gazelle-err: unsupported Content element: CopyToOutputDirectory
+        "foo.txt",
+    ],
     sdk = "Microsoft.NET.Sdk",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],

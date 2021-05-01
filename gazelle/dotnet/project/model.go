@@ -65,6 +65,7 @@ type PackageReference struct {
 type Item struct {
 	XMLName xml.Name
 	Include string `xml:"Include,attr"`
+	Exclude string `xml:"Exclude,attr"`
 	Unsupported
 }
 

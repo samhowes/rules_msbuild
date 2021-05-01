@@ -1,7 +1,7 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 
 dotnet_library(
-    name = "contentitems",
+    name = "simplecontentitems",
     srcs = glob(["*.cs"]),
     content = ["appsettings.json"],
     sdk = "Microsoft.NET.Sdk",
