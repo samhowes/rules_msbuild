@@ -9,7 +9,10 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 # gazelle-err: unsupported item group element: None
 dotnet_library(
     name = "unsupported",
-    srcs = glob(["*.cs"]),
+    srcs = glob(["*.cs"]) + [
+        # gazelle-err: unsupported Compile attribute: Condition
+        "foo.bar",
+    ],
     content = [
         # gazelle-err: unsupported Content attribute: Foo
         # gazelle-err: unsupported Content element: CopyToOutputDirectory

@@ -4,6 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/bazelbuild/bazel-gazelle/label"
+	bzl "github.com/bazelbuild/buildtools/build"
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"path"
@@ -38,7 +40,7 @@ func Load(projectFile string) (*Project, error) {
 	}
 
 	proj.IsWeb = strings.EqualFold(proj.Sdk, "Microsoft.NET.Sdk.Web")
-	proj.Files = make(map[string][]string)
+	proj.Files = make(map[string]*FileGroup)
 
 	outputType, exists := proj.Properties["OutputType"]
 	if exists && strings.EqualFold(outputType, "exe") || proj.IsWeb {
@@ -89,15 +91,30 @@ func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 	return l, nil
 }
 
+func (fg *FileGroup) IsExcluded(file string) bool {
+	for _, f := range fg.Filters {
+		if matched, _ := doublestar.Match(f, file); matched {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
 	_, exists := dir.Exts[ext]
-	if exists {
-		fileList := p.Files[key]
-		if rel != "" {
-			rel = fmt.Sprintf("%s/", rel)
-		}
-		p.Files[key] = append(fileList, fmt.Sprintf("%s*%s", rel, ext))
+	if !exists {
+		return
 	}
+	fg := p.GetFileGroup(key)
+	if rel != "" {
+		rel = fmt.Sprintf("%s/", forceSlash(rel))
+	}
+	testFile := fmt.Sprintf("%sfoo%s", rel, ext)
+	if fg.IsExcluded(testFile) {
+		return
+	}
+
+	fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
 }
 
 func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
@@ -113,10 +130,10 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		return
 	}
 
-	p.appendFiles(dir, "srcs", rel, p.LangExt)
+	p.appendFiles(dir, "Compile", rel, p.LangExt)
 	if p.IsWeb {
 		for _, ext := range []string{".json", ".config"} {
-			p.appendFiles(dir, "content", rel, ext)
+			p.appendFiles(dir, "Content", rel, ext)
 		}
 	}
 

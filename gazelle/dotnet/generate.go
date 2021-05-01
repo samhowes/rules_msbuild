@@ -27,15 +27,14 @@ import (
 func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	res := language.GenerateResult{}
 	info := getInfo(args.Config)
-	var proj *project.Project
 	if info == nil {
 		return res
 	}
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
-			proj = loadProject(args, f, info)
-			if proj != nil {
-				res.Imports = append(res.Imports, proj.Deps)
+			info.Project = loadProject(args, f)
+			if info.Project != nil {
+				res.Imports = append(res.Imports, info.Project.Deps)
 			}
 			continue
 		}
@@ -53,19 +52,19 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		// we've collected all the package information by now, we can store it in the macro
 		d.customUpdateRepos(args.Config)
 	}
-	if proj == nil {
+	if info.Project == nil {
 		return res
 	}
 
-	res.Gen = append(res.Gen, proj.GenerateRules()...)
-	if proj.IsExe {
+	res.Gen = append(res.Gen, info.Project.GenerateRules(info)...)
+	if info.Project.IsExe {
 		res.Imports = append(res.Imports, []interface{}{})
 	}
 
 	return res
 }
 
-func loadProject(args language.GenerateArgs, projectFile string, info *project.DirectoryInfo) *project.Project {
+func loadProject(args language.GenerateArgs, projectFile string) *project.Project {
 	dirtyPath := path.Join(args.Dir, projectFile)
 
 	// squash the error, we know we're under the repo root
@@ -77,9 +76,8 @@ func loadProject(args language.GenerateArgs, projectFile string, info *project.D
 		return nil
 	}
 	proj.FileLabel = l
-	info.Project = proj
+
 	processDeps(args, proj)
-	proj.CollectFiles(info, "")
 	return proj
 }
 

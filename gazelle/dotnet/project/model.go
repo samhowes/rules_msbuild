@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	bzl "github.com/bazelbuild/buildtools/build"
 )
 
 var SpecialProperties = map[string]bool{
@@ -24,7 +25,7 @@ type Project struct {
 	IsWeb           bool
 	IsTest          bool
 	LangExt         string
-	Files           map[string][]string
+	Files           map[string]*FileGroup
 	Data            []string
 
 	// Rel is the workspace relative path to the csproj file
@@ -34,6 +35,25 @@ type Project struct {
 	FileLabel label.Label
 	Rule      *rule.Rule
 	Deps      []interface{}
+}
+
+func (p *Project) GetFileGroup(key string) *FileGroup {
+	fg, exists := p.Files[key]
+	if !exists {
+		fg = &FileGroup{ItemType: key}
+		p.Files[key] = fg
+	}
+	return fg
+}
+
+type FileGroup struct {
+	ItemType       string
+	BazelAttribute string
+	Explicit       []bzl.Expr
+	Globs          []bzl.Expr
+	IncludeGlobs   []bzl.Expr
+	Filters        []string
+	Comments       []bzl.Comment
 }
 
 type PropertyGroup struct {
@@ -48,6 +68,7 @@ type Property struct {
 }
 
 type ItemGroup struct {
+	Compile           []Item             `xml:"Compile"`
 	Content           []Item             `xml:"Content"`
 	ProjectReferences []ProjectReference `xml:"ProjectReference"`
 	PackageReferences []PackageReference `xml:"PackageReference"`

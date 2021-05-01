@@ -13,6 +13,7 @@
     </Content>
     <Content Remove="$(CustomDir)**"/>
     <None Remove="$(CustomDir)**"/>
+    <Compile Include="foo.bar" Condition=""/>
   </ItemGroup>
 
   <ItemGroup>
