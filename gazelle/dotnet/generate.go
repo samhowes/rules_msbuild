@@ -88,6 +88,8 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		r.SetAttr(key, makeGlob(value, []string{}))
 	}
 
+	processItemGroup(proj, r)
+
 	r.SetAttr("visibility", []string{"//visibility:public"})
 	r.SetAttr("target_framework", proj.TargetFramework)
 	if proj.Sdk != "" {
@@ -98,6 +100,35 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 
 	return res
+}
+
+func processItemGroup(proj *project.Project, r *rule.Rule) {
+	var commentItems []bzl.Comment
+	var content []bzl.Expr
+	for _, ig := range proj.ItemGroups {
+		for _, i := range ig.Content {
+			comments := commentErrs(i.Unsupported.Messages("Content"))
+			if i.Include == "" {
+				commentItems = append(commentItems, comments...)
+				continue
+			}
+
+			e := bzl.StringExpr{Value: i.Include}
+			e.Comment().Before = comments
+			content = append(content, &e)
+		}
+	}
+	if expr := listWithComments(content, commentItems); expr != nil {
+		r.SetAttr("content", expr)
+	}
+}
+
+func commentErrs(messages []string) []bzl.Comment {
+	comments := make([]bzl.Comment, len(messages))
+	for i, m := range messages {
+		comments[i] = bzl.Comment{Token: commentErr(m)}
+	}
+	return comments
 }
 
 func loadProject(args language.GenerateArgs, projectFile string, info *project.DirectoryInfo) *project.Project {

@@ -72,23 +72,31 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		}
 	}
 
-	if len(deps) == 0 && len(missing) == 0 {
-		return
+	if expr := listWithComments(deps, missing); expr != nil {
+		r.SetAttr("deps", expr)
 	}
+}
 
-	expr := bzl.ListExpr{List: deps}
-	if len(missing) > 0 {
+// listWithComments creates a bzl.ListExpr with value of list
+// if both list and comments are empty, nil is returned
+// if list is empty, an empty list is rendered that contains comments
+// if list is non-empty, comments are placed at the beginning of the list
+func listWithComments(list []bzl.Expr, comments []bzl.Comment) *bzl.ListExpr {
+	if len(list) == 0 && len(comments) == 0 {
+		return nil
+	}
+	expr := bzl.ListExpr{List: list}
+	if len(comments) > 0 {
 		var commented *bzl.Comments
-		if len(deps) > 0 {
-			commented = deps[0].Comment()
-			commented.Before = append(missing, commented.Before...)
+		if len(list) > 0 {
+			commented = list[0].Comment()
+			commented.Before = append(comments, commented.Before...)
 		} else {
 			commented = expr.End.Comment()
-			commented.Before = append(commented.Before, missing...)
+			commented.Before = append(commented.Before, comments...)
 		}
 	}
-
-	r.SetAttr("deps", &expr)
+	return &expr
 }
 
 func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments []bzl.Comment, from label.Label) (*label.Label, []bzl.Comment) {

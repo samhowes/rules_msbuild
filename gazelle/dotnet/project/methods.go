@@ -1,13 +1,13 @@
 package project
 
 import (
-    "encoding/xml"
-    "fmt"
-    "github.com/bazelbuild/bazel-gazelle/label"
-    "io/ioutil"
-    "os"
-    "path"
-    "strings"
+	"encoding/xml"
+	"fmt"
+	"github.com/bazelbuild/bazel-gazelle/label"
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
 )
 
 type DirectoryInfo struct {
@@ -59,7 +59,7 @@ func Load(projectFile string) (*Project, error) {
 // Constructing a label is not strictly necessary, but this is bazel, and a label is a convenient notation
 func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 	// even on non-windows, dotnet still uses paths with backslashes in project files
-    // even on windows, go uses '/' for path cleaning
+	// even on windows, go uses '/' for path cleaning
 	dirtyProjectPath = strings.Replace(dirtyProjectPath, "\\", "/", -1)
 
 	// project files use relative paths, clean them to get the absolute path
@@ -67,8 +67,8 @@ func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 	// path.Clean will exclusively work with forward slashes
 	// repoRoot will be an actual windows path with backslashes on windows though
 	if os.PathSeparator == '\\' {
-        repoRoot = strings.Replace(repoRoot, "\\", "/", -1)
-    }
+		repoRoot = strings.Replace(repoRoot, "\\", "/", -1)
+	}
 	if !strings.HasPrefix(cleaned, repoRoot) {
 		err := fmt.Errorf("project path is not rooted in the repository: %s", cleaned)
 		return label.NoLabel, err
@@ -147,6 +147,12 @@ func (p *Project) GetUnsupported() []string {
 }
 
 func (u *Unsupported) Append(messages []string, prefix string) []string {
+	messages = append(messages, u.Messages(prefix)...)
+	return messages
+}
+
+func (u *Unsupported) Messages(prefix string) []string {
+	var messages []string
 	if prefix != "" {
 		prefix = fmt.Sprintf(" %s", prefix)
 	}
@@ -160,6 +166,5 @@ func (u *Unsupported) Append(messages []string, prefix string) []string {
 	for _, a := range u.UnsupportedElements {
 		apnd("element", a.XMLName.Local)
 	}
-
 	return messages
 }

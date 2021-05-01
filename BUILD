@@ -21,7 +21,7 @@ gazelle(
 gazelle(
     name = "gazelle",
     args = [
-        "--go_naming_convention=import",
+        "-go_naming_convention=import",
         "-deps_macro=deps/nuget.bzl%nuget_deps",
     ],
     gazelle = ":gazelle_local",

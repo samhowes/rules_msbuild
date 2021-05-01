@@ -43,6 +43,7 @@ type Property struct {
 }
 
 type ItemGroup struct {
+	Content           []Item             `xml:"Content"`
 	ProjectReferences []ProjectReference `xml:"ProjectReference"`
 	PackageReferences []PackageReference `xml:"PackageReference"`
 	Unsupported
@@ -63,6 +64,7 @@ type PackageReference struct {
 
 type Item struct {
 	XMLName xml.Name
+	Include string `xml:"Include,attr"`
 	Unsupported
 }
 

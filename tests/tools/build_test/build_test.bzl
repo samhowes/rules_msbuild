@@ -43,7 +43,7 @@ def build_test(name, target, expected_files, run_location = "", args = [], expec
         deps = [
             "//tests/tools/executable",
             "//tests/tools/files",
-            "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+            "@io_bazel_rules_go//go/tools/bazel",
         ],
     )
 
