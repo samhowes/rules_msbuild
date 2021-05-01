@@ -2,7 +2,7 @@
 
   <PropertyGroup Condition="">
     <TargetFramework Condition="">net5.0</TargetFramework>
-    <CustomDir>bar\</CustomDir>
+    <Foo Condition="">Bar</Foo>
   </PropertyGroup>
 
   <ItemGroup Condition="">

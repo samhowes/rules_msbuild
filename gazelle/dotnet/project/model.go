@@ -6,6 +6,11 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/rule"
 )
 
+var SpecialProperties = map[string]bool{
+	"TargetFramework": true,
+	"OutputType":      true,
+}
+
 type Project struct {
 	XMLName        xml.Name        `xml:"Project"`
 	Sdk            string          `xml:"Sdk,attr"`
@@ -66,7 +71,15 @@ type Item struct {
 	XMLName xml.Name
 	Include string `xml:"Include,attr"`
 	Exclude string `xml:"Exclude,attr"`
+	Ignored
 	Unsupported
+}
+
+// Ignored contains explicitly ignored attributes and elements.
+// Properties of this struct are not translated to Starlark code. They may be used when collecting files for a project
+type Ignored struct {
+	// Remove is ignored because the project template disables all default item includes
+	Remove string `xml:"Remove,attr"`
 }
 
 type Unsupported struct {

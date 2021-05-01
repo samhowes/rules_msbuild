@@ -137,6 +137,9 @@ func (p *Project) GetUnsupported() []string {
 	for _, pg := range p.PropertyGroups {
 		messages = pg.Unsupported.Append(messages, "property group")
 		for _, prop := range pg.Properties {
+			if SpecialProperties[prop.XMLName.Local] {
+				continue
+			}
 			messages = prop.Unsupported.Append(messages, "property")
 		}
 	}

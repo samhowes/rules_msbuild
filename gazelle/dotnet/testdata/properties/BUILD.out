@@ -1,0 +1,10 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+
+dotnet_library(
+    name = "properties",
+    srcs = glob(["*.cs"]),
+    msbuild_properties = {"Foo": "Bar"},
+    sdk = "Microsoft.NET.Sdk",
+    target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
+)

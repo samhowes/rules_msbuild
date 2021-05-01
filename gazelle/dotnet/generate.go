@@ -89,6 +89,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 
 	processItemGroup(proj, r)
+	setProperties(proj, r)
 
 	r.SetAttr("visibility", []string{"//visibility:public"})
 	r.SetAttr("target_framework", proj.TargetFramework)
@@ -100,6 +101,27 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	}
 
 	return res
+}
+
+func setProperties(proj *project.Project, r *rule.Rule) {
+	var exprs []*bzl.KeyValueExpr
+	for _, pg := range proj.PropertyGroups {
+		for _, p := range pg.Properties {
+			name := p.XMLName.Local
+			if project.SpecialProperties[name] {
+				continue
+			}
+			e := bzl.KeyValueExpr{
+				Comments: bzl.Comments{Before: commentErrs(p.Unsupported.Messages("property"))},
+				Key:      &bzl.StringExpr{Value: name},
+				Value:    &bzl.StringExpr{Value: p.Value},
+			}
+			exprs = append(exprs, &e)
+		}
+	}
+	if len(exprs) > 0 {
+		r.SetAttr("msbuild_properties", &bzl.DictExpr{List: exprs})
+	}
 }
 
 func processItemGroup(proj *project.Project, r *rule.Rule) {
