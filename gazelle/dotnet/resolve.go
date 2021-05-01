@@ -2,6 +2,7 @@ package dotnet
 
 import (
 	"fmt"
+	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 	"log"
 	"strings"
 
@@ -57,7 +58,7 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		comments := make([]bzl.Comment, len(dep.Comments))
 
 		for i, c := range dep.Comments {
-			comments[i] = bzl.Comment{Token: commentErr(c)}
+			comments[i] = bzl.Comment{Token: util.CommentErr(c)}
 		}
 		l, comments := findDep(c, ix, dep, comments, from)
 
@@ -72,31 +73,9 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		}
 	}
 
-	if expr := listWithComments(deps, missing); expr != nil {
+	if expr := util.ListWithComments(deps, missing); expr != nil {
 		r.SetAttr("deps", expr)
 	}
-}
-
-// listWithComments creates a bzl.ListExpr with value of list
-// if both list and comments are empty, nil is returned
-// if list is empty, an empty list is rendered that contains comments
-// if list is non-empty, comments are placed at the beginning of the list
-func listWithComments(list []bzl.Expr, comments []bzl.Comment) *bzl.ListExpr {
-	if len(list) == 0 && len(comments) == 0 {
-		return nil
-	}
-	expr := bzl.ListExpr{List: list}
-	if len(comments) > 0 {
-		var commented *bzl.Comments
-		if len(list) > 0 {
-			commented = list[0].Comment()
-			commented.Before = append(comments, commented.Before...)
-		} else {
-			commented = expr.End.Comment()
-			commented.Before = append(commented.Before, comments...)
-		}
-	}
-	return &expr
 }
 
 func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments []bzl.Comment, from label.Label) (*label.Label, []bzl.Comment) {
@@ -121,7 +100,7 @@ func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments [
 			"  results: %s", from.String(), dep.Label.String(), strings.Join(labels, "\n    "))
 	} else if len(results) == 0 {
 		c := fmt.Sprintf("could not find project file at %s", dep.Label.String())
-		comments = append(comments, bzl.Comment{Token: commentErr(c)})
+		comments = append(comments, bzl.Comment{Token: util.CommentErr(c)})
 		return nil, comments
 	}
 	return &results[0].Label, comments
