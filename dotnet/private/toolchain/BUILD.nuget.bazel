@@ -4,7 +4,7 @@ package(default_visibility = ["//visibility:public"])
 
 tfm_mapping(
     name = "tfm_mapping",
-    tfm_mapping = {tfm_mapping}
+    tfm_mapping = {tfm_mapping},
 )
 
 alias(
@@ -14,4 +14,6 @@ alias(
 
 exports_files(["{nuget_build_config}"])
 
-exports_files(glob(["packages/**/*"]))
+# this file list looks pretty crazy, but because we list every file specifically, bazel doesn't have to perform a glob
+# of the file system and read the packages directory itself.
+exports_files({file_list})

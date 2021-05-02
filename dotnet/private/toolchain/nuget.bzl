@@ -61,15 +61,48 @@ def _nuget_fetch_impl(ctx):
         all_files = [],
         tfm_mapping = {},
     )
-
-    _generate_nuget_configs(ctx, config)
-    fetch_project = _generate_fetch_project(ctx, config)
-
     os, _ = detect_host_platform(ctx)
     dotnet = dotnet_context(
         str(ctx.path(ctx.attr.dotnet_sdk_root).dirname),
         os,
     )
+
+    if ctx.attr.use_host:
+        # https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-locals
+        cache_type = "global-packages"
+        args = [
+            dotnet.path,
+            "nuget",
+            "locals",
+            cache_type,
+            "--list",
+        ]
+        result = ctx.execute(args)
+        if result.return_code != 0:
+            fail("failed to find global-packages folder with dotnet: " + result.stderr)
+
+        # example dotnet5 output: `global-packages: /Users/samh/.nuget/packages/`
+        # example dotnet3.1 output: `info : global-packages: /Users/samh/.nuget/packages/`
+        ind = result.stdout.index(cache_type)
+        if ind < 0:
+            fail("unexpected output from {}: {}".format(" ".join(args), result.stdout))
+        start = ind + len(cache_type) + 2
+        location = result.stdout[start:].strip()
+
+        # it's possible that the packages folder doesn't exist yet, if it doesn't the symlink won't be functional
+        # this mostly likely won't be the case in actual usage, but is definitely possible if the folder has been
+        # cleaned, like on a fresh CI instance for example.
+        mkdir = None
+        if os == "windows":
+            mkdir = ["cmd", "/e:on", "/c", "mkdir " + location]
+        else:
+            mkdir = ["mkdir", "-p", location]
+
+        ctx.execute(mkdir)
+        ctx.symlink(location, config.packages_folder)
+
+    _generate_nuget_configs(ctx, config)
+    fetch_project = _generate_fetch_project(ctx, config)
 
     args, _ = make_cmd(
         dotnet,
@@ -506,7 +539,8 @@ def _get_overrides(ctx, dotnet, tfn):
 def _generate_build_files(ctx, config):
     all_all_files = []
     for pkg in config.packages.values():
-        all_all_files.append(pkg.all_files)
+        # these are labels, and we need them to be paths to be used for exports_files()
+        all_all_files.extend([f[3:] for f in pkg.all_files])
         ctx.template(
             ctx.path(paths.join(pkg.name, "BUILD.bazel")),
             ctx.attr._nuget_import_template,
@@ -528,12 +562,14 @@ def _generate_build_files(ctx, config):
         ctx.attr._root_template,
         substitutions = {
             "{test_logger}": test_logger,
-            # todo(#61) explicitly develop the file list.
-            "{file_list}": "",
+            "{file_list}": _json_bzl(all_all_files, ""),
             "{nuget_build_config}": NUGET_BUILD_CONFIG,
-            "{tfm_mapping}": json.encode_indent(config.tfm_mapping, prefix = "    ", indent = "    "),
+            "{tfm_mapping}": _json_bzl(config.tfm_mapping),
         },
     )
+
+def _json_bzl(obj, prefix = "    "):
+    return json.encode_indent(obj, prefix = prefix, indent = "    ")
 
 nuget_fetch = repository_rule(
     implementation = _nuget_fetch_impl,
@@ -547,6 +583,12 @@ nuget_fetch = repository_rule(
             default = Label("@dotnet_sdk//:ROOT"),
             executable = True,
             cfg = "exec",
+        ),
+        "use_host": attr.bool(
+            default = False,
+            doc = ("When false (default) nuget packages will be fetched into a bazel-only directory, when true, the " +
+                   "host machine's global packages folder will be used. This is determined by executing " +
+                   "`dotnet nuget locals global-packages --list"),
         ),
         "_master_template": attr.label(
             default = Label("@my_rules_dotnet//dotnet/private/msbuild:project.tpl.proj"),

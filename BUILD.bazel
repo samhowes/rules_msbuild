@@ -21,6 +21,10 @@ GO_ARGS = [
     "-go_naming_convention=import",
 ]
 
+DOTNET_ARGS = [
+    "-deps_macro=deps/nuget.bzl%nuget_deps",
+]
+
 # for when the dotnet language is broken
 gazelle(
     name = "gazelle_go",
@@ -29,9 +33,7 @@ gazelle(
 
 gazelle(
     name = "gazelle",
-    args = [
-        "-deps_macro=deps/nuget.bzl%nuget_deps",
-    ] + GO_ARGS,
+    args = DOTNET_ARGS + GO_ARGS,
     gazelle = ":gazelle_local",
 )
 
@@ -44,8 +46,6 @@ gazelle_binary(
 
 gazelle(
     name = "gazelle-dotnet",
-    args = [
-        "-deps_macro=deps/nuget.bzl%nuget_deps",
-    ],
+    args = DOTNET_ARGS,
     gazelle = "//gazelle/dotnet:gazelle-dotnet",
 )
