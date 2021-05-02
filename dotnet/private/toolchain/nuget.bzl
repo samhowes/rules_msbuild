@@ -94,7 +94,7 @@ def _nuget_fetch_impl(ctx):
         # cleaned, like on a fresh CI instance for example.
         mkdir = None
         if os == "windows":
-            mkdir = ["cmd","/e:on" "/c", "mkdir " + location]
+            mkdir = ["cmd", "/e:on", "/c", "mkdir " + location]
         else:
             mkdir = ["mkdir", "-p", location]
 
