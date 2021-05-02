@@ -92,13 +92,13 @@ def _nuget_fetch_impl(ctx):
         # it's possible that the packages folder doesn't exist yet, if it doesn't the symlink won't be functional
         # this mostly likely won't be the case in actual usage, but is definitely possible if the folder has been
         # cleaned, like on a fresh CI instance for example.
-        ctx.execute(["mkdir", location])
+        makeres = ctx.execute(["mkdir", location])
         ctx.symlink(location, config.packages_folder)
 
         res1 = ctx.execute(["dir", location])
         res2 = ctx.execute(["dir", config.packages_folder])
 
-        fail("\n".join([res1.stdout, res1.stderr, "----------------------------", res2.stdout, res2.stderr]))
+        fail("\n".join([makeres.stdout, makeres.stderr, res1.stdout, res1.stderr, "----------------------------", res2.stdout, res2.stderr]))
 
     _generate_nuget_configs(ctx, config)
     fetch_project = _generate_fetch_project(ctx, config)
