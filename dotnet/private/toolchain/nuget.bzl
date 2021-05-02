@@ -88,6 +88,11 @@ def _nuget_fetch_impl(ctx):
             fail("unexpected output from {}: {}".format(" ".join(args), result.stdout))
         start = ind + len(cache_type) + 2
         location = result.stdout[start:].strip()
+
+        # it's possible that the packages folder doesn't exist yet, if it doesn't the symlink won't be functional
+        # this mostly likely won't be the case in actual usage, but is definitely possible if the folder has been
+        # cleaned, like on a fresh CI instance for example.
+        ctx.execute(["mkdir", location])
         ctx.symlink(location, config.packages_folder)
 
     _generate_nuget_configs(ctx, config)
