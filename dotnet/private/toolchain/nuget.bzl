@@ -95,6 +95,11 @@ def _nuget_fetch_impl(ctx):
         ctx.execute(["mkdir", location])
         ctx.symlink(location, config.packages_folder)
 
+        res1 = ctx.execute(["dir", location])
+        res2 = ctx.execute(["dir", config.packages_folder])
+
+        fail("\n".join([res1.stdout, res1.stderr, "----------------------------", res2.stdout, res2.stderr]))
+
     _generate_nuget_configs(ctx, config)
     fetch_project = _generate_fetch_project(ctx, config)
 
