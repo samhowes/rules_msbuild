@@ -92,11 +92,13 @@ def _nuget_fetch_impl(ctx):
         # it's possible that the packages folder doesn't exist yet, if it doesn't the symlink won't be functional
         # this mostly likely won't be the case in actual usage, but is definitely possible if the folder has been
         # cleaned, like on a fresh CI instance for example.
-        makeres = ctx.execute([
-            "mkdir",
-            "/S" if os == "windows" else "-p",
-            location,
-        ])
+        mkdir = None
+        if os == "windows":
+            mkdir = ["cmd","/e:on" "/c", "mkdir " + location]
+        else:
+            mkdir = ["mkdir", "-p", location]
+
+        makeres = ctx.execute(mkdir)
         ctx.symlink(location, config.packages_folder)
 
         res1 = ctx.execute(["dir", location])
