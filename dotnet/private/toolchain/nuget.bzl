@@ -98,13 +98,8 @@ def _nuget_fetch_impl(ctx):
         else:
             mkdir = ["mkdir", "-p", location]
 
-        makeres = ctx.execute(mkdir)
+        ctx.execute(mkdir)
         ctx.symlink(location, config.packages_folder)
-
-        res1 = ctx.execute(["dir", location])
-        res2 = ctx.execute(["dir", config.packages_folder])
-
-        fail("\n".join([makeres.stdout, makeres.stderr, res1.stdout, res1.stderr, "----------------------------", res2.stdout, res2.stderr]))
 
     _generate_nuget_configs(ctx, config)
     fetch_project = _generate_fetch_project(ctx, config)
