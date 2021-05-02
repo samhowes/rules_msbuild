@@ -76,6 +76,9 @@ BASE_ASSEMBLY_ATTRS = {
         doc = ("Target Framework Monikor (TFM) for the target .NET Framework i.e. netcoreapp3.1" +
                " https://docs.microsoft.com/en-us/dotnet/standard/frameworks"),
     ),
+    "msbuild_properties": attr.string_dict(
+        doc = "Properties to be placed in the main <PropertyGroup> of the generated project file.",
+    ),
     "sdk": attr.string(
         default = "Microsoft.NET.Sdk",
         doc = """The dotnet sdk to use, normally found in the project element like `<Project Sdk="{sdk}">`. Most common

@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+load("//tests/tools/build_test:build_test.bzl", "artifacts_dir")
+
+dotnet_library(
+    name = "BuildProperties",
+    srcs = glob(["*.cs"]),
+    msbuild_properties = {"Foo": "Bar"},
+    sdk = "Microsoft.NET.Sdk",
+    target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "artifacts",
+    testonly = True,
+    srcs = [":BuildProperties"],
+    output_group = "all",
+)
+
+go_test(
+    name = "BuildProperties_test",
+    srcs = ["build_properties_test.go"],
+    data = [
+        ":artifacts",
+    ],
+    rundir = artifacts_dir(),
+    deps = ["@com_github_stretchr_testify//assert"],
+)
