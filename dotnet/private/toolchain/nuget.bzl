@@ -551,7 +551,6 @@ def _generate_build_files(ctx, config):
         ctx.attr._root_template,
         substitutions = {
             "{test_logger}": test_logger,
-            # todo(#61) explicitly develop the file list.
             "{file_list}": _json_bzl(all_all_files, ""),
             "{nuget_build_config}": NUGET_BUILD_CONFIG,
             "{tfm_mapping}": _json_bzl(config.tfm_mapping),
