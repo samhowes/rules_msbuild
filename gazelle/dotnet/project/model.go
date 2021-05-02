@@ -61,9 +61,10 @@ type Property struct {
 type ItemGroup struct {
 	Compile           []*Item             `xml:"Compile"`
 	Content           []*Item             `xml:"Content"`
-	None              []*Item             `xml:"None"`
 	ProjectReferences []*ProjectReference `xml:"ProjectReference"`
 	PackageReferences []*PackageReference `xml:"PackageReference"`
+	// None items are completely ignored
+	None []*Item `xml:"None"`
 	Unsupported
 }
 
