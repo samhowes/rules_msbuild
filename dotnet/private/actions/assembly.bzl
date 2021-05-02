@@ -166,7 +166,7 @@ def emit_assembly(ctx, dotnet):
         data = files.data,
         content = files.content,
     )
-    return info, outputs + restore_outputs, private
+    return info, outputs + restore_outputs + [project_file], private
 
 def _declare_assembly_files(ctx, output_dir, is_executable):
     name = ctx.attr.name

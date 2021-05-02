@@ -17,13 +17,21 @@ gazelle(
     command = "update-repos",
 )
 
-# gazelle:go_naming_convention import
+GO_ARGS = [
+    "-go_naming_convention=import",
+]
+
+# for when the dotnet language is broken
+gazelle(
+    name = "gazelle_go",
+    args = GO_ARGS,
+)
+
 gazelle(
     name = "gazelle",
     args = [
-        "--go_naming_convention=import",
         "-deps_macro=deps/nuget.bzl%nuget_deps",
-    ],
+    ] + GO_ARGS,
     gazelle = ":gazelle_local",
 )
 

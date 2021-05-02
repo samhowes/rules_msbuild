@@ -1,7 +1,6 @@
 package dotnet
 
 import (
-	"fmt"
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
@@ -81,8 +80,4 @@ func getInfo(c *config.Config) *project.DirectoryInfo {
 
 func getConfig(c *config.Config) *dotnetConfig {
 	return c.Exts[dotnetName].(*dotnetConfig)
-}
-
-func commentErr(c string) string {
-	return fmt.Sprintf("# gazelle-err: %s", c)
 }

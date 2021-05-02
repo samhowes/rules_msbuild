@@ -17,6 +17,7 @@
   -->
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>

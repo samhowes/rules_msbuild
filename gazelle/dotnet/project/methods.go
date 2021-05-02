@@ -1,14 +1,19 @@
 package project
 
 import (
-    "encoding/xml"
-    "fmt"
-    "github.com/bazelbuild/bazel-gazelle/label"
-    "io/ioutil"
-    "os"
-    "path"
-    "strings"
+	"encoding/xml"
+	"fmt"
+	"github.com/bazelbuild/bazel-gazelle/label"
+	bzl "github.com/bazelbuild/buildtools/build"
+	"github.com/bmatcuk/doublestar"
+	"io/ioutil"
+	"os"
+	"path"
+	"regexp"
+	"strings"
 )
+
+var variableRegex = regexp.MustCompile(`\$\((\w+)\)`)
 
 type DirectoryInfo struct {
 	Children map[string]*DirectoryInfo
@@ -38,7 +43,7 @@ func Load(projectFile string) (*Project, error) {
 	}
 
 	proj.IsWeb = strings.EqualFold(proj.Sdk, "Microsoft.NET.Sdk.Web")
-	proj.Files = make(map[string][]string)
+	proj.Files = make(map[string]*FileGroup)
 
 	outputType, exists := proj.Properties["OutputType"]
 	if exists && strings.EqualFold(outputType, "exe") || proj.IsWeb {
@@ -54,12 +59,44 @@ func Load(projectFile string) (*Project, error) {
 	return &proj, nil
 }
 
+func (p *Project) GetFileGroup(key string) *FileGroup {
+	fg, exists := p.Files[key]
+	if !exists {
+		fg = &FileGroup{ItemType: key}
+		p.Files[key] = fg
+	}
+	return fg
+}
+
+func (p *Project) EvaluateItem(i *Item) {
+	i.Include = p.Evaluate(i.Include)
+	i.Exclude = p.Evaluate(i.Exclude)
+	i.Remove = p.Evaluate(i.Remove)
+}
+
+func (p *Project) Evaluate(s string) string {
+	if s == "" || len(s) < 4 {
+		return s
+	}
+
+	replaced := variableRegex.ReplaceAllStringFunc(s, func(match string) string {
+		// there has to be a better way, but oh well
+		variableName := match[len("$(") : len(match)-len(")")]
+		variableValue, exists := p.Properties[variableName]
+		if exists {
+			return variableValue
+		}
+		return match
+	})
+	return replaced
+}
+
 // NormalizePath takes an unclean absolute path to a project file and constructs a bazel label for it
 // The path may contain any combination of `.`, `..`, `/` and `\`
 // Constructing a label is not strictly necessary, but this is bazel, and a label is a convenient notation
 func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 	// even on non-windows, dotnet still uses paths with backslashes in project files
-    // even on windows, go uses '/' for path cleaning
+	// even on windows, go uses '/' for path cleaning
 	dirtyProjectPath = strings.Replace(dirtyProjectPath, "\\", "/", -1)
 
 	// project files use relative paths, clean them to get the absolute path
@@ -67,8 +104,8 @@ func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 	// path.Clean will exclusively work with forward slashes
 	// repoRoot will be an actual windows path with backslashes on windows though
 	if os.PathSeparator == '\\' {
-        repoRoot = strings.Replace(repoRoot, "\\", "/", -1)
-    }
+		repoRoot = strings.Replace(repoRoot, "\\", "/", -1)
+	}
 	if !strings.HasPrefix(cleaned, repoRoot) {
 		err := fmt.Errorf("project path is not rooted in the repository: %s", cleaned)
 		return label.NoLabel, err
@@ -89,15 +126,30 @@ func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 	return l, nil
 }
 
+func (fg *FileGroup) IsExcluded(file string) bool {
+	for _, f := range fg.Filters {
+		if matched, _ := doublestar.Match(f, file); matched {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
 	_, exists := dir.Exts[ext]
-	if exists {
-		fileList := p.Files[key]
-		if rel != "" {
-			rel = fmt.Sprintf("%s/", rel)
-		}
-		p.Files[key] = append(fileList, fmt.Sprintf("%s*%s", rel, ext))
+	if !exists {
+		return
 	}
+	fg := p.GetFileGroup(key)
+	if rel != "" {
+		rel = fmt.Sprintf("%s/", forceSlash(rel))
+	}
+	testFile := fmt.Sprintf("%sfoo%s", rel, ext)
+	if fg.IsExcluded(testFile) {
+		return
+	}
+
+	fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
 }
 
 func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
@@ -113,10 +165,10 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		return
 	}
 
-	p.appendFiles(dir, "srcs", rel, p.LangExt)
+	p.appendFiles(dir, "Compile", rel, p.LangExt)
 	if p.IsWeb {
 		for _, ext := range []string{".json", ".config"} {
-			p.appendFiles(dir, "content", rel, ext)
+			p.appendFiles(dir, "Content", rel, ext)
 		}
 	}
 
@@ -137,6 +189,9 @@ func (p *Project) GetUnsupported() []string {
 	for _, pg := range p.PropertyGroups {
 		messages = pg.Unsupported.Append(messages, "property group")
 		for _, prop := range pg.Properties {
+			if SpecialProperties[prop.XMLName.Local] {
+				continue
+			}
 			messages = prop.Unsupported.Append(messages, "property")
 		}
 	}
@@ -147,6 +202,12 @@ func (p *Project) GetUnsupported() []string {
 }
 
 func (u *Unsupported) Append(messages []string, prefix string) []string {
+	messages = append(messages, u.Messages(prefix)...)
+	return messages
+}
+
+func (u *Unsupported) Messages(prefix string) []string {
+	var messages []string
 	if prefix != "" {
 		prefix = fmt.Sprintf(" %s", prefix)
 	}
@@ -160,6 +221,5 @@ func (u *Unsupported) Append(messages []string, prefix string) []string {
 	for _, a := range u.UnsupportedElements {
 		apnd("element", a.XMLName.Local)
 	}
-
 	return messages
 }

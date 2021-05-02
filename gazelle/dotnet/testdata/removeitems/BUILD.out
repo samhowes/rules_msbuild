@@ -1,0 +1,9 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+
+dotnet_library(
+    name = "removeitems",
+    srcs = glob(["*.cs"]),
+    sdk = "Microsoft.NET.Sdk",
+    target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
+)

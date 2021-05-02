@@ -6,11 +6,15 @@ go_library(
         "methods.go",
         "model.go",
         "nuget.go",
+        "translation.go",
     ],
     importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project",
     visibility = ["//visibility:public"],
     deps = [
+        "//gazelle/dotnet/util",
         "@bazel_gazelle//label:go_default_library",
         "@bazel_gazelle//rule:go_default_library",
+        "@com_github_bazelbuild_buildtools//build:go_default_library",
+        "@com_github_bmatcuk_doublestar//:go_default_library",
     ],
 )

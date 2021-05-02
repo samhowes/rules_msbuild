@@ -17,7 +17,7 @@ type dotnetConfig struct {
 	packages          map[string]*project.NugetSpec
 }
 
-func (c *dotnetConfig) recordPackage(ref project.PackageReference, tfm string) {
+func (c *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
 	if c.macroFileName == "" {
 		return
 	}

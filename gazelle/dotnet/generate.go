@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"log"
 	"path"
-	"sort"
 	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
-	"github.com/bazelbuild/bazel-gazelle/rule"
-	bzl "github.com/bazelbuild/buildtools/build"
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
 )
 
@@ -30,15 +27,14 @@ import (
 func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	res := language.GenerateResult{}
 	info := getInfo(args.Config)
-	var proj *project.Project
 	if info == nil {
 		return res
 	}
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
-			proj = loadProject(args, f, info)
-			if proj != nil {
-				res.Imports = append(res.Imports, proj.Deps)
+			info.Project = loadProject(args, f)
+			if info.Project != nil {
+				res.Imports = append(res.Imports, info.Project.Deps)
 			}
 			continue
 		}
@@ -56,51 +52,19 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		// we've collected all the package information by now, we can store it in the macro
 		d.customUpdateRepos(args.Config)
 	}
-	if proj == nil {
+	if info.Project == nil {
 		return res
 	}
 
-	var kind string
-	if proj.IsTest {
-		kind = "dotnet_test"
-	} else if proj.IsExe {
-		kind = "dotnet_binary"
-	} else {
-		kind = "dotnet_library"
-	}
-
-	proj.Rule = rule.NewRule(kind, proj.Name)
-	r := proj.Rule
-	res.Gen = append(res.Gen, proj.Rule)
-	if proj.IsExe {
-		p := rule.NewRule("dotnet_publish", "publish")
-		p.SetAttr("target", ":"+proj.Name)
-		res.Gen = append(res.Gen, p)
+	res.Gen = append(res.Gen, info.Project.GenerateRules(info)...)
+	if info.Project.IsExe {
 		res.Imports = append(res.Imports, []interface{}{})
-	}
-
-	for _, u := range proj.GetUnsupported() {
-		r.AddComment(commentErr(u))
-	}
-
-	for key, value := range proj.Files {
-		sort.Strings(value)
-		r.SetAttr(key, makeGlob(value, []string{}))
-	}
-
-	r.SetAttr("visibility", []string{"//visibility:public"})
-	r.SetAttr("target_framework", proj.TargetFramework)
-	if proj.Sdk != "" {
-		r.SetAttr("sdk", proj.Sdk)
-	}
-	if len(proj.Data) > 0 {
-		r.SetAttr("data", makeGlob(proj.Data, []string{}))
 	}
 
 	return res
 }
 
-func loadProject(args language.GenerateArgs, projectFile string, info *project.DirectoryInfo) *project.Project {
+func loadProject(args language.GenerateArgs, projectFile string) *project.Project {
 	dirtyPath := path.Join(args.Dir, projectFile)
 
 	// squash the error, we know we're under the repo root
@@ -111,10 +75,9 @@ func loadProject(args language.GenerateArgs, projectFile string, info *project.D
 			"definitions. Parsing error: %v", projectFile, err)
 		return nil
 	}
-	proj.FileLabel = l
-	info.Project = proj
+	proj.FileLabel = &l
+
 	processDeps(args, proj)
-	proj.CollectFiles(info, "")
 	return proj
 }
 
@@ -153,24 +116,5 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 			}
 			proj.Deps = append(proj.Deps, dep)
 		}
-	}
-}
-
-// makeGlob returns a `glob([], exclude=[])` expression
-// the default ExprFromValue produces a `glob([], "excludes": [])` expression
-func makeGlob(include, exclude []string) bzl.Expr {
-	patternsValue := rule.ExprFromValue(include)
-	globArgs := []bzl.Expr{patternsValue}
-	if len(exclude) > 0 {
-		excludesValue := rule.ExprFromValue(exclude)
-		globArgs = append(globArgs, &bzl.AssignExpr{
-			LHS: &bzl.Ident{Name: "exclude"},
-			Op:  "=",
-			RHS: excludesValue,
-		})
-	}
-	return &bzl.CallExpr{
-		X:    &bzl.LiteralExpr{Token: "glob"},
-		List: globArgs,
 	}
 }

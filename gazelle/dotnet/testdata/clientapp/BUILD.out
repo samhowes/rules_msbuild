@@ -2,9 +2,6 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
 
 # gazelle-err: unsupported project element: Target
 # gazelle-err: unsupported project element: Target
-# gazelle-err: unsupported item group element: Content
-# gazelle-err: unsupported item group element: None
-# gazelle-err: unsupported item group element: None
 dotnet_binary(
     name = "clientapp",
     srcs = glob([
@@ -12,11 +9,14 @@ dotnet_binary(
         "Controllers/*.cs",
         "Pages/*.cs",
     ]),
-    content = glob([
-        "*.json",
-        "ClientApp/*.json",
-        "ClientApp/public/*.json",
-    ]),
+    content = glob(["*.json"]),
+    msbuild_properties = {
+        "TypeScriptCompileBlocked": "true",
+        "TypeScriptToolsVersion": "Latest",
+        "IsPackable": "false",
+        "SpaRoot": "ClientApp\\",
+        "DefaultItemExcludes": "$(DefaultItemExcludes);$(SpaRoot)node_modules\\**",
+    },
     sdk = "Microsoft.NET.Sdk.Web",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],

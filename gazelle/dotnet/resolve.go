@@ -2,6 +2,7 @@ package dotnet
 
 import (
 	"fmt"
+	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 	"log"
 	"strings"
 
@@ -57,7 +58,7 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		comments := make([]bzl.Comment, len(dep.Comments))
 
 		for i, c := range dep.Comments {
-			comments[i] = bzl.Comment{Token: commentErr(c)}
+			comments[i] = bzl.Comment{Token: util.CommentErr(c)}
 		}
 		l, comments := findDep(c, ix, dep, comments, from)
 
@@ -72,23 +73,9 @@ func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Re
 		}
 	}
 
-	if len(deps) == 0 && len(missing) == 0 {
-		return
+	if expr := util.ListWithComments(deps, missing); expr != nil {
+		r.SetAttr("deps", expr)
 	}
-
-	expr := bzl.ListExpr{List: deps}
-	if len(missing) > 0 {
-		var commented *bzl.Comments
-		if len(deps) > 0 {
-			commented = deps[0].Comment()
-			commented.Before = append(missing, commented.Before...)
-		} else {
-			commented = expr.End.Comment()
-			commented.Before = append(commented.Before, missing...)
-		}
-	}
-
-	r.SetAttr("deps", &expr)
 }
 
 func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments []bzl.Comment, from label.Label) (*label.Label, []bzl.Comment) {
@@ -113,7 +100,7 @@ func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments [
 			"  results: %s", from.String(), dep.Label.String(), strings.Join(labels, "\n    "))
 	} else if len(results) == 0 {
 		c := fmt.Sprintf("could not find project file at %s", dep.Label.String())
-		comments = append(comments, bzl.Comment{Token: commentErr(c)})
+		comments = append(comments, bzl.Comment{Token: util.CommentErr(c)})
 		return nil, comments
 	}
 	return &results[0].Label, comments

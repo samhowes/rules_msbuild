@@ -1,7 +1,6 @@
 root = true
 [*]
 end_of_line = lf
-indent_style = space
 
 [*.*proj]
 indent_style = space
@@ -11,3 +10,6 @@ indent_size = 2
 indent_style = space
 indent_size = 4
 max_line_length = 100
+
+[*.go]
+indent_style = tab

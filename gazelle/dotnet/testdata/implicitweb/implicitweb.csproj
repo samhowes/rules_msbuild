@@ -3,5 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
-
+  <ItemGroup>
+    <Content Include="foo.content"/>
+  </ItemGroup>
 </Project>

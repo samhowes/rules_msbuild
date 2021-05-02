@@ -51,7 +51,7 @@ def import_sdk(name, version = None):
     )
 
 def make_project_file(ctx, intermediate_path, nuget_config, is_executable, dep_files):
-    post_sdk_properties = {}
+    post_sdk_properties = dicts.add(getattr(ctx.attr, "msbuild_properties", {}))
     if is_executable:
         post_sdk_properties["OutputType"] = "Exe"
         post_sdk_properties["UseAppHost"] = "false"
