@@ -50,6 +50,8 @@ load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
 NUGET_BUILD_CONFIG = "NuGet.Build.Config"
 
+_TfmInfo = provider(fields = ["tfn", "implicit_deps"])
+
 def _nuget_fetch_impl(ctx):
     config = struct(
         fetch_base = "fetch",
@@ -59,7 +61,7 @@ def _nuget_fetch_impl(ctx):
         packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
         packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
         all_files = [],
-        tfm_mapping = {},
+        tfm_mapping = {},  # dict[tfm, struct(implicit_deps: List[_pkg])]
     )
     os, _ = detect_host_platform(ctx)
     dotnet = dotnet_context(
@@ -178,7 +180,7 @@ def _pkg(name, version, pkg_id = None):
         frameworks = {},  # dict[tfm: string] string is a filegroup to be written into a build file
         all_files = [],  # list[str]
         deps = {},  # dict[tfm: list[pkg]]
-        filegroups = [],
+        filegroups = {},  # dict[tfm: list[string]]
     )
 
 def _generate_nuget_configs(ctx, config):
@@ -247,6 +249,9 @@ def _generate_fetch_project(ctx, config):
 
 def _process_packages(ctx, config):
     seen_names = {}
+    for tfm in ctx.attr.target_frameworks:
+        config.packages_by_tfm.setdefault(tfm, {})
+
     for spec, frameworks in ctx.attr.packages.items():
         parts = spec.split(":")
         if len(parts) != 2:
@@ -303,13 +308,11 @@ def _process_assets_json(ctx, dotnet, config):
         if version != 3:  # no idea how often this changes
             fail("Unsupported project.assets.json version: {}.".format(version))
 
-        # tfm = netcoreap3.1; tfn = Microsoft.NETCore.App;
-        anchor = assets
-        for part in ["project", "frameworks", tfm, "frameworkReferences"]:
-            anchor = _get(anchor, part)
-        tfn = anchor.keys()[0]
-        config.tfm_mapping[tfm] = tfn
-        overrides = _get_overrides(ctx, dotnet, tfn)
+        _record_tfm_info(ctx, config, assets, tfm)
+        # todo(#91) maybe process these overrides
+        # parsing external/dotnet_sdk/sdk/5.0.202/Microsoft.NETCoreSdk.BundledVersions.props is necessary
+        # to properly retrieve overrides
+        #        overrides = _get_overrides(ctx, dotnet, tfn)
 
         # dict[pkg_id: Object]
         # sha512
@@ -358,8 +361,10 @@ def _process_assets_json(ctx, dotnet, config):
                          "Package name: {}.".format(pkg_id, pkg_name))
 
                 transitive = True
-                tfm_dict[pkg.name_lower] = pkg
                 config.packages[pkg.pkg_id] = pkg
+
+            # unconditionally do this in case the package was already registered by another framework
+            tfm_dict[pkg.name_lower] = pkg
 
             discovered_deps[pkg.name_lower] = pkg
             expecting = missing_deps.pop(pkg.name_lower, [])
@@ -381,26 +386,32 @@ def _process_assets_json(ctx, dotnet, config):
                         continue
                     pkg.deps.setdefault(tfm, []).append(dep)
 
-            # list of all files in the package. NuGet needs these to generate downstream project.assets.json files
-            # during restore of projects we are actually compiling.
-            pkg_files = _get(libraries, pkg_id)["files"]
-            pkg.all_files.extend([
-                _package_file_path(config, pkg_id, f)
-                for f in pkg_files
-            ])
-            pkg.all_files.append(
-                _package_file_path(config, pkg_id, pkg_id_lower.replace("/", ".") + ".nupkg"),
-            )
+            if len(pkg.all_files) == 0:
+                # only do this once per package, we'll be calling this code one per framework that depends on this
+                # package
 
-            if _get_override(overrides, pkg) != None:
-                # we don't need any of these files because they will be present in the sdk itself
-                continue
+                # list of all files in the package. NuGet needs these to generate downstream project.assets.json files
+                # during restore of projects we are actually compiling.
+                pkg_files = _get(libraries, pkg_id)["files"]
+                pkg.all_files.extend([
+                    _package_file_path(config, pkg_id, f)
+                    for f in pkg_files
+                ])
+                pkg.all_files.append(
+                    _package_file_path(config, pkg_id, pkg_id_lower.replace("/", ".") + ".nupkg"),
+                )
 
-            _accumulate_files(pkg.filegroups, config, desc, pkg_id, "compile")
-            _accumulate_files(pkg.filegroups, config, desc, pkg_id, "runtime")
-            _accumulate_files(pkg.filegroups, config, desc, pkg_id, "build", "buildMultiTargeting")
+            # todo(#91) maybe bring this back
+            #            if _get_override(overrides, pkg) != None:
+            #                # we don't need any of these files because they will be present in the sdk itself
+            #                continue
 
-            _accumulate_resources(pkg, config, desc)
+            tfm_filegroups = pkg.filegroups.setdefault(tfm, [])
+            _accumulate_files(tfm_filegroups, config, desc, pkg_id, "compile")
+            _accumulate_files(tfm_filegroups, config, desc, pkg_id, "runtime")
+            _accumulate_files(tfm_filegroups, config, desc, pkg_id, "build", "buildMultiTargeting")
+
+            _accumulate_resources(pkg, tfm_filegroups, config, desc)
 
             # resource = _get_filegroup(desc, "resource")  # todo(#48)
 
@@ -419,8 +430,50 @@ def _process_assets_json(ctx, dotnet, config):
             ])))
 
         for pkg in tfm_dict.values():
-            override = _get_override(overrides, pkg)
-            pkg.frameworks[tfm] = _nuget_file_group(tfm, pkg.deps.get(tfm, []), pkg.filegroups, override)
+            # todo(#91) maybe bring overrides back
+            #            override = _get_override(overrides, pkg)
+            pkg.frameworks[tfm] = _nuget_file_group(tfm, pkg.deps.get(tfm, []), pkg.filegroups[tfm], None)
+
+def _record_tfm_info(ctx, config, assets, tfm):
+    # tfm = netcoreapp3.1; tfn = Microsoft.NETCore.App;
+    anchor = assets
+    for part in ["project", "frameworks", tfm]:
+        anchor = _get(anchor, part)
+
+    implicit_deps = []
+    for pkg_name, desc in anchor.get("dependencies", {}).items():
+        if desc.get("autoReferenced", False):
+            # "version": "[2.0.3, )"
+            version_spec = desc["version"]
+            version = version_spec.split(",")[0][1:]
+            pkg = _pkg(pkg_name, version)
+            implicit_deps.append(pkg)
+            config.packages[pkg.pkg_id] = pkg
+
+    for desc in anchor.get("downloadDependencies", []):
+        # "version": "[3.1.10, 3.1.10]"
+        version_spec = desc["version"]
+        version = version_spec.split(",")[0][1:]
+        pkg = _pkg(desc["name"], version)
+        print("implicit", pkg.name, pkg.pkg_id)
+
+        implicit_deps.append(pkg)
+
+        # these packages appear to have the comment "Internal implementation package not meant for direct consumption.
+        # Please do not reference directly." and have a <packageType name="DotnetPlatform" /> element. They do not
+        # appear to have filegroups listed as normal. We'll walk the package to list all the files explicitly
+        # example package: `microsoft.netcore.app.ref`
+        _walk_package(ctx, config, pkg)
+        config.packages[pkg.pkg_id] = pkg
+
+    refs = anchor.get("frameworkReferences", None)
+    tfn = ""
+    if refs != None:
+        tfn = refs.keys()[0]
+    info = _TfmInfo(tfn = tfn, implicit_deps = implicit_deps)
+    config.tfm_mapping[tfm] = info
+    for pkg in implicit_deps:
+        config.packages_by_tfm.setdefault(tfm, {})[pkg.pkg_id] = pkg
 
 def _package_file_path(config, pkg_id, file_path):
     return "//:" + "/".join([config.packages_folder, pkg_id.lower(), file_path])
@@ -461,7 +514,7 @@ def _nuget_file_list(name, files):
         items = "\",\n        \"".join(files),
     )
 
-def _accumulate_resources(pkg, config, desc):
+def _accumulate_resources(pkg, tfm_filegroups, config, desc):
     resource = desc.pop("resource", None)
     if resource == None:
         return
@@ -475,10 +528,9 @@ def _accumulate_resources(pkg, config, desc):
             _pkg_fail(pkg.pkg_id, "Unkown metadata for resource file {}: {}".format(file, file_desc.keys()))
 
         files[_package_file_path(config, pkg.pkg_id, file)] = locale
-    pkg.filegroups.append("resource = " + json.encode_indent(files, prefix = "    ", indent = "    "))
+    tfm_filegroups.append("resource = " + json.encode_indent(files, prefix = "    ", indent = "    "))
 
 # this name is confusing
-
 def _nuget_file_group(name, deps, groups, override):
     deps_string = "\",\n        \"".join([
         dep.label
@@ -515,7 +567,7 @@ def _get_overrides(ctx, dotnet, tfn):
     ref_dir = ctx.path(paths.join(dotnet.sdk_root, "packs", tfn + ".Ref"))
     dirs = ref_dir.readdir()
     if len(dirs) != 1:
-        fail(base_fail + "unexpected packs contents: {}".format(tfn, ", ".join(dirs)))
+        fail(base_fail + "unexpected packs contents: {}".format(", ".join([str(d) for d in dirs])))
 
     data_dir = dirs[0].get_child("data")
     if data_dir.exists != True:
@@ -556,6 +608,16 @@ def _generate_build_files(ctx, config):
             },
         )
 
+    frameworks = []
+    framework_infos = []
+    for tfm, info in config.tfm_mapping.items():
+        framework_infos.append("""
+framework_info(
+    name = "{}",
+    implicit_deps = {},
+)""".format(tfm, _json_bzl([p.label for p in info.implicit_deps])))
+        frameworks.append(tfm)
+
     test_logger = ctx.attr.test_logger.split(":")[0]
     ctx.template(
         ctx.path("BUILD.bazel"),
@@ -564,7 +626,8 @@ def _generate_build_files(ctx, config):
             "{test_logger}": test_logger,
             "{file_list}": _json_bzl(all_all_files, ""),
             "{nuget_build_config}": NUGET_BUILD_CONFIG,
-            "{tfm_mapping}": _json_bzl(config.tfm_mapping),
+            "{frameworks}": _json_bzl(frameworks),
+            "{framework_infos}": "\n".join(framework_infos),
         },
     )
 
@@ -590,6 +653,7 @@ nuget_fetch = repository_rule(
                    "host machine's global packages folder will be used. This is determined by executing " +
                    "`dotnet nuget locals global-packages --list"),
         ),
+        "target_frameworks": attr.string_list(),
         "_master_template": attr.label(
             default = Label("@my_rules_dotnet//dotnet/private/msbuild:project.tpl.proj"),
         ),

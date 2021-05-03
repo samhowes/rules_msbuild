@@ -70,6 +70,13 @@ TfmMappingInfo = provider(
     },
 )
 
+FrameworkInfo = provider(
+    fields = {
+        "tfm": "the target framework moniker (netcoreapp3.1)",
+        "implicit_deps": "implicit nuget dependencies of the framework",
+    },
+)
+
 DotnetSdkInfo = provider(
     doc = "Contains information about the Dotnet SDK used in the toolchain",
     fields = {
@@ -79,6 +86,7 @@ DotnetSdkInfo = provider(
         "init_files": "The init files for dotnet, these prevent dotnet from printing noisy welcome messages",
         "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the " +
                      "extracted folder"),
+        "major_version": "The major version of the sdk",
         "sdk_files": ("The files under sdk_root"),
         "fxr": ("The hstfxr.dll"),
         "shared": ("The shared sdk libraries in a dict from canonical name i.e. Microsoft.NETCore.App"),

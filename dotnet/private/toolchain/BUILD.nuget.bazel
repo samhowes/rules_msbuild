@@ -1,11 +1,12 @@
-load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "tfm_mapping")
+load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "tfm_mapping", "framework_info")
 
 package(default_visibility = ["//visibility:public"])
 
 tfm_mapping(
     name = "tfm_mapping",
-    tfm_mapping = {tfm_mapping},
+    frameworks = {frameworks},
 )
+{framework_infos}
 
 alias(
     name = "test_logger",

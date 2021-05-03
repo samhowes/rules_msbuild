@@ -25,8 +25,6 @@ def _make_executable(ctx, test):
     info, outputs, private = emit_assembly(ctx, dotnet)
     launcher = make_launcher(ctx, dotnet, info)
 
-    tfm_runtime = dotnet.sdk.shared[dotnet.sdk.config.tfm_mapping[ctx.attr.target_framework]]
-
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(
         files = [info.output_dir] + ctx.files.data,

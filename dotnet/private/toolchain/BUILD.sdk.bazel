@@ -18,6 +18,7 @@ dotnet_sdk(
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
+    major_version = {major_version},
     init_files = ":init_files",
     packs = [
         {pack_labels},
@@ -40,7 +41,7 @@ dotnet_tool_binary(
     name = "builder",
     srcs = ["@my_rules_dotnet//dotnet/tools/builder:builder_srcs"],
     dotnet_sdk = ":dotnet_sdk",
-    target_framework = "netcoreapp3.1",
+    target_framework = "netcoreapp3.0",
 )
 
 filegroup(

@@ -19,6 +19,7 @@ def _dotnet_sdk_impl(ctx):
         root_file = ctx.file.root_file,
         sdk_root = ctx.file.sdk_root,
         sdk_files = ctx.files.sdk_files,
+        major_version = ctx.attr.major_version,
         fxr = ctx.files.fxr,
         shared = shared_dict,
         packs = depset(ctx.files.packs),
@@ -65,6 +66,7 @@ dotnet_sdk = rule(
             doc = ("The versioned directory containing the primary SDK" +
                    "Artifacts and build extensions"),
         ),
+        "major_version": attr.int(mandatory = True),
         "sdk_files": attr.label(
             mandatory = True,
             doc = ("The files inside the sdk_root"),

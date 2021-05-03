@@ -24,7 +24,7 @@ def restore(ctx, dotnet, project_file, dep_files):
 
     inputs = depset(
         direct = [project_file, dotnet.sdk.config.nuget_config] + cmd_inputs,
-        transitive = [dep_files.inputs, dotnet.sdk.init_files],
+        transitive = [dep_files.inputs, dotnet.sdk.init_files, dotnet.sdk.packs],
     )
 
     ctx.actions.run(
@@ -43,17 +43,24 @@ def _declare_files(ctx, dotnet, project_file):
     file_names = []
 
     nuget_file_extensions = [
-        ".cache",
         ".dgspec.json",
         ".g.props",
         ".g.targets",
     ]
+
+    if dotnet.sdk.major_version < 5:
+        nuget_file_extensions.append(".cache")
+
     for ext in nuget_file_extensions:
         file_names.append(project_file.basename + ".nuget" + ext)
 
     file_names.extend([
         "project.assets.json",
     ])
+    if dotnet.sdk.major_version >= 5:
+        file_names.extend([
+            "project.nuget.cache",
+        ])
 
     if dotnet.builder != None:
         # the builder needs to interpret the paths so our output files can be moved between sandboxes, build machines,
