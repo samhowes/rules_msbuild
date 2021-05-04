@@ -18,6 +18,7 @@ dotnet_sdk(
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
+    major_version = {major_version},
     init_files = ":init_files",
     packs = [
         {pack_labels},

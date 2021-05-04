@@ -203,7 +203,9 @@ def process_deps(dotnet, deps):
         references, packages, copied_files
     """
 
-    copy_packages = dotnet.config.is_executable
+    #    copy_packages = dotnet.config.is_executable
+    # todo(#99) maybe bring this back once we can process overrides again
+    copy_packages = False  #dotnet.config.is_executable
     tfm = dotnet.config.tfm
 
     references = []

@@ -1,7 +1,14 @@
 """Rules for importing nuget packages"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetFilegroupInfo", "NuGetPackageInfo", "TfmMappingInfo")
+load(
+    "//dotnet/private:providers.bzl",
+    "DotnetLibraryInfo",
+    "FrameworkInfo",
+    "NuGetFilegroupInfo",
+    "NuGetPackageInfo",
+    "TfmMappingInfo",
+)
 
 def _nuget_import_impl(ctx):
     tfms = {}
@@ -65,7 +72,15 @@ def _nuget_filegroup_impl(ctx):
     )]
 
 def _tfm_mapping_impl(ctx):
-    return [TfmMappingInfo(dict = ctx.attr.tfm_mapping)]
+    return [TfmMappingInfo(dict = dict(
+        [
+            (f[FrameworkInfo].tfm, f[FrameworkInfo])
+            for f in ctx.attr.frameworks
+        ],
+    ))]
+
+def _framework_info_impl(ctx):
+    return [FrameworkInfo(tfm = ctx.attr.name, implicit_deps = ctx.attr.implicit_deps)]
 
 nuget_import = rule(
     _nuget_import_impl,
@@ -98,6 +113,16 @@ nuget_filegroup = rule(
 tfm_mapping = rule(
     _tfm_mapping_impl,
     attrs = {
-        "tfm_mapping": attr.string_dict(mandatory = True),
+        "frameworks": attr.label_list(
+            mandatory = True,
+            providers = [FrameworkInfo],
+        ),
+    },
+)
+
+framework_info = rule(
+    _framework_info_impl,
+    attrs = {
+        "implicit_deps": attr.label_list(providers = [NuGetPackageInfo]),
     },
 )

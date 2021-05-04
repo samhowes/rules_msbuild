@@ -24,7 +24,6 @@ def _dotnet_toolchain_impl(ctx):
 dotnet_toolchain = rule(
     _dotnet_toolchain_impl,
     attrs = {
-        # Minimum requirements to specify a toolchain
         "builder": attr.label(
             # mandatory = True,
             cfg = "exec",
