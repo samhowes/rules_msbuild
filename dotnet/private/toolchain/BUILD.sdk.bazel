@@ -41,7 +41,7 @@ dotnet_tool_binary(
     name = "builder",
     srcs = ["@my_rules_dotnet//dotnet/tools/builder:builder_srcs"],
     dotnet_sdk = ":dotnet_sdk",
-    target_framework = "netcoreapp3.0",
+    target_framework = "netcoreapp3.1",
 )
 
 filegroup(

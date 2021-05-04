@@ -421,7 +421,8 @@ def _process_assets_json(ctx, dotnet, config):
                 # fail("[{}] Unknown filegroups: {}".format(pkg_id, ", ".join(remaining)))
                 pass
 
-        if len(unused_deps) > 0:
+        # todo(#99)
+        if False and len(unused_deps) > 0:
             fail("Found unused deps for target framework {}: {}".format(tfm, ", ".join(unused_deps.keys())))
         if len(missing_deps) > 0 or False:
             fail("Found packages expecting deps, but didn't find the dep: {}".format("; ".join([
@@ -447,23 +448,26 @@ def _record_tfm_info(ctx, config, assets, tfm):
             version_spec = desc["version"]
             version = version_spec.split(",")[0][1:]
             pkg = _pkg(pkg_name, version)
-            implicit_deps.append(pkg)
-            config.packages[pkg.pkg_id] = pkg
+            #todo(#99)
+            #implicit_deps.append(pkg)
+            #config.packages[pkg.pkg_id] = pkg
 
     for desc in anchor.get("downloadDependencies", []):
         # "version": "[3.1.10, 3.1.10]"
         version_spec = desc["version"]
         version = version_spec.split(",")[0][1:]
         pkg = _pkg(desc["name"], version)
-        print("implicit", pkg.name, pkg.pkg_id)
 
-        implicit_deps.append(pkg)
+        # todo(#99)
+        #        print("implicit", pkg.name, pkg.pkg_id)
+        pkg.filegroups[tfm] = []
+        #        implicit_deps.append(pkg)
 
         # these packages appear to have the comment "Internal implementation package not meant for direct consumption.
         # Please do not reference directly." and have a <packageType name="DotnetPlatform" /> element. They do not
         # appear to have filegroups listed as normal. We'll walk the package to list all the files explicitly
         # example package: `microsoft.netcore.app.ref`
-        _walk_package(ctx, config, pkg)
+        #        _walk_package(ctx, config, pkg) todo(#99)
         config.packages[pkg.pkg_id] = pkg
 
     refs = anchor.get("frameworkReferences", None)

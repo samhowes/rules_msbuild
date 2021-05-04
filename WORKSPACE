@@ -54,7 +54,14 @@ load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_
 
 dotnet_rules_dependencies()
 
-dotnet_register_toolchains(version = "3.1.100")
+dotnet_register_toolchains(
+    shas = {
+        "darwin_amd64": "b38e6f8935d4b82b283d85c6b83cd24b5253730bab97e0e5e6f4c43e2b741aab",
+        "windows_amd64": "abcd034b230365d9454459e271e118a851969d82516b1529ee0bfea07f7aae52",
+        "linux_amd64": "3687b2a150cd5fef6d60a4693b4166994f32499c507cd04f346b6dda38ecdc46",
+    },
+    version = "3.1.100",
+)
 
 load("//deps:nuget.bzl", "nuget_deps")
 

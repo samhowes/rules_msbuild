@@ -1,4 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
 load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
 load("//dotnet/private/toolchain:nuget.bzl", "NUGET_BUILD_CONFIG")
@@ -6,7 +8,13 @@ load("//dotnet/private/toolchain:common.bzl", "detect_host_platform")
 
 SDK_NAME = "dotnet_sdk"
 
-def dotnet_register_toolchains(version = None, nuget_repo = "nuget"):
+_download_sdk_attrs = {
+    "version": attr.string(),
+    "nuget_repo": attr.string(mandatory = True),
+    "shas": attr.string_dict(),
+}
+
+def dotnet_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
     if not version:
         fail('dotnet_register_toolchains: version must be a string like "3.1.100" or "host"')
 
@@ -16,6 +24,7 @@ def dotnet_register_toolchains(version = None, nuget_repo = "nuget"):
         _dotnet_download_sdk(
             name = SDK_NAME,
             version = version,
+            shas = shas,
             nuget_repo = nuget_repo,
         )
     _register_toolchains(SDK_NAME)
@@ -65,17 +74,62 @@ def _try_execute(ctx, args):
 
 def _dotnet_download_sdk_impl(ctx):
     version = ctx.attr.version
-    # todo(#10)
+    os, arch = detect_host_platform(ctx)
 
-    #    if len(urls) == 0:
-    #        fail("no urls specified")
-    #    ctx.report_progress("Downloading and extracting Dotnet toolchain")
-    #    ctx.download_and_extract(
-    #        url = urls,
-    #        sha256 = sha256,
-    #    )
+    platform = os + "_" + arch
+    shas = getattr(ctx.attr, "shas", {})
+    sdk_sha = ""
+    if platform in shas:
+        sdk_sha = shas[platform]
+
+    install_script = None
+    script_url = None
+    args = None
+    sha = ""
+    if os == "windows":
+        script_url = "https://dot.net/v1/dotnet-install.ps1"
+        install_script = ctx.path("dotnet-install.ps1")
+        args = ["powershell", "-NoProfile", str(install_script)]
+    else:
+        script_url = "https://dot.net/v1/dotnet-install.sh"
+        install_script = ctx.path("dotnet_install.sh")
+        sha = "c96360abc54d74454105df45cba5d6ac78c8d46859d9a1c2164df2a4dd09af6c"
+        args = [str(install_script)]
+
+    ctx.download(
+        script_url,
+        install_script,
+        sha256 = sha,
+        executable = True,
+    )
+
+    # bash supports the same as the powershell script, so we can use the same set of args
+    args.extend(["-DryRun", "-NoPath", "-Version", version])
+
+    res = ctx.execute(args)
+
+    url = None
+    for line in res.stdout.split("\n"):
+        if "Primary named payload URL:" in line:
+            url = line.rsplit(" ", 1)[1]
+            break
+
+    if url == None:
+        fail("failed to parse Primary url from:\nstdout:{}\nstderr:{}".format(res.stdout, res.stderr))
+
+    ctx.report_progress("Downloading Dotnet Sdk from {}".format(url))
+
+    res = ctx.download_and_extract(url, sha256 = sdk_sha)
+
+    attr_udpates = {}
+    if sdk_sha == "":
+        orig = dicts.add(getattr(ctx.attr, "shas", {}))
+        orig[platform] = res.sha256
+        attr_udpates["shas"] = orig
 
     _sdk_build_file(ctx, ctx.attr.version)
+
+    return update_attrs(ctx.attr, _download_sdk_attrs, attr_udpates)
 
 _dotnet_host_sdk = repository_rule(
     implementation = _dotnet_host_sdk_impl,
@@ -86,10 +140,7 @@ _dotnet_host_sdk = repository_rule(
 
 _dotnet_download_sdk = repository_rule(
     implementation = _dotnet_download_sdk_impl,
-    attrs = {
-        "version": attr.string(),
-        "nuget_repo": attr.string(mandatory = True),
-    },
+    attrs = _download_sdk_attrs,
 )
 
 def _make_filegroup(name, glob_path):
