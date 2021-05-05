@@ -61,6 +61,7 @@ dotnet_register_toolchains(
         "linux_amd64": "3687b2a150cd5fef6d60a4693b4166994f32499c507cd04f346b6dda38ecdc46",
     },
     version = "3.1.100",
+    #    version = "host",
 )
 
 load("//deps:nuget.bzl", "nuget_deps")

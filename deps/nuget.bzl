@@ -4,8 +4,7 @@ def nuget_deps():
     nuget_fetch(
         name = "nuget",
         use_host = True,
-        # todo(#99)
-        #        target_frameworks = ["netcoreapp3.1", "netstandard2.0"],
+        target_frameworks = ["netcoreapp3.1", "netstandard2.1"],
         packages = {
             "CommandLineParser:2.9.0-preview1": ["netcoreapp3.1"],  # keep
             # test deps
