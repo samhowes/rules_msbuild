@@ -12,11 +12,9 @@ load(
 
 def _nuget_import_impl(ctx):
     tfms = {}
-    all_files = []
     for target in ctx.attr.frameworks:
         info = target[NuGetFilegroupInfo]
         tfms[info.tfm] = info
-        all_files.append(info.all_dep_files)
 
     return [NuGetPackageInfo(
         name = ctx.attr.name,
@@ -24,7 +22,6 @@ def _nuget_import_impl(ctx):
         frameworks = struct(**tfms),
         all_files = depset(
             direct = ctx.files.all_files,
-            transitive = all_files,
         ),
     )]
 
@@ -42,6 +39,7 @@ def _nuget_filegroup_impl(ctx):
         group = getattr(pkg.frameworks, tfm, None)
         if group == None:
             fail("Package {} has not been restored for target framework {}.".format(target, tfm))
+        dep_files.append(group.all_dep_files)
         build_files.append(group.build)
         runtime.append(group.runtime)
         resource_files.append(group.resource)

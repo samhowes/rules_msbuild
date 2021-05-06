@@ -203,44 +203,27 @@ def process_deps(dotnet, deps):
         references, packages, copied_files
     """
 
-    #    copy_packages = dotnet.config.is_executable
-    # todo(#99) maybe bring this back once we can process overrides again
-    copy_packages = False  #dotnet.config.is_executable
     tfm = dotnet.config.tfm
 
     references = []
     packages = []
     package_runtimes = []
     copied_files = []
+
+    implicit_deps = dotnet.sdk.config.tfm_mapping[dotnet.config.tfm].implicit_deps
     inputs = []
+    for dep in implicit_deps:
+        _get_nuget_files(dep, tfm, [], inputs)
 
     for dep in deps:
         if DotnetLibraryInfo in dep:
             info = dep[DotnetLibraryInfo]
             references.append(info.project_file)
             copied_files.append(info.runtime)
-            if copy_packages:
-                copied_files.append(info.package_runtimes)
             inputs.append(info.build)
 
         elif NuGetPackageInfo in dep:
-            pkg = dep[NuGetPackageInfo]
-            framework_info = getattr(pkg.frameworks, tfm, None)
-            if framework_info == None:
-                fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
-                    tfm,
-                    pkg.name + ":" + pkg.version,
-                    ", ".join([k for k, v in pkg.frameworks]),
-                ))
-            packages.append(pkg)
-
-            # todo(#67) restrict these inputs
-            inputs.append(pkg.all_files)
-
-            inputs.append(framework_info.build)
-            package_runtimes.append(framework_info.runtime)
-            if copy_packages:
-                copied_files.append(framework_info.runtime)
+            _get_nuget_files(dep, tfm, packages, inputs)
         else:
             fail("Unkown dependency type: {}".format(dep))
 
@@ -252,3 +235,18 @@ def process_deps(dotnet, deps):
         copied_files = depset(transitive = copied_files),
         inputs = depset(transitive = inputs),
     )
+
+def _get_nuget_files(dep, tfm, packages, inputs):
+    pkg = dep[NuGetPackageInfo]
+    framework_info = getattr(pkg.frameworks, tfm, None)
+    if framework_info == None:
+        fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
+            tfm,
+            pkg.name + ":" + pkg.version,
+            ", ".join([k for k, v in pkg.frameworks]),
+        ))
+    packages.append(pkg)
+
+    # todo(#67) restrict these inputs
+    inputs.append(pkg.all_files)
+    inputs.append(framework_info.all_dep_files)
