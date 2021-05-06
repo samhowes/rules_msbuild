@@ -1,7 +1,7 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
 
 dotnet_binary(
-    name = "NugetParser",
+    name = "NuGetParser",
     srcs = glob(["*.cs"]),
     msbuild_properties = {"RootNamespace": "NuGetParser"},
     sdk = "Microsoft.NET.Sdk",
