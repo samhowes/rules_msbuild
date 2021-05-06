@@ -11,5 +11,5 @@ dotnet_binary(
 
 dotnet_publish(
     name = "publish",
-    target = ":NugetParser",
+    target = ":NuGetParser",
 )
