@@ -8,6 +8,7 @@ DotnetLibraryInfo = provider(
         "output_dir": "The msbuild output directory as a declared file",
         "intermediate_dir": "obj/tfm",
         "project_file": "",
+        "cache_file": "",
         "runtime": "files (dlls) needed in the output directory for the assembly to run",
         "package_runtimes": "nuget packages needed in the output directory of a binary at runtime",
         "build": "files that are inputs to the build process",

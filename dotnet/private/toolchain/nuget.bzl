@@ -91,7 +91,7 @@ def _nuget_fetch_impl(ctx):
         working_directory = str(fetch_project.dirname),
     )
     if result.return_code != 0:
-        fail(result.stdout)
+        fail("failed executing '{}': {}".format(" ".join(args), result.stdout))
 
     # first we have to collect all the target framework information for each package
     ctx.report_progress("Generating build files")

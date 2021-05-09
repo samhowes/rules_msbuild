@@ -3,70 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace MyRulesDotnet.Tools.Builder
 {
-    public class ProcessorContext
-    {
-        public Command Command { get; }
-
-        // bazel always sends us POSIX paths
-        private const char BazelPathChar = '/';
-        private readonly bool _normalizePath;
-
-        private const string OutputDirectoryKey = "output_directory";
-        
-        private string NormalizePath(string input)
-        {
-            if (!_normalizePath) return input;
-            return input.Replace('/', Path.DirectorySeparatorChar);
-        }
-
-        // for testing
-
-        public ProcessorContext()
-        {
-            Command = new Command();
-        }
-
-        public ProcessorContext(Command command)
-        {
-            Command = command;
-
-            _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
-            IntermediateBase = NormalizePath(command.NamedArgs["intermediate_base"]);
-            BazelOutputBase = NormalizePath(command.NamedArgs["bazel_output_base"]);
-            ProjectFile = NormalizePath(command.NamedArgs["project_file"]);
-            Package = command.NamedArgs["package"];
-            Workspace = command.NamedArgs["workspace"];
-            Tfm = NormalizePath(command.NamedArgs["tfm"]);
-            ChildCommand = command.PassThroughArgs;
-            // assumes bazel invokes actions at ExecRoot
-            ExecRoot = Directory.GetCurrentDirectory();
-            if (command.NamedArgs.TryGetValue(OutputDirectoryKey, out var outputDirectory))
-                OutputDirectory = outputDirectory;
-        }
-
-        public string Workspace { get; set; }
-
-        public string Package { get; set; }
-
-        public string Tfm { get; set; }
-
-        public string ProjectFile { get; set; }
-
-        public string IntermediateBase { get; set; }
-        public string BazelOutputBase { get; set; }
-        public string[] ChildCommand { get; set; }
-        public string Suffix { get; set; }
-        public string ExecRoot { get; set; }
-        public string OutputDirectory { get; set; }
-    }
-
     public class OutputProcessor
     {
         private readonly ProcessorContext _context;
+        private Regex _outputFileRegex;
         private const string ContentKey = "content";
         private const string RunfilesKey = "runfiles";
         private const string RunfilesDirectoryKey = "runfiles_directory";
@@ -82,6 +29,15 @@ namespace MyRulesDotnet.Tools.Builder
         public OutputProcessor(ProcessorContext context)
         {
             _context = context;
+            
+            var regexString =
+                $"(?<output_base>{Regex.Escape(_context.BazelOutputBase)}(?<exec_root>{Regex.Escape(_context.Suffix)})?)";
+
+            // to support files on windows that escape backslashes i.e. json.
+            regexString = regexString.Replace(@"\\", @"\\(\\)?");
+
+            _outputFileRegex = new Regex(regexString, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            Program.Debug($"Using regex: '{_outputFileRegex}'");
         }
 
 
@@ -90,32 +46,24 @@ namespace MyRulesDotnet.Tools.Builder
         /// </summary>
         public int PostProcess()
         {
-            Prepare();
-
             var exitCode = RunCommand();
             if (exitCode != 0) return exitCode;
 
-            Directory.CreateDirectory(Path.Combine(_context.IntermediateBase, "processed"));
+            var outputDir = Path.Combine(_context.IntermediateBase, "processed");
+            Directory.CreateDirectory(outputDir);
 
-            var regexString = $"(?<output_base>{Regex.Escape(_context.BazelOutputBase)}(?<exec_root>{Regex.Escape(_context.Suffix)})?)";
-
-            // to support files on windows that escape backslashes i.e. json.
-            regexString = regexString.Replace(@"\\", @"\\(\\)?");
-
-            var regex = new Regex(regexString,
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            Program.Debug($"Using regex: '{regex}'");
-
-            ProcessFiles(_context.IntermediateBase, (info, contents) =>
-            {
-                var replaced = regex.Replace(contents,
-                    (match) => match.Groups["exec_root"].Success ? ExecRoot : OutputBase);
-                File.WriteAllText(info.FullName, replaced);
-
-                info.MoveTo(Path.Combine(_context.IntermediateBase, "processed", info.Name), true);
-            });
+            ProcessFiles(_context.IntermediateBase, (info, contents) => { ProcessOutputFile(contents, info, outputDir); });
 
             return 0;
+        }
+
+        private void ProcessOutputFile(string contents, FileInfo info, string destinationDirectory)
+        {
+            var replaced = _outputFileRegex.Replace(contents,
+                (match) => match.Groups["exec_root"].Success ? ExecRoot : OutputBase);
+            File.WriteAllText(info.FullName, replaced);
+
+            info.MoveTo(Path.Combine(destinationDirectory, info.Name), true);
         }
 
         /// <summary>
@@ -142,8 +90,6 @@ namespace MyRulesDotnet.Tools.Builder
                 }
             }
 
-            
-            Prepare();
 
             var regex = new Regex($@"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})", RegexOptions.Compiled);
             var escapedOutputBase = _context.BazelOutputBase.Replace(@"\", @"\\");
@@ -170,7 +116,7 @@ namespace MyRulesDotnet.Tools.Builder
             CopyFiles(ContentKey, _context.OutputDirectory, true);
             if (_context.Command.NamedArgs.TryGetValue(RunfilesDirectoryKey, out var runfilesDirectory))
             {
-                CopyFiles(RunfilesKey, Path.Combine(_context.OutputDirectory, runfilesDirectory));    
+                CopyFiles(RunfilesKey, Path.Combine(_context.OutputDirectory, runfilesDirectory));
             }
 
             if (_context.Command.Action == "build")
@@ -184,6 +130,13 @@ namespace MyRulesDotnet.Tools.Builder
                     // makes it readonly. We'll copy it back into place later.
                     file.MoveTo(Path.Combine(processed.FullName, file.Name));
                 }
+
+                var resultCache = _context.ProjectFile + ".cache";
+                var outputDir = Path.Combine(Path.GetDirectoryName(resultCache)!, "processed");
+                Directory.CreateDirectory(outputDir);
+                var info = new FileInfo(resultCache);
+                ProcessOutputFile(File.ReadAllText(resultCache), info, outputDir);
+                
             }
 
             return 0;
@@ -191,7 +144,8 @@ namespace MyRulesDotnet.Tools.Builder
 
         private void CopyFiles(string filesKey, string destinationDirectory, bool trimPackage = false)
         {
-            if (!_context.Command.NamedArgs.TryGetValue(filesKey, out var contentListString) || contentListString == "") return;
+            if (!_context.Command.NamedArgs.TryGetValue(filesKey, out var contentListString) ||
+                contentListString == "") return;
             var contentList = contentListString.Split(";");
             var createdDirectories = new HashSet<string>();
             foreach (var filePath in contentList)
@@ -210,8 +164,8 @@ namespace MyRulesDotnet.Tools.Builder
                 {
                     destinationPath = Path.Combine(_context.Workspace, filePath);
                 }
-                
-                var dest = new FileInfo(Path.Combine(destinationDirectory,destinationPath));
+
+                var dest = new FileInfo(Path.Combine(destinationDirectory, destinationPath));
 
                 if (!dest.Exists || src.LastWriteTime > dest.LastWriteTime)
                 {
@@ -220,6 +174,7 @@ namespace MyRulesDotnet.Tools.Builder
                         Directory.CreateDirectory(dest.DirectoryName);
                         createdDirectories.Add(dest.DirectoryName);
                     }
+
                     src.CopyTo(dest.FullName, true);
                 }
             }
@@ -241,31 +196,32 @@ namespace MyRulesDotnet.Tools.Builder
                 {
                     throw new Exception($"Failed to process file: {info.FullName} see inner exception for details", ex);
                 }
-
             }
         }
-
-        private void Prepare()
-        {
-            if (!_context.IntermediateBase.EndsWith("obj"))
-                Fail($"Refusing to process unexpected directory {_context.IntermediateBase}");
-
-            if (Program.DebugEnabled)
-            {
-                Program.Debug(Directory.GetCurrentDirectory());
-                foreach (var entry in Directory.EnumerateDirectories("."))
-                    Console.WriteLine(entry);
-            }
-
-            if (!_context.ExecRoot.StartsWith(_context.BazelOutputBase))
-                Fail($"Refusing to process trim_path {_context.BazelOutputBase} that is not a prefix of" +
-                             $" cwd {_context.ExecRoot}");
-
-            _context.Suffix = _context.ExecRoot[_context.BazelOutputBase.Length..];
-        }
-
+        
         protected virtual int RunCommand()
         {
+            // var sandboxBase = Path.GetDirectoryName(Path.GetDirectoryName(_context.ExecRoot));
+            //
+            // var document = new XDocument(
+            //     new XElement("Project",
+            //         new XElement("PropertyGroup", 
+            //             new XElement("PathMap", $"{_context.BazelOutputBase}={sandboxBase}"),
+            //             // new XElement("PathMap", $"{sandboxBase}={ _context.BazelOutputBase}"),
+            //             new XElement("ContinuousIntegrationBuild", $"true")),
+            //         
+            //         new XElement("ItemGroup",
+            //             new XElement("SourceRoot",
+            //                 new XAttribute("Include", "$(MSBuildStartupDirectory)/"))))
+            //     );
+            //
+            // var outputPath = Path.Combine(Path.GetDirectoryName(_context.ProjectFile), "Directory.build.props");
+            // using (var writer = new XmlTextWriter(outputPath, Encoding.UTF8))
+            // {
+            //     writer.Formatting = Formatting.Indented;
+            //     document.WriteTo(writer);
+            // }
+            
             using var child = new Process
             {
                 StartInfo =
@@ -276,6 +232,8 @@ namespace MyRulesDotnet.Tools.Builder
             Program.Debug("Executing: " + string.Join(" ", _context.ChildCommand));
             foreach (var arg in _context.ChildCommand[1..])
                 child.StartInfo.ArgumentList.Add(arg);
+            
+            child.StartInfo.ArgumentList.Add("-outputResultsCache:" + _context.ProjectFile + ".cache");
             child.StartInfo.UseShellExecute = false;
 
             // inherit all the streams from this current process

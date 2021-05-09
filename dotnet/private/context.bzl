@@ -107,12 +107,17 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
     binlog = False  # todo(#51) disable when not debugging the build
     if True:
         binlog = True
+    actual_target = msbuild_target
+    if msbuild_target == "build":
+        # https://github.com/dotnet/msbuild/issues/5204
+        actual_target = "GetTargetFrameworks;Build;GetCopyToOutputDirectoryItems;GetNativeManifest"
 
     arg_list, binlog_path = make_cmd(
         dotnet,
         proj.path,
         msbuild_target,
         binlog,
+        actual_target,
     )
 
     msbuild_properties = {
@@ -184,12 +189,16 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
 
     for arg in arg_list:
         args.add(arg)
+
     return args, outputs, inputs
 
-def make_cmd(dotnet, project_path, msbuild_target, binlog = False):
+def make_cmd(dotnet, project_path, msbuild_target, binlog = False, actual_target = None):
+    if actual_target == None:
+        actual_target = msbuild_target
+    print(project_path, msbuild_target, actual_target)
     args_list = [
         "msbuild",
-        "-t:" + msbuild_target,
+        "/t:" + actual_target,
         "-nologo",
     ]
 

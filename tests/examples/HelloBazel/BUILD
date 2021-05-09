@@ -11,6 +11,7 @@ build_test(
     name = "HelloBazel_test",
     expected_files = {
         "": [
+            "HelloBazel.csproj.cache",
             "HelloBazel.csproj.build.binlog",
             "HelloBazel.csproj.restore.binlog",
         ],

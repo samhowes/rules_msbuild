@@ -8,6 +8,7 @@ filegroup(
         "LaunchDataWriter.cs",
         "LauncherFactory.cs",
         "OutputProcessor.cs",
+        "ProcessorContext.cs",
     ],
     visibility = ["//visibility:public"],
 )

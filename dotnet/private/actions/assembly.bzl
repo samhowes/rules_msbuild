@@ -127,6 +127,13 @@ def emit_assembly(ctx, dotnet):
 
     content = getattr(ctx.files, "content", [])
 
+    cache_file = None
+    if dotnet.builder != None:
+        cache_file = ctx.actions.declare_file(
+            paths.join("processed", project_file.basename + ".cache"),
+        )
+        args.add("-inputResultsCaches:" + ";".join([f.path for f in dep_files.cache_files]))
+
     ### collect build inputs/outputs
     inputs = depset(
         direct = ctx.files.srcs + content + [project_file] + restore_outputs + cmd_inputs,
@@ -141,8 +148,10 @@ def emit_assembly(ctx, dotnet):
     intermediate_dir = ctx.actions.declare_directory(paths.join(dotnet.config.intermediate_path, dotnet.config.tfm))
 
     outputs = runtime + private + copied_dep_files + cmd_outputs + [intermediate_dir]
-    if output_dir != None:
-        outputs.append(output_dir)
+
+    for f in [output_dir, cache_file]:
+        if f != None:
+            outputs.append(f)
 
     ctx.actions.run(
         mnemonic = "DotnetBuild",
@@ -154,14 +163,19 @@ def emit_assembly(ctx, dotnet):
         tools = dotnet.tools,
     )
 
+    build_files = runtime + [project_file]
+    if cache_file != None:
+        build_files.append(cache_file)
+
     info = DotnetLibraryInfo(
         assembly = assembly,
         intermediate_dir = intermediate_dir,
         output_dir = output_dir,
         project_file = project_file,
+        cache_file = cache_file,
         runtime = depset(runtime + copied_dep_files),
         package_runtimes = dep_files.package_runtimes,
-        build = depset(runtime + [project_file], transitive = [dep_files.inputs]),
+        build = depset(build_files, transitive = [dep_files.inputs]),
         target_framework = ctx.attr.target_framework,
         data = files.data,
         content = files.content,
@@ -209,6 +223,7 @@ def process_deps(dotnet, deps):
     packages = []
     package_runtimes = []
     copied_files = []
+    cache_files = []
 
     implicit_deps = dotnet.sdk.config.tfm_mapping[dotnet.config.tfm].implicit_deps
     inputs = []
@@ -221,6 +236,7 @@ def process_deps(dotnet, deps):
             references.append(info.project_file)
             copied_files.append(info.runtime)
             inputs.append(info.build)
+            cache_files.append(info.cache_file)
 
         elif NuGetPackageInfo in dep:
             _get_nuget_files(dep, tfm, packages, inputs)
@@ -231,6 +247,7 @@ def process_deps(dotnet, deps):
     return struct(
         references = references,
         packages = packages,
+        cache_files = cache_files,
         package_runtimes = depset(transitive = package_runtimes),
         copied_files = depset(transitive = copied_files),
         inputs = depset(transitive = inputs),
