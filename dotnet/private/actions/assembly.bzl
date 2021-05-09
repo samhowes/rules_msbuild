@@ -112,8 +112,12 @@ def emit_tool_binary(ctx, dotnet):
 
     args, cmd_outputs, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files, actual_target = "restore;build;publish")
 
+    direct_inputs = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config]
+    source_project_file = getattr(ctx.file, "project_file", None)
+    if source_project_file != None:
+        direct_inputs.append(source_project_file)
     inputs = depset(
-        direct = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config],
+        direct = direct_inputs,
         transitive = [dep_files.inputs, dotnet.sdk.init_files, dotnet.sdk.packs],
     )
     outputs = [output_dir, assembly] + cmd_outputs

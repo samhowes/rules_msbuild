@@ -99,6 +99,9 @@ dotnet_tool_binary = rule(
             mandatory = True,
             providers = [DotnetSdkInfo],
         ),
+        "project_file": attr.label(
+            allow_single_file = True,
+        ),
         "deps": attr.label_list(
             providers = [NuGetPackageInfo],
         ),
