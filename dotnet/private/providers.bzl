@@ -18,14 +18,34 @@ DotnetLibraryInfo = provider(
     },
 )
 
+NuGetPackageInfo = provider(
+    doc = "Package restore information",
+    fields = {
+        "name": "Package name",
+        "frameworks": (
+            "A struct from a cannonical tfm (e.g. netcoreapp3.1) to NuGetFetchedPackageFrameworkInfo providers " +
+            "for framework specific package information. The members of this struct are defined by the *package consumers*, not by " +
+            "the package. i.e. if the package is a netstandard2.0 package, but the consuming target is targeting netcoreapp3.1, then " +
+            "the key `netcoreapp3.1` will exist in this struct, *not* netstandard2.0. This matches up with the packages.lock.json and " +
+            "allows package consumers to easily access the deps specific to their framework."
+        ),
+    },
+)
+
+NuGetPackageVersionInfo = provider(
+    doc = "A specific restored version of a NuGet package",
+    fields = {
+        "version": "string representing the nuget package version: ex. `1.6-preview1`",
+        "all_files": "depset of All the files that comprise the nuget package. NuGet enumerates these for us each time " +
+                     "it does a restore.",
+    },
+)
+
 NuGetFilegroupInfo = provider(
     doc = "A group of files for a NuGet package.",
     fields = {
         "tfm": "the tfm of this filegroup",
-        "override_version": "true if this filegroup has an override",
-        "runtime": "depset of files to be copied to the output directory by MsBuild.",
-        "build": "depset of files that are inputs to the build",
-        "resource": "depset of resource files",
+        "version": "the version of the nuget package that tfm depends on",
         "all_dep_files": "depset of all the files that this filegroup depends on",
     },
 )
@@ -35,29 +55,12 @@ DotnetContextInfo = provider(
     fields = {},
 )
 
-NuGetPackageInfo = provider(
-    doc = "Package restore information",
-    fields = {
-        "name": "Package name",
-        "version": "A nuget version string",
-        "frameworks": (
-            "A struct from a cannonical tfm (e.g. netcoreapp3.1) to NuGetFetchedPackageFrameworkInfo providers " +
-            "for framework specific package information. The members of this struct are defined by the *package consumers*, not by " +
-            "the package. i.e. if the package is a netstandard2.0 package, but the consuming target is targeting netcoreapp3.1, then " +
-            "the key `netcoreapp3.1` will exist in this struct, *not* netstandard2.0. This matches up with the packages.lock.json and " +
-            "allows package consumers to easily access the deps specific to their framework."
-        ),
-        "all_files": "depset of All the files that comprise the nuget package. NuGet enumerates these for us each time " +
-                     "it does a restore.",
-    },
-)
-
 def MSBuildSdk(name, version):
     """An msbuild sdk happens to actually be a NuGetPackage
 
     https://github.com/microsoft/MSBuildSdks#how-can-i-use-these-sdks
     """
-    return NuGetPackageInfo(
+    return struct(
         name = name,
         version = version,
     )

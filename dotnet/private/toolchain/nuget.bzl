@@ -44,7 +44,7 @@ load(
     "prepare_nuget_config",
     "prepare_project_file",
 )
-load("//dotnet/private/toolchain:common.bzl", "detect_host_platform")
+load("//dotnet/private/toolchain:common.bzl", "BUILDER_PACKAGES", "default_tfm", "detect_host_platform")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
 load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
@@ -61,8 +61,6 @@ def _nuget_fetch_impl(ctx):
         fetch_config = ctx.path("NuGet.Fetch.Config"),
         packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
         packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
-        all_files = [],
-        tfm_mapping = {},  # dict[tfm, struct(implicit_deps: List[_pkg])]
     )
     os, _ = detect_host_platform(ctx)
     dotnet = dotnet_context(
@@ -230,7 +228,14 @@ def _generate_fetch_project(ctx, config, parser_project):
 
 def _process_packages(ctx, config):
     seen_names = {}
-    for tfm in ctx.attr.target_frameworks:
+    sdk_version = ctx.path(ctx.attr.dotnet_sdk_root).dirname.get_child("sdk").readdir()[-1]
+
+    tfm = default_tfm(sdk_version.basename)
+    for pkg_name, version in ctx.attr.builder_deps.items():
+        _record_package(config, seen_names, pkg_name, version, [tfm])
+    if "foo2":
+        pass
+    for tfm in ctx.attr.target_frameworks + [tfm]:
         config.packages_by_tfm.setdefault(tfm, {})
 
     for spec, frameworks in ctx.attr.packages.items():
@@ -242,8 +247,6 @@ def _process_packages(ctx, config):
         version_spec = parts[1]
 
         _record_package(config, seen_names, requested_name, version_spec, frameworks)
-
-    tfms = config.packages_by_tfm.keys()
 
     pkg_name, version, tfm = ctx.attr.test_logger.split(":")
     _record_package(config, seen_names, pkg_name, version, frameworks)
@@ -299,8 +302,6 @@ def _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects):
     ]
     args.extend([str(p) for p in tfm_projects])
 
-    if "foo":
-        pass
     result = ctx.execute(args, quiet = False, environment = dotnet.env)
     if result.return_code != 0:
         fail("failed to process restored packages, please file an issue.\nexit code: {}\nstdout: {}\nstderr: {}".format(result.return_code, result.stdout, result.stderr))
@@ -312,11 +313,12 @@ nuget_fetch = repository_rule(
         "test_logger": attr.string(
             default = "JunitXml.TestLogger:3.0.87:netstandard2.0",
         ),
+        "builder_deps": attr.string_dict(
+            default = BUILDER_PACKAGES,
+        ),
         # todo(#63) link this to the primary nuget folder if it is not the primary nuget folder
         "dotnet_sdk_root": attr.label(
             default = Label("@dotnet_sdk//:ROOT"),
-            executable = True,
-            cfg = "exec",
         ),
         "use_host": attr.bool(
             default = False,

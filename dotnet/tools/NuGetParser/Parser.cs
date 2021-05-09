@@ -20,7 +20,7 @@ namespace NuGetParser
         private readonly Dictionary<string, Package> _allPackages = PackageDict();
         private readonly Dictionary<string, TfmInfo> _tfms = new Dictionary<string, TfmInfo>();
 
-        public Parser(string intermediateBase, string packagesFolder, Dictionary<string,string> args)
+        public Parser(string intermediateBase, string packagesFolder, Dictionary<string, string> args)
         {
             _intermediateBase = intermediateBase;
             _packagesFolder = packagesFolder;
@@ -33,32 +33,16 @@ namespace NuGetParser
             {
                 Console.WriteLine(projectPath);
                 var tfm = Path.GetFileNameWithoutExtension(projectPath);
-                var tfmDict = PackageDict();
-                var project = XDocument.Load(projectPath);
-                foreach (var reference in project.Descendants("PackageReference"))
+                try
                 {
-                    var package = new Package(
-                        reference.Attribute("Include")!.Value,
-                        reference.Attribute("Version")!.Value);
-                    tfmDict[package.Id] = package;
-                    _allPackages[package.Id] = package;
+                    if (!ProcessTfmPackages(projectPath, tfm)) return false;
                 }
-
-                var assets =
-                    JsonSerializer.Deserialize<JsonElement>(
-                        File.ReadAllText(Path.Combine(_intermediateBase, tfm,
-                            "project.assets.json")));
-
-                if (!assets.GetRequired("version", out var version)) return false;
-
-                if (version.GetInt32() != 3)
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"Unsupported project.assets.json version {version.GetInt32()}");
+                    Console.WriteLine($"Failed to process packages for tfm {tfm}, please file an issue.");
+                    Console.WriteLine(ex.ToString());
                     return false;
                 }
-                if (!RecordTfmInfo(assets, tfm)) return false;
-
-                if (!ProcessAssets(tfm, assets)) return false;
             }
 
             if (!GenerateBuildFiles()) return false;
@@ -66,35 +50,80 @@ namespace NuGetParser
             return true;
         }
 
+        private bool ProcessTfmPackages(string projectPath, string tfm)
+        {
+            var project = XDocument.Load(projectPath);
+            foreach (var reference in project.Descendants("PackageReference"))
+            {
+                var packageName = reference.Attribute("Include")!.Value;
+                var versionString = reference.Attribute("Version")!.Value;
+                AddPackage(tfm, packageName, versionString);
+            }
+
+            var assets =
+                JsonSerializer.Deserialize<JsonElement>(
+                    File.ReadAllText(Path.Combine(_intermediateBase, tfm,
+                        "project.assets.json")));
+
+            if (!assets.GetRequired("version", out var version)) return false;
+
+            if (version.GetInt32() != 3)
+            {
+                Console.WriteLine($"Unsupported project.assets.json version {version.GetInt32()}");
+                return false;
+            }
+
+            if (!RecordTfmInfo(assets, tfm)) return false;
+
+            if (!ProcessAssets(tfm, assets)) return false;
+            return true;
+        }
+
         private bool GenerateBuildFiles()
         {
             var allFiles = new List<string>();
             var packagesName = Path.GetFileName(_packagesFolder);
-            foreach (var package in _allPackages.Values.OrderBy(p => p.Id))
+            foreach (var pkg in _allPackages.Values.OrderBy(p => p.RequestedName))
             {
-                var buildPath = Path.Join(Path.GetDirectoryName(_packagesFolder), package.RequestedName, "BUILD.bazel");
+                var buildPath = Path.Join(Path.GetDirectoryName(_packagesFolder), pkg.RequestedName, "BUILD.bazel");
                 Directory.CreateDirectory(Path.GetDirectoryName(buildPath));
-                using var buildFile = new BuildWriter(File.Create(buildPath));
-                buildFile.Load("@my_rules_dotnet//dotnet:defs.bzl" ,"nuget_filegroup", "nuget_import");
-                buildFile.Visibility();
-                buildFile.StartRule("nuget_import", package.RequestedName);
-                
-                var paths = package.AllFiles.Select(f => string.Join("/", packagesName, package.Id.ToLower(), f)).ToList();
-                allFiles.AddRange(paths);
-                var labels = paths.Select(p => "//:" + p);
-                buildFile.SetAttr("all_files", labels);
-                buildFile.SetAttr("frameworks", package.Deps.Keys.Select(d => ":" + d));
-                buildFile.SetAttr("version", package.Version);
-                buildFile.EndRule();
-                
-                foreach (var (tfm, dep) in package.Deps.OrderBy(k => k.Key))
+                using var b = new BuildWriter(File.Create(buildPath));
+                b.Load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_filegroup", "nuget_import", "nuget_package_version");
+                b.Visibility();
+                b.StartRule("nuget_import", pkg.RequestedName);
+
+                var frameworks = pkg.Frameworks.Values.OrderBy(f => f.Tfm).ToList();
+                b.SetAttr("frameworks", frameworks.Select(f => ":" + f.Tfm));
+                b.EndRule();
+
+                foreach (var framework in frameworks)
                 {
-                    buildFile.StartRule("nuget_filegroup", tfm);
-                    buildFile.SetAttr("deps", dep.OrderBy(d => d.Id).Select(d => d.Label));
-                    buildFile.EndRule();
+                    b.StartRule("nuget_filegroup", framework.Tfm);
+                    b.SetAttr("version", ":" + framework.Version);
+                    b.SetAttr("deps", framework.Deps.Select(d => d.Label).OrderBy(d => d));
+                    b.EndRule();
+                }
+
+                foreach (var version in pkg.Versions.Values.OrderBy(v => v.String))
+                {
+                    b.StartRule("nuget_package_version", version.String);
+                    var paths = version.AllFiles.Select(f =>
+                            string.Join("/", packagesName, pkg.RequestedName.ToLower(), version.String.ToLower(), f))
+                        .ToList();
+                    allFiles.AddRange(paths);
+                    var labels = paths.Select(p => "//:" + p);
+                    b.SetAttr("all_files", labels);
+                    b.EndRule();
                 }
             }
 
+            WriteMainBuild(allFiles);
+
+            return true;
+        }
+
+        private void WriteMainBuild(List<string> allFiles)
+        {
             using var b =
                 new BuildWriter(File.Create(Path.Join(Path.GetDirectoryName(_packagesFolder), "BUILD.bazel")));
             b.Load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "tfm_mapping", "framework_info");
@@ -109,16 +138,14 @@ namespace NuGetParser
                 b.SetAttr("implicit_deps", info.ImplicitDeps.Select(d => d.Label));
                 b.EndRule();
             }
-            
+
             b.StartRule("alias", "test_logger");
             b.SetAttr("actual", "//" + _args["test_logger"]);
             b.EndRule();
 
             b.Raw($"exports_files([\"{_args["nuget_build_config"]}\"])");
 
-            b.InlineCall("exports_files", b.BzlValue(allFiles, prefix:""));
-            
-            return true;
+            b.InlineCall("exports_files", b.BzlValue(allFiles, prefix: ""));
         }
 
         private bool RecordTfmInfo(JsonElement assets, string tfm)
@@ -131,16 +158,16 @@ namespace NuGetParser
 
             var info = new TfmInfo(tfm);
 
-            Package AddImplictDep(JsonElement dep, string name)
+            PackageVersion AddImplicitDep(JsonElement dep, string name)
             {
                 // "version": "[2.0.3, )"
                 var versionSpec = dep.GetProperty("version").GetString();
-                var version = versionSpec.Split(",")[0][1..];
-                var package = new Package(name, version);
-                info.ImplicitDeps.Add(package);
-                package.Deps.GetOrAdd(tfm, () => new List<Package>());
-                _allPackages[package.Id] = package;
-                return package;
+                var versionString = versionSpec.Split(",")[0][1..];
+                
+                var (pkg, version) = AddPackage(tfm, name, versionString);
+                info.ImplicitDeps.Add(pkg);
+
+                return version;
             }
 
             if (anchor.TryGetProperty("dependencies", out var deps))
@@ -148,7 +175,7 @@ namespace NuGetParser
                 foreach (var dep in deps.EnumerateObject())
                 {
                     if (!dep.Value.TryGetProperty("autoReferenced", out var auto) || !auto.GetBoolean()) continue;
-                    AddImplictDep(dep.Value, dep.Name);
+                    AddImplicitDep(dep.Value, dep.Name);
                 }
             }
 
@@ -156,7 +183,7 @@ namespace NuGetParser
             {
                 foreach (var dep in deps.EnumerateArray())
                 {
-                    var package = AddImplictDep(dep, dep.GetProperty("name").GetString());
+                    var package = AddImplicitDep(dep, dep.GetProperty("name").GetString());
                     WalkPackage(package);
                 }
             }
@@ -172,9 +199,18 @@ namespace NuGetParser
             return true;
         }
 
-        private void WalkPackage(Package package)
+        private (Package pkg, PackageVersion version) AddPackage(string tfm, string name, string version)
         {
-            var root = Path.Combine(_packagesFolder, package.Id.ToLower());
+            var package = _allPackages.GetOrAdd(name, () => new Package(name));
+            var pkgVersion = new PackageVersion(package, version);
+            package.Versions[version] = pkgVersion;
+            package.Frameworks.GetOrAdd(tfm, () => new FrameworkDependency(tfm, version));
+            return (package, pkgVersion);
+        }
+
+        private void WalkPackage(PackageVersion version)
+        {
+            var root = Path.Combine(_packagesFolder, version.Id.ToLower());
 
             void Walk(string path)
             {
@@ -186,7 +222,7 @@ namespace NuGetParser
                 foreach (var file in Directory.EnumerateFiles(path))
                 {
                     var subPath = file[(root.Length + 1)..];
-                    package.AllFiles.Add(subPath);
+                    version.AllFiles.Add(subPath);
                 }
             }
 
@@ -195,9 +231,8 @@ namespace NuGetParser
 
         private bool ProcessAssets(string tfm, JsonElement assets)
         {
-            var discoveredDeps = PackageDict();
-            var unusedDeps = PackageDict();
-            var missingDeps = PackageDict<List<Package>>();
+            var unusedDeps = PackageDict<PackageVersion>();
+            var missingDeps = PackageDict<List<FrameworkDependency>>();
             var tfmPackages = assets.GetProperty("targets").EnumerateObject().Single().Value;
             if (!assets.GetRequired("libraries", out var libraries)) return false;
 
@@ -211,75 +246,53 @@ namespace NuGetParser
                     Console.WriteLine($"Unexpected dependency type: {type}");
                     return false;
                 }
-
+                
+                var parts = canonicalId.Split("/");
                 bool transitive = false;
-                var package = _allPackages.GetOrAdd(canonicalId, () =>
+                var package = _allPackages.GetOrAdd(parts[0], () =>
                 {
-                    var parts = canonicalId.Split("/");
-                    var p = new Package(parts[0], parts[1]);
-                    _allPackages[p.Id] = p;
                     transitive = true;
-                    return p;
+                    return new Package(parts[0]);
                 });
-                package.Deps.GetOrAdd(tfm, () => new List<Package>());
-                package.CanonicalId = canonicalId;
-
-                discoveredDeps[package.Id] = package;
-                if (missingDeps.TryGetValue(package.Id, out var expecting))
+                package.CanonicalName = parts[0];
+                
+                var version = package.Versions.GetOrAdd(parts[1], () =>
+                {
+                    var v = new PackageVersion(package, parts[1]);
+                    transitive = true;
+                    return v;
+                });
+                version.CanonicalId = canonicalId;
+                var tfmDep = package.Frameworks.GetOrAdd(tfm, () =>
+                {
+                    transitive = true;
+                    return new FrameworkDependency(tfm, version.String);
+                });
+                
+                if (missingDeps.TryGetValue(version.Id, out var expecting))
                 {
                     foreach (var e in expecting)
                     {
-                        e.Deps.GetOrAdd(tfm, () => new List<Package>()).Add(package);
+                        e.Deps.Add(package);
                     }
 
-                    missingDeps.Remove(package.Id);
+                    missingDeps.Remove(version.Id);
                 }
                 else if (transitive)
                 {
-                    unusedDeps[package.Id] = package;
+                    unusedDeps[version.Id] = version;
                 }
 
-                if (desc.Value.TryGetProperty("dependencies", out var deps))
-                {
-                    foreach (var dep in deps.EnumerateObject())
-                    {
-                        var canonicalName = dep.Name;
-                        var version = dep.Value.GetString();
-                        if (version[0] == '[')
-                        {
-                            var parts = version.Split(",");
-                            if (parts.Length > 1)
-                            {
-                                // "[1.2.3, )"
-                                version = parts[0][1..];
-                            }
-                            else
-                            {
-                                // "[1.2.3]"
-                                version = version[1..^1];
-                            }
-                        }
-                        var id = canonicalName + "/" + version;
-                        unusedDeps.Remove(id);
-
-                        if (!discoveredDeps.TryGetValue(id, out var pkg))
-                        {
-                            missingDeps.GetOrAdd(id, () => new List<Package>()).Add(package);
-                            continue;
-                        }
-
-                        package.Deps.GetOrAdd(tfm, () => new List<Package>()).Add(pkg);
-                    }
-                }
-
-                if (!package.AllFiles.Any())
+                if (!version.AllFiles.Any())
                 {
                     // only do this once per package, we'll be calling this code one per framework that depends on this
                     // package
-                    if (!libraries.GetRequired(package.CanonicalId, out var meta)) return false;
+                    if (!libraries.GetRequired(version.CanonicalId, out var meta)) return false;
                     var allFiles = meta.GetProperty("files");
-                    package.AllFiles.AddRange(allFiles.EnumerateArray().Select(f => f.GetString()));
+                    version.AllFiles.AddRange(allFiles.EnumerateArray().Select(f => f.GetString()));
                 }
+                
+                AddPackageDeps(desc, unusedDeps, missingDeps, tfmDep);
             }
 
             if (unusedDeps.Any())
@@ -290,24 +303,13 @@ namespace NuGetParser
 
             if (missingDeps.Any())
             {
-                var byName = PackageDict();
-                foreach (var (_, p) in discoveredDeps)
-                {
-                    if (byName.ContainsKey(p.RequestedName))
-                    {
-                        Console.WriteLine($"Detected multiple versions of the same package: {p.RequestedName}. Please file an issue to support this use case.");
-                        return false;
-                    }
-
-                    byName[p.RequestedName] = p;
-                }
                 foreach (var (id, expecting) in missingDeps)
                 {
-                    if (byName.TryGetValue(id.Split("/")[0], out var versionUpgrade))
+                    if (_allPackages.TryGetValue(id.Split("/")[0], out var versionUpgrade))
                     {
                         foreach (var e in expecting)
                         {
-                            e.Deps.GetOrAdd(tfm, () => new List<Package>()).Add(versionUpgrade);
+                            e.Deps.Add(versionUpgrade);
                         }
 
                         missingDeps.Remove(id);
@@ -319,7 +321,7 @@ namespace NuGetParser
                     Console.WriteLine($"Found packages expecting dependencies, but didn't find the dependencies:");
                     foreach (var (id, expecting) in missingDeps)
                     {
-                        Console.WriteLine($"{id} <= {string.Join(", ", expecting.Select(e => e.Id))}");
+                        Console.WriteLine($"{id} <= {string.Join(", ", expecting.Select(e => e.Tfm))}");
                     }
 
                     return false;
@@ -327,6 +329,45 @@ namespace NuGetParser
             }
 
             return true;
+        }
+
+        private void AddPackageDeps(JsonProperty desc, 
+            Dictionary<string, PackageVersion> unusedDeps, 
+            Dictionary<string, List<FrameworkDependency>> missingDeps,
+            FrameworkDependency tfmDep)
+        {
+            if (!desc.Value.TryGetProperty("dependencies", out var deps)) return;
+            foreach (var dep in deps.EnumerateObject())
+            {
+                var canonicalName = dep.Name;
+                var versionString = dep.Value.GetString();
+                if (versionString[0] == '[')
+                {
+                    var parts = versionString.Split(",");
+                    if (parts.Length > 1)
+                    {
+                        // "[1.2.3, )"
+                        versionString = parts[0][1..];
+                    }
+                    else
+                    {
+                        // "[1.2.3]"
+                        versionString = versionString[1..^1];
+                    }
+                }
+
+                var id = canonicalName + "/" + versionString;
+                unusedDeps.Remove(id);
+                var package = _allPackages.GetOrAdd(canonicalName, () => new Package(canonicalName));
+
+                if (!package.Versions.TryGetValue(versionString, out var version))
+                {
+                    missingDeps.GetOrAdd(id, () => new List<FrameworkDependency>()).Add(tfmDep);
+                    continue;
+                }
+
+                tfmDep.Deps.Add(package);
+            }
         }
     }
 }

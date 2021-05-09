@@ -102,13 +102,19 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
+def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files, actual_target = None):
     """Create a command for use during the execution phase"""
     binlog = False  # todo(#51) disable when not debugging the build
     if True:
         binlog = True
-    actual_target = msbuild_target
-    if msbuild_target == "build":
+
+    target_heuristics = True
+    if actual_target != None:
+        target_heuristics = False
+    else:
+        actual_target = msbuild_target
+
+    if target_heuristics and msbuild_target == "build":
         # https://github.com/dotnet/msbuild/issues/5204
         actual_target = "GetTargetFrameworks;Build;GetCopyToOutputDirectoryItems;GetNativeManifest"
 
@@ -126,7 +132,7 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
         "RestoreRecursive": "false",
     }
 
-    if msbuild_target == "publish":
+    if target_heuristics and msbuild_target == "publish":
         msbuild_properties = dicts.add(msbuild_properties, {
             "PublishDir": paths.join(STARTUP_DIR, files.output_dir.path),
             "NoBuild": "true",
@@ -142,7 +148,7 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
 
     args = ctx.actions.args()
     inputs = []
-    if dotnet.builder != None:
+    if target_heuristics and dotnet.builder != None:
         intermediate_path_full = paths.join(str(proj.dirname), dotnet.config.intermediate_path)
         processed_path = paths.join(intermediate_path_full, dotnet.builder_output_dir)
         args.add(dotnet.builder.path)
@@ -206,7 +212,7 @@ def make_cmd(dotnet, project_path, msbuild_target, binlog = False, actual_target
 
     binlog_path = None
     if binlog:
-        binlog_path = project_path + ".{}.binlog".format(msbuild_target)
+        binlog_path = project_path + ".{}.binlog".format(msbuild_target.rstrip(";"))
         args_list.append("-bl:{}".format(binlog_path))
 
     return args_list, binlog_path

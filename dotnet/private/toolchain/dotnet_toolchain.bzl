@@ -1,7 +1,7 @@
 """Repository rules to define dotnet_toolchain"""
 
 load("//dotnet/private:platforms.bzl", "PLATFORMS")
-load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo")
 
 def _dotnet_toolchain_impl(ctx):
     sdk = ctx.attr.sdk[DotnetSdkInfo]
@@ -18,16 +18,14 @@ def _dotnet_toolchain_impl(ctx):
             compile = (),
         ),
         sdk = sdk,
-        _builder = ctx.executable.builder,
+        _builder = ctx.attr.builder[DotnetLibraryInfo].assembly,
     )]
 
 dotnet_toolchain = rule(
     _dotnet_toolchain_impl,
     attrs = {
         "builder": attr.label(
-            # mandatory = True,
             cfg = "exec",
-            executable = True,
             doc = "Tool used to execute most Dotnet actions",
         ),
         "dotnetos": attr.string(

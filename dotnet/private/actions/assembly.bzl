@@ -94,6 +94,47 @@ def _format_launcher_args(args, bin_launcher):
     else:
         return "*~*".join(args)
 
+def emit_tool_binary(ctx, dotnet):
+    """Create a binary used for the dotnet toolchain itself.
+
+    This implementation assumes that no other targets will depend on this binary for anything other than executing as a
+    tool. Since this is part of the toolchain itself, it can't execute a multiphase restore, build, publish,
+    because bazel's sandboxing/remote execution will cause msbuild to not be able to find reference paths between
+    actions. So instead, we execute all msbuild steps in a single action via invoking the publish target directly.
+    """
+    output_dir = ctx.actions.declare_directory(paths.join(dotnet.config.output_dir_name, "publish"))
+    dep_files = process_deps(dotnet, ctx.attr.deps)
+    project_file = make_project_file(ctx, dotnet, dep_files)
+    assembly = ctx.actions.declare_file(paths.join(output_dir.short_path, ctx.attr.name + ".dll"))
+    files = struct(
+        output_dir = output_dir,
+    )
+
+    args, cmd_outputs, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files, actual_target = "restore;build;publish")
+
+    inputs = depset(
+        direct = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config],
+        transitive = [dep_files.inputs, dotnet.sdk.init_files, dotnet.sdk.packs],
+    )
+    outputs = [output_dir, assembly] + cmd_outputs
+
+    ctx.actions.run(
+        mnemonic = "DotnetBuild",
+        inputs = inputs,
+        outputs = outputs,
+        executable = dotnet.sdk.dotnet,
+        arguments = [args],
+        env = dotnet.env,
+    )
+    return DotnetLibraryInfo(
+        assembly = assembly,
+        output_dir = output_dir,
+        project_file = project_file,
+        runtime = depset(outputs),
+        package_runtimes = dep_files.package_runtimes,
+        target_framework = ctx.attr.target_framework,
+    ), outputs + [project_file]
+
 def emit_assembly(ctx, dotnet):
     """Compile a dotnet assembly with the provided project template
 
@@ -103,7 +144,6 @@ def emit_assembly(ctx, dotnet):
     Returns:
         Tuple: the emitted assembly and all outputs
     """
-    compiliation_mode = ctx.var["COMPILATION_MODE"]
     sdk = dotnet.sdk
 
     output_dir = None
@@ -111,9 +151,8 @@ def emit_assembly(ctx, dotnet):
         output_dir = ctx.actions.declare_directory(dotnet.config.output_dir_name)
 
     ### declare and prepare all the build inputs/outputs
-    deps = dotnet.config.implicit_deps + getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
-    dep_files = process_deps(dotnet, deps)
-    project_file = make_project_file(ctx, dotnet.config.intermediate_path, sdk.config.nuget_config, dotnet.config.is_executable, dep_files)
+    dep_files = process_deps(dotnet, ctx.attr.deps)
+    project_file = make_project_file(ctx, dotnet, dep_files)
 
     restore_outputs = restore(ctx, dotnet, project_file, dep_files)
     assembly, runtime, private = _declare_assembly_files(ctx, dotnet.config.output_dir_name, dotnet.config.is_executable)
@@ -262,8 +301,7 @@ def _get_nuget_files(dep, tfm, packages, inputs):
             pkg.name + ":" + pkg.version,
             ", ".join([k for k, v in pkg.frameworks]),
         ))
-    packages.append(pkg)
+    packages.append(struct(name = pkg.name, version = framework_info.version))
 
     # todo(#67) restrict these inputs
-    inputs.append(pkg.all_files)
     inputs.append(framework_info.all_dep_files)

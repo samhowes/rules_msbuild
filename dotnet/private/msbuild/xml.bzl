@@ -50,7 +50,8 @@ def import_sdk(name, version = None):
         _import_sdk(name, "targets", version),
     )
 
-def make_project_file(ctx, intermediate_path, nuget_config, is_executable, dep_files):
+def make_project_file(ctx, dotnet, dep_files):
+    (intermediate_path, nuget_config, is_executable) = dotnet.config.intermediate_path, dotnet.sdk.config.nuget_config, dotnet.config.is_executable
     post_sdk_properties = dicts.add(getattr(ctx.attr, "msbuild_properties", {}))
     if is_executable:
         post_sdk_properties["OutputType"] = "Exe"

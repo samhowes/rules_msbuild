@@ -1,4 +1,4 @@
-load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "make_launcher")
+load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "emit_tool_binary", "make_launcher")
 load("//dotnet/private/actions:publish.bzl", "publish")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
@@ -7,15 +7,14 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 def _dotnet_tool_binary_impl(ctx):
     dotnet = dotnet_exec_context(ctx, True)
 
-    info, outputs, private = emit_assembly(ctx, dotnet)
+    info, all_outputs = emit_tool_binary(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset([info.assembly]),
-            executable = info.assembly,
+            files = depset([info.assembly, info.output_dir]),
         ),
         info,
         OutputGroupInfo(
-            all = depset(outputs + private),
+            all = depset(all_outputs),
         ),
     ]
 
@@ -100,8 +99,13 @@ dotnet_tool_binary = rule(
             mandatory = True,
             providers = [DotnetSdkInfo],
         ),
+        "deps": attr.label_list(
+            providers = [NuGetPackageInfo],
+        ),
     }),
-    executable = True,
+    # this is compiling a dotnet executable, but it'll be a framework dependent executable, so bazel won't be able
+    # to execute it directly
+    executable = False,
     doc = """Used instead of dotnet_binary for executables in the toolchain.
 
 dotnet_tool_binaries cannot have any dependencies and are used to build other dotnet_* targets.""",
