@@ -6,6 +6,11 @@ namespace NuGetParser
 {
     public class Package
     {
+        public static Dictionary<string, Package> PackageDict() => PackageDict<Package>();
+
+        public static Dictionary<string, T> PackageDict<T>() =>
+            new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+        
         public string RequestedName { get; }
         public string Label { get; }
         public string CanonicalName { get; set; }

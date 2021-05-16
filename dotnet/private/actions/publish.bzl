@@ -14,7 +14,7 @@ def publish(ctx):
         data = info.data,
     )
 
-    args, cmd_outputs, cmd_inputs = make_exec_cmd(ctx, dotnet, "publish", info.project_file, files)
+    args, cmd_outputs, cmd_inputs, _ = make_exec_cmd(ctx, dotnet, "publish", info.project_file, files)
 
     groups = ctx.attr.target[OutputGroupInfo]
     ctx.actions.run(

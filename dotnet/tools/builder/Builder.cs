@@ -1,141 +1,140 @@
+#nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using Microsoft.Build.Definition;
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Execution;
+using Microsoft.Build.Logging;
+using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
 namespace MyRulesDotnet.Tools.Builder
 {
-    public class Command
+    public class Builder
     {
-        public string Action;
-        public List<string> PositionalArgs = new List<string>();
-        public Dictionary<string, string> NamedArgs = new Dictionary<string, string>();
-        public string[] PassThroughArgs { get; set; }
-    }
+        private readonly ProcessorContext _context;
+        private readonly string _action;
+        private readonly BuildManager _buildManager;
+        private readonly MsBuildCacheManager _cacheManager;
 
-    public class Program
-    {
-        private static Regex MsBuildVariableRegex = new Regex(@"\$\((\w+)\)", RegexOptions.Compiled);
-        public static bool DebugEnabled = Environment.GetEnvironmentVariable("DOTNET_BUILDER_DEBUG") != null;
-
-        public static int Fail(string message)
+        public Builder(ProcessorContext context)
         {
-            Console.Error.WriteLine("[Builder] " + message);
-            Environment.Exit(1);
-            return 1; // weird. Oh well.
+            _context = context;
+            _action = _context.Command.Action.ToLower();
+            _buildManager = BuildManager.DefaultBuildManager;
+            _cacheManager = new MsBuildCacheManager(_buildManager, _context.ExecRoot);
         }
 
-        public static void Debug(string message)
-        {
-            if (!DebugEnabled) return;
-            Console.WriteLine("[Debug] " + message);
-        }
+        string CachePath(string projectPath, string? action = null)
+            => ProjectPath(projectPath, action ?? _action, "cache");
 
-        static int Main(string[] args)
+        string BinlogPath(string projectPath) =>
+            ProjectPath(projectPath, _action, "binlog");
+
+        private string ProjectPath(params string[] parts) => string.Join(".", parts);
+
+
+        public int Build()
         {
-            if (DebugEnabled)
+            var pc = ProjectCollection.GlobalProjectCollection;
+            pc.RegisterLogger(new BazelMsBuildLogger(_context.BazelOutputBase));
+            pc.SetGlobalProperty("ImportDirectoryBuildProps", "false");
+            pc.SetGlobalProperty("NoWarn", "NU1603;MSB3277");
+            if (_action == "restore")
             {
-                Debug($"Received {args.Length} arguments: {string.Join(" ", args)}");
+                // this one is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
+                // ahead of time, there will be a cache miss on the restored project.
+                pc.SetGlobalProperty("ExcludeRestorePackageImports", "true");
             }
 
-            var command = ParseArgs(args);
-
-            switch (command.Action)
+            var loggers = pc.Loggers.ToList();
+            // todo(#51) disable when no build diagnostics are requested
+            if (true)
             {
-                case "launcher":
-                    return MakeLauncher(command);
-                    
+                var path = BinlogPath(Path.GetFullPath(_context.ProjectFile));
+                Debug($"added binlog {path}");
+                loggers.Add(new BinaryLogger() {Parameters = path});
+            }
+
+            var project = Project.FromFile(_context.ProjectFile, new ProjectOptions()
+            {
+                ProjectCollection = pc,
+            });
+            Console.WriteLine($"Project {project.FullPath} loaded");
+
+            string[] targets;
+            switch (_action)
+            {
                 case "restore":
-                    return PostProcess(command);
-                    
-                case "publish":
-                case "build":
-                    return PreProcess(command);
-                    
-                default:
-                    return Fail($"Unknown command: {command.Action}");
-                    
-            }
-        }
-
-        private static Command ParseArgs(string[] args)
-        {
-            var command = new Command {Action = args[0]};
-            ParseArgsImpl(args, 1, command);
-            if (command.PassThroughArgs == null) return command;
-            
-            var startupDirectory = Environment.CurrentDirectory;
-            for (var i = 0; i < command.PassThroughArgs.Length; i++)
-            {
-                var arg = command.PassThroughArgs[i];
-                
-                command.PassThroughArgs[i] = MsBuildVariableRegex.Replace(arg, (match) =>
-                {
-                    if (match.Groups[1].Value == "MSBuildStartupDirectory")
-                    {
-                        return startupDirectory;
-                    }
-
-                    return match.Value;
-                });
-
-            }
-            return command;
-        }
-
-        private static void ParseArgsImpl(string[] args, int start, Command command)
-        {
-            for (var i = start; i < args.Length; i++)
-            {
-                var arg = args[i];
-                if (arg == "@file")
-                {
-                    var fileArgs = File.ReadAllLines(args[i + 1])
-                        .SelectMany(l => l.Split(' '))
-                        .ToArray();
-                    ParseArgsImpl(fileArgs, 0, command);
-                    i++;
-                    continue;
-                }
-                
-                if (arg.Length == 0 || arg[0] != '-')
-                {
-                    command.PositionalArgs.Add(arg);
-                    continue;
-                }
-
-                if (arg == "--")
-                {
-                    command.PassThroughArgs = args[(i + 1)..];
+                    targets = new[] {"Restore"};
                     break;
-                }
-
-                // assume a well formed array of args in the form [`--name` `value`]
-                var name = arg[2..];
-                var value = args[i + 1];
-                command.NamedArgs[name] = value;
-                i++;
+                case "build":
+                    targets = new[]
+                    {
+                        "GetTargetFrameworks", "Build", "GetCopyToOutputDirectoryItems", "GetNativeManifest"
+                    };
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown action {_action}");
             }
+
+            var inputCaches = GetInputCaches(project);
+            var parameters = new BuildParameters(ProjectCollection.GlobalProjectCollection)
+            {
+                EnableNodeReuse = false,
+                Loggers = loggers,
+                DetailedSummary = true,
+                IsolateProjects = true,
+                OutputResultsCacheFile = CachePath(project.FullPath),
+                InputResultsCacheFiles = inputCaches.ToArray(),
+                // cult-copy
+                ToolsetDefinitionLocations =
+                    Microsoft.Build.Evaluation.ToolsetDefinitionLocations.ConfigurationFile |
+                    Microsoft.Build.Evaluation.ToolsetDefinitionLocations.Registry,
+            };
+            var data = new BuildRequestData(
+                project.CreateProjectInstance(),
+                targets,
+                null,
+                // replace the existing config that we'll load from cache
+                // not setting this results in MSBuild setting a global unique property to protect against 
+                // https://github.com/dotnet/msbuild/issues/1748
+                BuildRequestDataFlags.ReplaceExistingProjectInstance
+            );
+
+
+            _buildManager.BeginBuild(parameters);
+            if (inputCaches.Any())
+            {
+                _cacheManager.BeforeExecuteBuild();
+            }
+
+            var submission = _buildManager.PendBuildRequest(data);
+
+            var result = submission.Execute();
+
+            if (result.OverallResult == BuildResultCode.Success)
+            {
+                _cacheManager.AfterExecuteBuild();    
+            }
+            
+            _buildManager.EndBuild();
+            return (int) result.OverallResult;
         }
 
-        private static int PreProcess(Command command)
-        {
-            var processor = new OutputProcessor(new ProcessorContext(command));
-            return processor.PreProcess();
-        }
 
-        private static int PostProcess(Command command)
+        private  List<string> GetInputCaches(Project project)
         {
-            var processor = new OutputProcessor(new ProcessorContext(command));
-            return processor.PostProcess();
-        }
+            var inputCaches = new List<string>();
+            foreach (var reference in project.GetItems("ProjectReference"))
+            {
+                var path = reference.EvaluatedInclude;
 
-        private static int MakeLauncher(Command command)
-        {
-            var factory = new LauncherFactory();
-            return factory.Create(command.PositionalArgs.ToArray());
+                inputCaches.Add(CachePath(path));
+            }
+
+            return inputCaches;
         }
     }
 }

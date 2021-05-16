@@ -19,12 +19,12 @@ def restore(ctx, dotnet, project_file, dep_files):
     """
     outputs = _declare_files(ctx, dotnet, project_file)
 
-    args, cmd_outputs, cmd_inputs = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
+    args, cmd_outputs, cmd_inputs, restore_cache = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
     outputs.extend(cmd_outputs)
 
     inputs = depset(
         direct = [project_file, dotnet.sdk.config.nuget_config] + cmd_inputs,
-        transitive = [dep_files.inputs, dotnet.sdk.init_files, dotnet.sdk.packs],
+        transitive = [dep_files.inputs, dep_files.restore_caches, dotnet.sdk.init_files, dotnet.sdk.packs],
     )
 
     ctx.actions.run(
@@ -37,7 +37,7 @@ def restore(ctx, dotnet, project_file, dep_files):
         tools = dotnet.tools,
     )
 
-    return outputs
+    return restore_cache, outputs
 
 def _declare_files(ctx, dotnet, project_file):
     file_names = []
@@ -74,7 +74,6 @@ def _declare_files(ctx, dotnet, project_file):
 
             file_names[i] = paths.join(paths.join(
                 dirname,
-                dotnet.builder_output_dir,
                 basename,
             ))
 

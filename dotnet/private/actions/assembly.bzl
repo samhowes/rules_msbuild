@@ -110,7 +110,7 @@ def emit_tool_binary(ctx, dotnet):
         output_dir = output_dir,
     )
 
-    args, cmd_outputs, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files, actual_target = "restore;build;publish")
+    args, cmd_outputs, _, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files, actual_target = "restore;build;publish")
 
     direct_inputs = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config]
     source_project_file = getattr(ctx.file, "project_file", None)
@@ -135,6 +135,7 @@ def emit_tool_binary(ctx, dotnet):
         output_dir = output_dir,
         project_file = project_file,
         runtime = depset(outputs),
+        build = depset(),
         package_runtimes = dep_files.package_runtimes,
         target_framework = ctx.attr.target_framework,
     ), outputs + [project_file]
@@ -158,7 +159,7 @@ def emit_assembly(ctx, dotnet):
     dep_files = process_deps(dotnet, ctx.attr.deps)
     project_file = make_project_file(ctx, dotnet, dep_files)
 
-    restore_outputs = restore(ctx, dotnet, project_file, dep_files)
+    restore_cache, restore_outputs = restore(ctx, dotnet, project_file, dep_files)
     assembly, runtime, private = _declare_assembly_files(ctx, dotnet.config.output_dir_name, dotnet.config.is_executable)
     files = struct(
         output_dir = output_dir,
@@ -166,21 +167,14 @@ def emit_assembly(ctx, dotnet):
         content = depset(getattr(ctx.files, "content", [])),
         data = depset(getattr(ctx.files, "data", [])),
     )
-    args, cmd_outputs, cmd_inputs = make_exec_cmd(ctx, dotnet, "build", project_file, files)
+    args, cmd_outputs, cmd_inputs, build_cache = make_exec_cmd(ctx, dotnet, "build", project_file, files)
 
     content = getattr(ctx.files, "content", [])
-
-    cache_file = None
-    if dotnet.builder != None:
-        cache_file = ctx.actions.declare_file(
-            paths.join("processed", project_file.basename + ".cache"),
-        )
-        args.add("-inputResultsCaches:" + ";".join([f.path for f in dep_files.cache_files]))
 
     ### collect build inputs/outputs
     inputs = depset(
         direct = ctx.files.srcs + content + [project_file] + restore_outputs + cmd_inputs,
-        transitive = [dep_files.inputs, sdk.init_files],
+        transitive = [dep_files.inputs, dep_files.build_caches, sdk.init_files],
     )
 
     copied_dep_files = [
@@ -192,7 +186,7 @@ def emit_assembly(ctx, dotnet):
 
     outputs = runtime + private + copied_dep_files + cmd_outputs + [intermediate_dir]
 
-    for f in [output_dir, cache_file]:
+    for f in [output_dir]:
         if f != None:
             outputs.append(f)
 
@@ -207,15 +201,17 @@ def emit_assembly(ctx, dotnet):
     )
 
     build_files = runtime + [project_file]
-    if cache_file != None:
-        build_files.append(cache_file)
+    runtime_files = runtime + copied_dep_files
+    if getattr(dotnet.config, "is_executable", False):
+        runtime_files += private
 
     info = DotnetLibraryInfo(
         assembly = assembly,
         intermediate_dir = intermediate_dir,
         output_dir = output_dir,
         project_file = project_file,
-        cache_file = cache_file,
+        restore_cache = restore_cache,
+        build_cache = build_cache,
         runtime = depset(runtime + copied_dep_files),
         package_runtimes = dep_files.package_runtimes,
         build = depset(build_files, transitive = [dep_files.inputs]),
@@ -266,12 +262,15 @@ def process_deps(dotnet, deps):
     packages = []
     package_runtimes = []
     copied_files = []
-    cache_files = []
+    restore_caches = []
+    build_caches = []
 
-    implicit_deps = dotnet.sdk.config.tfm_mapping[dotnet.config.tfm].implicit_deps
     inputs = []
-    for dep in implicit_deps:
+    for dep in getattr(dotnet.config, "tfm_deps", []):
         _get_nuget_files(dep, tfm, [], inputs)
+
+    for dep in getattr(dotnet.config, "implicit_deps", []):
+        _get_nuget_files(dep, tfm, packages, inputs)
 
     for dep in deps:
         if DotnetLibraryInfo in dep:
@@ -279,7 +278,8 @@ def process_deps(dotnet, deps):
             references.append(info.project_file)
             copied_files.append(info.runtime)
             inputs.append(info.build)
-            cache_files.append(info.cache_file)
+            restore_caches.append(info.restore_cache)
+            build_caches.append(info.build_cache)
 
         elif NuGetPackageInfo in dep:
             _get_nuget_files(dep, tfm, packages, inputs)
@@ -290,7 +290,8 @@ def process_deps(dotnet, deps):
     return struct(
         references = references,
         packages = packages,
-        cache_files = cache_files,
+        restore_caches = depset(restore_caches),
+        build_caches = depset(build_caches),
         package_runtimes = depset(transitive = package_runtimes),
         copied_files = depset(transitive = copied_files),
         inputs = depset(transitive = inputs),
@@ -298,12 +299,12 @@ def process_deps(dotnet, deps):
 
 def _get_nuget_files(dep, tfm, packages, inputs):
     pkg = dep[NuGetPackageInfo]
-    framework_info = getattr(pkg.frameworks, tfm, None)
+    framework_info = pkg.frameworks.get(tfm, None)
     if framework_info == None:
         fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
             tfm,
-            pkg.name + ":" + pkg.version,
-            ", ".join([k for k, v in pkg.frameworks]),
+            pkg.name,
+            ", ".join([k for k, v in pkg.frameworks.items()]),
         ))
     packages.append(struct(name = pkg.name, version = framework_info.version))
 

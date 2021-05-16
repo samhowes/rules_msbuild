@@ -232,9 +232,8 @@ def _process_packages(ctx, config):
 
     tfm = default_tfm(sdk_version.basename)
     for pkg_name, version in ctx.attr.builder_deps.items():
-        _record_package(config, seen_names, pkg_name, version, [tfm])
-    if "foo2":
-        pass
+        _record_package(config, seen_names, pkg_name, version, [tfm], True)
+
     for tfm in ctx.attr.target_frameworks + [tfm]:
         config.packages_by_tfm.setdefault(tfm, {})
 
@@ -251,20 +250,22 @@ def _process_packages(ctx, config):
     pkg_name, version, tfm = ctx.attr.test_logger.split(":")
     _record_package(config, seen_names, pkg_name, version, frameworks)
 
-def _record_package(config, seen_names, requested_name, version_spec, frameworks):
+def _record_package(config, seen_names, requested_name, version_spec, frameworks, use_existing = False):
     # todo(#53) don't count on the Version Spec being a precise version
     pkg = _pkg(requested_name, version_spec)
 
-    if pkg.name_lower in seen_names:
+    if pkg.name_lower in seen_names and not use_existing:
         # todo(#47)
-        fail("Multiple package versions are not supported.")
-    seen_names[pkg.name_lower] = True
+        fail("Found multiple versions of package {}. Multiple package versions are not supported.".format(pkg.name_lower))
+    if not use_existing:
+        seen_names[pkg.name_lower] = True
 
     config.packages[pkg.pkg_id] = pkg
 
     for tfm in frameworks:
         tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
-        tfm_dict[pkg.name_lower] = pkg
+        if not use_existing or pkg.name_lower not in tfm_dict:
+            tfm_dict[pkg.name_lower] = pkg
 
 def _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects):
     args = [

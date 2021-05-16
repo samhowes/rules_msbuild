@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
 namespace MyRulesDotnet.Tools.Builder
 {
@@ -34,10 +35,11 @@ namespace MyRulesDotnet.Tools.Builder
             IntermediateBase = NormalizePath(command.NamedArgs["intermediate_base"]);
             BazelOutputBase = NormalizePath(command.NamedArgs["bazel_output_base"]);
             ProjectFile = NormalizePath(command.NamedArgs["project_file"]);
+            SdkRoot = NormalizePath(command.NamedArgs["sdk_root"]);
             Package = command.NamedArgs["package"];
             Workspace = command.NamedArgs["workspace"];
             Tfm = NormalizePath(command.NamedArgs["tfm"]);
-            // assumes bazel invokes actions at ExecRoot
+            // (accurately) assumes bazel invokes actions at ExecRoot
             ExecRoot = Directory.GetCurrentDirectory();
             ChildCommand = command.PassThroughArgs;
             if (command.NamedArgs.TryGetValue(OutputDirectoryKey, out var outputDirectory))
@@ -49,17 +51,17 @@ namespace MyRulesDotnet.Tools.Builder
         private void Validate()
         {
             if (!IntermediateBase.EndsWith("obj"))
-                Program.Fail($"Refusing to process unexpected directory {IntermediateBase}");
+                Fail($"Refusing to process unexpected directory {IntermediateBase}");
 
-            if (Program.DebugEnabled)
+            if (DebugEnabled)
             {
-                Program.Debug(Directory.GetCurrentDirectory());
+                Debug(Directory.GetCurrentDirectory());
                 foreach (var entry in Directory.EnumerateDirectories("."))
                     Console.WriteLine(entry);
             }
 
             if (!ExecRoot.StartsWith(BazelOutputBase))
-                Program.Fail($"Refusing to process trim_path {BazelOutputBase} that is not a prefix of" +
+                Fail($"Refusing to process trim_path {BazelOutputBase} that is not a prefix of" +
                      $" cwd {ExecRoot}");
 
             Suffix = ExecRoot[BazelOutputBase.Length..];
@@ -79,5 +81,6 @@ namespace MyRulesDotnet.Tools.Builder
         public string Suffix { get; set; }
         public string ExecRoot { get; set; }
         public string OutputDirectory { get; set; }
+        public string SdkRoot { get; set; }
     }
 }

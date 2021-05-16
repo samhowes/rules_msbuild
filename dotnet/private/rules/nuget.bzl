@@ -19,7 +19,7 @@ def _nuget_import_impl(ctx):
 
     return [NuGetPackageInfo(
         name = ctx.attr.name,
-        frameworks = struct(**tfms),
+        frameworks = tfms,
     )]
 
 def _nuget_package_version_impl(ctx):
@@ -35,7 +35,7 @@ def _nuget_filegroup_impl(ctx):
     files = [version.all_files]
     for target in ctx.attr.deps:
         pkg = target[NuGetPackageInfo]
-        group = getattr(pkg.frameworks, tfm, None)
+        group = pkg.frameworks.get(tfm, None)
         if group == None:
             fail("Package {} has not been restored for target framework {}.".format(target, tfm))
 

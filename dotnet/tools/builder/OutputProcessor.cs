@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
+using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
 namespace MyRulesDotnet.Tools.Builder
 {
@@ -18,12 +19,12 @@ namespace MyRulesDotnet.Tools.Builder
         private const string RunfilesKey = "runfiles";
         private const string RunfilesDirectoryKey = "runfiles_directory";
 
-        private const string ExecRoot = "$exec_root$";
-        private const string OutputBase = "$output_base$";
+        private const string ExecRoot = "/$exec_root$";
+        private const string OutputBase = "/$output_base$";
 
         protected virtual void Fail(string message)
-        {
-            Program.Fail(message);
+        { 
+            BazelLogger.Fail(message);
         }
 
         public OutputProcessor(ProcessorContext context)
@@ -37,7 +38,7 @@ namespace MyRulesDotnet.Tools.Builder
             regexString = regexString.Replace(@"\\", @"\\(\\)?");
 
             _outputFileRegex = new Regex(regexString, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            Program.Debug($"Using regex: '{_outputFileRegex}'");
+            Debug($"Using regex: '{_outputFileRegex}'");
         }
 
 
@@ -47,20 +48,24 @@ namespace MyRulesDotnet.Tools.Builder
         public int PostProcess()
         {
             var exitCode = RunCommand();
-            if (exitCode != 0) return exitCode;
-
-            var outputDir = Path.Combine(_context.IntermediateBase, "processed");
-            Directory.CreateDirectory(outputDir);
-
-            ProcessFiles(_context.IntermediateBase, (info, contents) => { ProcessOutputFile(contents, info, outputDir); });
-
-            return 0;
+            return exitCode;
         }
 
         private void ProcessOutputFile(string contents, FileInfo info, string destinationDirectory)
         {
             var replaced = _outputFileRegex.Replace(contents,
-                (match) => match.Groups["exec_root"].Success ? ExecRoot : OutputBase);
+                (match) =>
+                {
+                    if (match.Groups["exec_root"].Success)
+                    {
+                        // Console.WriteLine(contents[match.Index..(match.Index + match.Value.Length + 100)]);
+                        return ExecRoot;
+                    }
+                    else
+                    {
+                        return OutputBase;
+                    }
+                });
             File.WriteAllText(info.FullName, replaced);
 
             info.MoveTo(Path.Combine(destinationDirectory, info.Name), true);
@@ -135,7 +140,8 @@ namespace MyRulesDotnet.Tools.Builder
                 var outputDir = Path.Combine(Path.GetDirectoryName(resultCache)!, "processed");
                 Directory.CreateDirectory(outputDir);
                 var info = new FileInfo(resultCache);
-                ProcessOutputFile(File.ReadAllText(resultCache), info, outputDir);
+                info.MoveTo(Path.Combine(outputDir, info.Name));
+                // ProcessOutputFile(File.ReadAllText(resultCache), info, outputDir);
                 
             }
 
@@ -184,7 +190,7 @@ namespace MyRulesDotnet.Tools.Builder
         {
             foreach (var info in new DirectoryInfo(directoryPath).GetFiles())
             {
-                Program.Debug($"Processing file: {info}");
+                Debug($"Processing file: {info}");
                 // assumes buffering the whole file into memory is okay. This should be a safe assumption. 
                 // might be better to make sure we don't open a file we aren't supposed to.
                 try
@@ -201,50 +207,8 @@ namespace MyRulesDotnet.Tools.Builder
         
         protected virtual int RunCommand()
         {
-            // var sandboxBase = Path.GetDirectoryName(Path.GetDirectoryName(_context.ExecRoot));
-            //
-            // var document = new XDocument(
-            //     new XElement("Project",
-            //         new XElement("PropertyGroup", 
-            //             new XElement("PathMap", $"{_context.BazelOutputBase}={sandboxBase}"),
-            //             // new XElement("PathMap", $"{sandboxBase}={ _context.BazelOutputBase}"),
-            //             new XElement("ContinuousIntegrationBuild", $"true")),
-            //         
-            //         new XElement("ItemGroup",
-            //             new XElement("SourceRoot",
-            //                 new XAttribute("Include", "$(MSBuildStartupDirectory)/"))))
-            //     );
-            //
-            // var outputPath = Path.Combine(Path.GetDirectoryName(_context.ProjectFile), "Directory.build.props");
-            // using (var writer = new XmlTextWriter(outputPath, Encoding.UTF8))
-            // {
-            //     writer.Formatting = Formatting.Indented;
-            //     document.WriteTo(writer);
-            // }
-            
-            using var child = new Process
-            {
-                StartInfo =
-                {
-                    FileName = _context.ChildCommand[0]
-                }
-            };
-            Program.Debug("Executing: " + string.Join(" ", _context.ChildCommand));
-            foreach (var arg in _context.ChildCommand[1..])
-                child.StartInfo.ArgumentList.Add(arg);
-            
-            child.StartInfo.ArgumentList.Add("-outputResultsCache:" + _context.ProjectFile + ".cache");
-            child.StartInfo.UseShellExecute = false;
-
-            // inherit all the streams from this current process
-            child.StartInfo.RedirectStandardInput = false;
-            child.StartInfo.RedirectStandardOutput = false;
-            child.StartInfo.RedirectStandardError = false;
-
-            if (!child.Start())
-                Fail("Failed to start child.");
-            child.WaitForExit();
-            return child.ExitCode;
+            var builder = new Builder(_context);
+            return builder.Build();
         }
     }
 }

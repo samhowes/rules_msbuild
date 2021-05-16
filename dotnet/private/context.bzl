@@ -56,6 +56,7 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         # todo(73) remove this
         is_precise = True if toolchain == None else False,
         implicit_deps = implicit_deps,
+        tfm_deps = sdk.config.tfm_mapping[tfm].implicit_deps,
         is_test = is_test,
         intermediate_path = INTERMEDIATE_BASE,
     )
@@ -68,7 +69,6 @@ def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
         path = paths.join(sdk_root, "dotnet" + ext),
         env = _make_env(sdk_root, os),
         builder = builder,
-        builder_output_dir = "processed",
         sdk = sdk,
         tools = [builder] if builder != None else [],
         ext = ext,
@@ -148,17 +148,20 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files, actual_target = None
 
     args = ctx.actions.args()
     inputs = []
+    cache_file = None
     if target_heuristics and dotnet.builder != None:
         intermediate_path_full = paths.join(str(proj.dirname), dotnet.config.intermediate_path)
-        processed_path = paths.join(intermediate_path_full, dotnet.builder_output_dir)
         args.add(dotnet.builder.path)
         args.add(msbuild_target)
+        cache_file = ctx.actions.declare_file(proj.basename + "." + msbuild_target + ".cache")
+        outputs.append(cache_file)
 
         # these args specify lists of files, which could get very long. We can't take advantage of
         # params files because the dotnet cli needs to execute the builder, and the dotnet cli doesn't have
         # support for params files. Instead, we'll just write our own params file manually
         builder_args = [
             ["--package", ctx.label.package],
+            ["--sdk_root", dotnet.sdk.sdk_root.path],
             ["--intermediate_base", intermediate_path_full],
             ["--tfm", dotnet.config.tfm],
             ["--bazel_output_base", dotnet.sdk.config.trim_path],
@@ -196,12 +199,12 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files, actual_target = None
     for arg in arg_list:
         args.add(arg)
 
-    return args, outputs, inputs
+    return args, outputs, inputs, cache_file
 
 def make_cmd(dotnet, project_path, msbuild_target, binlog = False, actual_target = None):
     if actual_target == None:
         actual_target = msbuild_target
-    print(project_path, msbuild_target, actual_target)
+
     args_list = [
         "msbuild",
         "/t:" + actual_target,
