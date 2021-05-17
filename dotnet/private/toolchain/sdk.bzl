@@ -31,7 +31,7 @@ def dotnet_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
 
 def _dotnet_host_sdk_impl(ctx):
     os, _ = detect_host_platform(ctx)
-    dotnet_name = "dotnet" + ("exe" if os == "windows" else "")
+    dotnet_name = "dotnet" + (".exe" if os == "windows" else "")
     dotnet_path = ctx.which(dotnet_name)
     if dotnet_path == None:
         fail("could not find {} on path".format(dotnet_name))
