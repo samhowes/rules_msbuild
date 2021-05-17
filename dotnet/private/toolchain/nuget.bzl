@@ -41,6 +41,7 @@ Definitions: (some are made up)
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "//dotnet/private/msbuild:xml.bzl",
+    "STARTUP_DIR",
     "prepare_nuget_config",
     "prepare_project_file",
 )
@@ -74,12 +75,7 @@ def _nuget_fetch_impl(ctx):
     parser_project = _copy_parser(ctx, config)
     fetch_project, tfm_projects = _generate_fetch_project(ctx, config, parser_project)
 
-    args, _ = make_cmd(
-        dotnet,
-        paths.basename(str(fetch_project)),
-        "restore",
-        True,  # todo(#51) determine when to binlog
-    )
+    args = make_cmd(paths.basename(str(fetch_project)), "restore")
     args = [dotnet.path] + args
     ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
     result = ctx.execute(
@@ -203,6 +199,7 @@ def _generate_fetch_project(ctx, config, parser_project):
             pkgs.values(),
             config.fetch_config,  # this has to be specified for _every_ project
             tfm,
+            exec_root = STARTUP_DIR,
         )
         ctx.template(
             proj,
@@ -217,6 +214,7 @@ def _generate_fetch_project(ctx, config, parser_project):
         [],
         config.fetch_config,
         None,  # no tfm for the traversal project
+        exec_root = STARTUP_DIR,
     )
     fetch_project = config.fetch_base.get_child("nuget.fetch.proj")
     ctx.template(

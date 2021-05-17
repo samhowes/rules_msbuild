@@ -23,7 +23,7 @@ still want to perform the same fundamental actions with the dotnet binary.
 
 load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
-load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "STARTUP_DIR")
+load("//dotnet/private/msbuild:xml.bzl", "EXEC_ROOT", "INTERMEDIATE_BASE")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
@@ -102,59 +102,29 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files, actual_target = None):
+def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
     """Create a command for use during the execution phase"""
-    binlog = False  # todo(#51) disable when not debugging the build
+    outputs = []  # todo(#51) disable when not debugging the build
+    binlog_path = None
     if True:
-        binlog = True
-
-    target_heuristics = True
-    if actual_target != None:
-        target_heuristics = False
-    else:
-        actual_target = msbuild_target
-
-    if target_heuristics and msbuild_target == "build":
-        # https://github.com/dotnet/msbuild/issues/5204
-        actual_target = "GetTargetFrameworks;Build;GetCopyToOutputDirectoryItems;GetNativeManifest"
-
-    arg_list, binlog_path = make_cmd(
-        dotnet,
-        proj.path,
-        msbuild_target,
-        binlog,
-        actual_target,
-    )
-
-    msbuild_properties = {
-        # we'll take care of making sure references are built, don't traverse them unnecessarily
-        "BuildProjectReferences": "false",
-        "RestoreRecursive": "false",
-    }
-
-    if target_heuristics and msbuild_target == "publish":
-        msbuild_properties = dicts.add(msbuild_properties, {
-            "PublishDir": paths.join(STARTUP_DIR, files.output_dir.path),
-            "NoBuild": "true",
-            "TreatWarningsAsErrors": "true",
-        })
-
-    for k, v in msbuild_properties.items():
-        arg_list.append("/p:{}={}".format(k, v))
-
-    outputs = []
-    if binlog_path != None:
+        binlog_path = proj.path + ".{}.binlog".format(msbuild_target)
         outputs.append(ctx.actions.declare_file(paths.basename(binlog_path)))
 
     args = ctx.actions.args()
     inputs = []
     cache_file = None
-    if target_heuristics and dotnet.builder != None:
+    if dotnet.builder == None:
+        arg_list = make_cmd(
+            proj.path,
+            msbuild_target,
+            binlog_path,
+        )
+        for arg in arg_list:
+            args.add(arg)
+    else:
         intermediate_path_full = paths.join(str(proj.dirname), dotnet.config.intermediate_path)
         args.add(dotnet.builder.path)
         args.add(msbuild_target)
-        cache_file = ctx.actions.declare_file(proj.basename + "." + msbuild_target + ".cache")
-        outputs.append(cache_file)
 
         # these args specify lists of files, which could get very long. We can't take advantage of
         # params files because the dotnet cli needs to execute the builder, and the dotnet cli doesn't have
@@ -168,6 +138,10 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files, actual_target = None
             ["--project_file", proj.path],
             ["--workspace", ctx.workspace_name],
         ]
+
+        if msbuild_target == "build":
+            cache_file = ctx.actions.declare_file(proj.basename + "." + msbuild_target + ".cache")
+            outputs.append(cache_file)
 
         if msbuild_target == "build" or msbuild_target == "publish":
             builder_args.extend([
@@ -193,29 +167,20 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files, actual_target = None
         inputs.append(params_file)
 
         args.add("@file", params_file.path)
-        args.add("--")
-        args.add(dotnet.path)
-
-    for arg in arg_list:
-        args.add(arg)
 
     return args, outputs, inputs, cache_file
 
-def make_cmd(dotnet, project_path, msbuild_target, binlog = False, actual_target = None):
-    if actual_target == None:
-        actual_target = msbuild_target
-
+def make_cmd(project_path, msbuild_target, binlog_path = None):
     args_list = [
         "msbuild",
-        "/t:" + actual_target,
+        "/t:" + msbuild_target,
         "-nologo",
+        "-verbosity:quiet",
     ]
 
     args_list.append(project_path)
 
-    binlog_path = None
-    if binlog:
-        binlog_path = project_path + ".{}.binlog".format(msbuild_target.rstrip(";"))
+    if binlog_path:
         args_list.append("-bl:{}".format(binlog_path))
 
-    return args_list, binlog_path
+    return args_list

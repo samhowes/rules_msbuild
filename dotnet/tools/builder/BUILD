@@ -23,7 +23,7 @@ exports_files(["Builder.csproj"])
 dotnet_binary(
     name = "Builder",
     srcs = glob(["*.cs"]),
-    msbuild_properties = {"DisableMSBuildAssemblyCopyCheck":"true"},
+    msbuild_properties = {"DisableMSBuildAssemblyCopyCheck": "true"},
     sdk = "Microsoft.NET.Sdk",
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],

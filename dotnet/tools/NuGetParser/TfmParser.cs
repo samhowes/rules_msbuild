@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Xml.Linq;
-using MyRulesDotnet.Tools.NuGetParser;
 using static MyRulesDotnet.Tools.NuGetParser.BazelLogger;
 using static NuGetParser.Package;
 
@@ -12,7 +11,7 @@ namespace NuGetParser
 {
     public class TfmParser
     {
-        private readonly string _tfm;
+        public readonly string Tfm;
         private readonly Parser _parent;
         private readonly Dictionary<string, PackageVersion> _unusedDeps;
         private readonly Dictionary<string, List<FrameworkDependency>> _missingDeps;
@@ -21,13 +20,13 @@ namespace NuGetParser
 
         public TfmParser(string tfm, Parser parent)
         {
-            _tfm = tfm;
+            Tfm = tfm;
             _parent = parent;
             _unusedDeps = PackageDict<PackageVersion>();
             _missingDeps = PackageDict<List<FrameworkDependency>>();
         }
 
-        public bool ProcessPackages(string projectPath)
+        public bool LoadRequestedPackages(string projectPath)
         {
             var project = XDocument.Load(projectPath);
             foreach (var reference in project.Descendants("PackageReference"))
@@ -37,9 +36,14 @@ namespace NuGetParser
                 AddPackage(packageName, versionString);
             }
 
+            return true;
+        }
+        
+        public bool ProcessPackages()
+        {
             _assets =
                 JsonSerializer.Deserialize<JsonElement>(
-                    File.ReadAllText(Path.Combine(_parent.IntermediateBase, _tfm,
+                    File.ReadAllText(Path.Combine(_parent.IntermediateBase, Tfm,
                         "project.assets.json")));
 
             if (!_assets.GetRequired("version", out var version)) return false;
@@ -61,7 +65,7 @@ namespace NuGetParser
             var tfmPackagesJson = assets.GetProperty("targets").EnumerateObject().Single().Value;
             if (!assets.GetRequired("libraries", out var libraries)) return false;
 
-            Debug(_tfm);
+            Debug(Tfm);
             foreach (var desc in tfmPackagesJson.EnumerateObject())
             {
                 if (!Parse(desc, libraries)) return false;
@@ -70,7 +74,7 @@ namespace NuGetParser
             if (_unusedDeps.Any())
             {
                 Console.WriteLine(
-                    $"Found unused deps for target framework {_tfm}: {string.Join(";", _unusedDeps.Keys)}");
+                    $"Found unused deps for target framework {Tfm}: {string.Join(";", _unusedDeps.Keys)}");
                 return false;
             }
 
@@ -107,7 +111,7 @@ namespace NuGetParser
         public bool Parse(JsonProperty desc, JsonElement libraries)
         {
             var canonicalId = desc.Name;
-            VerboseEnabled = canonicalId.StartsWith("Microsoft.Build");
+            
             var type = desc.Value.GetProperty("type");
             if (type.GetString() != "package")
             {
@@ -126,10 +130,10 @@ namespace NuGetParser
                 return v;
             });
             version.CanonicalId = canonicalId;
-            var tfmDep = package.Frameworks.GetOrAdd(_tfm, () =>
+            var tfmDep = package.Frameworks.GetOrAdd(Tfm, () =>
             {
                 transitive = true;
-                return new FrameworkDependency(_tfm, version.String);
+                return new FrameworkDependency(Tfm, version.String);
             });
 
             Verbose(version.CanonicalId);
@@ -214,12 +218,12 @@ namespace NuGetParser
         private bool RecordTfmInfo(JsonElement assets)
         {
             var anchor = assets;
-            foreach (var part in new[] {"project", "frameworks", _tfm})
+            foreach (var part in new[] {"project", "frameworks", Tfm})
             {
                 if (!anchor.GetRequired(part, out anchor)) return false;
             }
 
-            var info = new TfmInfo(_tfm);
+            var info = new TfmInfo(Tfm);
 
             PackageVersion AddImplicitDep(JsonElement dep, string name)
             {
@@ -258,7 +262,7 @@ namespace NuGetParser
                 info.Tfn = tfn;
             }
 
-            _parent.Tfms[_tfm] = info;
+            _parent.Tfms[Tfm] = info;
             return true;
         }
 
@@ -267,7 +271,7 @@ namespace NuGetParser
             var package = GetOrAddPackage(name, out _);
             var pkgVersion = new PackageVersion(package, version);
             package.Versions[version] = pkgVersion;
-            package.Frameworks.GetOrAdd(_tfm, () => new FrameworkDependency(_tfm, version));
+            package.Frameworks.GetOrAdd(Tfm, () => new FrameworkDependency(Tfm, version));
             return (package, pkgVersion);
         }
 

@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetPackageInfo")
-load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "make_project_file")
+load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "STARTUP_DIR", "make_project_file")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load(
     "//dotnet/private:context.bzl",
@@ -104,13 +104,15 @@ def emit_tool_binary(ctx, dotnet):
     """
     output_dir = ctx.actions.declare_directory(paths.join(dotnet.config.output_dir_name, "publish"))
     dep_files = process_deps(dotnet, ctx.attr.deps)
-    project_file = make_project_file(ctx, dotnet, dep_files)
+    project_file = make_project_file(ctx, dotnet, dep_files, STARTUP_DIR)
     assembly = ctx.actions.declare_file(paths.join(output_dir.short_path, ctx.attr.name + ".dll"))
     files = struct(
         output_dir = output_dir,
     )
 
-    args, cmd_outputs, _, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files, actual_target = "restore;build;publish")
+    args, cmd_outputs, _, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files)
+
+    args.add("-restore")
 
     direct_inputs = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config]
     source_project_file = getattr(ctx.file, "project_file", None)
@@ -118,7 +120,7 @@ def emit_tool_binary(ctx, dotnet):
         direct_inputs.append(source_project_file)
     inputs = depset(
         direct = direct_inputs,
-        transitive = [dep_files.inputs, dotnet.sdk.init_files, dotnet.sdk.packs],
+        transitive = [dep_files.build, dotnet.sdk.init_files, dotnet.sdk.packs],
     )
     outputs = [output_dir, assembly] + cmd_outputs
 
@@ -136,7 +138,7 @@ def emit_tool_binary(ctx, dotnet):
         project_file = project_file,
         runtime = depset(outputs),
         build = depset(),
-        package_runtimes = dep_files.package_runtimes,
+        restore = depset(),
         target_framework = ctx.attr.target_framework,
     ), outputs + [project_file]
 
@@ -159,7 +161,7 @@ def emit_assembly(ctx, dotnet):
     dep_files = process_deps(dotnet, ctx.attr.deps)
     project_file = make_project_file(ctx, dotnet, dep_files)
 
-    restore_cache, restore_outputs = restore(ctx, dotnet, project_file, dep_files)
+    restore_outputs = restore(ctx, dotnet, project_file, dep_files)
     assembly, runtime, private = _declare_assembly_files(ctx, dotnet.config.output_dir_name, dotnet.config.is_executable)
     files = struct(
         output_dir = output_dir,
@@ -174,17 +176,12 @@ def emit_assembly(ctx, dotnet):
     ### collect build inputs/outputs
     inputs = depset(
         direct = ctx.files.srcs + content + [project_file] + restore_outputs + cmd_inputs,
-        transitive = [dep_files.inputs, dep_files.build_caches, sdk.init_files],
+        transitive = [dep_files.build, sdk.init_files],
     )
-
-    copied_dep_files = [
-        ctx.actions.declare_file(f.basename, sibling = assembly)
-        for f in dep_files.copied_files.to_list()
-    ]
 
     intermediate_dir = ctx.actions.declare_directory(paths.join(dotnet.config.intermediate_path, dotnet.config.tfm))
 
-    outputs = runtime + private + copied_dep_files + cmd_outputs + [intermediate_dir]
+    outputs = runtime + private + cmd_outputs + [intermediate_dir]
 
     for f in [output_dir]:
         if f != None:
@@ -200,8 +197,7 @@ def emit_assembly(ctx, dotnet):
         tools = dotnet.tools,
     )
 
-    build_files = runtime + [project_file]
-    runtime_files = runtime + copied_dep_files
+    runtime_files = runtime
     if getattr(dotnet.config, "is_executable", False):
         runtime_files += private
 
@@ -210,11 +206,16 @@ def emit_assembly(ctx, dotnet):
         intermediate_dir = intermediate_dir,
         output_dir = output_dir,
         project_file = project_file,
-        restore_cache = restore_cache,
         build_cache = build_cache,
-        runtime = depset(runtime + copied_dep_files),
-        package_runtimes = dep_files.package_runtimes,
-        build = depset(build_files, transitive = [dep_files.inputs]),
+        runtime = depset(runtime),
+        build = depset(
+            runtime + [project_file, build_cache],
+            transitive = [dep_files.build],
+        ),
+        restore = depset(
+            [project_file],
+            transitive = [dep_files.restore],
+        ),
         target_framework = ctx.attr.target_framework,
         data = files.data,
         content = files.content,
@@ -253,48 +254,42 @@ def process_deps(dotnet, deps):
         copy_packages: Whether to copy package files to the output directory. NuGet packages are only copied for
             executables.
     Returns:
-        references, packages, copied_files
+        references, packages
     """
 
     tfm = dotnet.config.tfm
 
     references = []
     packages = []
-    package_runtimes = []
-    copied_files = []
-    restore_caches = []
-    build_caches = []
 
-    inputs = []
+    build = []
+    restore_list = []
+    common = []
     for dep in getattr(dotnet.config, "tfm_deps", []):
-        _get_nuget_files(dep, tfm, [], inputs)
+        _get_nuget_files(dep, tfm, [], common)
 
     for dep in getattr(dotnet.config, "implicit_deps", []):
-        _get_nuget_files(dep, tfm, packages, inputs)
+        _get_nuget_files(dep, tfm, packages, common)
 
     for dep in deps:
         if DotnetLibraryInfo in dep:
             info = dep[DotnetLibraryInfo]
             references.append(info.project_file)
-            copied_files.append(info.runtime)
-            inputs.append(info.build)
-            restore_caches.append(info.restore_cache)
-            build_caches.append(info.build_cache)
+            build.append(info.build)
+            restore_list.append(info.restore)
 
         elif NuGetPackageInfo in dep:
-            _get_nuget_files(dep, tfm, packages, inputs)
+            _get_nuget_files(dep, tfm, packages, common)
         else:
             fail("Unkown dependency type: {}".format(dep))
 
-    inputs.extend(copied_files)
+    build.extend(common)
+    restore_list.extend(common)
     return struct(
         references = references,
         packages = packages,
-        restore_caches = depset(restore_caches),
-        build_caches = depset(build_caches),
-        package_runtimes = depset(transitive = package_runtimes),
-        copied_files = depset(transitive = copied_files),
-        inputs = depset(transitive = inputs),
+        build = depset(transitive = build),
+        restore = depset(transitive = restore_list),
     )
 
 def _get_nuget_files(dep, tfm, packages, inputs):

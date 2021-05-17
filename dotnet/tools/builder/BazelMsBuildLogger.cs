@@ -7,13 +7,26 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class BazelMsBuildLogger : ConsoleLogger
     {
-        public BazelMsBuildLogger(string trimPath) : base(
-            LoggerVerbosity.Normal,
+        public BazelMsBuildLogger(LoggerVerbosity verbosity, string trimPath) : base(
+            verbosity,
             (m) => Console.Out.Write(m.Replace(trimPath, "")),
             SetColor,
             ResetColor)
         {
         }
+
+        public override void Initialize(IEventSource eventSource)
+        {
+            base.Initialize(eventSource);
+            eventSource.ErrorRaised += (sender, args) => HasError = true;
+        }
+        public override void Initialize(IEventSource eventSource, int nodeCount)
+        {
+            base.Initialize(eventSource, nodeCount);
+            eventSource!.ErrorRaised += (sender, args) => HasError = true;
+        }
+
+        public bool HasError { get; set; }
 
         /// <summary>
         /// Sets foreground color to color specified

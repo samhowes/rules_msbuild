@@ -15,9 +15,6 @@ namespace MyRulesDotnet.Tools.Builder
     {
         private readonly ProcessorContext _context;
         private Regex _outputFileRegex;
-        private const string ContentKey = "content";
-        private const string RunfilesKey = "runfiles";
-        private const string RunfilesDirectoryKey = "runfiles_directory";
 
         private const string ExecRoot = "/$exec_root$";
         private const string OutputBase = "/$output_base$";
@@ -118,12 +115,6 @@ namespace MyRulesDotnet.Tools.Builder
             var exitCode = RunCommand();
             if (exitCode != 0) return exitCode;
 
-            CopyFiles(ContentKey, _context.OutputDirectory, true);
-            if (_context.Command.NamedArgs.TryGetValue(RunfilesDirectoryKey, out var runfilesDirectory))
-            {
-                CopyFiles(RunfilesKey, Path.Combine(_context.OutputDirectory, runfilesDirectory));
-            }
-
             if (_context.Command.Action == "build")
             {
                 var intermediateDirectory = new DirectoryInfo(intermediatePath);
@@ -146,44 +137,6 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             return 0;
-        }
-
-        private void CopyFiles(string filesKey, string destinationDirectory, bool trimPackage = false)
-        {
-            if (!_context.Command.NamedArgs.TryGetValue(filesKey, out var contentListString) ||
-                contentListString == "") return;
-            var contentList = contentListString.Split(";");
-            var createdDirectories = new HashSet<string>();
-            foreach (var filePath in contentList)
-            {
-                var src = new FileInfo(filePath);
-                string destinationPath;
-                if (filePath.StartsWith("external/"))
-                {
-                    destinationPath = filePath.Substring("external/".Length);
-                }
-                else if (trimPackage && filePath.StartsWith(_context.Package))
-                {
-                    destinationPath = filePath.Substring(_context.Package.Length + 1);
-                }
-                else
-                {
-                    destinationPath = Path.Combine(_context.Workspace, filePath);
-                }
-
-                var dest = new FileInfo(Path.Combine(destinationDirectory, destinationPath));
-
-                if (!dest.Exists || src.LastWriteTime > dest.LastWriteTime)
-                {
-                    if (!createdDirectories.Contains(dest.DirectoryName))
-                    {
-                        Directory.CreateDirectory(dest.DirectoryName);
-                        createdDirectories.Add(dest.DirectoryName);
-                    }
-
-                    src.CopyTo(dest.FullName, true);
-                }
-            }
         }
 
         private void ProcessFiles(string directoryPath, Action<FileInfo, string> modifyFile)

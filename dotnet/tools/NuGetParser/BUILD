@@ -5,7 +5,7 @@ dotnet_binary(
     srcs = glob(["*.cs"]),
     msbuild_properties = {"RootNamespace": "NuGetParser"},
     sdk = "Microsoft.NET.Sdk",
-    target_framework = "netcoreapp3.1",
+    target_framework = "netcoreapp3.1",  # keep
     visibility = ["//visibility:public"],
 )
 

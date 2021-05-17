@@ -82,5 +82,8 @@ namespace MyRulesDotnet.Tools.Builder
         public string ExecRoot { get; set; }
         public string OutputDirectory { get; set; }
         public string SdkRoot { get; set; }
+        public bool DiagnosticsEnabled { get; set; }
+        // todo(#51) disable when no build diagnostics are requested
+        public bool BinlogEnabled { get; set; } = true;
     }
 }

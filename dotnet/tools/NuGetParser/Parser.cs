@@ -23,13 +23,35 @@ namespace NuGetParser
 
         public bool Parse(List<string> projects)
         {
+            var tfms = new List<TfmParser>();
+            
+            // explicitly load all requested packages first so we populate the requested name field properly
             foreach (var projectPath in projects)
             {
                 var tfm = Path.GetFileNameWithoutExtension(projectPath);
-                try
+                if (!Try(tfm, () =>
                 {
                     var parser = new TfmParser(tfm, this);
-                    if (!parser.ProcessPackages(projectPath)) return false;
+                    tfms.Add(parser);
+                    return parser.LoadRequestedPackages(projectPath);
+                })) return false;
+            }
+
+            // now load the full closure of packages
+            foreach (var tfmParser in tfms)
+            {
+                if (!Try(tfmParser.Tfm, () => tfmParser.ProcessPackages())) return false;
+            }
+
+            if (!GenerateBuildFiles()) return false;
+
+            return true;
+
+            bool Try(string tfm, Func<bool> func)
+            {
+                try
+                {
+                    return func();
                 }
                 catch (Exception ex)
                 {
@@ -38,10 +60,6 @@ namespace NuGetParser
                     return false;
                 }
             }
-
-            if (!GenerateBuildFiles()) return false;
-
-            return true;
         }
 
         private bool GenerateBuildFiles()

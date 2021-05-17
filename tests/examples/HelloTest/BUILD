@@ -25,6 +25,6 @@ build_test(
             "Microsoft.TestPlatform.CommunicationUtilities.resources.dll",
         ],
     },
-    expected_output = "%Total tests: 1\n\\s+Passed: 1",
+    expected_output = "%Passed:\\s+1",
     target = "HelloTest",
 )

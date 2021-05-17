@@ -1,7 +1,7 @@
 """Actions for dotnet restore"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private/msbuild:xml.bzl", "STARTUP_DIR", "element", "prepare_project_file")
+load("//dotnet/private/msbuild:xml.bzl", "element", "prepare_project_file")
 load("//dotnet/private:context.bzl", "make_exec_cmd")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
 
@@ -19,12 +19,12 @@ def restore(ctx, dotnet, project_file, dep_files):
     """
     outputs = _declare_files(ctx, dotnet, project_file)
 
-    args, cmd_outputs, cmd_inputs, restore_cache = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
+    args, cmd_outputs, cmd_inputs, _ = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
     outputs.extend(cmd_outputs)
 
     inputs = depset(
         direct = [project_file, dotnet.sdk.config.nuget_config] + cmd_inputs,
-        transitive = [dep_files.inputs, dep_files.restore_caches, dotnet.sdk.init_files, dotnet.sdk.packs],
+        transitive = [dep_files.restore, dotnet.sdk.init_files, dotnet.sdk.packs],
     )
 
     ctx.actions.run(
@@ -37,7 +37,7 @@ def restore(ctx, dotnet, project_file, dep_files):
         tools = dotnet.tools,
     )
 
-    return restore_cache, outputs
+    return outputs
 
 def _declare_files(ctx, dotnet, project_file):
     file_names = []

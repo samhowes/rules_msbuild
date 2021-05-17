@@ -12,7 +12,7 @@ build_test(
     name = "TransitiveTransitiveLib_test",
     expected_files = {
         "": [
-            "TransitiveTransitiveLib.csproj.cache",
+            "TransitiveTransitiveLib.csproj.build.cache",
         ],
         "netstandard2.1": [
             "TransitiveTransitiveLib.pdb",

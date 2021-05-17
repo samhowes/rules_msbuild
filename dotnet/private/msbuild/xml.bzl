@@ -6,6 +6,7 @@ load("//dotnet/private:providers.bzl", "MSBuildSdk")
 
 INTERMEDIATE_BASE = "obj"
 STARTUP_DIR = "$(MSBuildStartupDirectory)"
+EXEC_ROOT = "$(ExecRoot)"
 THIS_DIR = "$(MSBuildThisFileDirectory)"
 
 def properties(property_dict):
@@ -50,14 +51,14 @@ def import_sdk(name, version = None):
         _import_sdk(name, "targets", version),
     )
 
-def make_project_file(ctx, dotnet, dep_files):
+def make_project_file(ctx, dotnet, dep_files, exec_root = EXEC_ROOT):
     (intermediate_path, nuget_config, is_executable) = dotnet.config.intermediate_path, dotnet.sdk.config.nuget_config, dotnet.config.is_executable
     post_sdk_properties = dicts.add(getattr(ctx.attr, "msbuild_properties", {}))
     if is_executable:
         post_sdk_properties["OutputType"] = "Exe"
         post_sdk_properties["UseAppHost"] = "false"
 
-    nuget_config_path = paths.join(STARTUP_DIR, nuget_config.path)
+    nuget_config_path = paths.join(exec_root, nuget_config.path)
     pre_sdk_properties = {
         # we'll take care of making sure deps are built, no need to traverse
         "BuildProjectReferences": "false",
@@ -78,18 +79,20 @@ def make_project_file(ctx, dotnet, dep_files):
             post_sdk_properties = post_sdk_properties,
             srcs = ctx.files.srcs,
             imports = [source_project_file],
+            exec_root = exec_root,
         )
     else:
         substitutions = prepare_project_file(
             MSBuildSdk(ctx.attr.sdk, None),
             intermediate_path,
-            [paths.join(STARTUP_DIR, r.path) for r in dep_files.references],
+            [paths.join(EXEC_ROOT, r.path) for r in dep_files.references],
             dep_files.packages,
             nuget_config_path,
             tfm = ctx.attr.target_framework,
             pre_sdk_properties = pre_sdk_properties,
             post_sdk_properties = post_sdk_properties,
             srcs = ctx.files.srcs,
+            exec_root = exec_root,
         )
 
     project_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
@@ -111,7 +114,8 @@ def prepare_project_file(
         pre_sdk_properties = {},
         post_sdk_properties = {},
         srcs = [],
-        imports = []):
+        imports = [],
+        exec_root = EXEC_ROOT):
     pre_import_msbuild_properties = dicts.add(pre_sdk_properties, {
         "RestoreConfigFile": nuget_config_path,
         # this is where nuget creates project.assets.json (and other files) during a restore
@@ -132,7 +136,7 @@ def prepare_project_file(
         post_import_msbuild_properties["TargetFramework"] = tfm
 
     compile_srcs = [
-        inline_element("Compile", {"Include": paths.join(STARTUP_DIR, src.path)})
+        inline_element("Compile", {"Include": paths.join(exec_root, src.path)})
         for src in srcs
     ]
 
@@ -158,7 +162,7 @@ def prepare_project_file(
         props.append(p)
         targets.append(t)
     else:
-        props = [inline_element("Import", {"Project": paths.join(STARTUP_DIR, i.path)}) for i in imports]
+        props = [inline_element("Import", {"Project": paths.join(exec_root, i.path)}) for i in imports]
 
     sep = "\n    "
     substitutions = {
