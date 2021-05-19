@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
@@ -24,7 +25,7 @@ namespace MyRulesDotnet.Tools.Builder
         private const string ContentKey = "content";
         private const string RunfilesKey = "runfiles";
         private const string RunfilesDirectoryKey = "runfiles_directory";
-        
+
         public Builder(ProcessorContext context)
         {
             _context = context;
@@ -59,8 +60,8 @@ namespace MyRulesDotnet.Tools.Builder
                     _context.OutputDirectory);
                 Environment.SetEnvironmentVariable("PublishDir", relative);
             }
-                
-            
+
+
             var pc = ProjectCollection.GlobalProjectCollection;
 
             pc.RegisterLogger(_msbuildLog);
@@ -171,9 +172,97 @@ namespace MyRulesDotnet.Tools.Builder
                 {
                     CopyFiles(RunfilesKey, Path.Combine(_context.OutputDirectory, runfilesDirectory));
                 }
+
+                if (_action == "restore")
+                {
+                    FixRestoreOutputs();
+                }
             }
 
             return (int) overallResult;
+        }
+
+        /// <summary>
+        /// Restore writes absolute paths to project.assets.json and to .props and .targets files.
+        /// We can't have absolute paths for these, because they will be re-used in future actions in a different
+        /// sandbox or machine.
+        /// For the assets file, we assume that the only build action that is looking at the file is MSBuild building
+        /// the direct project. As such, the current directory will be the directory of this project file, so we'll
+        /// make all the paths relative to the project file.
+        /// For the xml files, we'll prepend MSBuildThisFileDirectory in case another project file is evaluating these
+        /// files.
+        /// </summary>
+        private void FixRestoreOutputs()
+        {
+            var projectDir = Path.GetDirectoryName(Path.GetFullPath(_context.ProjectFile))!;
+
+
+            var projectName = Path.GetFileName(_context.ProjectFile);
+            var obj = Path.Combine(projectDir, "obj");
+            var filesToKeep = new[] {".nuget.g.props", ".nuget.g.targets"}
+                .Select(f => projectName + f)
+                .Append("project.assets.json")
+                .Select(f => Path.Combine(obj, f))
+                .ToHashSet();
+
+            foreach (var fileName in Directory.EnumerateFiles(obj))
+            {
+                if (!filesToKeep.Contains(fileName))
+                {
+                    // just to make sure MSBuild doesn't use them
+                    File.Delete(fileName);
+                    continue;
+                }
+
+                var target = _context.BazelOutputBase;
+
+                var isJson = fileName.EndsWith("json");
+                var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
+
+                string Escape(string s) => s.Replace(@"\", @"\\");
+
+                if (needsEscaping)
+                    target = Escape(target);
+
+                var contents = File.ReadAllText(fileName);
+                using var output = new StreamWriter(File.Open(fileName, FileMode.Truncate));
+                var index = 0;
+                for (;;)
+                {
+                    var thisIndex = contents.IndexOf(target, index, StringComparison.Ordinal);
+                    if (thisIndex == -1) break;
+                    output.Write(contents[index..thisIndex]);
+
+                    if (contents[thisIndex..(thisIndex + "sandbox".Length)] == "sandbox")
+                        thisIndex = contents.IndexOf("execroot", index, StringComparison.Ordinal);
+                    
+                    var endOfPath = contents.IndexOfAny(new[] {'"', ';', '<'}, thisIndex);
+                
+                    index = endOfPath;
+                
+                    var path = contents[thisIndex..endOfPath];
+                
+                    if (needsEscaping)
+                        path = path.Replace(@"\\", @"\");
+                
+                    path = Path.GetRelativePath(projectDir, path);
+                    if (needsEscaping)
+                    {
+                        path = Escape(path);
+                    }
+                    
+                    if (!isJson)
+                    {
+                        path = Path.Combine("$(MSBuildThisFileDirectory)", 
+                            "..", // one more to get out of the obj directory 
+                            path);
+                    }
+                    output.Write(path);
+                }
+                
+                output.Write(contents[index..]);
+                output.Flush();
+            }
         }
 
 
