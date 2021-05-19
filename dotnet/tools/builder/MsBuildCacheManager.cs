@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -15,6 +16,8 @@ namespace MyRulesDotnet.Tools.Builder
         private readonly string _execRoot;
         private readonly BuildManager _buildManager;
         private readonly BuildManagerFields _fields;
+
+        private static readonly string Root = Path.DirectorySeparatorChar == '\\' ? "C:\\" : "/";
 
         public MsBuildCacheManager(BuildManager buildManager, string execRoot)
         {
@@ -35,8 +38,8 @@ namespace MyRulesDotnet.Tools.Builder
 
         private void FixPaths(bool isBeforeBuild)
         {
-            var target = isBeforeBuild ? "/$exec_root" : _execRoot;
-            var replacement = isBeforeBuild ? _execRoot : "/$exec_root";
+            var target = isBeforeBuild ? $"{Root}$exec_root" : _execRoot;
+            var replacement = isBeforeBuild ? _execRoot : $"{Root}$exec_root";
 
             FixConfigResults(isBeforeBuild, target, replacement);
             FixBuildResults(isBeforeBuild, target, replacement);
