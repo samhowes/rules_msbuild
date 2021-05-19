@@ -9,7 +9,6 @@ dotnet_test(
     visibility = ["//visibility:public"],
     deps = [
         "//dotnet/tools/runfiles",  # keep
-        "@dotnet_sdk//:builder",  # keep
         "@nuget//FluentAssertions",
         "@nuget//Microsoft.NET.Test.Sdk",
         "@nuget//xunit",

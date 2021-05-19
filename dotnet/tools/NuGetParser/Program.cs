@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -10,10 +11,9 @@ namespace NuGetParser
     {
         static int Main(string[] args)
         {
-            string sdkRoot = "";
             string intermediateBase = "";
             string packagesFolder = "";
-            List<string> projects = null;
+            List<string>? projects = null;
             var dict = new Dictionary<string, string>();
             for (var i = 0; i < args.Length; i++)
             {
@@ -24,7 +24,6 @@ namespace NuGetParser
                     switch (name.ToLower())
                     {
                         case "dotnet_path":
-                            sdkRoot = Path.GetDirectoryName(args[i + 1]);
                             break;
                         case "intermediate_base":
                             intermediateBase = args[i + 1];
@@ -44,7 +43,7 @@ namespace NuGetParser
                 projects = args[i..].ToList();
                 break;
             }
-            Console.WriteLine(string.Join(",", projects));
+            Console.WriteLine(string.Join(",", projects!));
 
             var parser = new Parser(intermediateBase, packagesFolder, dict);
             
@@ -53,11 +52,13 @@ namespace NuGetParser
         }
     }
 
-    internal class TfmInfo
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    public class TfmInfo
     {
         public string Tfm { get; }
         public List<Package> ImplicitDeps { get; } = new List<Package>();
-        public string Tfn { get; set; }
+        public string? Tfn { get; set; }
 
         public TfmInfo(string tfm)
         {

@@ -11,7 +11,6 @@ namespace NuGetParser
             if (!e.TryGetProperty(name, out value))
             {
                 throw new Exception($"Missing required property: {name}");
-                return false;
             }
 
             return true;

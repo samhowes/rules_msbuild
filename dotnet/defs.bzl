@@ -36,6 +36,7 @@ load(
     "//dotnet/private/rules:nuget.bzl",
     _nuget_filegroup = "nuget_filegroup",
     _nuget_import = "nuget_import",
+    _nuget_package_version = "nuget_package_version",
 )
 load(
     "//dotnet/private/toolchain:nuget.bzl",
@@ -50,6 +51,7 @@ dotnet_config = _dotnet_config
 nuget_fetch = _nuget_fetch
 nuget_import = _nuget_import
 nuget_filegroup = _nuget_filegroup
+nuget_package_version = _nuget_package_version
 
 DotnetSdkInfo = _DotnetSdkInfo
 DotnetLibraryInfo = _DotnetLibraryInfo

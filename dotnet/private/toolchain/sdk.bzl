@@ -4,7 +4,7 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
 load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
 load("//dotnet/private/toolchain:nuget.bzl", "NUGET_BUILD_CONFIG")
-load("//dotnet/private/toolchain:common.bzl", "detect_host_platform")
+load("//dotnet/private/toolchain:common.bzl", "BUILDER_PACKAGES", "default_tfm", "detect_host_platform")
 
 SDK_NAME = "dotnet_sdk"
 
@@ -31,7 +31,7 @@ def dotnet_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
 
 def _dotnet_host_sdk_impl(ctx):
     os, _ = detect_host_platform(ctx)
-    dotnet_name = "dotnet" + ("exe" if os == "windows" else "")
+    dotnet_name = "dotnet" + (".exe" if os == "windows" else "")
     dotnet_path = ctx.which(dotnet_name)
     if dotnet_path == None:
         fail("could not find {} on path".format(dotnet_name))
@@ -196,6 +196,11 @@ def _sdk_build_file(ctx, version):
    srcs = ["dotnet.exe"],
 )""")
 
+    builder_deps = [
+        "@{}//{}".format(ctx.attr.nuget_repo, k)
+        for k in BUILDER_PACKAGES.keys()
+    ]
+    builder_tfm = default_tfm(version)
     ctx.template(
         "BUILD.bazel",
         Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),
@@ -223,6 +228,8 @@ def _sdk_build_file(ctx, version):
             "{init_files}": "\",\n        \"".join(init_files),
             "{tfm_mapping}": "@{}//:tfm_mapping".format(ctx.attr.nuget_repo),
             "{nuget_repo}": ctx.attr.nuget_repo,
+            "{builder_deps}": "\",\n        \"".join(builder_deps),
+            "{builder_tfm}": builder_tfm,
         },
     )
 

@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetPackageInfo")
-load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "make_project_file")
+load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "STARTUP_DIR", "make_project_file")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load(
     "//dotnet/private:context.bzl",
@@ -94,6 +94,54 @@ def _format_launcher_args(args, bin_launcher):
     else:
         return "*~*".join(args)
 
+def emit_tool_binary(ctx, dotnet):
+    """Create a binary used for the dotnet toolchain itself.
+
+    This implementation assumes that no other targets will depend on this binary for anything other than executing as a
+    tool. Since this is part of the toolchain itself, it can't execute a multiphase restore, build, publish,
+    because bazel's sandboxing/remote execution will cause msbuild to not be able to find reference paths between
+    actions. So instead, we execute all msbuild steps in a single action via invoking the publish target directly.
+    """
+    output_dir = ctx.actions.declare_directory(paths.join(dotnet.config.output_dir_name, "publish"))
+    dep_files = process_deps(dotnet, ctx.attr.deps)
+    project_file = make_project_file(ctx, dotnet, dep_files, STARTUP_DIR)
+    assembly = ctx.actions.declare_file(paths.join(output_dir.short_path, ctx.attr.name + ".dll"))
+    files = struct(
+        output_dir = output_dir,
+    )
+
+    args, cmd_outputs, _, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files)
+
+    args.add("-restore")
+
+    direct_inputs = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config]
+    source_project_file = getattr(ctx.file, "project_file", None)
+    if source_project_file != None:
+        direct_inputs.append(source_project_file)
+    inputs = depset(
+        direct = direct_inputs,
+        transitive = [dep_files.build, dotnet.sdk.init_files, dotnet.sdk.packs],
+    )
+    outputs = [output_dir, assembly] + cmd_outputs
+
+    ctx.actions.run(
+        mnemonic = "DotnetBuild",
+        inputs = inputs,
+        outputs = outputs,
+        executable = dotnet.sdk.dotnet,
+        arguments = [args],
+        env = dotnet.env,
+    )
+    return DotnetLibraryInfo(
+        assembly = assembly,
+        output_dir = output_dir,
+        project_file = project_file,
+        runtime = depset(outputs),
+        build = depset(),
+        restore = depset(),
+        target_framework = ctx.attr.target_framework,
+    ), outputs + [project_file]
+
 def emit_assembly(ctx, dotnet):
     """Compile a dotnet assembly with the provided project template
 
@@ -103,7 +151,6 @@ def emit_assembly(ctx, dotnet):
     Returns:
         Tuple: the emitted assembly and all outputs
     """
-    compiliation_mode = ctx.var["COMPILATION_MODE"]
     sdk = dotnet.sdk
 
     output_dir = None
@@ -111,9 +158,8 @@ def emit_assembly(ctx, dotnet):
         output_dir = ctx.actions.declare_directory(dotnet.config.output_dir_name)
 
     ### declare and prepare all the build inputs/outputs
-    deps = dotnet.config.implicit_deps + getattr(ctx.attr, "deps", [])  # dotnet_tool_binary can't have any deps
-    dep_files = process_deps(dotnet, deps)
-    project_file = make_project_file(ctx, dotnet.config.intermediate_path, sdk.config.nuget_config, dotnet.config.is_executable, dep_files)
+    dep_files = process_deps(dotnet, ctx.attr.deps)
+    project_file = make_project_file(ctx, dotnet, dep_files)
 
     restore_outputs = restore(ctx, dotnet, project_file, dep_files)
     assembly, runtime, private = _declare_assembly_files(ctx, dotnet.config.output_dir_name, dotnet.config.is_executable)
@@ -123,26 +169,23 @@ def emit_assembly(ctx, dotnet):
         content = depset(getattr(ctx.files, "content", [])),
         data = depset(getattr(ctx.files, "data", [])),
     )
-    args, cmd_outputs, cmd_inputs = make_exec_cmd(ctx, dotnet, "build", project_file, files)
+    args, cmd_outputs, cmd_inputs, build_cache = make_exec_cmd(ctx, dotnet, "build", project_file, files)
 
     content = getattr(ctx.files, "content", [])
 
     ### collect build inputs/outputs
     inputs = depset(
         direct = ctx.files.srcs + content + [project_file] + restore_outputs + cmd_inputs,
-        transitive = [dep_files.inputs, sdk.init_files],
+        transitive = [dep_files.build, sdk.init_files],
     )
-
-    copied_dep_files = [
-        ctx.actions.declare_file(f.basename, sibling = assembly)
-        for f in dep_files.copied_files.to_list()
-    ]
 
     intermediate_dir = ctx.actions.declare_directory(paths.join(dotnet.config.intermediate_path, dotnet.config.tfm))
 
-    outputs = runtime + private + copied_dep_files + cmd_outputs + [intermediate_dir]
-    if output_dir != None:
-        outputs.append(output_dir)
+    outputs = runtime + private + cmd_outputs + [intermediate_dir]
+
+    for f in [output_dir]:
+        if f != None:
+            outputs.append(f)
 
     ctx.actions.run(
         mnemonic = "DotnetBuild",
@@ -154,14 +197,25 @@ def emit_assembly(ctx, dotnet):
         tools = dotnet.tools,
     )
 
+    runtime_files = runtime
+    if getattr(dotnet.config, "is_executable", False):
+        runtime_files += private
+
     info = DotnetLibraryInfo(
         assembly = assembly,
         intermediate_dir = intermediate_dir,
         output_dir = output_dir,
         project_file = project_file,
-        runtime = depset(runtime + copied_dep_files),
-        package_runtimes = dep_files.package_runtimes,
-        build = depset(runtime + [project_file], transitive = [dep_files.inputs]),
+        build_cache = build_cache,
+        runtime = depset(runtime),
+        build = depset(
+            runtime + [project_file, build_cache],
+            transitive = [dep_files.build],
+        ),
+        restore = depset(
+            [project_file],
+            transitive = [dep_files.restore],
+        ),
         target_framework = ctx.attr.target_framework,
         data = files.data,
         content = files.content,
@@ -200,53 +254,54 @@ def process_deps(dotnet, deps):
         copy_packages: Whether to copy package files to the output directory. NuGet packages are only copied for
             executables.
     Returns:
-        references, packages, copied_files
+        references, packages
     """
 
     tfm = dotnet.config.tfm
 
     references = []
     packages = []
-    package_runtimes = []
-    copied_files = []
 
-    implicit_deps = dotnet.sdk.config.tfm_mapping[dotnet.config.tfm].implicit_deps
-    inputs = []
-    for dep in implicit_deps:
-        _get_nuget_files(dep, tfm, [], inputs)
+    build = []
+    restore_list = []
+    common = []
+    for dep in getattr(dotnet.config, "tfm_deps", []):
+        _get_nuget_files(dep, tfm, [], common)
+
+    for dep in getattr(dotnet.config, "implicit_deps", []):
+        _get_nuget_files(dep, tfm, packages, common)
 
     for dep in deps:
         if DotnetLibraryInfo in dep:
             info = dep[DotnetLibraryInfo]
             references.append(info.project_file)
-            copied_files.append(info.runtime)
-            inputs.append(info.build)
+            build.append(info.build)
+            restore_list.append(info.restore)
 
         elif NuGetPackageInfo in dep:
-            _get_nuget_files(dep, tfm, packages, inputs)
+            _get_nuget_files(dep, tfm, packages, common)
         else:
             fail("Unkown dependency type: {}".format(dep))
 
-    inputs.extend(copied_files)
+    build.extend(common)
+    restore_list.extend(common)
     return struct(
         references = references,
         packages = packages,
-        package_runtimes = depset(transitive = package_runtimes),
-        copied_files = depset(transitive = copied_files),
-        inputs = depset(transitive = inputs),
+        build = depset(transitive = build),
+        restore = depset(transitive = restore_list),
     )
 
 def _get_nuget_files(dep, tfm, packages, inputs):
     pkg = dep[NuGetPackageInfo]
-    framework_info = getattr(pkg.frameworks, tfm, None)
+    framework_info = pkg.frameworks.get(tfm, None)
     if framework_info == None:
         fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
             tfm,
-            pkg.name + ":" + pkg.version,
-            ", ".join([k for k, v in pkg.frameworks]),
+            pkg.name,
+            ", ".join([k for k, v in pkg.frameworks.items()]),
         ))
-    packages.append(pkg)
+    packages.append(struct(name = pkg.name, version = framework_info.version))
 
     # todo(#67) restrict these inputs
-    inputs.append(pkg.all_files)
     inputs.append(framework_info.all_dep_files)

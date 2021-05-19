@@ -1,3 +1,16 @@
+# keep in sync with //dotnet/tools/builder/builder.csproj
+BUILDER_PACKAGES = {
+    "Microsoft.Build.Locator": "1.4.1",
+    "Microsoft.Build": "16.9.0",
+    "Microsoft.Build.Utilities.Core": "16.9.0",
+}
+
+def default_tfm(sdk_version):
+    default_tfm_version = sdk_version.rsplit(".", 1)[0]
+    major_version = int(default_tfm_version.split(".")[0])
+    default_tfm = ("netcoreapp" if major_version < 5 else "net") + default_tfm_version
+    return default_tfm
+
 def detect_host_platform(ctx):
     """Detects a host os and architecture from a repository_ctx."""
     if ctx.os.name == "linux":
