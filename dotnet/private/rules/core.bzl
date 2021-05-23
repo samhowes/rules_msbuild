@@ -105,6 +105,10 @@ dotnet_tool_binary = rule(
         "deps": attr.label_list(
             providers = [NuGetPackageInfo],
         ),
+        "_project_template": attr.label(
+            default = Label("//dotnet/private/msbuild:project.tpl.proj"),
+            allow_single_file = True,
+        ),
     }),
     # this is compiling a dotnet executable, but it'll be a framework dependent executable, so bazel won't be able
     # to execute it directly

@@ -1,6 +1,15 @@
 """Dotnet Providers"""
 
-# See dotnet/providers.md#DotnetLibraryInfo for full documentation.
+DotnetRestoreInfo = provider(
+    doc = "todo",
+    fields = {
+        "source_project_file": "",
+        "generated_project_file": "",
+        "dep_files": "",
+        "intermediate_dir": "",
+    },
+)
+
 DotnetLibraryInfo = provider(
     doc = "Contains information about a Dotnet library",
     fields = {

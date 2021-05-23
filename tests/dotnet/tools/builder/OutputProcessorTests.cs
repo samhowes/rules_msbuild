@@ -10,7 +10,7 @@ namespace MyRulesDotnet.Tests.Tools
 {
     internal class FakeCommandOutputProcessor : OutputProcessor
     {
-        public FakeCommandOutputProcessor(ProcessorContext context) : base(context)
+        public FakeCommandOutputProcessor(BuildContext context) : base(context)
         {
         }
 
@@ -31,7 +31,7 @@ namespace MyRulesDotnet.Tests.Tools
         private readonly string _outputBase = @"C:\foo\bar"; 
         private readonly string _assetsFilepathBase;
         private readonly string _testDir;
-        private readonly ProcessorContext _context;
+        private readonly BuildContext _context;
         private readonly OutputProcessor _processor;
         private string _contents;
 
@@ -47,7 +47,7 @@ namespace MyRulesDotnet.Tests.Tools
             {
 
             };
-            _context = new ProcessorContext()
+            _context = new BuildContext()
             {
                 Command = {},
                 IntermediateBase = _testDir,

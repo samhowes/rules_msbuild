@@ -4,7 +4,7 @@ using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
 namespace MyRulesDotnet.Tools.Builder
 {
-    public class ProcessorContext
+    public class BuildContext
     {
         public Command Command { get; }
 
@@ -22,37 +22,42 @@ namespace MyRulesDotnet.Tools.Builder
 
         // for testing
 
-        public ProcessorContext()
+        public BuildContext()
         {
             Command = new Command();
         }
 
-        public ProcessorContext(Command command)
+        public BuildContext(Command command)
         {
             Command = command;
 
             _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
-            IntermediateBase = NormalizePath(command.NamedArgs["intermediate_base"]);
             BazelOutputBase = NormalizePath(command.NamedArgs["bazel_output_base"]);
-            ProjectFile = NormalizePath(command.NamedArgs["project_file"]);
+            GeneratedProjectFile = NormalizePath(command.NamedArgs["generated_project_file"]);
+            SourceProjectFile = NormalizePath(command.NamedArgs["source_project_file"]);
             SdkRoot = NormalizePath(command.NamedArgs["sdk_root"]);
+            Tfm = NormalizePath(command.NamedArgs["tfm"]);
+            
+            // these may not be necessary
             Package = command.NamedArgs["package"];
             Workspace = command.NamedArgs["workspace"];
-            Tfm = NormalizePath(command.NamedArgs["tfm"]);
+            
             // (accurately) assumes bazel invokes actions at ExecRoot
             ExecRoot = Directory.GetCurrentDirectory();
-            ChildCommand = command.PassThroughArgs;
-            if (command.NamedArgs.TryGetValue(OutputDirectoryKey, out var outputDirectory))
-                OutputDirectory = outputDirectory;
             
             Validate();
+            
+            ProjectDirectory = Path.GetDirectoryName(GeneratedProjectFile)!;
+            IntermediateBase = NormalizePath(Path.Combine(ProjectDirectory!, "obj"));
+            OutputDirectory = NormalizePath(Path.Combine(ProjectDirectory, Tfm));
         }
-        
+
+        public string SourceProjectFile { get; set; }
+
+        public string ProjectDirectory { get; set; }
+
         private void Validate()
         {
-            if (!IntermediateBase.EndsWith("obj"))
-                Fail($"Refusing to process unexpected directory {IntermediateBase}");
-
             if (DebugEnabled)
             {
                 Debug(Directory.GetCurrentDirectory());
@@ -73,11 +78,10 @@ namespace MyRulesDotnet.Tools.Builder
 
         public string Tfm { get; set; }
 
-        public string ProjectFile { get; set; }
+        public string GeneratedProjectFile { get; set; }
 
         public string IntermediateBase { get; set; }
         public string BazelOutputBase { get; set; }
-        public string[] ChildCommand { get; set; }
         public string Suffix { get; set; }
         public string ExecRoot { get; set; }
         public string OutputDirectory { get; set; }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
@@ -16,7 +17,7 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class Builder
     {
-        private readonly ProcessorContext _context;
+        private readonly BuildContext _context;
         private readonly string _action;
         private readonly BuildManager _buildManager;
         private readonly MsBuildCacheManager _cacheManager;
@@ -26,7 +27,7 @@ namespace MyRulesDotnet.Tools.Builder
         private const string RunfilesKey = "runfiles";
         private const string RunfilesDirectoryKey = "runfiles_directory";
 
-        public Builder(ProcessorContext context)
+        public Builder(BuildContext context)
         {
             _context = context;
             _action = _context.Command.Action.ToLower();
@@ -39,9 +40,6 @@ namespace MyRulesDotnet.Tools.Builder
 
         string CachePath(string projectPath, string? action = null)
             => ProjectPath(projectPath, action ?? _action, "cache");
-
-        string BinlogPath(string projectPath) =>
-            ProjectPath(projectPath, _action, "binlog");
 
         private string ProjectPath(params string[] parts) => string.Join(".", parts);
 
@@ -56,7 +54,7 @@ namespace MyRulesDotnet.Tools.Builder
             Environment.SetEnvironmentVariable("ExecRoot", _context.ExecRoot);
             if (_action == "publish")
             {
-                var relative = Path.GetRelativePath(Path.GetDirectoryName(_context.ProjectFile)!,
+                var relative = Path.GetRelativePath(Path.GetDirectoryName(_context.GeneratedProjectFile)!,
                     _context.OutputDirectory);
                 Environment.SetEnvironmentVariable("PublishDir", relative);
             }
@@ -68,6 +66,11 @@ namespace MyRulesDotnet.Tools.Builder
             var globalProperties = new Dictionary<string, string>
             {
                 ["ImportDirectoryBuildProps"] = "false",
+                ["EnableDefaultItems"] = "false",
+                ["EnableDefaultContentItems"] = "false",
+                ["EnableDefaultCompileItems"] = "false",
+                ["EnableDefaultEmbeddedResourceItems"] = "false",
+                ["EnableDefaultNoneItems"] = "false",
                 ["NoWarn"] = "NU1603;MSB3277",
             };
             if (_action == "restore")
@@ -86,12 +89,18 @@ namespace MyRulesDotnet.Tools.Builder
             var loggers = pc.Loggers.ToList();
             if (_context.BinlogEnabled)
             {
-                var path = BinlogPath(Path.GetFullPath(_context.ProjectFile));
+                var path = Path.Combine(_context.ProjectDirectory,
+                    Path.GetFileNameWithoutExtension(_context.GeneratedProjectFile) +
+                    "_" + _action + ".binlog");
                 Debug($"added binlog {path}");
                 loggers.Add(new BinaryLogger() {Parameters = path});
             }
 
-            var graph = new ProjectGraph(_context.ProjectFile, globalProperties, pc);
+            var generatedProject = ProjectRootElement.Create(pc, NewProjectFileOptions.None);
+            generatedProject.AddImport("$(ExecRoot)/" + _context.SourceProjectFile);
+            generatedProject.Save(_context.GeneratedProjectFile);
+
+            var graph = new ProjectGraph(_context.GeneratedProjectFile, globalProperties, pc);
 
             List<string>? inputCaches = null;
             string[] targets;
@@ -108,11 +117,11 @@ namespace MyRulesDotnet.Tools.Builder
                         "GetTargetFrameworks", "Build", "GetCopyToOutputDirectoryItems", "GetNativeManifest"
                     };
                     inputCaches = GetInputCaches(graph);
-                    outputCache = CachePath(_context.ProjectFile);
+                    outputCache = CachePath(_context.GeneratedProjectFile);
                     break;
                 case "publish":
                     targets = new[] {"Publish"};
-                    inputCaches = new List<string>() {CachePath(_context.ProjectFile, "build")};
+                    inputCaches = new List<string>() {CachePath(_context.GeneratedProjectFile, "build")};
                     skipAfterExecute = true;
                     break;
                 default:
@@ -194,26 +203,11 @@ namespace MyRulesDotnet.Tools.Builder
         /// </summary>
         private void FixRestoreOutputs()
         {
-            var projectDir = Path.GetDirectoryName(Path.GetFullPath(_context.ProjectFile))!;
-
-
-            var projectName = Path.GetFileName(_context.ProjectFile);
+            var projectDir = Path.GetDirectoryName(Path.GetFullPath(_context.GeneratedProjectFile))!;
             var obj = Path.Combine(projectDir, "obj");
-            var filesToKeep = new[] {".nuget.g.props", ".nuget.g.targets"}
-                .Select(f => projectName + f)
-                .Append("project.assets.json")
-                .Select(f => Path.Combine(obj, f))
-                .ToHashSet();
-
+            
             foreach (var fileName in Directory.EnumerateFiles(obj))
             {
-                if (!filesToKeep.Contains(fileName))
-                {
-                    // just to make sure MSBuild doesn't use them
-                    File.Delete(fileName);
-                    continue;
-                }
-
                 var target = _context.BazelOutputBase;
 
                 var isJson = fileName.EndsWith("json");

@@ -1,30 +1,24 @@
 """Actions for dotnet restore"""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private/msbuild:xml.bzl", "element", "prepare_project_file")
-load("//dotnet/private:context.bzl", "make_exec_cmd")
-load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
+load("//dotnet/private/msbuild:xml.bzl", "make_project_file")
+load("//dotnet/private:context.bzl", "make_builder_cmd")
+load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
 
-def restore(ctx, dotnet, project_file, dep_files):
-    """Emits an action for generating files necessary for a nuget restore
+def restore(ctx, dotnet):
+    source_project_file = ctx.file.project_file
+    generated_project_file = ctx.actions.declare_file(source_project_file.basename)
+    args, outputs = make_builder_cmd(ctx, dotnet, "restore", generated_project_file)
 
-    https://docs.microsoft.com/en-us/nuget/concepts/package-installation-process
+    outputs.append(generated_project_file)
+    intermediate_dir = ctx.actions.declare_directory("obj")
+    outputs.append(intermediate_dir)
 
-    Args:
-        ctx: the ctx of the dotnet rule
-        sdk: the dotnet sdk
-        packages: a list of NuGetPackageInfo providers to restore
-    Returns:
-        a list of files in the package
-    """
-    outputs = _declare_files(ctx, dotnet, project_file)
-
-    args, cmd_outputs, cmd_inputs, _ = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
-    outputs.extend(cmd_outputs)
+    dep_files = process_deps(dotnet, ctx.attr.deps)
 
     inputs = depset(
-        direct = [project_file, dotnet.sdk.config.nuget_config] + cmd_inputs,
-        transitive = [dep_files.restore, dotnet.sdk.init_files, dotnet.sdk.packs],
+        direct = [source_project_file, dotnet.sdk.config.nuget_config],
+        transitive = [dep_files, dotnet.sdk.init_files, dotnet.sdk.packs],
     )
 
     ctx.actions.run(
@@ -34,29 +28,51 @@ def restore(ctx, dotnet, project_file, dep_files):
         executable = dotnet.sdk.dotnet,
         arguments = [args],
         env = dotnet.env,
-        tools = dotnet.tools,
+        tools = [dotnet.builder],
     )
 
-    return outputs
+    return DotnetRestoreInfo(
+        source_project_file = source_project_file,
+        generated_project_file = generated_project_file,
+        dep_files = dep_files,
+        intermediate_dir = intermediate_dir,
+    ), outputs
 
-def _declare_files(ctx, dotnet, project_file):
-    file_names = []
+def process_deps(dotnet, deps):
+    tfm = dotnet.config.tfm
 
-    nuget_file_extensions = [
-        ".g.props",
-        ".g.targets",
-    ]
+    files = []
+    package_files = []
+    for dep in getattr(dotnet.config, "tfm_deps", []):
+        _get_nuget_files(dep, tfm, package_files)
 
-    for ext in nuget_file_extensions:
-        file_names.append(project_file.basename + ".nuget" + ext)
+    for dep in getattr(dotnet.config, "implicit_deps", []):
+        _get_nuget_files(dep, tfm, package_files)
 
-    file_names.extend([
-        "project.assets.json",
-    ])
+    for dep in deps:
+        if DotnetRestoreInfo in dep:
+            info = dep[DotnetRestoreInfo]
 
-    files = [
-        ctx.actions.declare_file(paths.join(dotnet.config.intermediate_path, file_name))
-        for file_name in file_names
-    ]
+            # MSBuild Restore is going to unconditionally traverse the entire project graph to
+            # compute the full transitive closure of package files for *every* project file.
+            # make sure the source_project_file (user-owned) is available as well as all package
+            # files that those project files reference.
+            files.append(info.source_project_file)
+            package_files.append(info.dep_files)
+        elif NuGetPackageInfo in dep:
+            _get_nuget_files(dep, tfm, package_files)
+        else:
+            fail("Unkown dependency type: {}".format(dep))
 
-    return files
+    return depset(files, transitive = package_files)
+
+def _get_nuget_files(dep, tfm, files):
+    pkg = dep[NuGetPackageInfo]
+    framework_info = pkg.frameworks.get(tfm, None)
+    if framework_info == None:
+        fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
+            tfm,
+            pkg.name,
+            ", ".join([k for k, v in pkg.frameworks.items()]),
+        ))
+    files.append(framework_info.all_dep_files)

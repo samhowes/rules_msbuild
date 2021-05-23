@@ -13,7 +13,7 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class OutputProcessor
     {
-        private readonly ProcessorContext _context;
+        private readonly BuildContext _context;
         private Regex _outputFileRegex;
 
         private const string ExecRoot = "/$exec_root$";
@@ -24,7 +24,7 @@ namespace MyRulesDotnet.Tools.Builder
             BazelLogger.Fail(message);
         }
 
-        public OutputProcessor(ProcessorContext context)
+        public OutputProcessor(BuildContext context)
         {
             _context = context;
             
@@ -127,7 +127,7 @@ namespace MyRulesDotnet.Tools.Builder
                     file.MoveTo(Path.Combine(processed.FullName, file.Name));
                 }
 
-                var resultCache = _context.ProjectFile + ".cache";
+                var resultCache = _context.GeneratedProjectFile + ".cache";
                 var outputDir = Path.Combine(Path.GetDirectoryName(resultCache)!, "processed");
                 Directory.CreateDirectory(outputDir);
                 var info = new FileInfo(resultCache);

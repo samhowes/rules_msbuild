@@ -1,4 +1,4 @@
 <Project>
-    <Import Project="Bazel.props"/>
-    <Import Project="extras/ide/Directory.Solution.props"/>
+<!--    <Import Project="Bazel.props"/>-->
+<!--    <Import Project="extras/ide/Directory.Solution.props"/>-->
 </Project>

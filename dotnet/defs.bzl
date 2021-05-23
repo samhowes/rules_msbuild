@@ -33,6 +33,12 @@ load(
     _dotnet_tool_binary = "dotnet_tool_binary",
 )
 load(
+    "//dotnet/private:msbuild.bzl",
+    _msbuild_binary = "msbuild_binary",
+    _msbuild_library = "msbuild_library",
+    _msbuild_test = "msbuild_test",
+)
+load(
     "//dotnet/private/rules:nuget.bzl",
     _nuget_filegroup = "nuget_filegroup",
     _nuget_import = "nuget_import",
@@ -62,3 +68,7 @@ dotnet_binary = _dotnet_binary
 dotnet_publish = _dotnet_publish
 dotnet_library = _dotnet_library
 dotnet_test = _dotnet_test
+
+msbuild_binary = _msbuild_binary
+msbuild_library = _msbuild_library
+msbuild_test = _msbuild_test
