@@ -33,7 +33,7 @@ namespace MyRulesDotnet.Tools.Builder
 
             _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
             BazelOutputBase = NormalizePath(command.NamedArgs["bazel_output_base"]);
-            GeneratedProjectFile = NormalizePath(command.NamedArgs["generated_project_file"]);
+            GeneratedProjectFile = Path.GetFullPath(NormalizePath(command.NamedArgs["generated_project_file"]));
             SourceProjectFile = NormalizePath(command.NamedArgs["source_project_file"]);
             SdkRoot = NormalizePath(command.NamedArgs["sdk_root"]);
             Tfm = NormalizePath(command.NamedArgs["tfm"]);
@@ -41,6 +41,7 @@ namespace MyRulesDotnet.Tools.Builder
             // these may not be necessary
             Package = command.NamedArgs["package"];
             Workspace = command.NamedArgs["workspace"];
+            LabelName = command.NamedArgs["label_name"];
             
             // (accurately) assumes bazel invokes actions at ExecRoot
             ExecRoot = Directory.GetCurrentDirectory();
@@ -51,6 +52,8 @@ namespace MyRulesDotnet.Tools.Builder
             IntermediateBase = NormalizePath(Path.Combine(ProjectDirectory!, "obj"));
             OutputDirectory = NormalizePath(Path.Combine(ProjectDirectory, Tfm));
         }
+
+        public string LabelName { get; set; }
 
         public string SourceProjectFile { get; set; }
 

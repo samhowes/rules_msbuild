@@ -1,5 +1,3 @@
-"""Actions for dotnet restore"""
-
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private/msbuild:xml.bzl", "make_project_file")
 load("//dotnet/private:context.bzl", "make_builder_cmd")

@@ -1,6 +1,8 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
 load("//dotnet/private/actions:restore.bzl", "restore")
+load("//dotnet/private/actions:msbuild_assembly.bzl", "build_assembly")
+load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 def _publish_impl(ctx):
@@ -20,7 +22,29 @@ def _restore_impl(ctx):
     ]
 
 def _binary_impl(ctx):
-    pass
+    dotnet = dotnet_exec_context(ctx, True)
+    info, outputs = build_assembly(ctx, dotnet)
+    launcher = make_launcher(ctx, dotnet, info)
+
+    launcher_info = ctx.attr._launcher_template[DefaultInfo]
+    assembly_runfiles = ctx.runfiles(
+        files = [info.output_dir] + ctx.files.data,
+        transitive_files = depset([dotnet.sdk.dotnet]),
+    )
+
+    assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
+
+    return [
+        DefaultInfo(
+            files = depset([launcher, info.assembly]),
+            runfiles = assembly_runfiles,
+            executable = launcher,
+        ),
+        info,
+        OutputGroupInfo(
+            all = outputs,
+        ),
+    ]
 
 def _library_impl(ctx):
     pass
@@ -64,9 +88,16 @@ _ASSEMBLY_ATTRS = dicts.add(_RESTORE_ATTRS, {
     ]),
 })
 
+_EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, {
+    "_launcher_template": attr.label(
+        default = Label("//dotnet/tools/launcher"),
+        allow_single_file = True,
+    ),
+})
+
 msbuild_binary = rule(
     _binary_impl,
-    attrs = _ASSEMBLY_ATTRS,
+    attrs = _EXECUTABLE_ATTRS,
     executable = True,
     toolchains = _TOOLCHAINS,
 )

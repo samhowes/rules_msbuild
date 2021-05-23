@@ -15,13 +15,7 @@ DotnetLibraryInfo = provider(
     fields = {
         "assembly": "The primary assembly that was compiled",
         "output_dir": "The msbuild output directory as a declared file",
-        "intermediate_dir": "obj/tfm",
-        "project_file": "",
         "build_cache": "",
-        "runtime": "files (dlls) needed in the output directory for the assembly to run",
-        "build": "depset of files that are inputs to the build action",
-        "restore": "depset of files that are inputs to the restore action",
-        "target_framework": "",
         "data": "depset of runfiles",
         "content": "depset of non-compiled files needed in the output directory as a sibling of the output assembly",
     },

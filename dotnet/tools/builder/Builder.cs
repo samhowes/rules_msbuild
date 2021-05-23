@@ -84,24 +84,24 @@ namespace MyRulesDotnet.Tools.Builder
                 // enables a faster nuget restore compatible with isolated builds
                 // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
                 globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
+                
+                var generatedProject = ProjectRootElement.Create(pc, NewProjectFileOptions.None);
+                generatedProject.AddImport("$(ExecRoot)/" + _context.SourceProjectFile);
+                generatedProject.Save(_context.GeneratedProjectFile);
             }
 
             var loggers = pc.Loggers.ToList();
             if (_context.BinlogEnabled)
             {
-                var path = Path.Combine(_context.ProjectDirectory,
-                    Path.GetFileNameWithoutExtension(_context.GeneratedProjectFile) +
-                    "_" + _action + ".binlog");
+                var path = Path.Combine(_context.ProjectDirectory, _context.LabelName + ".binlog");
                 Debug($"added binlog {path}");
                 loggers.Add(new BinaryLogger() {Parameters = path});
             }
-
-            var generatedProject = ProjectRootElement.Create(pc, NewProjectFileOptions.None);
-            generatedProject.AddImport("$(ExecRoot)/" + _context.SourceProjectFile);
-            generatedProject.Save(_context.GeneratedProjectFile);
-
+            
+            ConfigureOutputPaths(pc);
             var graph = new ProjectGraph(_context.GeneratedProjectFile, globalProperties, pc);
-
+            var entry = graph.EntryPointNodes.Single();
+            
             List<string>? inputCaches = null;
             string[] targets;
             var skipAfterExecute = false;
@@ -116,7 +116,8 @@ namespace MyRulesDotnet.Tools.Builder
                     {
                         "GetTargetFrameworks", "Build", "GetCopyToOutputDirectoryItems", "GetNativeManifest"
                     };
-                    inputCaches = GetInputCaches(graph);
+                    inputCaches = GetInputCaches(graph, entry);
+                    AddSrcs(entry);
                     outputCache = CachePath(_context.GeneratedProjectFile);
                     break;
                 case "publish":
@@ -127,8 +128,7 @@ namespace MyRulesDotnet.Tools.Builder
                 default:
                     throw new ArgumentException($"Unknown action {_action}");
             }
-
-
+            
             var parameters = new BuildParameters(ProjectCollection.GlobalProjectCollection)
             {
                 EnableNodeReuse = false,
@@ -189,6 +189,64 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             return (int) overallResult;
+        }
+
+        void ConfigureOutputPaths(ProjectCollection collection)
+        {
+            // just to make sure the paths match up below
+            var fullPath = Path.GetFullPath(_context.GeneratedProjectFile); 
+            collection.ProjectAdded += SetBazelProps;
+            // We need to set thees properties before any other sdks get loaded
+            // this implementation is kind of a hack, but it works.
+            // I might replace this in the future with just an Import element in the top of the 
+            // generated project file, but this way I don't have to deal with figuring out the correct msbuild 
+            // variables to reference, and I can use absolute paths
+            void SetBazelProps(object sender, ProjectCollection.ProjectAddedToProjectCollectionEventArgs args)
+            {
+                var root = args.ProjectRootElement;
+                var file = args.ProjectRootElement.ProjectFileLocation.File;
+                if (file != fullPath) return;
+                var dir = Path.GetDirectoryName(file);
+
+                // see Microsoft.Common.CurrentVersion.targets for documentation
+                var properties = new Dictionary<string, string>()
+                {
+                    // bin/Debug/netcoreapp3.1 => netcoreapp3.1
+                    // trim the MSBuildConfiguration because we're already in the
+                    // bazel-out/<cpu>-<bazelconfiguration> directory
+                    ["OutputPath"] = _context.ProjectDirectory,
+                    ["BaseIntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "obj") + Path.DirectorySeparatorChar,
+                    // obj/Debug => obj
+                    // trim the MSBuildConfiguration
+                    ["IntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "obj") + Path.DirectorySeparatorChar,
+                    ["BuildProjectReferences"] = "false",
+                };
+                var props = root.CreatePropertyGroupElement();
+                root.PrependChild(props);
+                foreach (var (name, value) in properties)
+                {
+                    var prop = root.CreatePropertyElement(name);
+                    prop.Value = value;
+                    props.AppendChild(prop);
+                }
+
+                
+                collection.ProjectAdded -= SetBazelProps;
+            }
+        }
+        
+        
+
+        private void AddSrcs(ProjectGraphNode entry)
+        {
+            var proj = entry.ProjectInstance;
+            var srcsFilePath = proj.FullPath + ".srcs";
+            var srcs = File.ReadLines(srcsFilePath);
+
+            foreach (var src in srcs)
+            {
+                proj.AddItem("Compile", Path.Combine(_context.ExecRoot, src));
+            }
         }
 
         /// <summary>
@@ -260,9 +318,8 @@ namespace MyRulesDotnet.Tools.Builder
         }
 
 
-        private List<string> GetInputCaches(ProjectGraph graph)
+        private List<string> GetInputCaches(ProjectGraph graph, ProjectGraphNode entry)
         {
-            var entry = graph.EntryPointNodes.Single();
             return graph.ProjectNodes
                 .Where(n => n != entry)
                 .Select(n => CachePath(n.ProjectInstance.FullPath))

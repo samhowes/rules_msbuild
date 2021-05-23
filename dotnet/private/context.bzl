@@ -102,7 +102,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_builder_cmd(ctx, dotnet, action, project_file):
+def make_builder_cmd(ctx, dotnet, action, generated_project_file):
     outputs = []
     binlog = None
     if True:
@@ -119,15 +119,17 @@ def make_builder_cmd(ctx, dotnet, action, project_file):
         "--source_project_file",
         ctx.file.project_file,
         "--generated_project_file",
-        project_file.path,
-        "--package",
-        ctx.label.package,
+        generated_project_file.path,
         "--tfm",
         dotnet.config.tfm,
         "--bazel_output_base",
         dotnet.sdk.config.trim_path,
         "--workspace",
         ctx.workspace_name,
+        "--package",
+        ctx.label.package,
+        "--label_name",
+        ctx.label.name,
         "--nuget_config",
         dotnet.sdk.config.nuget_config,
     ])

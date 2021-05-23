@@ -1,4 +1,5 @@
-load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "emit_tool_binary", "make_launcher")
+load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "emit_tool_binary")
+load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("//dotnet/private/actions:publish.bzl", "publish")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")

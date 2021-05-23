@@ -30,8 +30,7 @@ build_test(
     expected_files = {
         "": [
             "HelloBazel.csproj.build.cache",
-            "HelloBazel.csproj.build.binlog",
-            "HelloBazel.csproj.restore.binlog",
+            "HelloBazel.binlog",
         ],
         "netcoreapp3.1": [
             "HelloBazel.pdb",
@@ -43,4 +42,18 @@ build_test(
     },
     expected_output = "Hello Bazel!\n",
     target = "HelloBazel",
+)
+
+build_test(
+    name = "HelloBazel_publish_test",
+    expected_files = {
+        "publish/netcoreapp3.1": [
+            "HelloBazel.pdb",
+            "HelloBazel.dll",
+            "HelloBazel.deps.json",
+            "HelloBazel.runtimeconfig.json",
+            "HelloBazel.runtimeconfig.dev.json",
+        ],
+    },
+    target = "HelloBazel_publish",
 )

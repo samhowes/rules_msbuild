@@ -8,92 +8,6 @@ load(
     "make_exec_cmd",
 )
 
-def make_launcher(ctx, dotnet, info):
-    sdk = dotnet.sdk
-
-    launcher = ctx.actions.declare_file(
-        ctx.attr.name + dotnet.ext,
-        sibling = info.output_dir,
-    )
-
-    bin_launcher = dotnet.os == "windows"
-
-    # ../dotnet_sdk/dotnet => dotnet_sdk/dotnet
-    dotnet_path = sdk.dotnet.short_path.split("/", 1)[1]
-
-    launch_data = {
-        "dotnet_bin_path": dotnet_path,
-        "target_bin_path": paths.join(ctx.workspace_name, info.assembly.short_path),
-        "output_dir": info.output_dir.short_path,
-        "dotnet_root": sdk.root_file.dirname,
-        "dotnet_args": _format_launcher_args([], bin_launcher),
-        "assembly_args": _format_launcher_args([], bin_launcher),
-        "workspace_name": ctx.workspace_name,
-        "dotnet_cmd": "exec",
-        "dotnet_logger": "junit",
-        "log_path_arg_name": "LogFilePath",
-    }
-
-    if getattr(dotnet.config, "is_test", False):
-        launch_data = dicts.add(launch_data, {
-            "dotnet_cmd": "test",
-        })
-
-    launcher_template = ctx.file._launcher_template
-    if bin_launcher:
-        args = ctx.actions.args()
-        args.add(dotnet.builder)
-        args.add("launcher")
-        args.add(launcher_template)
-        args.add(launcher)
-
-        args.add("symlink_runfiles_enabled")
-        args.add("0")
-
-        args.add("dotnet_env")
-        args.add(";".join([
-            "{}={}".format(k, v)
-            for k, v in dotnet.env.items()
-        ]))
-
-        for k, v in launch_data.items():
-            args.add(k)
-            args.add(v)
-
-        ctx.actions.run(
-            inputs = [launcher_template],
-            outputs = [launcher],
-            executable = sdk.dotnet,
-            arguments = [args],
-            env = dotnet.env,
-            tools = [
-                dotnet.builder,
-            ],
-        )
-    else:
-        substitutions = dict([
-            ("%{}%".format(k), v)
-            for k, v in launch_data.items()
-        ])
-        substitutions["%dotnet_env%"] = "\n".join([
-            "export {}=\"{}\"".format(k, v)
-            for k, v in dotnet.env.items()
-        ])
-
-        ctx.actions.expand_template(
-            template = launcher_template,
-            output = launcher,
-            is_executable = True,
-            substitutions = substitutions,
-        )
-    return launcher
-
-def _format_launcher_args(args, bin_launcher):
-    if not bin_launcher:
-        return " ".join(["\"{}\"".format(a) for a in args])
-    else:
-        return "*~*".join(args)
-
 def emit_tool_binary(ctx, dotnet):
     """Create a binary used for the dotnet toolchain itself.
 
@@ -135,11 +49,6 @@ def emit_tool_binary(ctx, dotnet):
     return DotnetLibraryInfo(
         assembly = assembly,
         output_dir = output_dir,
-        project_file = project_file,
-        runtime = depset(outputs),
-        build = depset(),
-        restore = depset(),
-        target_framework = ctx.attr.target_framework,
     ), outputs + [project_file]
 
 def emit_assembly(ctx, dotnet):
