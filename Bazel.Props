@@ -1,0 +1,9 @@
+<Project>
+    <PropertyGroup>
+        <!-- Bazel variables -->
+        <BazelWorkspaceName Condition="$(BazelWorkspaceName) == ''">my_rules_dotnet</BazelWorkspaceName>
+        <BazelWorkspacePath Condition="$(BazelWorkspacePath) == ''">$(MSBuildThisFileDirectory)</BazelWorkspacePath>
+        <BazelBin Condition="$(BazelBin) == ''">bazel-bin</BazelBin>
+        <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">nuget</BazelNuGetWorkspace>
+    </PropertyGroup>
+</Project>

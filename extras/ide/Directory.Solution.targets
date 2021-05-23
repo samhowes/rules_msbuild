@@ -1,0 +1,8 @@
+<Project>
+    <Import Project="Bazel.targets"/>
+
+    <Target Name="BazelClean" 
+        AfterTargets="Clean">
+        <Exec Command="bazel clean" />
+    </Target>
+</Project>

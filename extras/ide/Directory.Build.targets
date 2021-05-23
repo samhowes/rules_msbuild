@@ -1,0 +1,19 @@
+<Project>    
+    
+    <Target Name="Build">
+        <!-- NoOp: BazelBuild in Bazel.targets will take care of this one -->
+    </Target>
+
+    <Target Name="Rebuild">
+        <!-- NoOp: BazelBuild in Bazel.targets will take care of this one -->
+    </Target>
+
+    <Target Name="Clean">
+        <Error Text="Refusing to clean project. Cleaning an individual project is not possible with bazel. If you need to do a clean, clean the entire solution."/>
+    </Target>
+
+    <!-- Microsoft.NET.Publish.targets is imported after Directory.Build.targets, so unfortunately we can't do much for that here.
+    <Target Name="Publish" /> -->
+
+    <Import Project="Bazel.targets"/>
+</Project>

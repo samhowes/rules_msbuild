@@ -1,0 +1,22 @@
+<Project>
+    <PropertyGroup>
+        <!-- Bazel variables -->
+        <BazelWorkspaceName Condition="$(BazelWorkspaceName) == ''">@@BazelWorkspaceName@@</BazelWorkspaceName>
+        <BazelWorkspacePath Condition="$(BazelWorkspacePath) == ''">@@BazelWorkspacePath@@</BazelWorkspacePath>
+        <BazelBin Condition="$(BazelBin) == ''">@@BazelBin@@</BazelBin>
+        <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@BazelNuGetWorkspace@@</BazelNuGetWorkspace>
+        <BazelExecRoot>bazel-$(BazelWorkspace)</BazelExecRoot>
+
+        <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\\','/'))</BazelPackage>
+        <!-- If the file is at the root, msbuild will generate a relative path to this directoy, bazel wants this to be empty -->
+        <BazelPackage Condition="$(BazelPackage.StartsWith(../))"></BazelPackage>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <!-- Override MSBuild properties -->
+        <OutputPath>$(BazelWorkspacePath)$(BazelBin)/$(BazelPackage)</OutputPath>
+        <BaseIntermediateOutputPath>$(OutputPath)/obj</BaseIntermediateOutputPath>
+        <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+        <BuildProjectReferences>false</BuildProjectReferences>
+    </PropertyGroup>
+</Project>

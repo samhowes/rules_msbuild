@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunfilesTests", "tests\dotn
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGetParser", "dotnet\tools\NuGetParser\NuGetParser.csproj", "{C32532CC-6380-48A9-A81C-0FA20C68B56E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bzl", "extras\Bzl\Bzl.csproj", "{F39C8EF7-F223-4A16-B824-3950C74A220C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BzlTests", "tests\extras\BzlTests\BzlTests.csproj", "{5683F297-CC81-4750-A161-F40FCB4FA409}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{C32532CC-6380-48A9-A81C-0FA20C68B56E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C32532CC-6380-48A9-A81C-0FA20C68B56E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C32532CC-6380-48A9-A81C-0FA20C68B56E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F39C8EF7-F223-4A16-B824-3950C74A220C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F39C8EF7-F223-4A16-B824-3950C74A220C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F39C8EF7-F223-4A16-B824-3950C74A220C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F39C8EF7-F223-4A16-B824-3950C74A220C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5683F297-CC81-4750-A161-F40FCB4FA409}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5683F297-CC81-4750-A161-F40FCB4FA409}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5683F297-CC81-4750-A161-F40FCB4FA409}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5683F297-CC81-4750-A161-F40FCB4FA409}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

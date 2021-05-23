@@ -1,0 +1,3 @@
+<Project>
+    <Import Project="extras/ide/Directory.Build.targets"/>
+</Project>
