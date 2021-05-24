@@ -15,7 +15,7 @@ build_test(
             "HelloBazel.csproj",
             "HelloBazel_restore.binlog",
         ],
-        "obj": [
+        "restore": [
             "project.assets.json",
             "HelloBazel.csproj.nuget.dgspec.json",
             "HelloBazel.csproj.nuget.g.props",
@@ -31,6 +31,9 @@ build_test(
         "": [
             "HelloBazel.csproj.build.cache",
             "HelloBazel.binlog",
+        ],
+        "obj/netcoreapp3.1": [
+            "HelloBazel.dll",
         ],
         "netcoreapp3.1": [
             "HelloBazel.pdb",
@@ -52,7 +55,6 @@ build_test(
             "HelloBazel.dll",
             "HelloBazel.deps.json",
             "HelloBazel.runtimeconfig.json",
-            "HelloBazel.runtimeconfig.dev.json",
         ],
     },
     target = "HelloBazel_publish",

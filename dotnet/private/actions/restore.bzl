@@ -9,8 +9,12 @@ def restore(ctx, dotnet):
     args, outputs = make_builder_cmd(ctx, dotnet, "restore", generated_project_file)
 
     outputs.append(generated_project_file)
-    intermediate_dir = ctx.actions.declare_directory("obj")
-    outputs.append(intermediate_dir)
+    restore_dir = ctx.actions.declare_directory("restore")
+
+    # we don't really need this, but this way, if the restore fails, bazel will fail the build
+    # because this file wasn't created
+    assets_json = ctx.actions.declare_file("restore/project.assets.json")
+    outputs.extend([restore_dir, assets_json])
 
     dep_files = process_deps(dotnet, ctx.attr.deps)
 
@@ -33,7 +37,8 @@ def restore(ctx, dotnet):
         source_project_file = source_project_file,
         generated_project_file = generated_project_file,
         dep_files = dep_files,
-        intermediate_dir = intermediate_dir,
+        restore_dir = restore_dir,
+        target_framework = ctx.attr.target_framework,
     ), outputs
 
 def process_deps(dotnet, deps):

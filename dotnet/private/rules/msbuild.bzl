@@ -1,19 +1,25 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
 load("//dotnet/private/actions:restore.bzl", "restore")
+load("//dotnet/private/actions:publish.bzl", "publish")
 load("//dotnet/private/actions:msbuild_assembly.bzl", "build_assembly")
 load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 def _publish_impl(ctx):
-    pass
+    output_dir = publish(ctx)
+    all = depset([output_dir])
+    return [
+        DefaultInfo(files = all),
+        OutputGroupInfo(all = all),
+    ]
 
 def _restore_impl(ctx):
     dotnet = dotnet_exec_context(ctx, False)
     restore_info, outputs = restore(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset([restore_info.intermediate_dir]),
+            files = depset([restore_info.restore_dir]),
         ),
         restore_info,
         OutputGroupInfo(

@@ -54,9 +54,7 @@ namespace MyRulesDotnet.Tools.Builder
             Environment.SetEnvironmentVariable("ExecRoot", _context.ExecRoot);
             if (_action == "publish")
             {
-                var relative = Path.GetRelativePath(Path.GetDirectoryName(_context.GeneratedProjectFile)!,
-                    _context.OutputDirectory);
-                Environment.SetEnvironmentVariable("PublishDir", relative);
+                Environment.SetEnvironmentVariable("PublishDir", Path.Combine("publish", _context.Tfm));
             }
 
 
@@ -85,9 +83,20 @@ namespace MyRulesDotnet.Tools.Builder
                 // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
                 globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
                 
+                // we need to do this as global properties for the restore because RestoreStaticGraphEvaluation starts
+                // a brand new build session in a new process and re-evaluates the files. It keeps the global properties
+                // though. Since we aren't using an output cache for restore, it's fine to put absolute paths in here
+                // we don't want to put these props in the file itself, because then we'll persist absolute paths.
+                foreach (var (name, value) in GetBazelProps())
+                    globalProperties[name] = value;
+                
                 var generatedProject = ProjectRootElement.Create(pc, NewProjectFileOptions.None);
                 generatedProject.AddImport("$(ExecRoot)/" + _context.SourceProjectFile);
                 generatedProject.Save(_context.GeneratedProjectFile);
+            }
+            else
+            {
+                ConfigureOutputPaths(pc);
             }
 
             var loggers = pc.Loggers.ToList();
@@ -98,7 +107,7 @@ namespace MyRulesDotnet.Tools.Builder
                 loggers.Add(new BinaryLogger() {Parameters = path});
             }
             
-            ConfigureOutputPaths(pc);
+            
             var graph = new ProjectGraph(_context.GeneratedProjectFile, globalProperties, pc);
             var entry = graph.EntryPointNodes.Single();
             
@@ -191,10 +200,31 @@ namespace MyRulesDotnet.Tools.Builder
             return (int) overallResult;
         }
 
+        Dictionary<string, string> GetBazelProps()
+        {
+            // see Microsoft.Common.CurrentVersion.targets for documentation
+            var properties = new Dictionary<string, string>()
+            {
+                // bin/Debug/netcoreapp3.1 => netcoreapp3.1
+                // trim the MSBuildConfiguration because we're already in the
+                // bazel-out/<cpu>-<bazelconfiguration> directory
+                ["OutputPath"] = _context.ProjectDirectory,
+                // traditionally, this is set to obj, however, restore and build are in two separate actions, and 
+                // they both create Tree Artifacts (directories): obj/<restore files> and
+                // obj/tfm/<intermediate build files> so bazel won't let us have these directories nested under each
+                // other
+                ["BaseIntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "restore") + Path.DirectorySeparatorChar,
+                // obj/Debug => obj
+                // trim the MSBuildConfiguration
+                ["IntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "obj") + Path.DirectorySeparatorChar,
+                ["BuildProjectReferences"] = "false",
+                ["RestoreConfigFile"] = _context.NuGetConfig,
+            };
+            return properties;
+        }
+        
         void ConfigureOutputPaths(ProjectCollection collection)
         {
-            // just to make sure the paths match up below
-            var fullPath = Path.GetFullPath(_context.GeneratedProjectFile); 
             collection.ProjectAdded += SetBazelProps;
             // We need to set thees properties before any other sdks get loaded
             // this implementation is kind of a hack, but it works.
@@ -205,25 +235,12 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 var root = args.ProjectRootElement;
                 var file = args.ProjectRootElement.ProjectFileLocation.File;
-                if (file != fullPath) return;
-                var dir = Path.GetDirectoryName(file);
-
-                // see Microsoft.Common.CurrentVersion.targets for documentation
-                var properties = new Dictionary<string, string>()
-                {
-                    // bin/Debug/netcoreapp3.1 => netcoreapp3.1
-                    // trim the MSBuildConfiguration because we're already in the
-                    // bazel-out/<cpu>-<bazelconfiguration> directory
-                    ["OutputPath"] = _context.ProjectDirectory,
-                    ["BaseIntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "obj") + Path.DirectorySeparatorChar,
-                    // obj/Debug => obj
-                    // trim the MSBuildConfiguration
-                    ["IntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "obj") + Path.DirectorySeparatorChar,
-                    ["BuildProjectReferences"] = "false",
-                };
+                if (file != _context.GeneratedProjectFile) return;
+                
+                
                 var props = root.CreatePropertyGroupElement();
                 root.PrependChild(props);
-                foreach (var (name, value) in properties)
+                foreach (var (name, value) in GetBazelProps())
                 {
                     var prop = root.CreatePropertyElement(name);
                     prop.Value = value;
@@ -262,7 +279,7 @@ namespace MyRulesDotnet.Tools.Builder
         private void FixRestoreOutputs()
         {
             var projectDir = Path.GetDirectoryName(Path.GetFullPath(_context.GeneratedProjectFile))!;
-            var obj = Path.Combine(projectDir, "obj");
+            var obj = Path.Combine(projectDir, "restore");
             
             foreach (var fileName in Directory.EnumerateFiles(obj))
             {

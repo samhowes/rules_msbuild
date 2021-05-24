@@ -37,6 +37,7 @@ namespace MyRulesDotnet.Tools.Builder
             SourceProjectFile = NormalizePath(command.NamedArgs["source_project_file"]);
             SdkRoot = NormalizePath(command.NamedArgs["sdk_root"]);
             Tfm = NormalizePath(command.NamedArgs["tfm"]);
+            NuGetConfig = Path.GetFullPath(command.NamedArgs["nuget_config"]);
             
             // these may not be necessary
             Package = command.NamedArgs["package"];
@@ -52,6 +53,8 @@ namespace MyRulesDotnet.Tools.Builder
             IntermediateBase = NormalizePath(Path.Combine(ProjectDirectory!, "obj"));
             OutputDirectory = NormalizePath(Path.Combine(ProjectDirectory, Tfm));
         }
+
+        public string NuGetConfig { get; set; }
 
         public string LabelName { get; set; }
 

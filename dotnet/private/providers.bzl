@@ -5,8 +5,9 @@ DotnetRestoreInfo = provider(
     fields = {
         "source_project_file": "",
         "generated_project_file": "",
+        "restore_dir": "",
+        "target_framework": "",
         "dep_files": "",
-        "intermediate_dir": "",
     },
 )
 
@@ -18,6 +19,9 @@ DotnetLibraryInfo = provider(
         "build_cache": "",
         "data": "depset of runfiles",
         "content": "depset of non-compiled files needed in the output directory as a sibling of the output assembly",
+        "restore": "DotnetRestoreInfo",
+        "dep_files": "depset of all files this library depends on",
+        "intermediate_dir": "",
     },
 )
 
