@@ -53,7 +53,18 @@ def _binary_impl(ctx):
     ]
 
 def _library_impl(ctx):
-    pass
+    dotnet = dotnet_exec_context(ctx, False)
+    info, outputs = build_assembly(ctx, dotnet)
+    return [
+        DefaultInfo(
+            files = depset([info.assembly]),
+            # todo(#6) add runfiles
+        ),
+        info,
+        OutputGroupInfo(
+            all = outputs,
+        ),
+    ]
 
 def _test_impl(ctx):
     pass
