@@ -12,7 +12,6 @@ build_test(
     name = "HelloBazel_restore_test",
     expected_files = {
         "": [
-            "HelloBazel.csproj",
             "HelloBazel_restore.binlog",
         ],
         "restore": [
@@ -29,7 +28,7 @@ build_test(
     name = "HelloBazel_test",
     expected_files = {
         "": [
-            "HelloBazel.csproj.build.cache",
+            "HelloBazel.cache",
             "HelloBazel.binlog",
         ],
         "obj/netcoreapp3.1": [

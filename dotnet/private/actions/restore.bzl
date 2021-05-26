@@ -4,11 +4,8 @@ load("//dotnet/private:context.bzl", "make_builder_cmd")
 load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
 
 def restore(ctx, dotnet):
-    source_project_file = ctx.file.project_file
-    generated_project_file = ctx.actions.declare_file(source_project_file.basename)
-    args, outputs = make_builder_cmd(ctx, dotnet, "restore", generated_project_file)
+    args, outputs = make_builder_cmd(ctx, dotnet, "restore")
 
-    outputs.append(generated_project_file)
     restore_dir = ctx.actions.declare_directory("restore")
 
     # we don't really need this, but this way, if the restore fails, bazel will fail the build
@@ -19,8 +16,8 @@ def restore(ctx, dotnet):
     dep_files = process_deps(dotnet, ctx.attr.deps)
 
     inputs = depset(
-        direct = [source_project_file, dotnet.sdk.config.nuget_config],
-        transitive = [dep_files, dotnet.sdk.init_files, dotnet.sdk.packs],
+        direct = [ctx.file.project_file, dotnet.sdk.config.nuget_config],
+        transitive = [dep_files],
     )
 
     ctx.actions.run(
@@ -30,12 +27,11 @@ def restore(ctx, dotnet):
         executable = dotnet.sdk.dotnet,
         arguments = [args],
         env = dotnet.env,
-        tools = [dotnet.builder],
+        tools = dotnet.builder.files,
     )
 
     return DotnetRestoreInfo(
-        source_project_file = source_project_file,
-        generated_project_file = generated_project_file,
+        project_file = ctx.file.project_file,
         dep_files = dep_files,
         restore_dir = restore_dir,
         target_framework = ctx.attr.target_framework,
@@ -45,12 +41,12 @@ def process_deps(dotnet, deps):
     tfm = dotnet.config.tfm
 
     files = []
-    package_files = []
+    transitive = []
     for dep in getattr(dotnet.config, "tfm_deps", []):
-        _get_nuget_files(dep, tfm, package_files)
+        _get_nuget_files(dep, tfm, transitive)
 
     for dep in getattr(dotnet.config, "implicit_deps", []):
-        _get_nuget_files(dep, tfm, package_files)
+        _get_nuget_files(dep, tfm, transitive)
 
     for dep in deps:
         if DotnetRestoreInfo in dep:
@@ -58,16 +54,16 @@ def process_deps(dotnet, deps):
 
             # MSBuild Restore is going to unconditionally traverse the entire project graph to
             # compute the full transitive closure of package files for *every* project file.
-            # make sure the source_project_file (user-owned) is available as well as all package
-            # files that those project files reference.
-            files.append(info.source_project_file)
-            package_files.append(info.dep_files)
+            # make sure the project_file is available as well as all package files that those project
+            # files reference.
+            files.append(info.project_file)
+            transitive.append(info.dep_files)
         elif NuGetPackageInfo in dep:
-            _get_nuget_files(dep, tfm, package_files)
+            _get_nuget_files(dep, tfm, transitive)
         else:
             fail("Unkown dependency type: {}".format(dep))
 
-    return depset(files, transitive = package_files)
+    return depset(files, transitive = transitive)
 
 def _get_nuget_files(dep, tfm, files):
     pkg = dep[NuGetPackageInfo]

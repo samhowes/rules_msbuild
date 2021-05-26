@@ -43,9 +43,6 @@ namespace MyRulesDotnet.Tools.Builder
                     
             }
         }
-
-        public static string SdkVersion = "5.0.202";
-
         private static Command ParseArgs(string[] args)
         {
             var command = new Command {Action = args[0]};
@@ -85,7 +82,7 @@ namespace MyRulesDotnet.Tools.Builder
         private static int Build(Command command)
         {
             var context = new BuildContext(command);
-            MSBuildLocator.RegisterMSBuildPath(Path.Combine(context.BazelOutputBase, context.SdkRoot));
+            MSBuildLocator.RegisterMSBuildPath(context.SdkRoot);
             var builder = new Builder(context);
             return builder.Build();
         }

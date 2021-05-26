@@ -3,8 +3,7 @@
 DotnetRestoreInfo = provider(
     doc = "todo",
     fields = {
-        "source_project_file": "",
-        "generated_project_file": "",
+        "project_file": "",
         "restore_dir": "",
         "target_framework": "",
         "dep_files": "",
@@ -94,7 +93,8 @@ DotnetSdkInfo = provider(
         "dotnetos": "The host OS the SDK was built for.",
         "dotnetarch": "The host architecture the SDK was built for.",
         "root_file": "A file in the SDK root directory",
-        "init_files": "The init files for dotnet, these prevent dotnet from printing noisy welcome messages",
+        "runfiles": "Files required to run a command with the sdk",
+        "bazel_props": "",
         "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the " +
                      "extracted folder"),
         "major_version": "The major version of the sdk",

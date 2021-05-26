@@ -36,7 +36,7 @@ def make_launcher(ctx, dotnet, info):
     if is_bin_launcher:
         args = ctx.actions.args()
         args.add_all([
-            dotnet.builder,
+            dotnet.builder.assembly,
             "launcher",
             launcher_template,
             launcher,
@@ -62,9 +62,7 @@ def make_launcher(ctx, dotnet, info):
             executable = sdk.dotnet,
             arguments = [args],
             env = dotnet.env,
-            tools = [
-                dotnet.builder,
-            ],
+            tools = dotnet.builder.files,
         )
     else:
         substitutions = dict([

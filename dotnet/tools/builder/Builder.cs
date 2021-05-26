@@ -21,139 +21,61 @@ namespace MyRulesDotnet.Tools.Builder
         private readonly string _action;
         private readonly BuildManager _buildManager;
         private readonly MsBuildCacheManager _cacheManager;
-        private BazelMsBuildLogger _msbuildLog;
-
-        private const string ContentKey = "content";
-        private const string RunfilesKey = "runfiles";
-        private const string RunfilesDirectoryKey = "runfiles_directory";
+        private readonly BazelMsBuildLogger _msbuildLog;
 
         public Builder(BuildContext context)
         {
             _context = context;
             _action = _context.Command.Action.ToLower();
             _buildManager = BuildManager.DefaultBuildManager;
-            _cacheManager = new MsBuildCacheManager(_buildManager, _context.ExecRoot);
+            _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                _context.BazelOutputBase);
+                _context.Bazel.OutputBase);
         }
-
-        string CachePath(string projectPath, string? action = null)
-            => ProjectPath(projectPath, action ?? _action, "cache");
-
-        private string ProjectPath(params string[] parts) => string.Join(".", parts);
-
 
         public int Build()
         {
-            // GlobalProjectCollection loads EnvironmentVariables on Init. We use ExecRoot in the project files, we 
-            // can't use MSBuildStartupDirectory because NuGet Restore uses a static graph restore which starts up a 
-            // new process in the directory of the project file. We could set ExecRoot in the ProjectCollection Global
-            // properties, but then we'd have to manage its value in the ConfigCache of the build manager later on.
-            // Setting it here allows the project file to read it for paths and we don't have to clear it later.
-            Environment.SetEnvironmentVariable("ExecRoot", _context.ExecRoot);
-            if (_action == "publish")
+            var projectCollection = BeginBuild();
+
+            var graph = LoadProject(projectCollection);
+
+            var result = ExecuteBuild(graph).OverallResult;
+
+            EndBuild(result);
+
+            return (int) result;
+        }
+
+        private void EndBuild(BuildResultCode result)
+        {
+            if (_context.MSBuild.PostProcessCaches && result == BuildResultCode.Success)
             {
-                Environment.SetEnvironmentVariable("PublishDir", Path.Combine("publish", _context.Tfm));
+                _cacheManager.AfterExecuteBuild();
             }
 
+            _buildManager.EndBuild();
 
-            var pc = ProjectCollection.GlobalProjectCollection;
+            if (result == BuildResultCode.Success)
+            {
+                // CopyFiles(ContentKey, _context.MSBuild.OutputPath, true);
+                // if (_context.Command.NamedArgs.TryGetValue(RunfilesDirectoryKey, out var runfilesDirectory))
+                // {
+                //     CopyFiles(RunfilesKey, Path.Combine(_context.MSBuild.OutputPath, runfilesDirectory));
+                // }
 
-            pc.RegisterLogger(_msbuildLog);
-            var globalProperties = new Dictionary<string, string>
-            {
-                ["ImportDirectoryBuildProps"] = "false",
-                ["EnableDefaultItems"] = "false",
-                ["EnableDefaultContentItems"] = "false",
-                ["EnableDefaultCompileItems"] = "false",
-                ["EnableDefaultEmbeddedResourceItems"] = "false",
-                ["EnableDefaultNoneItems"] = "false",
-                ["NoWarn"] = "NU1603;MSB3277",
-            };
-            if (_action == "restore")
-            {
-                // this is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
-                // ahead of time, there will be a cache miss on the restored project.
-                // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L69
-                globalProperties["ExcludeRestorePackageImports"] = "true";
-                // only restore this project, bazel takes care of making sure other projects are restored
-                globalProperties["RestoreRecursive"] = "false";
-                // enables a faster nuget restore compatible with isolated builds
-                // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
-                globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
-                
-                // we need to do this as global properties for the restore because RestoreStaticGraphEvaluation starts
-                // a brand new build session in a new process and re-evaluates the files. It keeps the global properties
-                // though. Since we aren't using an output cache for restore, it's fine to put absolute paths in here
-                // we don't want to put these props in the file itself, because then we'll persist absolute paths.
-                foreach (var (name, value) in GetBazelProps())
-                    globalProperties[name] = value;
-                
-                var generatedProject = ProjectRootElement.Create(pc, NewProjectFileOptions.None);
-                generatedProject.AddImport("$(ExecRoot)/" + _context.SourceProjectFile);
-                generatedProject.Save(_context.GeneratedProjectFile);
+                if (_action == "restore")
+                {
+                    // FixRestoreOutputs();
+                }
             }
-            else
-            {
-                ConfigureOutputPaths(pc);
-            }
+        }
 
-            var loggers = pc.Loggers.ToList();
-            if (_context.BinlogEnabled)
-            {
-                var path = Path.Combine(_context.ProjectDirectory, _context.LabelName + ".binlog");
-                Debug($"added binlog {path}");
-                loggers.Add(new BinaryLogger() {Parameters = path});
-            }
-            
-            
-            var graph = new ProjectGraph(_context.GeneratedProjectFile, globalProperties, pc);
-            var entry = graph.EntryPointNodes.Single();
-            
-            List<string>? inputCaches = null;
-            string[] targets;
-            var skipAfterExecute = false;
-            string? outputCache = null;
-            switch (_action)
-            {
-                case "restore":
-                    targets = new[] {"Restore"};
-                    break;
-                case "build":
-                    targets = new[]
-                    {
-                        "GetTargetFrameworks", "Build", "GetCopyToOutputDirectoryItems", "GetNativeManifest"
-                    };
-                    inputCaches = GetInputCaches(graph, entry);
-                    AddSrcs(entry);
-                    outputCache = CachePath(_context.GeneratedProjectFile);
-                    break;
-                case "publish":
-                    targets = new[] {"Publish"};
-                    inputCaches = new List<string>() {CachePath(_context.GeneratedProjectFile, "build")};
-                    skipAfterExecute = true;
-                    break;
-                default:
-                    throw new ArgumentException($"Unknown action {_action}");
-            }
-            
-            var parameters = new BuildParameters(ProjectCollection.GlobalProjectCollection)
-            {
-                EnableNodeReuse = false,
-                Loggers = loggers,
-                DetailedSummary = true,
-                IsolateProjects = true,
-                OutputResultsCacheFile = outputCache,
-                InputResultsCacheFiles = inputCaches?.ToArray(),
-                // cult-copy
-                ToolsetDefinitionLocations =
-                    Microsoft.Build.Evaluation.ToolsetDefinitionLocations.ConfigurationFile |
-                    Microsoft.Build.Evaluation.ToolsetDefinitionLocations.Registry,
-            };
+        private GraphBuildResult ExecuteBuild(ProjectGraph graph)
+        {
             var data = new GraphBuildRequestData(
                 graph,
-                targets,
+                _context.MSBuild.Targets,
                 null,
                 // replace the existing config that we'll load from cache
                 // not setting this results in MSBuild setting a global unique property to protect against 
@@ -161,109 +83,89 @@ namespace MyRulesDotnet.Tools.Builder
                 BuildRequestDataFlags.ReplaceExistingProjectInstance
             );
 
+            var submission = _buildManager.PendBuildRequest(data);
+
+            var result = submission.Execute();
+
+            return result;
+        }
+
+        private ProjectGraph LoadProject(ProjectCollection? projectCollection)
+        {
+            var globalProperties = new Dictionary<string, string>
+            {
+                ["ImportDirectoryBuildProps"] = "true",
+                // ["EnableDefaultItems"] = "false",
+                // ["EnableDefaultContentItems"] = "false",
+                // ["EnableDefaultCompileItems"] = "false",
+                // ["EnableDefaultEmbeddedResourceItems"] = "false",
+                // ["EnableDefaultNoneItems"] = "false",
+                ["NoWarn"] = "NU1603;MSB3277",
+            };
+            if (_action == "restore")
+            {
+                // we aren't using restore's cache files in the Build actions, so different global properties are fine
+
+                // this is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
+                // ahead of time, there will be a cache miss on the restored project.
+                // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L69
+                globalProperties["ExcludeRestorePackageImports"] = "true";
+                // enables a faster nuget restore compatible with isolated builds
+                // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
+                globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
+            }
+
+            var graph = new ProjectGraph(_context.ProjectFile, globalProperties, projectCollection);
+            return graph;
+        }
+
+        private ProjectCollection BeginBuild()
+        {
+            // GlobalProjectCollection loads EnvironmentVariables on Init. We use ExecRoot in the project files, we 
+            // can't use MSBuildStartupDirectory because NuGet Restore uses a static graph restore which starts up a 
+            // new process in the directory of the project file. We could set ExecRoot in the ProjectCollection Global
+            // properties, but then we'd have to manage its value in the ConfigCache of the build manager later on.
+            // Setting it here allows the project file to read it for paths and we don't have to clear it later.
+            _context.SetEnvironment();
+
+            var pc = ProjectCollection.GlobalProjectCollection;
+            
+            BinaryLogger? binlog = null;
+            // var loggers = pc.Loggers.ToList();
+            if (_context.BinlogEnabled)
+            {
+                var path = _context.OutputPath(_context.Bazel.Label.Name + ".binlog");
+                Debug($"added binlog {path}");
+                binlog = new BinaryLogger() {Parameters = path};
+                pc.RegisterLogger(binlog);
+            }
+
+            pc.RegisterLogger(_msbuildLog);
+            var inputCaches = GetInputCaches();
+            var parameters = new BuildParameters(pc)
+            {
+                EnableNodeReuse = false,
+                Loggers = new ILogger[] {_msbuildLog, binlog!},
+                DetailedSummary = true,
+                IsolateProjects = true,
+                OutputResultsCacheFile = _context.LabelPath(".cache"),
+                InputResultsCacheFiles = inputCaches,
+                // cult-copy
+                ToolsetDefinitionLocations =
+                    Microsoft.Build.Evaluation.ToolsetDefinitionLocations.ConfigurationFile |
+                    Microsoft.Build.Evaluation.ToolsetDefinitionLocations.Registry,
+            };
             _buildManager.BeginBuild(parameters);
             if (_msbuildLog.HasError)
             {
                 Console.WriteLine("Failed to initialize build manager, please file an issue.");
             }
-            else if (inputCaches?.Any() == true)
+            else if (inputCaches.Any())
             {
                 _cacheManager.BeforeExecuteBuild();
             }
 
-            var submission = _buildManager.PendBuildRequest(data);
-
-            var result = submission.Execute();
-
-            var overallResult = result.OverallResult;
-            if (!skipAfterExecute && overallResult == BuildResultCode.Success)
-            {
-                _cacheManager.AfterExecuteBuild();
-            }
-
-            _buildManager.EndBuild();
-
-            if (overallResult == BuildResultCode.Success)
-            {
-                CopyFiles(ContentKey, _context.OutputDirectory, true);
-                if (_context.Command.NamedArgs.TryGetValue(RunfilesDirectoryKey, out var runfilesDirectory))
-                {
-                    CopyFiles(RunfilesKey, Path.Combine(_context.OutputDirectory, runfilesDirectory));
-                }
-
-                if (_action == "restore")
-                {
-                    FixRestoreOutputs();
-                }
-            }
-
-            return (int) overallResult;
-        }
-
-        Dictionary<string, string> GetBazelProps()
-        {
-            // see Microsoft.Common.CurrentVersion.targets for documentation
-            var properties = new Dictionary<string, string>()
-            {
-                // bin/Debug/netcoreapp3.1 => netcoreapp3.1
-                // trim the MSBuildConfiguration because we're already in the
-                // bazel-out/<cpu>-<bazelconfiguration> directory
-                ["OutputPath"] = _context.ProjectDirectory,
-                // traditionally, this is set to obj, however, restore and build are in two separate actions, and 
-                // they both create Tree Artifacts (directories): obj/<restore files> and
-                // obj/tfm/<intermediate build files> so bazel won't let us have these directories nested under each
-                // other
-                ["BaseIntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "restore") + Path.DirectorySeparatorChar,
-                // obj/Debug => obj
-                // trim the MSBuildConfiguration
-                ["IntermediateOutputPath"] = Path.Combine(_context.ProjectDirectory, "obj") + Path.DirectorySeparatorChar,
-                ["BuildProjectReferences"] = "false",
-                ["RestoreConfigFile"] = _context.NuGetConfig,
-            };
-            return properties;
-        }
-        
-        void ConfigureOutputPaths(ProjectCollection collection)
-        {
-            collection.ProjectAdded += SetBazelProps;
-            // We need to set thees properties before any other sdks get loaded
-            // this implementation is kind of a hack, but it works.
-            // I might replace this in the future with just an Import element in the top of the 
-            // generated project file, but this way I don't have to deal with figuring out the correct msbuild 
-            // variables to reference, and I can use absolute paths
-            void SetBazelProps(object sender, ProjectCollection.ProjectAddedToProjectCollectionEventArgs args)
-            {
-                var root = args.ProjectRootElement;
-                var file = args.ProjectRootElement.ProjectFileLocation.File;
-                if (file != _context.GeneratedProjectFile) return;
-                
-                
-                var props = root.CreatePropertyGroupElement();
-                root.PrependChild(props);
-                foreach (var (name, value) in GetBazelProps())
-                {
-                    var prop = root.CreatePropertyElement(name);
-                    prop.Value = value;
-                    props.AppendChild(prop);
-                }
-
-                
-                collection.ProjectAdded -= SetBazelProps;
-            }
-        }
-        
-        
-
-        private void AddSrcs(ProjectGraphNode entry)
-        {
-            var proj = entry.ProjectInstance;
-            var srcsFilePath = proj.FullPath + ".srcs";
-            var srcs = File.ReadLines(srcsFilePath);
-
-            foreach (var src in srcs)
-            {
-                proj.AddItem("Compile", Path.Combine(_context.ExecRoot, src));
-            }
+            return pc;
         }
 
         /// <summary>
@@ -278,12 +180,9 @@ namespace MyRulesDotnet.Tools.Builder
         /// </summary>
         private void FixRestoreOutputs()
         {
-            var projectDir = Path.GetDirectoryName(Path.GetFullPath(_context.GeneratedProjectFile))!;
-            var obj = Path.Combine(projectDir, "restore");
-            
-            foreach (var fileName in Directory.EnumerateFiles(obj))
+            foreach (var fileName in Directory.EnumerateFiles(_context.MSBuild.BaseIntermediateOutputPath))
             {
-                var target = _context.BazelOutputBase;
+                var target = _context.Bazel.OutputBase;
 
                 var isJson = fileName.EndsWith("json");
                 var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
@@ -304,43 +203,55 @@ namespace MyRulesDotnet.Tools.Builder
 
                     if (contents[thisIndex..(thisIndex + "sandbox".Length)] == "sandbox")
                         thisIndex = contents.IndexOf("execroot", index, StringComparison.Ordinal);
-                    
+
                     var endOfPath = contents.IndexOfAny(new[] {'"', ';', '<'}, thisIndex);
-                
+
                     index = endOfPath;
-                
+
                     var path = contents[thisIndex..endOfPath];
-                
+
                     if (needsEscaping)
                         path = path.Replace(@"\\", @"\");
-                
-                    path = Path.GetRelativePath(projectDir, path);
+
+                    path = Path.GetRelativePath(_context.Bazel.OutputDir, path);
                     if (needsEscaping)
                     {
                         path = Escape(path);
                     }
-                    
+
                     if (!isJson)
                     {
-                        path = Path.Combine("$(MSBuildThisFileDirectory)", 
+                        path = Path.Combine("$(MSBuildThisFileDirectory)",
                             "..", // one more to get out of the obj directory 
                             path);
                     }
+
                     output.Write(path);
                 }
-                
+
                 output.Write(contents[index..]);
                 output.Flush();
             }
         }
 
-
-        private List<string> GetInputCaches(ProjectGraph graph, ProjectGraphNode entry)
+        private void WaitForDebugger()
         {
-            return graph.ProjectNodes
-                .Where(n => n != entry)
-                .Select(n => CachePath(n.ProjectInstance.FullPath))
-                .ToList();
+            // Process currentProcess = Process.GetCurrentProcess();
+            // Console.WriteLine($"Waiting for debugger to attach... ({currentProcess.MainModule.FileName} PID {currentProcess.Id})");
+            // while (!Debugger.IsAttached)
+            // {
+            //     Thread.Sleep(100);
+            // }
+            // Console.WriteLine("debugger attached!");
+            // Debugger.Break();
+        }
+
+
+        private string[] GetInputCaches()
+        {
+            var cacheManifest = _context.LabelPath(".input_caches");
+            if (!File.Exists(cacheManifest)) return Array.Empty<string>();
+            return File.ReadAllLines(cacheManifest);
         }
 
         private void CopyFiles(string filesKey, string destinationDirectory, bool trimPackage = false)
@@ -357,13 +268,13 @@ namespace MyRulesDotnet.Tools.Builder
                 {
                     destinationPath = filePath.Substring("external/".Length);
                 }
-                else if (trimPackage && filePath.StartsWith(_context.Package))
+                else if (trimPackage && filePath.StartsWith(_context.Bazel.Label.Package))
                 {
-                    destinationPath = filePath.Substring(_context.Package.Length + 1);
+                    destinationPath = filePath.Substring(_context.Bazel.Label.Package.Length + 1);
                 }
                 else
                 {
-                    destinationPath = Path.Combine(_context.Workspace, filePath);
+                    destinationPath = Path.Combine(_context.Bazel.Label.Workspace, filePath);
                 }
 
                 var dest = new FileInfo(Path.Combine(destinationDirectory, destinationPath));

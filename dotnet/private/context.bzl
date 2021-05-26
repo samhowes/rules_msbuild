@@ -70,7 +70,6 @@ def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
         env = _make_env(sdk_root, os),
         builder = builder,
         sdk = sdk,
-        tools = [builder] if builder != None else [],
         ext = ext,
         config = struct(
             **kwargs
@@ -102,7 +101,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_builder_cmd(ctx, dotnet, action, generated_project_file):
+def make_builder_cmd(ctx, dotnet, action):
     outputs = []
     binlog = None
     if True:
@@ -112,14 +111,14 @@ def make_builder_cmd(ctx, dotnet, action, generated_project_file):
 
     args = ctx.actions.args()
     args.add_all([
-        dotnet.builder.path,
+        dotnet.builder.assembly.path,
         action,
         "--sdk_root",
         dotnet.sdk.sdk_root.path,
-        "--source_project_file",
+        "--project_file",
         ctx.file.project_file,
-        "--generated_project_file",
-        generated_project_file.path,
+        "--bazel_bin_dir",
+        ctx.bin_dir.path,
         "--tfm",
         dotnet.config.tfm,
         "--bazel_output_base",
@@ -132,6 +131,8 @@ def make_builder_cmd(ctx, dotnet, action, generated_project_file):
         ctx.label.name,
         "--nuget_config",
         dotnet.sdk.config.nuget_config,
+        "--directory_bazel_props",
+        dotnet.sdk.bazel_props,
     ])
     return args, outputs
 

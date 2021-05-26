@@ -53,11 +53,16 @@ def _msbuild_assembly(
 
     restore_name = name + "_restore"
 
+    restore_deps = []
+    for d in deps:
+        l = Label(d)
+        restore_deps.append(l.relative(":{}_restore".format(l.name)))
+
     msbuild_restore(
         name = restore_name,
         target_framework = target_framework,
         project_file = project_file,
-        deps = [d + "_restore" for d in deps],
+        deps = restore_deps,
         **kwargs
     )
 

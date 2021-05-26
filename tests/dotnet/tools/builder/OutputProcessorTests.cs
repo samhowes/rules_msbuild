@@ -50,10 +50,10 @@ namespace MyRulesDotnet.Tests.Tools
             _context = new BuildContext()
             {
                 Command = {},
-                IntermediateBase = _testDir,
                 Tfm = "foo",
-                BazelOutputBase = _outputBase,
-                ExecRoot = Combine(_outputBase, "baz")
+                // BaseIntermediateOutputPath = _testDir,
+                // BazelOutputBase = _outputBase,
+                // ExecRoot = Combine(_outputBase, "baz")
             };
             
             _contents = Combine(_outputBase, "bam");
@@ -94,7 +94,7 @@ namespace MyRulesDotnet.Tests.Tools
             
             _processor.PreProcess();
 
-            outputFile = Path.Combine(_context.IntermediateBase, testFileInput.Name);
+            outputFile = Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, testFileInput.Name);
 
             var preProcessedContents = File.ReadAllText(outputFile);
 

@@ -34,7 +34,7 @@ def emit_tool_binary(ctx, dotnet):
         direct_inputs.append(source_project_file)
     inputs = depset(
         direct = direct_inputs,
-        transitive = [dep_files.build, dotnet.sdk.init_files, dotnet.sdk.packs],
+        transitive = [dep_files.build, dotnet.sdk.runfiles],
     )
     outputs = [output_dir, assembly] + cmd_outputs
 

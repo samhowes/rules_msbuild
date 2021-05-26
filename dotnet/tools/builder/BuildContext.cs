@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
@@ -12,88 +13,156 @@ namespace MyRulesDotnet.Tools.Builder
         private const char BazelPathChar = '/';
         private readonly bool _normalizePath;
 
-        private const string OutputDirectoryKey = "output_directory";
-
         private string NormalizePath(string input)
         {
             if (!_normalizePath) return input;
             return input.Replace('/', Path.DirectorySeparatorChar);
         }
 
-        // for testing
-
         public BuildContext()
         {
+            // for testing
             Command = new Command();
         }
 
+        public void SetEnvironment()
+        {
+            var vars = new Dictionary<string, string>()
+            {
+                ["DirectoryBuildPropsPath"] = DirectoryBazelProps,
+                ["ExecRoot"] = Bazel.ExecRoot,
+                ["BINDIR"] = Bazel.BinDir,
+                ["RestoreConfigFile"] = NuGetConfig,
+            };
+            
+            if (Command.Action == "publish")
+            {
+                vars["PublishDir"] = Path.Combine(MSBuild.OutputPath, "publish", Tfm);
+            }
+
+            foreach (var (name, value) in vars)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+
+        public string LabelPath(string extension) => Path.Combine(Bazel.OutputDir, Bazel.Label.Name) + extension;
+        public string OutputPath(string subpath) => Path.Combine(Bazel.OutputDir, subpath);
+        private string ExecPath(string subpath) => Path.Combine(Bazel.ExecRoot, subpath);
+        public string BinPath(string subpath) => Path.Combine(Bazel.BinDir, subpath);
+        
+        // This should be Bazel.ExecRoot, as all the sdk tools are in the sandbox with the builder when it is running
+        // MSBuild, however, MSBuild appears to not like the sandbox for the locations of the SDK files as it produces
+        //  Microsoft.Common.CurrentVersion.targets(2182,5): error MSB3095: Invalid argument. "DefiningProjectDirectory"
+        //  is a reserved item metadata, and cannot be modified or deleted.
+        // when run with ExecRoot. After much debugging, this appears to happen somewhere in ResolveAssemblyReferences 
+        // because MSBuild thinks it is necessary to copy metdata from one TaskItem for a referenced project to another 
+        // TaskItem for that referenced project because it is missing metadata before being resolved. 
+        private string ToolPath(string subpath) => Path.Combine(Bazel.OutputBase, subpath);
+        
         public BuildContext(Command command)
         {
             Command = command;
-
             _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
-            BazelOutputBase = NormalizePath(command.NamedArgs["bazel_output_base"]);
-            GeneratedProjectFile = Path.GetFullPath(NormalizePath(command.NamedArgs["generated_project_file"]));
-            SourceProjectFile = NormalizePath(command.NamedArgs["source_project_file"]);
-            SdkRoot = NormalizePath(command.NamedArgs["sdk_root"]);
-            Tfm = NormalizePath(command.NamedArgs["tfm"]);
-            NuGetConfig = Path.GetFullPath(command.NamedArgs["nuget_config"]);
+            Bazel = new BazelContext(command);
+            MSBuild = new MSBuildContext(Bazel.OutputDir, command.Action);
             
-            // these may not be necessary
-            Package = command.NamedArgs["package"];
-            Workspace = command.NamedArgs["workspace"];
-            LabelName = command.NamedArgs["label_name"];
+            SdkRoot = ToolPath(command.NamedArgs["sdk_root"]);
+            DirectoryBazelProps = ToolPath(command.NamedArgs["directory_bazel_props"]);
             
-            // (accurately) assumes bazel invokes actions at ExecRoot
-            ExecRoot = Directory.GetCurrentDirectory();
-            
-            Validate();
-            
-            ProjectDirectory = Path.GetDirectoryName(GeneratedProjectFile)!;
-            IntermediateBase = NormalizePath(Path.Combine(ProjectDirectory!, "obj"));
-            OutputDirectory = NormalizePath(Path.Combine(ProjectDirectory, Tfm));
-        }
+            ProjectFile = ExecPath(command.NamedArgs["project_file"]);
+            NuGetConfig = ExecPath(command.NamedArgs["nuget_config"]);
+            Tfm = command.NamedArgs["tfm"];
 
-        public string NuGetConfig { get; set; }
-
-        public string LabelName { get; set; }
-
-        public string SourceProjectFile { get; set; }
-
-        public string ProjectDirectory { get; set; }
-
-        private void Validate()
-        {
-            if (DebugEnabled)
+            if (false)
             {
-                Debug(Directory.GetCurrentDirectory());
-                foreach (var entry in Directory.EnumerateDirectories("."))
-                    Console.WriteLine(entry);
+                Bazel.Label.Package = Bazel.Label.Package.Replace("Dependent", "ClassLibrary");
+                Bazel.Label.Name = Bazel.Label.Name.Replace("Dependent", "ClassLibrary");
+                ProjectFile = ProjectFile.Replace("Dependent", "ClassLibrary");
             }
-
-            if (!ExecRoot.StartsWith(BazelOutputBase))
-                Fail($"Refusing to process trim_path {BazelOutputBase} that is not a prefix of" +
-                     $" cwd {ExecRoot}");
-
-            Suffix = ExecRoot[BazelOutputBase.Length..];
         }
 
-        public string Workspace { get; set; }
-
-        public string Package { get; set; }
-
+        public MSBuildContext MSBuild { get; set; }
+        public string ProjectFile { get; set; }
+        public BazelContext Bazel { get; set; }
+        public string NuGetConfig { get; set; }
         public string Tfm { get; set; }
-
-        public string GeneratedProjectFile { get; set; }
-
-        public string IntermediateBase { get; set; }
-        public string BazelOutputBase { get; set; }
-        public string Suffix { get; set; }
-        public string ExecRoot { get; set; }
-        public string OutputDirectory { get; set; }
         public string SdkRoot { get; set; }
         public bool DiagnosticsEnabled { get; set; }
         // todo(#51) disable when no build diagnostics are requested
         public bool BinlogEnabled { get; set; } = true;
+        public string DirectoryBazelProps { get; set; }
+    }
+    
+    public class BazelContext
+    {
+        public class BazelLabel
+        {
+            public string Workspace { get; set; }
+            public string Package { get; set; }
+            public string Name { get; set; }
+        }
+        public BazelContext(Command command)
+        {
+            OutputBase = command.NamedArgs["bazel_output_base"];
+            // bazel invokes us at the exec root
+            ExecRoot = Directory.GetCurrentDirectory();
+            // Suffix = ExecRoot[OutputBase.Length..];
+            BinDir = Path.Combine(ExecRoot, command.NamedArgs["bazel_bin_dir"]);
+                
+            Label = new BazelLabel()
+            {
+                Workspace = command.NamedArgs["workspace"],
+                Package = command.NamedArgs["package"],
+                Name = command.NamedArgs["label_name"],
+            };
+
+            OutputDir = Path.Combine(BinDir, Label.Package);
+        }
+
+        public string OutputBase { get; set; }
+        public string OutputDir { get; set; }
+        public BazelLabel Label { get; set; }
+        public string Suffix { get; set; }
+        public string BinDir { get; set; }
+        public string ExecRoot { get; set; }
+            
+    }
+    
+    public class MSBuildContext
+    {
+        public MSBuildContext(string outputDir, string action)
+        {
+            OutputPath = outputDir;
+            BaseIntermediateOutputPath = Path.Combine(outputDir, "restore");
+            IntermediateOutputPath = Path.Combine(outputDir, "obj");
+            
+            switch (action)
+            {
+                case "restore":
+                    Targets = new[] {"Restore"};
+                    break;
+                case "build":
+                    Targets = new[]
+                    {
+                        "GetTargetFrameworks", "Build", "GetCopyToOutputDirectoryItems", "GetNativeManifest"
+                    };
+                    break;
+                case "publish":
+                    Targets = new[] {"Publish"};
+                    PostProcessCaches = false;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown action {action}");
+            }
+        }
+
+        public bool PostProcessCaches { get; set; } = true;
+
+        public string[] Targets { get; set; }
+
+        public string BaseIntermediateOutputPath { get; set; }
+        public string IntermediateOutputPath { get; set; }
+        public string OutputPath { get; set; }
     }
 }

@@ -14,7 +14,6 @@ build_test(
     name = "ClassLibrary_restore_test",
     expected_files = {
         "": [
-            "ClassLibrary.csproj",
             "ClassLibrary_restore.binlog",
         ],
         "restore": [
@@ -31,7 +30,7 @@ build_test(
     name = "ClassLibrary_test",
     expected_files = {
         "": [
-            "ClassLibrary.csproj.build.cache",
+            "ClassLibrary.cache",
             "ClassLibrary.binlog",
         ],
         "obj/netstandard2.1": [

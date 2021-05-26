@@ -11,7 +11,7 @@ def _dotnet_tool_binary_impl(ctx):
     info, all_outputs = emit_tool_binary(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset([info.assembly, info.output_dir]),
+            files = depset([info.output_dir]),
         ),
         info,
         OutputGroupInfo(

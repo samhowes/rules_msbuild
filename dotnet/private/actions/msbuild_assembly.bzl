@@ -1,5 +1,6 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
+load(":common.bzl", "write_cache_manifest")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def build_assembly(ctx, dotnet):
@@ -14,28 +15,19 @@ def build_assembly(ctx, dotnet):
     # didn't listen to our paths
     intermediate_assembly = ctx.actions.declare_file(paths.join("obj", dotnet.config.tfm, assembly.basename))
 
-    build_cache = ctx.actions.declare_file(restore.generated_project_file.basename + ".build.cache")
+    build_cache = ctx.actions.declare_file(ctx.attr.name + ".cache")
 
-    dep_files = _process_deps(ctx, restore)
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build", restore.generated_project_file)
+    dep_files, caches = _process_deps(ctx, restore)
+    cache_manifest = write_cache_manifest(ctx, caches)
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
     # todo(#6) make this a full depset including dependencies
     content = depset(getattr(ctx.files, "content", []))
     data = depset(getattr(ctx.files, "data", []))
 
-    # This could be a lot of files. We would use args.use_params_file, but that would put *all*
-    # the args into a params file, and dotnet does not support that.
-    # By convention, the builder will look for proj.srcs for the sources to compile
-    srcs = ctx.actions.declare_file(
-        restore.generated_project_file.basename + ".srcs",
-        sibling = restore.generated_project_file,
-    )
-    ctx.actions.write(srcs, "\n".join([s.path for s in ctx.files.srcs]))
-
     inputs = depset(
-        [srcs] +
-        ctx.files.srcs,
-        transitive = [dep_files, content, dotnet.sdk.init_files],
+        ctx.files.srcs + [cache_manifest],
+        transitive = [dep_files, content, dotnet.sdk.runfiles],
     )
 
     outputs = [output_dir, assembly, intermediate_dir, intermediate_assembly, build_cache] + cmd_outputs
@@ -47,7 +39,7 @@ def build_assembly(ctx, dotnet):
         executable = dotnet.sdk.dotnet,
         arguments = [args],
         env = dotnet.env,
-        tools = [dotnet.builder],
+        tools = dotnet.builder.files,
     )
 
     info = DotnetLibraryInfo(
@@ -66,10 +58,10 @@ def build_assembly(ctx, dotnet):
 
 def _process_deps(ctx, restore_info):
     files = [
-        restore_info.generated_project_file,
-        restore_info.source_project_file,
+        restore_info.project_file,
         restore_info.restore_dir,
     ]
+    caches = []
 
     # we need the full transitive closure of dependency files here because MSBuild
     # could decide to copy some of these files to the output directory
@@ -84,5 +76,6 @@ def _process_deps(ctx, restore_info):
                 info.build_cache,
             ])
             transitive.append(info.dep_files)
+            caches.append(info.build_cache)
 
-    return depset(files, transitive = transitive)
+    return depset(files, transitive = transitive), caches
