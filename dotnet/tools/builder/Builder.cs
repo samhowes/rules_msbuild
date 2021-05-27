@@ -71,10 +71,15 @@ namespace MyRulesDotnet.Tools.Builder
             }
         }
 
-        private GraphBuildResult ExecuteBuild(ProjectGraph graph)
+        private BuildResult ExecuteBuild(ProjectGraph graph)
         {
-            var data = new GraphBuildRequestData(
-                graph,
+            var entry = graph.EntryPointNodes.Single();
+            
+            // this is a *Build* Request, NOT a *Graph* build request
+            // build request only builds a single project in isolation, and any cache misses are considered errors.
+            // loading up the project graph to begin with enables some other optimizations. 
+            var data = new BuildRequestData(
+                entry.ProjectInstance,
                 _context.MSBuild.Targets,
                 null,
                 // replace the existing config that we'll load from cache

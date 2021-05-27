@@ -1,9 +1,10 @@
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
+msbuild_binary(
     name = "Binary",
     srcs = ["Program.cs"],
+    project_file = "Binary.csproj",
     target_framework = "netcoreapp3.1",
     deps = [
         "//tests/examples/Transitive/Lib",
@@ -14,6 +15,7 @@ build_test(
     name = "Binary_test",
     expected_files = {
         "netcoreapp3.1": [
+            "Binary.dll",
             "Binary.pdb",
             "Lib.dll",
             "Lib.pdb",

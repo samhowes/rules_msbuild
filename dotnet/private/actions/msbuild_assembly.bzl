@@ -17,8 +17,8 @@ def build_assembly(ctx, dotnet):
 
     build_cache = ctx.actions.declare_file(ctx.attr.name + ".cache")
 
-    dep_files, caches = _process_deps(ctx, restore)
-    cache_manifest = write_cache_manifest(ctx, caches)
+    dep_files, input_caches = _process_deps(ctx, restore)
+    cache_manifest = write_cache_manifest(ctx, input_caches)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
     # todo(#6) make this a full depset including dependencies
@@ -47,6 +47,7 @@ def build_assembly(ctx, dotnet):
         output_dir = output_dir,
         intermediate_dir = intermediate_dir,
         build_cache = build_cache,
+        build_caches = depset([build_cache], transitive = [input_caches]),
         data = data,
         dep_files = depset(
             transitive = [dep_files, content, data],
@@ -76,6 +77,6 @@ def _process_deps(ctx, restore_info):
                 info.build_cache,
             ])
             transitive.append(info.dep_files)
-            caches.append(info.build_cache)
+            caches.append(info.build_caches)
 
-    return depset(files, transitive = transitive), caches
+    return depset(files, transitive = transitive), depset(transitive = caches)
