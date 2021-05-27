@@ -1,9 +1,10 @@
-load("//dotnet:defs.bzl", "dotnet_library")
+load("//dotnet:defs.bzl", "msbuild_library")
 load("//tests/tools/build_test:build_test.bzl", "build_test")
 
-dotnet_library(
+msbuild_library(
     name = "Library",
     srcs = ["JsonParser.cs"],
+    project_file = "Library.csproj",
     target_framework = "netcoreapp3.1",
     visibility = ["//tests/examples/NuGet/Transitive:__subpackages__"],
     deps = [
