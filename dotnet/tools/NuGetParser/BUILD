@@ -13,3 +13,8 @@ dotnet_publish(
     name = "publish",
     target = ":NuGetParser",
 )
+
+filegroup(
+    name = "NuGetParser_srs",
+    srcs = glob(["*"]),
+)

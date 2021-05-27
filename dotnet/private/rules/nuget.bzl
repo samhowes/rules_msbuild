@@ -11,7 +11,7 @@ load(
     "TfmMappingInfo",
 )
 
-def _nuget_import_impl(ctx):
+def _nuget_package_impl(ctx):
     tfms = {}
     for target in ctx.attr.frameworks:
         info = target[NuGetFilegroupInfo]
@@ -22,13 +22,7 @@ def _nuget_import_impl(ctx):
         frameworks = tfms,
     )]
 
-def _nuget_package_version_impl(ctx):
-    return [NuGetPackageVersionInfo(
-        version = ctx.attr.name,
-        all_files = depset(ctx.files.all_files),
-    )]
-
-def _nuget_filegroup_impl(ctx):
+def _nuget_package_framework_impl(ctx):
     # the name is the tfm of the package this belongs to by convention
     tfm = ctx.attr.name
     version = ctx.attr.version[NuGetPackageVersionInfo]
@@ -50,6 +44,12 @@ def _nuget_filegroup_impl(ctx):
         ),
     )]
 
+def _nuget_package_version_impl(ctx):
+    return [NuGetPackageVersionInfo(
+        version = ctx.attr.name,
+        all_files = depset(ctx.files.all_files),
+    )]
+
 def _tfm_mapping_impl(ctx):
     return [TfmMappingInfo(dict = dict(
         [
@@ -61,29 +61,32 @@ def _tfm_mapping_impl(ctx):
 def _framework_info_impl(ctx):
     return [FrameworkInfo(tfm = ctx.attr.name, implicit_deps = ctx.attr.implicit_deps)]
 
-nuget_import = rule(
-    _nuget_import_impl,
+nuget_package = rule(
+    _nuget_package_impl,
     attrs = {
         "frameworks": attr.label_list(mandatory = True, providers = [NuGetFilegroupInfo]),
     },
     executable = False,
 )
 
-nuget_package_version = rule(
-    _nuget_package_version_impl,
+nuget_package_framework = rule(
+    _nuget_package_framework_impl,
     attrs = {
-        "all_files": attr.label_list(mandatory = True, allow_files = True),
-    },
-)
-
-nuget_filegroup = rule(
-    _nuget_filegroup_impl,
-    attrs = {
-        "version": attr.label(mandatory = True, providers = [NuGetPackageVersionInfo]),
+        "version": attr.label(
+            mandatory = True,
+            providers = [NuGetPackageVersionInfo],
+        ),
         "deps": attr.label_list(
             mandatory = True,
             providers = [NuGetPackageInfo],
         ),
+    },
+)
+
+nuget_package_version = rule(
+    _nuget_package_version_impl,
+    attrs = {
+        "all_files": attr.label_list(mandatory = True, allow_files = True),
     },
 )
 

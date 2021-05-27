@@ -40,9 +40,12 @@ load(
 )
 load(
     "//dotnet/private/rules:nuget.bzl",
-    _nuget_filegroup = "nuget_filegroup",
-    _nuget_import = "nuget_import",
+    _nuget_package_framework = "nuget_package_framework",
     _nuget_package_version = "nuget_package_version",
+)
+load(
+    "//dotnet/private:nuget.bzl",
+    _nuget_package = "nuget_package",
 )
 load(
     "//dotnet/private/toolchain:nuget.bzl",
@@ -55,8 +58,8 @@ dotnet_sdk = _dotnet_sdk
 dotnet_config = _dotnet_config
 
 nuget_fetch = _nuget_fetch
-nuget_import = _nuget_import
-nuget_filegroup = _nuget_filegroup
+nuget_package = _nuget_package
+nuget_package_framework = _nuget_package_framework
 nuget_package_version = _nuget_package_version
 
 DotnetSdkInfo = _DotnetSdkInfo

@@ -85,7 +85,10 @@ msbuild_publish = rule(
 
 _RESTORE_ATTRS = dicts.add(_COMMON_ATTRS, {
     "target_framework": attr.string(mandatory = True),
-    "deps": attr.label_list(providers = [DotnetRestoreInfo]),
+    "deps": attr.label_list(providers = [
+        [DotnetLibraryInfo],
+        [NuGetPackageInfo],
+    ]),
 })
 
 msbuild_restore = rule(
@@ -99,10 +102,6 @@ _ASSEMBLY_ATTRS = dicts.add(_RESTORE_ATTRS, {
     "srcs": attr.label_list(allow_files = [".cs"]),
     "restore": attr.label(mandatory = True, providers = [DotnetRestoreInfo]),
     "data": attr.label_list(allow_files = True),
-    "deps": attr.label_list(providers = [
-        [DotnetLibraryInfo],
-        [NuGetPackageInfo],
-    ]),
 })
 
 _EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, {

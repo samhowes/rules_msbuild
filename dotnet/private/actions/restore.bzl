@@ -53,9 +53,9 @@ def process_deps(dotnet, deps):
             info = dep[DotnetRestoreInfo]
 
             # MSBuild Restore is going to unconditionally traverse the entire project graph to
-            # compute the full transitive closure of package files for *every* project file.
-            # make sure the project_file is available as well as all package files that those project
-            # files reference.
+            # compute the full transitive closure of package files for *every* project file via a static
+            # graph evaluation of project files. make sure the project_file is available as well as all
+            # package files that those project files reference.
             files.append(info.project_file)
             transitive.append(info.dep_files)
         elif NuGetPackageInfo in dep:
