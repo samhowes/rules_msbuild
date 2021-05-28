@@ -1,19 +1,16 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_test")
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
+msbuild_binary(
     name = "HelloWeb",
     srcs = [
         "Program.cs",
         "Startup.cs",
-    ],
-    content = [
-        ":appsettings.json",
-        ":appsettings.Development.json",
-    ],
-    data = glob(["wwwroot/**/*"]),
-    sdk = "Microsoft.NET.Sdk.Web",
+        "appsettings.Development.json",
+        "appsettings.json",
+    ] + glob(["wwwroot/**/*"]),
+    project_file = "HelloWeb.csproj",
     target_framework = "netcoreapp3.1",
 )
 
@@ -24,14 +21,12 @@ build_test(
             "appsettings.json",
             "appsettings.Development.json",
         ],
+        "netcoreapp3.1/wwwroot": [
+            "foo.txt",
+        ],
     },
     expected_output = "The special value is: 42!\n",
     run_location = "standard",
-    target = "HelloWeb",
-)
-
-dotnet_publish(
-    name = "publish",
     target = "HelloWeb",
 )
 
@@ -47,11 +42,11 @@ build_test(
             "HelloWeb.runtimeconfig.json",
             "web.config",
         ],
-        "publish/netcoreapp3.1/HelloWeb.dll.runfiles/my_rules_dotnet/tests/examples/HelloWeb/wwwroot": [
+        "publish/netcoreapp3.1/wwwroot": [
             "foo.txt",
         ],
     },
-    target = "publish",
+    target = "HelloWeb_publish",
 )
 
 go_test(

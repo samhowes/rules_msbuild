@@ -47,9 +47,14 @@ def build_assembly(ctx, dotnet):
         output_dir = output_dir,
         intermediate_dir = intermediate_dir,
         build_cache = build_cache,
-        build_caches = depset([build_cache], transitive = [input_caches]),
+        build_caches = depset(
+            [build_cache],
+            transitive = [input_caches],
+        ),
         data = data,
         dep_files = depset(
+            # include srcs here because msbuild could copy them to the output directory
+            ctx.files.srcs,
             transitive = [dep_files, content, data],
         ),
         restore = restore,

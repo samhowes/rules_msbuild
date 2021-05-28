@@ -37,7 +37,9 @@ namespace MyRulesDotnet.Tools.Builder
             
             if (Command.Action == "publish")
             {
-                vars["PublishDir"] = Path.Combine(MSBuild.OutputPath, "publish", Tfm);
+                vars["PublishDir"] = Path.Combine(MSBuild.OutputPath, "publish", Tfm) + "/";
+                // Required, otherwise publish will try to re-build and discard the previous build results
+                vars["NoBuild"] = "true";
             }
 
             foreach (var (name, value) in vars)
@@ -143,9 +145,13 @@ namespace MyRulesDotnet.Tools.Builder
                     Targets = new[] {"Restore"};
                     break;
                 case "build":
+                    // https://github.com/dotnet/msbuild/issues/5204
                     Targets = new[]
                     {
-                        "GetTargetFrameworks", "Build", "GetCopyToOutputDirectoryItems", "GetNativeManifest"
+                        "GetTargetFrameworks", 
+                        "Build",
+                        "GetCopyToOutputDirectoryItems",
+                        "GetNativeManifest",
                     };
                     break;
                 case "publish":

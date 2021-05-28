@@ -100,7 +100,7 @@ msbuild_restore = rule(
 )
 
 _ASSEMBLY_ATTRS = dicts.add(_RESTORE_ATTRS, {
-    "srcs": attr.label_list(allow_files = [".cs"]),
+    "srcs": attr.label_list(allow_files = True),
     "restore": attr.label(mandatory = True, providers = [DotnetRestoreInfo]),
     "data": attr.label_list(allow_files = True),
     "deps": attr.label_list(providers = [

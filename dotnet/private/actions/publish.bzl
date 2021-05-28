@@ -13,7 +13,7 @@ def publish(ctx):
 
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish")
 
-    cache_manifest = write_cache_manifest(ctx, [info.build_cache])
+    cache_manifest = write_cache_manifest(ctx, depset([info.build_cache]))
 
     inputs = depset(
         [info.output_dir, info.intermediate_dir, info.build_cache, cache_manifest],

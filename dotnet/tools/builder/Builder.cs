@@ -85,7 +85,10 @@ namespace MyRulesDotnet.Tools.Builder
                 // replace the existing config that we'll load from cache
                 // not setting this results in MSBuild setting a global unique property to protect against 
                 // https://github.com/dotnet/msbuild/issues/1748
-                BuildRequestDataFlags.ReplaceExistingProjectInstance
+                // todo: update above comment
+                // setting to replace means that publish will discard item groups that were previoiusly built, 
+                // resulting in publish not publishing content items.
+                BuildRequestDataFlags.None
             );
 
             var submission = _buildManager.PendBuildRequest(data);
@@ -153,6 +156,7 @@ namespace MyRulesDotnet.Tools.Builder
                 Loggers = new ILogger[] {_msbuildLog, binlog!},
                 DetailedSummary = true,
                 IsolateProjects = true,
+                LogTaskInputs = _msbuildLog.Verbosity == LoggerVerbosity.Diagnostic,
                 OutputResultsCacheFile = _context.LabelPath(".cache"),
                 InputResultsCacheFiles = inputCaches,
                 // cult-copy
