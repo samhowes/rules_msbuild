@@ -89,6 +89,8 @@ namespace MyRulesDotnet.Tools.Builder
         public bool BinlogEnabled { get; set; } = true;
         public string DirectoryBazelProps { get; set; }
         public bool IsTest { get; set; }
+
+        public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];
     }
     
     public class BazelContext
@@ -147,6 +149,8 @@ namespace MyRulesDotnet.Tools.Builder
                         "Build",
                         "GetCopyToOutputDirectoryItems",
                         "GetNativeManifest",
+                        // included so Publish doesn't produce MSB3088
+                        "ResolveAssemblyReferences"
                     };
                     break;
                 case "publish":

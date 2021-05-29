@@ -10,7 +10,7 @@ bazel build //tests/sanity //tests/examples/HelloBazel
 
 bazel test //...
 
-bazel run //:gazelle-dotnet
+#bazel run //:gazelle-dotnet
 
 # these should all be cached because gazelle dotnet shouldn't change anything
 # even if they aren't fully cached, they should still pass

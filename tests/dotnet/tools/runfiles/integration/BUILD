@@ -1,8 +1,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_test")
-load("//dotnet:defs.bzl", "dotnet_binary")
+load("//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
-    name = "dotnet_cat",
+msbuild_binary(
+    name = "DotnetCat",
     srcs = ["DotnetCat.cs"],
     data = ["foo.txt"],
     target_framework = "netcoreapp3.1",
@@ -13,15 +13,15 @@ genrule(
     name = "run_dotnet_cat",
     srcs = [],
     outs = ["run_dotnet_cat_result.txt"],
-    cmd = "$(location :dotnet_cat) > $@",
-    tools = [":dotnet_cat"],
+    cmd = "$(location :DotnetCat) > $@",
+    tools = [":DotnetCat"],
 )
 
 go_test(
     name = "integration_test",
     srcs = ["dotnet_cat_test.go"],
     data = [
-        ":dotnet_cat",
+        ":DotnetCat",
         ":run_dotnet_cat",
     ],
     deps = [

@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "//dotnet/private/rules:msbuild.bzl",
     "msbuild_publish",
@@ -15,6 +16,7 @@ def msbuild_binary(
         srcs = [],
         deps = [],
         **kwargs):
+    project_file = _guess_project_file(name, srcs, project_file)
     _msbuild_assembly(name, _msbuild_binary, project_file, target_framework, srcs, deps, kwargs)
 
     msbuild_publish(
@@ -45,6 +47,12 @@ def msbuild_test(
 
     _msbuild_assembly(name, _msbuild_test, project_file, target_framework, srcs, deps, kwargs)
 
+_KNOWN_EXTS = {
+    ".cs": True,
+    ".fs": True,
+    ".vb": True,
+}
+
 def _msbuild_assembly(
         name,
         assembly_impl,
@@ -54,9 +62,14 @@ def _msbuild_assembly(
         deps,
         kwargs,
         assembly_args = {}):
-    if project_file == None:
-        fail("Target {} is missing required attribute 'project_file'".format(name))
+    assembly_args = dicts.add(assembly_args, dict(
+        [
+            [k, kwargs.pop(k, None)]
+            for k in ["data"]
+        ],
+    ))
 
+    project_file = _guess_project_file(name, srcs, project_file)
     restore_name = name + "_restore"
 
     restore_deps = []
@@ -81,3 +94,17 @@ def _msbuild_assembly(
         deps = deps,
         **dicts.add(kwargs, assembly_args)
     )
+
+def _guess_project_file(name, srcs, project_file):
+    if project_file != None:
+        return project_file
+
+    for src in srcs:
+        _, ext = paths.split_extension(src)
+        if _KNOWN_EXTS.get(ext, False):
+            return name + ext + "proj"
+
+    if project_file == None:
+        fail("Target {} is missing project_file attribute and has no srcs to determine project type from. " +
+             "Please directly specify project_file or add a source file with one of the following " +
+             "extensions: {}".format(name, ", ".join(_KNOWN_EXTS.keys())))

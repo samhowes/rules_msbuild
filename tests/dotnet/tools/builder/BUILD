@@ -1,13 +1,11 @@
-load("//dotnet:defs.bzl", "dotnet_test")
+load("//dotnet:defs.bzl", "msbuild_test")
 
-dotnet_test(
+msbuild_test(
     name = "BuilderTest",
     size = "small",
     srcs = glob(["*.cs"]),
-    msbuild_properties = {"UseAppHost": "false"},
-    sdk = "Microsoft.NET.Sdk",
+    project_file = "BuilderTest.csproj",
     target_framework = "netcoreapp3.1",
-    visibility = ["//visibility:public"],
     deps = [
         "//dotnet/tools/builder:Builder",  # keep
         "@nuget//FluentAssertions",

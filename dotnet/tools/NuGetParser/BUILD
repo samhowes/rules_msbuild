@@ -1,17 +1,10 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
+msbuild_binary(
     name = "NuGetParser",
     srcs = glob(["*.cs"]),
-    msbuild_properties = {"RootNamespace": "NuGetParser"},
-    sdk = "Microsoft.NET.Sdk",
     target_framework = "netcoreapp3.1",  # keep
     visibility = ["//visibility:public"],
-)
-
-dotnet_publish(
-    name = "publish",
-    target = ":NuGetParser",
 )
 
 filegroup(

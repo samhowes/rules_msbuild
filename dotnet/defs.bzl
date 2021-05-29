@@ -33,7 +33,7 @@ load(
     _dotnet_tool_binary = "dotnet_tool_binary",
 )
 load(
-    "//dotnet/private:msbuild.bzl",
+    "//dotnet/private:msbuild_macros.bzl",
     _msbuild_binary = "msbuild_binary",
     _msbuild_library = "msbuild_library",
     _msbuild_test = "msbuild_test",
