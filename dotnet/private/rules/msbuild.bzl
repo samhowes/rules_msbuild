@@ -28,7 +28,13 @@ def _restore_impl(ctx):
     ]
 
 def _binary_impl(ctx):
-    dotnet = dotnet_exec_context(ctx, True)
+    return _make_executable(ctx, False)
+
+def _test_impl(ctx):
+    return _make_executable(ctx, True)
+
+def _make_executable(ctx, is_test):
+    dotnet = dotnet_exec_context(ctx, True, is_test)
     info, outputs = build_assembly(ctx, dotnet)
     launcher = make_launcher(ctx, dotnet, info)
 
@@ -65,9 +71,6 @@ def _library_impl(ctx):
             all = outputs,
         ),
     ]
-
-def _test_impl(ctx):
-    pass
 
 _TOOLCHAINS = ["@my_rules_dotnet//dotnet:toolchain"]
 _COMMON_ATTRS = {
@@ -109,6 +112,13 @@ _ASSEMBLY_ATTRS = dicts.add(_RESTORE_ATTRS, {
     ]),
 })
 
+msbuild_library = rule(
+    _library_impl,
+    attrs = _ASSEMBLY_ATTRS,
+    executable = False,
+    toolchains = _TOOLCHAINS,
+)
+
 _EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, {
     "_launcher_template": attr.label(
         default = Label("//dotnet/tools/launcher"),
@@ -123,16 +133,9 @@ msbuild_binary = rule(
     toolchains = _TOOLCHAINS,
 )
 
-msbuild_library = rule(
-    _library_impl,
-    attrs = _ASSEMBLY_ATTRS,
-    executable = False,
-    toolchains = _TOOLCHAINS,
-)
-
 msbuild_test = rule(
     _test_impl,
-    attrs = _ASSEMBLY_ATTRS,
+    attrs = _EXECUTABLE_ATTRS,
     executable = True,
     test = True,
     toolchains = _TOOLCHAINS,

@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "//dotnet/private/rules:msbuild.bzl",
     "msbuild_publish",
@@ -14,7 +15,7 @@ def msbuild_binary(
         srcs = [],
         deps = [],
         **kwargs):
-    _msbuild_assembly(name, _msbuild_binary, project_file, target_framework, srcs, deps, **kwargs)
+    _msbuild_assembly(name, _msbuild_binary, project_file, target_framework, srcs, deps, kwargs)
 
     msbuild_publish(
         name = name + "_publish",
@@ -29,7 +30,7 @@ def msbuild_library(
         srcs = [],
         deps = [],
         **kwargs):
-    _msbuild_assembly(name, _msbuild_library, project_file, target_framework, srcs, deps, **kwargs)
+    _msbuild_assembly(name, _msbuild_library, project_file, target_framework, srcs, deps, kwargs)
 
 def msbuild_test(
         name,
@@ -38,7 +39,11 @@ def msbuild_test(
         srcs = [],
         deps = [],
         **kwargs):
-    _msbuild_assembly(name, _msbuild_test, project_file, target_framework, srcs, deps, **kwargs)
+    test_args = dict(
+        size = kwargs.pop("size", None),
+    )
+
+    _msbuild_assembly(name, _msbuild_test, project_file, target_framework, srcs, deps, kwargs)
 
 def _msbuild_assembly(
         name,
@@ -47,7 +52,8 @@ def _msbuild_assembly(
         target_framework,
         srcs,
         deps,
-        **kwargs):
+        kwargs,
+        assembly_args = {}):
     if project_file == None:
         fail("Target {} is missing required attribute 'project_file'".format(name))
 
@@ -73,5 +79,5 @@ def _msbuild_assembly(
         project_file = project_file,
         restore = ":" + restore_name,
         deps = deps,
-        **kwargs
+        **dicts.add(kwargs, assembly_args)
     )

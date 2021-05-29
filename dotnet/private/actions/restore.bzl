@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//dotnet/private/msbuild:xml.bzl", "make_project_file")
+load(":common.bzl", "get_nuget_files")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
 load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
 
@@ -43,10 +44,10 @@ def process_deps(dotnet, deps):
     files = []
     transitive = []
     for dep in getattr(dotnet.config, "tfm_deps", []):
-        _get_nuget_files(dep, tfm, transitive)
+        get_nuget_files(dep, tfm, transitive)
 
     for dep in getattr(dotnet.config, "implicit_deps", []):
-        _get_nuget_files(dep, tfm, transitive)
+        get_nuget_files(dep, tfm, transitive)
 
     for dep in deps:
         if DotnetRestoreInfo in dep:
@@ -59,19 +60,8 @@ def process_deps(dotnet, deps):
             files.append(info.project_file)
             transitive.append(info.dep_files)
         elif NuGetPackageInfo in dep:
-            _get_nuget_files(dep, tfm, transitive)
+            get_nuget_files(dep, tfm, transitive)
         else:
             fail("Unkown dependency type: {}".format(dep))
 
     return depset(files, transitive = transitive)
-
-def _get_nuget_files(dep, tfm, files):
-    pkg = dep[NuGetPackageInfo]
-    framework_info = pkg.frameworks.get(tfm, None)
-    if framework_info == None:
-        fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
-            tfm,
-            pkg.name,
-            ", ".join([k for k, v in pkg.frameworks.items()]),
-        ))
-    files.append(framework_info.all_dep_files)

@@ -134,6 +134,8 @@ def make_builder_cmd(ctx, dotnet, action):
         "--directory_bazel_props",
         dotnet.sdk.bazel_props,
     ])
+    if dotnet.config.is_test:
+        args.add_all(["--is_test", True])
     return args, outputs
 
 def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):

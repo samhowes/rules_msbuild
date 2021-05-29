@@ -75,13 +75,7 @@ namespace MyRulesDotnet.Tools.Builder
             ProjectFile = ExecPath(command.NamedArgs["project_file"]);
             NuGetConfig = ExecPath(command.NamedArgs["nuget_config"]);
             Tfm = command.NamedArgs["tfm"];
-
-            if (false)
-            {
-                Bazel.Label.Package = Bazel.Label.Package.Replace("Dependent", "ClassLibrary");
-                Bazel.Label.Name = Bazel.Label.Name.Replace("Dependent", "ClassLibrary");
-                ProjectFile = ProjectFile.Replace("Dependent", "ClassLibrary");
-            }
+            IsTest = command.NamedArgs.TryGetValue("is_test", out _);
         }
 
         public MSBuildContext MSBuild { get; set; }
@@ -94,6 +88,7 @@ namespace MyRulesDotnet.Tools.Builder
         // todo(#51) disable when no build diagnostics are requested
         public bool BinlogEnabled { get; set; } = true;
         public string DirectoryBazelProps { get; set; }
+        public bool IsTest { get; set; }
     }
     
     public class BazelContext

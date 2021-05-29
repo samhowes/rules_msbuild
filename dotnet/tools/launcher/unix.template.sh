@@ -87,7 +87,7 @@ if [[ -z "${RUNFILES_DIR:-}" ]]; then
       self="${self%/*}/$readlink"
     fi
   done
-  if [[ -z "$RUNFILES_DIR" ]]; then
+  if [[ -z "${RUNFILES_DIR:-}" ]]; then
     die 'Cannot locate runfiles directory. (Set $RUNFILES_DIR to inhibit searching.)'
   fi
 fi

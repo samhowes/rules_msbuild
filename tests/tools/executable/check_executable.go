@@ -93,6 +93,9 @@ func CheckExecutableOutput(t *testing.T, config *TestConfig) {
 		return
 	}
 
+	actualErr := files.Endings(stderr.String())
+	assert.Empty(t, actualErr, "command had errors")
+
 	if config.ExpectedOutput[0] == '%' {
 		expr := config.ExpectedOutput[1:]
 		matched, err := regexp.Match(expr, []byte(actualOut))
@@ -101,9 +104,6 @@ func CheckExecutableOutput(t *testing.T, config *TestConfig) {
 	} else {
 		assert.Equal(t, config.ExpectedOutput, actualOut, "incorrect command output")
 	}
-
-	actualErr := files.Endings(stderr.String())
-	assert.Empty(t, actualErr, "command had errors")
 
 	t.Logf("Stdout: \n'%s'", actualOut)
 }

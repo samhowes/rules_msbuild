@@ -1,6 +1,6 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
-load(":common.bzl", "write_cache_manifest")
+load(":common.bzl", "get_nuget_files", "write_cache_manifest")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def build_assembly(ctx, dotnet):
@@ -17,7 +17,7 @@ def build_assembly(ctx, dotnet):
 
     build_cache = ctx.actions.declare_file(ctx.attr.name + ".cache")
 
-    dep_files, input_caches = _process_deps(ctx, restore)
+    dep_files, input_caches = _process_deps(ctx, dotnet, restore)
     cache_manifest = write_cache_manifest(ctx, input_caches)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
@@ -62,7 +62,7 @@ def build_assembly(ctx, dotnet):
 
     return info, outputs
 
-def _process_deps(ctx, restore_info):
+def _process_deps(ctx, dotnet, restore_info):
     files = [
         restore_info.project_file,
         restore_info.restore_dir,
@@ -74,6 +74,10 @@ def _process_deps(ctx, restore_info):
     # this will definitely happen for an exe build, and may happen for other assemblies
     # depending on the user's project settings
     transitive = [restore_info.dep_files]
+
+    for d in dotnet.config.implicit_deps:
+        get_nuget_files(d, dotnet.config.tfm, transitive)
+
     for d in ctx.attr.deps:
         if DotnetLibraryInfo in d:
             info = d[DotnetLibraryInfo]

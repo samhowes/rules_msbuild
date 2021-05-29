@@ -54,9 +54,8 @@ go_test(
     size = "small",
     srcs = ["run_publish_test.go"],
     data = [
-        ":publish",
+        ":HelloWeb_publish",
         "@dotnet_sdk//:dotnet",
-        "@dotnet_sdk//:init_files",
     ],
     deps = [
         "//tests/tools/executable",

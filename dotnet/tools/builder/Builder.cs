@@ -68,6 +68,20 @@ namespace MyRulesDotnet.Tools.Builder
                 {
                     // FixRestoreOutputs();
                 }
+
+                if (_action == "build" && _context.IsTest)
+                {
+                    // todo make this less hacky
+                    var loggerPath = Path.Combine(
+                        Path.GetDirectoryName(_context.NuGetConfig)!, 
+                        "packages/junitxml.testlogger/3.0.87/build/_common");
+                    var tfmPath = Path.Combine(_context.MSBuild.OutputPath, _context.Tfm);
+                    foreach (var dll in Directory.EnumerateFiles(loggerPath))
+                    {
+                        var filename = Path.GetFileName(dll);
+                        File.Copy(dll, Path.Combine(tfmPath, filename));
+                    }
+                }
             }
         }
 
@@ -98,7 +112,7 @@ namespace MyRulesDotnet.Tools.Builder
             return result;
         }
 
-        private ProjectGraph LoadProject(ProjectCollection? projectCollection)
+        private ProjectGraph LoadProject(ProjectCollection projectCollection)
         {
             var globalProperties = new Dictionary<string, string>
             {
@@ -123,6 +137,25 @@ namespace MyRulesDotnet.Tools.Builder
                 globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
             }
 
+            // void AddImplicitDeps(object sender, ProjectCollection.ProjectAddedToProjectCollectionEventArgs args)
+            // {
+            //     var root = args.ProjectRootElement;
+            //     if (!string.Equals(root.FullPath, _context.ProjectFile,StringComparison.OrdinalIgnoreCase))
+            //         return;
+            //     
+            //     var g = root.CreateItemGroupElement();
+            //     root.AppendChild(g);
+            //     var pr = root.CreateItemElement("PackageReference", "JUnitXml.TestLogger");
+            //     g.AppendChild(pr);
+            //     pr.AddMetadata("Version", "3.0.87");
+            //     
+            //     root.save
+            //     
+            //     projectCollection.ProjectAdded -= AddImplicitDeps;
+            // }
+            //
+            // projectCollection.ProjectAdded += AddImplicitDeps;
+            
             var graph = new ProjectGraph(_context.ProjectFile, globalProperties, projectCollection);
             return graph;
         }
