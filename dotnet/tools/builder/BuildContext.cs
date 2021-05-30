@@ -138,6 +138,10 @@ namespace MyRulesDotnet.Tools.Builder
                 ["BINDIR"] = bazel.BinDir,
                 ["RestoreConfigFile"] = nuGetConfig,
                 ["PublishDir"] = Path.Combine(OutputPath, "publish", tfm) + "/",
+                ["UseAppHost"] = "false", // we'll basically be making our own via the launcher
+                // msbuild's shared compilation is not compatible with sandboxing because it wll delegate compilation to aonother 
+                // process that won't have access to the sandbox requesting the build.
+                ["UseSharedCompilation"] = "false",
             };
             
             switch (action)

@@ -1,18 +1,18 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private/msbuild:xml.bzl", "make_project_file")
 load(":common.bzl", "get_nuget_files")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
 load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
 
 def restore(ctx, dotnet):
-    args, outputs = make_builder_cmd(ctx, dotnet, "restore")
-
+    # we don't really need this since we're declaring the directory, but this way, if the restore
+    # fails, bazel will fail the build because this file wasn't created
+    assets_json = ctx.actions.declare_file("restore/project.assets.json")
     restore_dir = ctx.actions.declare_directory("restore")
 
-    # we don't really need this, but this way, if the restore fails, bazel will fail the build
-    # because this file wasn't created
-    assets_json = ctx.actions.declare_file("restore/project.assets.json")
-    outputs.extend([restore_dir, assets_json])
+    outputs = [assets_json, restore_dir]
+
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore")
+
+    outputs.extend(cmd_outputs)
 
     dep_files = process_deps(dotnet, ctx.attr.deps)
 
