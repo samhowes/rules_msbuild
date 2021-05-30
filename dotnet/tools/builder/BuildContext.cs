@@ -16,13 +16,6 @@ namespace MyRulesDotnet.Tools.Builder
 
         // bazel always sends us POSIX paths
         private const char BazelPathChar = '/';
-        private readonly bool _normalizePath;
-
-        private string NormalizePath(string input)
-        {
-            if (!_normalizePath) return input;
-            return input.Replace('/', Path.DirectorySeparatorChar);
-        }
 
         public BuildContext()
         {
@@ -55,7 +48,6 @@ namespace MyRulesDotnet.Tools.Builder
         public BuildContext(Command command)
         {
             Command = command;
-            _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
             Bazel = new BazelContext(command);
             NuGetConfig = ExecPath(command.NamedArgs["nuget_config"]);
             Tfm = command.NamedArgs["tfm"];
