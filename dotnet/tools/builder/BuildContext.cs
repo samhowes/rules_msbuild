@@ -27,22 +27,7 @@ namespace MyRulesDotnet.Tools.Builder
 
         public void SetEnvironment()
         {
-            var vars = new Dictionary<string, string>()
-            {
-                ["DirectoryBuildPropsPath"] = DirectoryBazelProps,
-                ["ExecRoot"] = Bazel.ExecRoot,
-                ["BINDIR"] = Bazel.BinDir,
-                ["RestoreConfigFile"] = NuGetConfig,
-            };
-            
-            if (Command.Action == "publish")
-            {
-                vars["PublishDir"] = Path.Combine(MSBuild.OutputPath, "publish", Tfm) + "/";
-                // Required, otherwise publish will try to re-build and discard the previous build results
-                vars["NoBuild"] = "true";
-            }
-
-            foreach (var (name, value) in vars)
+            foreach (var (name, value) in MSBuild.BuildEnvironment)
             {
                 Environment.SetEnvironmentVariable(name, value);
             }
@@ -67,28 +52,35 @@ namespace MyRulesDotnet.Tools.Builder
             Command = command;
             _normalizePath = Path.DirectorySeparatorChar != BazelPathChar;
             Bazel = new BazelContext(command);
-            MSBuild = new MSBuildContext(Bazel.OutputDir, command.Action);
-            
-            SdkRoot = ToolPath(command.NamedArgs["sdk_root"]);
-            DirectoryBazelProps = ToolPath(command.NamedArgs["directory_bazel_props"]);
-            
-            ProjectFile = ExecPath(command.NamedArgs["project_file"]);
             NuGetConfig = ExecPath(command.NamedArgs["nuget_config"]);
             Tfm = command.NamedArgs["tfm"];
+            MSBuild = new MSBuildContext(
+                command.Action,
+                Bazel,
+                ToolPath(command.NamedArgs["directory_bazel_props"]),
+                NuGetConfig,
+                Tfm
+                );
+            
+            SdkRoot = ToolPath(command.NamedArgs["sdk_root"]);
+            
+            ProjectFile = ExecPath(command.NamedArgs["project_file"]);
+            
+            
             IsTest = command.NamedArgs.TryGetValue("is_test", out _);
         }
 
-        public MSBuildContext MSBuild { get; set; }
-        public string ProjectFile { get; set; }
-        public BazelContext Bazel { get; set; }
-        public string NuGetConfig { get; set; }
-        public string Tfm { get; set; }
-        public string SdkRoot { get; set; }
+        // ReSharper disable once InconsistentNaming
+        public MSBuildContext MSBuild { get; }
+        public string ProjectFile { get; }
+        public BazelContext Bazel { get; }
+        public string NuGetConfig { get; }
+        public string Tfm { get; }
+        public string SdkRoot { get; }
         public bool DiagnosticsEnabled { get; set; }
         // todo(#51) disable when no build diagnostics are requested
-        public bool BinlogEnabled { get; set; } = true;
-        public string DirectoryBazelProps { get; set; }
-        public bool IsTest { get; set; }
+        public bool BinlogEnabled { get; } = true;
+        public bool IsTest { get; }
 
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];
     }
@@ -97,9 +89,9 @@ namespace MyRulesDotnet.Tools.Builder
     {
         public class BazelLabel
         {
-            public string Workspace { get; set; }
-            public string Package { get; set; }
-            public string Name { get; set; }
+            public string Workspace { get; init; }
+            public string Package { get; init; }
+            public string Name { get; init; }
         }
         public BazelContext(Command command)
         {
@@ -119,22 +111,32 @@ namespace MyRulesDotnet.Tools.Builder
             OutputDir = Path.Combine(BinDir, Label.Package);
         }
 
-        public string OutputBase { get; set; }
-        public string OutputDir { get; set; }
-        public BazelLabel Label { get; set; }
+        public string OutputBase { get; }
+        public string OutputDir { get; }
+        public BazelLabel Label { get; }
         public string Suffix { get; set; }
-        public string BinDir { get; set; }
-        public string ExecRoot { get; set; }
+        public string BinDir { get; }
+        public string ExecRoot { get; }
             
     }
     
+    // ReSharper disable once InconsistentNaming
     public class MSBuildContext
     {
-        public MSBuildContext(string outputDir, string action)
+        public MSBuildContext(string action, BazelContext bazel, string directoryBazelPropsPath, string nuGetConfig, string tfm)
         {
-            OutputPath = outputDir;
-            BaseIntermediateOutputPath = Path.Combine(outputDir, "restore");
-            IntermediateOutputPath = Path.Combine(outputDir, "obj");
+            OutputPath = bazel.OutputDir;
+            BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
+            IntermediateOutputPath = Path.Combine(OutputPath, "obj");
+            
+            BuildEnvironment = new Dictionary<string, string>()
+            {
+                ["DirectoryBuildPropsPath"] = directoryBazelPropsPath,
+                ["ExecRoot"] = bazel.ExecRoot,
+                ["BINDIR"] = bazel.BinDir,
+                ["RestoreConfigFile"] = nuGetConfig,
+                ["PublishDir"] = Path.Combine(OutputPath, "publish", tfm) + "/",
+            };
             
             switch (action)
             {
@@ -155,19 +157,32 @@ namespace MyRulesDotnet.Tools.Builder
                     break;
                 case "publish":
                     Targets = new[] {"Publish"};
-                    PostProcessCaches = false;
+                    
+                    // Required, otherwise publish will try to re-build and discard the previous build results
+                    BuildEnvironment["NoBuild"] = "true";
+                    UseCaching = false;
+                    // msbuild is going to evaluate all the project files anyways, and we can't use any input caches
+                    // from the builds, so just do a graph build. It might be faster to use publish caches, but this 
+                    // current implementation is quite slower than a standard `dotnet publish /graph` anyways, so 
+                    // i'll be taking more of a look at optimizations later. 
+                    GraphBuild = true;
+                    
                     break;
                 default:
                     throw new ArgumentException($"Unknown action {action}");
             }
         }
 
-        public bool PostProcessCaches { get; set; } = true;
+        public Dictionary<string,string> BuildEnvironment { get; }
 
-        public string[] Targets { get; set; }
+        public bool GraphBuild { get; }
 
-        public string BaseIntermediateOutputPath { get; set; }
-        public string IntermediateOutputPath { get; set; }
-        public string OutputPath { get; set; }
+        public bool UseCaching { get; } = true;
+
+        public string[] Targets { get; }
+
+        public string BaseIntermediateOutputPath { get; }
+        public string IntermediateOutputPath { get; }
+        public string OutputPath { get; }
     }
 }

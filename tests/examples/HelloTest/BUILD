@@ -30,5 +30,4 @@ build_test(
         ],
     },
     expected_output = "%Passed:\\s+1",
-    target = "HelloTest",
 )

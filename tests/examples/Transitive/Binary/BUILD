@@ -26,5 +26,4 @@ build_test(
         ],
     },
     expected_output = "Hello Transitive: Transitive Transitive Value!\n",
-    target = "Binary",
 )

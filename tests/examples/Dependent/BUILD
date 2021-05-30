@@ -21,7 +21,6 @@ build_test(
         ],
     },
     expected_output = "Hello Secret: Foo\n",
-    target = "Dependent",
 )
 
 build_test(
@@ -33,6 +32,4 @@ build_test(
             "ClassLibrary.dll",
         ],
     },
-    expected_output = "Hello Secret: Foo\n",
-    target = "Dependent_publish",
 )

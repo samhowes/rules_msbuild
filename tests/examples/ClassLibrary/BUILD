@@ -23,7 +23,6 @@ build_test(
             "ClassLibrary.csproj.nuget.g.targets",
         ],
     },
-    target = "ClassLibrary_restore",
 )
 
 build_test(
@@ -42,5 +41,4 @@ build_test(
             "ClassLibrary.deps.json",
         ],
     },
-    target = "ClassLibrary",
 )

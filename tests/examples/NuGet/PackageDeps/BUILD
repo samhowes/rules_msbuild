@@ -24,5 +24,4 @@ build_test(
         ],
     },
     expected_output = "hello\n",
-    target = "PackageDeps",
 )

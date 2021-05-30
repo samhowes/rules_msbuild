@@ -20,5 +20,4 @@ build_test(
         ],
     },
     expected_output = "bar\n",
-    target = "Binary",
 )

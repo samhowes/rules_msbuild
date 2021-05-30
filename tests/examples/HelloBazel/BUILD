@@ -21,7 +21,6 @@ build_test(
             "HelloBazel.csproj.nuget.g.targets",
         ],
     },
-    target = "HelloBazel_restore",
 )
 
 build_test(
@@ -43,7 +42,6 @@ build_test(
         ],
     },
     expected_output = "Hello Bazel!\n",
-    target = "HelloBazel",
 )
 
 build_test(
@@ -56,5 +54,4 @@ build_test(
             "HelloBazel.runtimeconfig.json",
         ],
     },
-    target = "HelloBazel_publish",
 )

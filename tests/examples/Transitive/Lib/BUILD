@@ -24,5 +24,4 @@ build_test(
             "TransitiveTransitiveLib.dll",
         ],
     },
-    target = "Lib",
 )

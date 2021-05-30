@@ -50,7 +50,7 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         fail("Tfm {} was not configured for restore by nuget. If this was not a mistake, please add it to your " +
              "nuget_fetch rule.".format(tfm))
 
-    return dotnet_context(
+    dotnet = dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,
         None if toolchain == None else toolchain._builder,
@@ -65,6 +65,9 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         is_test = is_test,
         intermediate_path = INTERMEDIATE_BASE,
     )
+
+    dotnet.env["BINDIR"] = ctx.bin_dir.path
+    return dotnet
 
 def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
     ext = ".exe" if os == "windows" else ""

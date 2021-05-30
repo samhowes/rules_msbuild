@@ -78,7 +78,7 @@ def make_project_file(ctx, dotnet, dep_files, exec_root = EXEC_ROOT):
             pre_sdk_properties = pre_sdk_properties,
             post_sdk_properties = post_sdk_properties,
             srcs = ctx.files.srcs,
-            imports = [source_project_file],
+            imports = [source_project_file, dotnet.sdk.bazel_props],
             exec_root = exec_root,
         )
     else:

@@ -21,5 +21,4 @@ build_test(
         ],
     },
     expected_output = "NuGet <3 Bazel\n",
-    target = "HelloNuGet",
 )

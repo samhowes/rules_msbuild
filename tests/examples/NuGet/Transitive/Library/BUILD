@@ -20,5 +20,4 @@ build_test(
             "!Newtonsoft.Json.dll",
         ],
     },
-    target = "Library",
 )

@@ -36,26 +36,26 @@ namespace MyRulesDotnet.Tools.Builder
         {
             var projectCollection = BeginBuild();
 
-            var project = LoadProject(projectCollection);
+            var (project, graph) = LoadProject(projectCollection);
             if (project == null) return 1;
 
-            var result = ExecuteBuild(project);
+            var result = ExecuteBuild(project, graph!);
 
             EndBuild(result);
 
-            return (int) result.OverallResult;
+            return (int) result;
         }
 
-        private void EndBuild(BuildResult result)
+        private void EndBuild(BuildResultCode result)
         {
-            if (_context.MSBuild.PostProcessCaches && result.OverallResult == BuildResultCode.Success)
+            if (_context.MSBuild.UseCaching && result == BuildResultCode.Success)
             {
                 _cacheManager.AfterExecuteBuild();
             }
 
             _buildManager.EndBuild();
  
-            if (result.OverallResult == BuildResultCode.Success)
+            if (result == BuildResultCode.Success)
             {
                 if (_action == "restore")
                 {
@@ -78,36 +78,45 @@ namespace MyRulesDotnet.Tools.Builder
             }
         }
 
-        private BuildResult ExecuteBuild(ProjectInstance project)
+        private BuildResultCode ExecuteBuild(ProjectGraphNode project, ProjectGraph graph)
         {
-            // this is a *Build* Request, NOT a *Graph* build request
-            // build request only builds a single project in isolation, and any cache misses are considered errors.
-            // loading up the project graph to begin with enables some other optimizations. 
-            var data = new BuildRequestData(
-                project,
-                _context.MSBuild.Targets,
-                null,
-                // replace the existing config that we'll load from cache
-                // not setting this results in MSBuild setting a global unique property to protect against 
-                // https://github.com/dotnet/msbuild/issues/1748
-                // todo: update above comment
-                // setting to replace means that publish will discard item groups that were previoiusly built, 
-                // resulting in publish not publishing content items.
+            var source = new TaskCompletionSource<BuildResultCode>();
+            var flags = BuildRequestDataFlags.None;
+            BuildResultCode result;
+            
+            if (_context.MSBuild.GraphBuild)
+            {
+                var graphData = new GraphBuildRequestData(graph, _context.MSBuild.Targets, null, flags);
+                var submission = _buildManager.PendBuildRequest(graphData);
                 
-                // Keep the project items that we have discovered for publish so publish doesn't do a re-build.
-                BuildRequestDataFlags.None
-            );
-
-            var submission = _buildManager.PendBuildRequest(data);
-
-            var source = new TaskCompletionSource<bool>();
-            submission.ExecuteAsync(_ => source.SetResult(true), new object());
-            source.Task.GetAwaiter().GetResult();
-            var result = submission.BuildResult;
-            return result;
+                submission.ExecuteAsync(_ => source.SetResult(submission.BuildResult.OverallResult), submission);
+            }
+            else
+            {
+                // this is a *Build* Request, NOT a *Graph* build request
+                // build request only builds a single project in isolation, and any cache misses are considered errors.
+                // loading up the project graph to begin with enables some other optimizations. 
+                var data = new BuildRequestData(
+                    project.ProjectInstance,
+                    _context.MSBuild.Targets,
+                    null,
+                    // replace the existing config that we'll load from cache
+                    // not setting this results in MSBuild setting a global unique property to protect against 
+                    // https://github.com/dotnet/msbuild/issues/1748
+                    // todo: update above comment
+                    // setting to replace means that publish will discard item groups that were previoiusly built, 
+                    // resulting in publish not publishing content items.
+                
+                    // Keep the project items that we have discovered for publish so publish doesn't do a re-build.
+                    flags
+                );
+                var submission = _buildManager.PendBuildRequest(data);
+                submission.ExecuteAsync(_ => source.SetResult(submission.BuildResult.OverallResult), submission);
+            }
+            return source.Task.GetAwaiter().GetResult();
         }
 
-        private ProjectInstance? LoadProject(ProjectCollection projectCollection)
+        private (ProjectGraphNode? project, ProjectGraph? graph) LoadProject(ProjectCollection projectCollection)
         {
             var noWarn = "NU1603;MSB3277";
             var globalProperties = new Dictionary<string, string>
@@ -160,29 +169,29 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             globalProperties["NoWarn"] = noWarn;
-            
+
             // load with a project graph so we get graph properties set on evaluation
             var graph = new ProjectGraph(_context.ProjectFile, globalProperties, projectCollection);
+            //
+            // if (_action == "publish" && graph.ProjectNodes.Count > 1)
+            // {
+            //     throw new Exception(string.Join("\n",
+            //         graph.GetTargetLists(_context.MSBuild.Targets)
+            //         .Select(p => p.Key.ProjectInstance.FullPath + ": " + string.Join(",", p.Value))));
+            // }
 
-            if (_action == "publish" && graph.ProjectNodes.Count > 1)
-            {
-                throw new Exception(string.Join("\n",
-                    graph.GetTargetLists(_context.MSBuild.Targets)
-                    .Select(p => p.Key.ProjectInstance.FullPath + ": " + string.Join(",", p.Value))));
-            }
+            var project = graph.EntryPointNodes.Single();
 
-            var project = graph.EntryPointNodes.Single().ProjectInstance;
-
-            var actualTfm = project.GetProperty("TargetFramework")?.EvaluatedValue ?? "";
+            var actualTfm = project.ProjectInstance.GetProperty("TargetFramework")?.EvaluatedValue ?? "";
             if (actualTfm != _context.Tfm)
             {
                 Error($"Bazel expected TargetFramework {_context.Tfm}, but {_context.WorkspacePath(_context.ProjectFile)} is " +
                       $"configured to use TargetFramework {actualTfm}. Refusing to build as this will " +
                       $"produce unreachable output. Please reconfigure the project and/or BUILD file.");
-                return null;
+                return (null,null);
             }
 
-            return project;
+            return (project, graph);
         }
 
         private ProjectCollection BeginBuild()
@@ -197,7 +206,6 @@ namespace MyRulesDotnet.Tools.Builder
             var pc = ProjectCollection.GlobalProjectCollection;
 
             BinaryLogger? binlog = null;
-            // var loggers = pc.Loggers.ToList();
             if (_context.BinlogEnabled)
             {
                 var path = _context.OutputPath(_context.Bazel.Label.Name + ".binlog");
@@ -207,29 +215,33 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             pc.RegisterLogger(_msbuildLog);
-            var inputCaches = GetInputCaches();
             var parameters = new BuildParameters(pc)
             {
                 EnableNodeReuse = false,
                 Loggers = new ILogger[] {_msbuildLog, binlog!},
                 DetailedSummary = true,
-                IsolateProjects = true,
                 ResetCaches = false,
                 LogTaskInputs = _msbuildLog.Verbosity == LoggerVerbosity.Diagnostic,
-                OutputResultsCacheFile = _context.LabelPath(".cache"),
-                InputResultsCacheFiles = inputCaches, 
                 ProjectLoadSettings = ProjectLoadSettings.RecordEvaluatedItemElements,
                 // cult-copy
                 ToolsetDefinitionLocations =
                     Microsoft.Build.Evaluation.ToolsetDefinitionLocations.ConfigurationFile |
                     Microsoft.Build.Evaluation.ToolsetDefinitionLocations.Registry,
             };
+
+            if (_context.MSBuild.UseCaching)
+            {
+                parameters.OutputResultsCacheFile = _context.LabelPath(".cache");
+                parameters.InputResultsCacheFiles = GetInputCaches();
+                parameters.IsolateProjects = true;  
+            }
+            
             _buildManager.BeginBuild(parameters);
             if (_msbuildLog.HasError)
             {
                 Console.WriteLine("Failed to initialize build manager, please file an issue.");
             }
-            else if (inputCaches.Any())
+            else if (_context.MSBuild.UseCaching && parameters.InputResultsCacheFiles.Any())
             {
                 _cacheManager.BeforeExecuteBuild();
             }
