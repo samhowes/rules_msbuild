@@ -9,6 +9,7 @@ msbuild_library(
         "LabelRunfiles.cs",
         "Runfiles.cs",
     ],
+    project_file = "Runfiles.csproj",
     target_framework = "netstandard2.1",
     visibility = ["//visibility:public"],
 )
