@@ -59,7 +59,7 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 if (_action == "restore")
                 {
-                    // FixRestoreOutputs();
+                    FixRestoreOutputs();
                 }
 
                 if (_action == "build" && _context.IsTest)
@@ -82,8 +82,9 @@ namespace MyRulesDotnet.Tools.Builder
         {
             var source = new TaskCompletionSource<BuildResultCode>();
             var flags = BuildRequestDataFlags.None;
-            BuildResultCode result;
             
+            // our restore outputs are relative to the project directory
+            Environment.CurrentDirectory = _context.ProjectDirectory;
             if (_context.MSBuild.GraphBuild)
             {
                 var graphData = new GraphBuildRequestData(graph, _context.MSBuild.Targets, null, flags);
@@ -294,17 +295,18 @@ namespace MyRulesDotnet.Tools.Builder
                     if (needsEscaping)
                         path = path.Replace(@"\\", @"\");
 
-                    path = Path.GetRelativePath(_context.Bazel.OutputDir, path);
+                    if (isJson)
+                    {
+                        path = Path.GetRelativePath(_context.ProjectDirectory, path);    
+                    }
+                    else
+                    {
+                        path = Path.Combine("$(ExecRoot)", Path.GetRelativePath(_context.Bazel.ExecRoot, path));
+                    }
+                    
                     if (needsEscaping)
                     {
                         path = Escape(path);
-                    }
-
-                    if (!isJson)
-                    {
-                        path = Path.Combine("$(MSBuildThisFileDirectory)",
-                            "..", // one more to get out of the obj directory 
-                            path);
                     }
 
                     output.Write(path);

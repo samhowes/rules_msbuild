@@ -8,6 +8,7 @@ namespace MyRulesDotnet.Tests.Examples.HelloTest
         [Fact]
         public void HelloTest()
         {
+
             Assert.Equal(2, 1 + 1);
         }
     }

@@ -15,7 +15,7 @@ namespace MyRulesDotnet.Tests.Examples.NuGet.Transitive
         [Fact]
         public void HelloTest()
         {
-            Assert.Equal(1 + 1, 2);
+            Assert.Equal(2, 1 + 1);
         }
     }
 }

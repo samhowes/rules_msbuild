@@ -70,10 +70,12 @@ namespace MyRulesDotnet.Tools.Builder
             SdkRoot = ToolPath(command.NamedArgs["sdk_root"]);
             
             ProjectFile = ExecPath(command.NamedArgs["project_file"]);
-            
+            ProjectDirectory = Path.GetDirectoryName(ProjectFile)!;
             
             IsTest = command.NamedArgs.TryGetValue("is_test", out _);
         }
+
+        public string ProjectDirectory { get; }
 
         // ReSharper disable once InconsistentNaming
         public MSBuildContext MSBuild { get; }
