@@ -18,6 +18,7 @@ genrule(
 
 go_test(
     name = "launcher_test",
+    size = "small",
     srcs = ["launcher_test.go"],
     data = [
         ":Greeter",

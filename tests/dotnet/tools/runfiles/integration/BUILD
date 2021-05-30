@@ -19,6 +19,7 @@ genrule(
 
 go_test(
     name = "integration_test",
+    size = "small",
     srcs = ["dotnet_cat_test.go"],
     data = [
         ":DotnetCat",

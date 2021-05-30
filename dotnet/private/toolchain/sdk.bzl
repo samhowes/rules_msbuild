@@ -153,6 +153,7 @@ def _sdk_build_file(ctx, version):
     root = ctx.file("ROOT")
 
     ctx.template("Directory.Bazel.props", Label("//dotnet/private/msbuild:Directory.Bazel.props"), executable = False)
+    ctx.template("Directory.Bazel.targets", Label("//dotnet/private/msbuild:Directory.Bazel.targets"), executable = False)
 
     dynamics = []
 

@@ -45,7 +45,7 @@ def msbuild_test(
         size = kwargs.pop("size", None),
     )
 
-    _msbuild_assembly(name, _msbuild_test, project_file, target_framework, srcs, deps, kwargs)
+    _msbuild_assembly(name, _msbuild_test, project_file, target_framework, srcs, deps, kwargs, test_args)
 
 _KNOWN_EXTS = {
     ".cs": True,

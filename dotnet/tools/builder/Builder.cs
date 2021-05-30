@@ -29,7 +29,7 @@ namespace MyRulesDotnet.Tools.Builder
             _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                _context.Bazel.OutputBase);
+                _context.Bazel.ExecRoot + Path.DirectorySeparatorChar);
         }
 
         public int Build()

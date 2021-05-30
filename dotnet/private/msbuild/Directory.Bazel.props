@@ -31,5 +31,7 @@
 
     <ItemGroup>
         <SourceRoot Include="$(ExecRoot)/" />
+        <Compile Remove="$(MSBuildProjectDirectory)/obj"/>
+        <Compile Remove="$(MSBuildProjectDirectory)/bin"/>
     </ItemGroup>
 </Project>

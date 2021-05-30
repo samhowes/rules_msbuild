@@ -1,7 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using static MyRulesDotnet.Tools.Builder.BazelLogger;
+
+// https://stackoverflow.com/questions/64749385/predefined-type-system-runtime-compilerservices-isexternalinit-is-not-defined
+namespace System.Runtime.CompilerServices
+{
+    internal static class IsExternalInit {}
+}
 
 namespace MyRulesDotnet.Tools.Builder
 {
@@ -75,7 +80,7 @@ namespace MyRulesDotnet.Tools.Builder
         public string ProjectFile { get; }
         public BazelContext Bazel { get; }
         public string NuGetConfig { get; }
-        public string Tfm { get; }
+        public string Tfm { get; init; }
         public string SdkRoot { get; }
         public bool DiagnosticsEnabled { get; set; }
         // todo(#51) disable when no build diagnostics are requested
@@ -128,10 +133,13 @@ namespace MyRulesDotnet.Tools.Builder
             OutputPath = bazel.OutputDir;
             BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
+
+            var targetsName = Path.GetFileNameWithoutExtension(directoryBazelPropsPath) + ".targets";
             
             BuildEnvironment = new Dictionary<string, string>()
             {
                 ["DirectoryBuildPropsPath"] = directoryBazelPropsPath,
+                ["DirectoryBuildTargetsPath"] = Path.Combine(Path.GetDirectoryName(directoryBazelPropsPath)!, targetsName),
                 ["ExecRoot"] = bazel.ExecRoot,
                 ["BINDIR"] = bazel.BinDir,
                 ["RestoreConfigFile"] = nuGetConfig,

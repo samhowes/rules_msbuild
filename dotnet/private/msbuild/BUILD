@@ -5,4 +5,5 @@ exports_files([
     "project.tpl.proj",
     "project.tpl.new.proj",
     "Directory.Bazel.props",
+    "Directory.Bazel.targets",
 ])

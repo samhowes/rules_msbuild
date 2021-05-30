@@ -18,6 +18,7 @@ def _dotnet_sdk_impl(ctx):
         major_version = ctx.attr.major_version,
         runfiles = depset([
             ctx.file.bazel_props,
+            ctx.file.bazel_targets,
             ctx.file.sdk_root,
             ctx.file.shared,
             ctx.file.home_dir,
@@ -41,6 +42,10 @@ dotnet_sdk = rule(
     provides = [DotnetSdkInfo],
     attrs = {
         "bazel_props": attr.label(
+            mandatory = True,
+            allow_single_file = True,
+        ),
+        "bazel_targets": attr.label(
             mandatory = True,
             allow_single_file = True,
         ),
