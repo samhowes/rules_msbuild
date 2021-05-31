@@ -2,6 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
 
 # gazelle:exclude testdata
+# gazelle:go_naming_convention_external go_default_library
 
 go_library(
     name = "dotnet",

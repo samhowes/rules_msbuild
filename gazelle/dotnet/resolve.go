@@ -23,8 +23,7 @@ import (
 // returned, including an empty slice, the rule will be indexed.
 func (d *dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	info := getInfo(c)
-
-	if info.Project != nil && info.Project.Rule == r {
+	if info.Project != nil && info.Project.Rule.Name() == r.Name() {
 		l := fmt.Sprintf(info.Project.FileLabel.String())
 		return []resolve.ImportSpec{{
 			Lang: dotnetName,
@@ -54,7 +53,7 @@ func (d *dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.R
 	var missing []bzl.Comment
 	var deps []bzl.Expr
 	for _, depRaw := range importsRaw.([]interface{}) {
-		dep := depRaw.(projectDep)
+		dep := depRaw.(*projectDep)
 		comments := make([]bzl.Comment, len(dep.Comments))
 
 		for i, c := range dep.Comments {
@@ -65,6 +64,11 @@ func (d *dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.R
 		if l == nil {
 			missing = append(missing, comments...)
 		} else {
+			// not sure why gazelle doesn't do this automatically...
+			if from.Repo == l.Repo {
+				l.Repo = ""
+			}
+
 			dExpr := bzl.StringExpr{
 				Value:    l.String(),
 				Comments: bzl.Comments{Before: comments},
@@ -78,7 +82,7 @@ func (d *dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.R
 	}
 }
 
-func findDep(c *config.Config, ix *resolve.RuleIndex, dep projectDep, comments []bzl.Comment, from label.Label) (*label.Label, []bzl.Comment) {
+func findDep(c *config.Config, ix *resolve.RuleIndex, dep *projectDep, comments []bzl.Comment, from label.Label) (*label.Label, []bzl.Comment) {
 	if dep.Label == label.NoLabel {
 		return nil, comments
 	}

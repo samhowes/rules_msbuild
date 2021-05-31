@@ -6,7 +6,10 @@ msbuild_binary(
     srcs = ["DotnetCat.cs"],
     data = ["foo.txt"],
     target_framework = "netcoreapp3.1",
-    deps = ["//dotnet/tools/Runfiles"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//dotnet/tools/Runfiles",
+    ],
 )
 
 genrule(

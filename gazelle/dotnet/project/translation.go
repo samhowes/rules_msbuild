@@ -9,7 +9,7 @@ import (
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 )
 
-func (p *Project) GenerateRules() []*rule.Rule {
+func (p *Project) GenerateRules(f *rule.File) []*rule.Rule {
 	var kind string
 	if p.IsTest {
 		kind = "msbuild_test"
@@ -33,7 +33,7 @@ func (p *Project) GenerateRules() []*rule.Rule {
 		p.Rule.AddComment(util.CommentErr(u))
 	}
 
-	if !p.IsTest {
+	if (f == nil || !f.HasDefaultVisibility()) && !p.IsTest {
 		p.Rule.SetAttr("visibility", []string{"//visibility:public"})
 	}
 

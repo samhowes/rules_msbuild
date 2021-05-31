@@ -62,7 +62,7 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		return res
 	}
 
-	res.Gen = append(res.Gen, info.Project.GenerateRules()...)
+	res.Gen = append(res.Gen, info.Project.GenerateRules(args.File)...)
 
 	return res
 }
@@ -99,7 +99,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 				continue
 			}
 			dep.Label = l
-			proj.Deps = append(proj.Deps, dep)
+			proj.Deps = append(proj.Deps, &dep)
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
@@ -117,7 +117,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 				Pkg:  ref.Include,
 				Name: ref.Include,
 			}
-			proj.Deps = append(proj.Deps, dep)
+			proj.Deps = append(proj.Deps, &dep)
 		}
 	}
 }

@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\dotnet\tools\runfiles\Runfiles.csproj" />
+    <ProjectReference Include="..\..\..\..\dotnet\tools\Runfiles\Runfiles.csproj" />
   </ItemGroup>
 
   <ItemGroup>

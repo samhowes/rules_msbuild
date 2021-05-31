@@ -1,5 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
+# gazelle:go_naming_convention_external go_default_library
+
 go_library(
     name = "project",
     srcs = [
@@ -14,7 +16,7 @@ go_library(
         "//gazelle/dotnet/util",
         "@bazel_gazelle//label:go_default_library",  # keep
         "@bazel_gazelle//rule:go_default_library",
-        "@com_github_bazelbuild_buildtools//build",
-        "@com_github_bmatcuk_doublestar//:doublestar",
+        "@com_github_bazelbuild_buildtools//build:go_default_library",  # keep
+        "@com_github_bmatcuk_doublestar//:go_default_library",
     ],
 )
