@@ -4,11 +4,6 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 # gazelle-err: unsupported project element: Target
 msbuild_binary(
     name = "clientapp",
-    srcs = glob([
-        "*.cs",
-        "Controllers/*.cs",
-        "Pages/*.cs",
-    ]),
     content = glob(["*.json"]),
     msbuild_properties = {
         "TypeScriptCompileBlocked": "true",

@@ -2,10 +2,6 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
     name = "implicitweb",
-    srcs = glob([
-        "*.cs",
-        "Properties/*.cs",
-    ]),
     content = glob([
         "*.json",
         "othersubdir/*.json",

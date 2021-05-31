@@ -1,7 +1,13 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
-    name = "nested",
+    name = "folders",
+    srcs = glob([
+        "*.cs",
+        "Controllers/*.cs",
+        "Pages/*.cs",
+        "Pages/*.cshtml",
+    ]),
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
 )

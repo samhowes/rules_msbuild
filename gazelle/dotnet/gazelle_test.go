@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -43,6 +44,11 @@ func TestGazelleBinary(t *testing.T) {
 		}
 
 		d := parts[0]
+
+		if strings.HasSuffix(d, ".suite") {
+			parts = strings.SplitN(parts[1], "/", 2)
+			d = path.Join(d, parts[0])
+		}
 
 		tMap, exists := testTypeMap[d]
 		if !exists {
