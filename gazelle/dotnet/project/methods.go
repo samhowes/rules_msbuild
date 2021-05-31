@@ -44,6 +44,7 @@ func Load(projectFile string) (*Project, error) {
 
 	proj.LangExt = strings.TrimSuffix(path.Ext(projectFile), "proj")
 	proj.Properties = make(map[string]string)
+	proj.srcsModes = make(map[string]SrcsMode)
 
 	for _, pg := range proj.PropertyGroups {
 		for _, p := range pg.Properties {
@@ -153,13 +154,14 @@ func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
 	if rel != "" {
 		rel = forceSlash(rel) + "/"
 	}
-	if dir.SrcsMode == Folders {
+	mode := p.srcsModes[key]
+	if mode == Folders {
 		testFile := fmt.Sprintf("%sfoo%s", rel, ext)
 		if fg.IsExcluded(testFile) {
 			return
 		}
-		fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
-	} else if dir.SrcsMode == Explicit {
+		fg.IncludeGlob(fmt.Sprintf("%s*%s", rel, ext))
+	} else if mode == Explicit {
 		for _, f := range files {
 			if fg.IsExcluded(f) {
 				continue
@@ -182,20 +184,29 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		return
 	}
 
-	if dir.SrcsMode != Implicit {
-		key := "Compile"
+	key := "Compile"
+	if p.srcsModes[key] != Implicit {
 		// make sure we have an entry so we send `srcs = []` when empty to the macro
 		// to prevent it from implicitly globbing
 		_ = p.GetFileGroup(key)
+
 		p.appendFiles(dir, key, rel, p.LangExt)
 		if p.LangExt == ".cs" {
 			p.appendFiles(dir, key, rel, ".cshtml")
 		}
 	}
+
 	if p.IsWeb {
-		for _, ext := range []string{".json", ".config"} {
-			p.appendFiles(dir, "Content", rel, ext)
+		key = "Content"
+		originalMode, exists := p.srcsModes[key]
+		if !exists || originalMode == Implicit {
+			// do this so we don't have to write an ugly glob that excludes bin, obj, and Properties
+			p.srcsModes[key] = Folders
 		}
+		for _, ext := range []string{".json", ".config"} {
+			p.appendFiles(dir, key, rel, ext)
+		}
+		p.srcsModes[key] = originalMode
 	}
 
 	for _, c := range dir.Children {

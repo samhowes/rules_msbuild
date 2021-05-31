@@ -35,6 +35,8 @@ type Project struct {
 	FileLabel *label.Label
 	Rule      *rule.Rule
 	Deps      []interface{}
+	Directory *DirectoryInfo
+	srcsModes map[string]SrcsMode
 }
 
 type FileGroup struct {
@@ -45,6 +47,10 @@ type FileGroup struct {
 	IncludeGlobs   []bzl.Expr
 	Filters        []string
 	Comments       []bzl.Comment
+}
+
+func (fg *FileGroup) IncludeGlob(g string) {
+	fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: g})
 }
 
 type PropertyGroup struct {

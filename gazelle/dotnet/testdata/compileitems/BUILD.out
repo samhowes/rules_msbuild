@@ -2,6 +2,7 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
 
 msbuild_library(
     name = "compileitems",
+    srcs = glob(["*.cs"]) + ["foo.bar"],
     target_framework = "netstandard2.1",
     visibility = ["//visibility:public"],
 )

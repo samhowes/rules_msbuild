@@ -33,6 +33,7 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
 			info.Project = loadProject(args, f)
+			info.Project.Directory = info
 			if info.Project != nil {
 				res.Imports = append(res.Imports, info.Project.Deps)
 			}
@@ -61,7 +62,7 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		return res
 	}
 
-	res.Gen = append(res.Gen, info.Project.GenerateRules(info)...)
+	res.Gen = append(res.Gen, info.Project.GenerateRules()...)
 
 	return res
 }

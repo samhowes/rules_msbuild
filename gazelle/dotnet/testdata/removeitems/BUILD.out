@@ -2,6 +2,7 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
 
 msbuild_library(
     name = "removeitems",
+    srcs = glob(["*.cs"]),
     target_framework = "netstandard2.1",
     visibility = ["//visibility:public"],
 )

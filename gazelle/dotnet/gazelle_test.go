@@ -32,7 +32,6 @@ func TestGazelleBinary(t *testing.T) {
 		t.Fatalf("bazel.ListRunfiles() error: %v", err)
 	}
 	for _, f := range files {
-		t.Logf(f.ShortPath)
 		if !strings.HasPrefix(f.ShortPath, testDataPath) {
 			continue
 		}

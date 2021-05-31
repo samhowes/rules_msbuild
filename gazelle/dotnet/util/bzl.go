@@ -44,6 +44,18 @@ func MakeGlob(include, exclude []bzl.Expr) bzl.Expr {
 	}
 }
 
+func MakeGlobS(include, exclude []string) bzl.Expr {
+	iExpr := make([]bzl.Expr, len(include))
+	eExpr := make([]bzl.Expr, len(exclude))
+	for i, in := range include {
+		iExpr[i] = &bzl.StringExpr{Value: in}
+	}
+	for i, ex := range exclude {
+		eExpr[i] = &bzl.StringExpr{Value: ex}
+	}
+	return MakeGlob(iExpr, eExpr)
+}
+
 func SortExprs(exprs []bzl.Expr) []bzl.Expr {
 	sort.Slice(exprs, func(i, j int) bool {
 		return strings.Compare(exprs[i].(*bzl.StringExpr).Value, exprs[j].(*bzl.StringExpr).Value) < 0

@@ -9,7 +9,7 @@ import (
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 )
 
-func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
+func (p *Project) GenerateRules() []*rule.Rule {
 	var kind string
 	if p.IsTest {
 		kind = "msbuild_test"
@@ -22,10 +22,10 @@ func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
 	p.Rule = rule.NewRule(kind, p.Name)
 	rules := []*rule.Rule{p.Rule}
 
-	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Compile })
-	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Content })
+	p.ProcessItemGroup("Compile", func(ig *ItemGroup) []*Item { return ig.Compile })
+	p.ProcessItemGroup("Content", func(ig *ItemGroup) []*Item { return ig.Content })
 
-	p.CollectFiles(info, "")
+	p.CollectFiles(p.Directory, "")
 
 	p.SetFileAttributes()
 	p.SetProperties()
@@ -64,7 +64,7 @@ func (p *Project) SetProperties() {
 	}
 }
 
-func (p *Project) ProcessItemGroup(getItems func(ig *ItemGroup) []*Item) {
+func (p *Project) ProcessItemGroup(fgKey string, getItems func(ig *ItemGroup) []*Item) {
 	for _, ig := range p.ItemGroups {
 		for _, i := range getItems(ig) {
 			p.EvaluateItem(i)
@@ -100,6 +100,14 @@ func (p *Project) ProcessItemGroup(getItems func(ig *ItemGroup) []*Item) {
 				e.Comment().Before = comments
 				fg.Explicit = append(fg.Explicit, e)
 			}
+		}
+	}
+	p.srcsModes[fgKey] = p.Directory.SrcsMode
+	if _, exists := p.Files[fgKey]; exists {
+		// the user explicitly specified some files for these items, rather than doing some complicated globbing logic
+		// later, we'll just upgrade the srcs_mode for the directory tree
+		if p.Directory.SrcsMode == Implicit {
+			p.srcsModes[fgKey] = Folders
 		}
 	}
 }
