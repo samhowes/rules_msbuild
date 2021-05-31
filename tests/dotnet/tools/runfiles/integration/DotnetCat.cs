@@ -9,7 +9,7 @@ namespace MyRulesDotnet.Tools.RunfilesTests
         static void Main(string[] args)
         {
             var r = Runfiles.Create();
-            var contents = File.ReadAllText(r.Rlocation("my_rules_dotnet/tests/dotnet/tools/runfiles/integration/foo.txt"));
+            var contents = File.ReadAllText(r.Rlocation("my_rules_dotnet/tests/dotnet/tools/Runfiles/integration/foo.txt"));
 
             Console.Write(contents);
         }

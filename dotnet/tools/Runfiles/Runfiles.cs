@@ -18,7 +18,7 @@ namespace MyRulesDotnet.Tools.Bazel
     /// dotnet_binary(
     ///     name = "my_binary",
     ///     ...
-    ///     deps = ["@my_rules_dotnet//dotnet/tools/runfiles"],
+    ///     deps = ["@my_rules_dotnet//dotnet/tools/Runfiles"],
     /// )
     /// </code>
     /// </description>

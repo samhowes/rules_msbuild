@@ -1,7 +1,7 @@
 load("//dotnet:defs.bzl", "msbuild_library")
 
 msbuild_library(
-    name = "runfiles",
+    name = "Runfiles",
     srcs = [
         "BazelEnvironment.cs",
         "Check.cs",
