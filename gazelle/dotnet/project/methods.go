@@ -183,9 +183,13 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 	}
 
 	if dir.SrcsMode != Implicit {
-		p.appendFiles(dir, "Compile", rel, p.LangExt)
+		key := "Compile"
+		// make sure we have an entry so we send `srcs = []` when empty to the macro
+		// to prevent it from implicitly globbing
+		_ = p.GetFileGroup(key)
+		p.appendFiles(dir, key, rel, p.LangExt)
 		if p.LangExt == ".cs" {
-			p.appendFiles(dir, "Compile", rel, ".cshtml")
+			p.appendFiles(dir, key, rel, ".cshtml")
 		}
 	}
 	if p.IsWeb {

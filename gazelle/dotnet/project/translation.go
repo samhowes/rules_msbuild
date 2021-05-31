@@ -120,7 +120,8 @@ func (p *Project) SetFileAttributes() {
 		}
 
 		if len(exprs) <= 0 {
-			continue
+			// print `srcs = []` to prevent the macro from implicitly globbing
+			exprs = append(exprs, &bzl.ListExpr{List: []bzl.Expr{}})
 		}
 
 		expr := exprs[0]

@@ -1,9 +1,11 @@
 load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
-    name = "implicitweb",
+    name = "mixed",
+    srcs = [],
     content = glob([
         "*.json",
+        "Properties/**",
         "othersubdir/*.json",
         "subdir/*.config",
     ]) + ["foo.content"],
