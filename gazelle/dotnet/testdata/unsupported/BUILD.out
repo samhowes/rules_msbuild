@@ -17,10 +17,6 @@ msbuild_library(
         # gazelle-err: unsupported Content element: CopyToOutputDirectory
         "foo.txt",
     ],
-    msbuild_properties = {
-        # gazelle-err: unsupported property attribute: Condition
-        "Foo": "Bar",
-    },
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [

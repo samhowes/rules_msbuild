@@ -3,7 +3,6 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
 msbuild_library(
     name = "properties",
     content = ["Bar/item.json"],
-    msbuild_properties = {"Foo": "Bar"},
     target_framework = "netstandard2.1",
     visibility = ["//visibility:public"],
 )

@@ -28,13 +28,15 @@ func (p *Project) GenerateRules() []*rule.Rule {
 	p.CollectFiles(p.Directory, "")
 
 	p.SetFileAttributes()
-	p.SetProperties()
 
 	for _, u := range p.GetUnsupported() {
 		p.Rule.AddComment(util.CommentErr(u))
 	}
 
-	p.Rule.SetAttr("visibility", []string{"//visibility:public"})
+	if !p.IsTest {
+		p.Rule.SetAttr("visibility", []string{"//visibility:public"})
+	}
+
 	p.Rule.SetAttr("target_framework", p.TargetFramework)
 	if len(p.Data) > 0 {
 		p.Rule.SetAttr("data", util.MakeGlob(util.MakeStringExprs(p.Data), nil))
@@ -43,6 +45,7 @@ func (p *Project) GenerateRules() []*rule.Rule {
 	return rules
 }
 
+// todo: delete this when I decide to not re-introduce msbuild_properties
 func (p *Project) SetProperties() {
 	var exprs []*bzl.KeyValueExpr
 	for _, pg := range p.PropertyGroups {

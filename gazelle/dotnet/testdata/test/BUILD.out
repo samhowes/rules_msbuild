@@ -2,9 +2,7 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_test")
 
 msbuild_test(
     name = "test",
-    msbuild_properties = {"IsPackable": "false"},
     target_framework = "net5.0",
-    visibility = ["//visibility:public"],
     deps = [
         "@nuget//Microsoft.NET.Test.Sdk",
         # gazelle-err: unsupported element: IncludeAssets
