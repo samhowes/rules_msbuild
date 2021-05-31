@@ -1,4 +1,4 @@
-# gazelle:exclude *.tpl.proj
+# gazelle:exclude *.proj
 
 exports_files([
     "NuGet.tpl.config",
