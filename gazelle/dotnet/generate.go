@@ -56,10 +56,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		return res
 	}
 
-	res.Gen = append(res.Gen, info.Project.GenerateRules(info)...)
-	if info.Project.IsExe {
-		res.Imports = append(res.Imports, []interface{}{})
-	}
+	res.Gen = append(res.Gen, info.Project.GenerateRules(info, dc.explicitSrcs)...)
 
 	return res
 }

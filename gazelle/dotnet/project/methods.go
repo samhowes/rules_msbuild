@@ -152,7 +152,7 @@ func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
 	fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
 }
 
-func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
+func (p *Project) CollectFiles(dir *DirectoryInfo, rel string, explicitSrcs bool) {
 	// https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes
 	// https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/host-and-deploy/visual-studio-publish-profiles.md#compute-project-items
 	switch rel {
@@ -165,7 +165,9 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		return
 	}
 
-	p.appendFiles(dir, "Compile", rel, p.LangExt)
+	if explicitSrcs {
+		p.appendFiles(dir, "Compile", rel, p.LangExt)
+	}
 	if p.IsWeb {
 		for _, ext := range []string{".json", ".config"} {
 			p.appendFiles(dir, "Content", rel, ext)
@@ -179,7 +181,7 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		} else {
 			cRel = path.Join(rel, c.Base)
 		}
-		p.CollectFiles(c, cRel)
+		p.CollectFiles(c, cRel, false)
 	}
 }
 

@@ -9,28 +9,23 @@ import (
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 )
 
-func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
+func (p *Project) GenerateRules(info *DirectoryInfo, explicitSrcs bool) []*rule.Rule {
 	var kind string
 	if p.IsTest {
-		kind = "dotnet_test"
+		kind = "msbuild_test"
 	} else if p.IsExe {
-		kind = "dotnet_binary"
+		kind = "msbuild_binary"
 	} else {
-		kind = "dotnet_library"
+		kind = "msbuild_library"
 	}
 
 	p.Rule = rule.NewRule(kind, p.Name)
 	rules := []*rule.Rule{p.Rule}
-	if p.IsExe {
-		pub := rule.NewRule("dotnet_publish", "publish")
-		pub.SetAttr("target", ":"+p.Name)
-		rules = append(rules, pub)
-	}
 
 	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Compile })
 	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Content })
 
-	p.CollectFiles(info, "")
+	p.CollectFiles(info, "", explicitSrcs)
 
 	p.SetFileAttributes()
 	p.SetProperties()
@@ -41,9 +36,6 @@ func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
 
 	p.Rule.SetAttr("visibility", []string{"//visibility:public"})
 	p.Rule.SetAttr("target_framework", p.TargetFramework)
-	if p.Sdk != "" {
-		p.Rule.SetAttr("sdk", p.Sdk)
-	}
 	if len(p.Data) > 0 {
 		p.Rule.SetAttr("data", util.MakeGlob(util.MakeStringExprs(p.Data), nil))
 	}
@@ -118,7 +110,6 @@ func forceSlash(p string) string {
 
 func (p *Project) SetFileAttributes() {
 	for _, fg := range p.Files {
-		//sort.Strings(value)
 		var exprs []bzl.Expr
 		if len(fg.IncludeGlobs) > 0 {
 			exprs = append(exprs, util.MakeGlob(fg.IncludeGlobs, nil))
@@ -144,8 +135,6 @@ func (p *Project) SetFileAttributes() {
 		}
 		var key string
 		switch fg.ItemType {
-		case "Compile":
-			key = "srcs"
 		case "Content":
 			key = "content"
 		default:

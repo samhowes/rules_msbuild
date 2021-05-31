@@ -15,7 +15,7 @@ func NewLanguage() language.Language {
 	return &dotnetLang{}
 }
 
-const dotnetName = "dotnet"
+const dotnetName = "msbuild"
 const dotnetDirName = "dotnet_dir"
 
 // Name returns the name of the language. This should be a prefix of the
@@ -58,13 +58,10 @@ var commonInfo = rule.KindInfo{
 }
 
 var kinds = map[string]rule.KindInfo{
-	"dotnet_library": commonInfo,
-	"dotnet_binary":  commonInfo,
-	"dotnet_test":    commonInfo,
-	"dotnet_publish": {
-		MergeableAttrs: map[string]bool{"target": true},
-	},
-	"nuget_fetch": {},
+	"msbuild_library": commonInfo,
+	"msbuild_binary":  commonInfo,
+	"msbuild_test":    commonInfo,
+	"nuget_fetch":     {},
 }
 
 func (d dotnetLang) Fix(c *config.Config, f *rule.File) {

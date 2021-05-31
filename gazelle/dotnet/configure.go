@@ -15,6 +15,7 @@ type dotnetConfig struct {
 	macroDefName      string
 	packageReportFile string
 	packages          map[string]*project.NugetSpec
+	explicitSrcs      bool
 }
 
 func (c *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
