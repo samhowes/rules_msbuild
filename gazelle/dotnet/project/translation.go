@@ -9,7 +9,7 @@ import (
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 )
 
-func (p *Project) GenerateRules(info *DirectoryInfo, explicitSrcs bool) []*rule.Rule {
+func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
 	var kind string
 	if p.IsTest {
 		kind = "msbuild_test"
@@ -25,7 +25,7 @@ func (p *Project) GenerateRules(info *DirectoryInfo, explicitSrcs bool) []*rule.
 	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Compile })
 	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Content })
 
-	p.CollectFiles(info, "", explicitSrcs)
+	p.CollectFiles(info, "")
 
 	p.SetFileAttributes()
 	p.SetProperties()
@@ -135,6 +135,8 @@ func (p *Project) SetFileAttributes() {
 		}
 		var key string
 		switch fg.ItemType {
+		case "Compile":
+			key = "srcs"
 		case "Content":
 			key = "content"
 		default:

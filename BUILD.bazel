@@ -18,7 +18,8 @@ gazelle(
 )
 
 GO_ARGS = [
-    "-go_naming_convention=import",
+    "--go_naming_convention=import",
+    "--go_naming_convention_external=import",
 ]
 
 DOTNET_ARGS = [

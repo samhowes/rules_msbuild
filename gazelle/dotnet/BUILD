@@ -18,6 +18,7 @@ go_library(
         "//gazelle/dotnet/project",
         "//gazelle/dotnet/util",
         "@bazel_gazelle//config:go_default_library",
+        "@bazel_gazelle//flag:go_default_library",
         "@bazel_gazelle//label:go_default_library",
         "@bazel_gazelle//language:go_default_library",
         "@bazel_gazelle//merger:go_default_library",

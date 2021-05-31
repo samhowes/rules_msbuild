@@ -1,6 +1,7 @@
 package dotnet
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -31,6 +32,7 @@ func TestGazelleBinary(t *testing.T) {
 		t.Fatalf("bazel.ListRunfiles() error: %v", err)
 	}
 	for _, f := range files {
+		t.Logf(f.ShortPath)
 		if !strings.HasPrefix(f.ShortPath, testDataPath) {
 			continue
 		}
@@ -45,7 +47,7 @@ func TestGazelleBinary(t *testing.T) {
 
 		d := parts[0]
 
-		if strings.HasSuffix(d, ".suite") {
+		if strings.Index(d, ".") > 0 {
 			parts = strings.SplitN(parts[1], "/", 2)
 			d = path.Join(d, parts[0])
 		}
@@ -84,6 +86,13 @@ func TestGazelleBinary(t *testing.T) {
 
 func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry) {
 	t.Run(name, func(t *testing.T) {
+		var args []string
+		baseName := strings.SplitN(name, "/", 2)[0]
+		parts := strings.Split(baseName, ".")
+		if len(parts) > 1 {
+			args = append(args, fmt.Sprintf("--%s=%s", parts[0], parts[1]))
+		}
+
 		var inputs []testtools.FileSpec
 		var goldens []testtools.FileSpec
 
@@ -134,9 +143,10 @@ func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry)
 		}
 
 		if !repos {
-			runCommand(t, dir)
+			runCommand(t, dir, args...)
 		} else {
-			runCommand(t, dir, "-deps_macro=deps/nuget.bzl%nuget_deps")
+			args = append(args, "-deps_macro=deps/nuget.bzl%nuget_deps")
+			runCommand(t, dir, args...)
 		}
 
 		testtools.CheckFiles(t, dir, goldens)

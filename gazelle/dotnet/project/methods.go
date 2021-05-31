@@ -20,7 +20,16 @@ type DirectoryInfo struct {
 	Exts     map[string]bool
 	Base     string
 	Project  *Project
+	SrcsMode SrcsMode
 }
+
+type SrcsMode int
+
+const (
+	Implicit SrcsMode = iota
+	Folders
+	Explicit
+)
 
 func Load(projectFile string) (*Project, error) {
 	var proj Project
@@ -144,15 +153,16 @@ func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
 	if rel != "" {
 		rel = fmt.Sprintf("%s/", forceSlash(rel))
 	}
-	testFile := fmt.Sprintf("%sfoo%s", rel, ext)
-	if fg.IsExcluded(testFile) {
-		return
+	if dir.SrcsMode == Folders {
+		testFile := fmt.Sprintf("%sfoo%s", rel, ext)
+		if fg.IsExcluded(testFile) {
+			return
+		}
+		fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
 	}
-
-	fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
 }
 
-func (p *Project) CollectFiles(dir *DirectoryInfo, rel string, explicitSrcs bool) {
+func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 	// https://docs.microsoft.com/en-us/dotnet/core/project-sdk/overview#default-includes-and-excludes
 	// https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/host-and-deploy/visual-studio-publish-profiles.md#compute-project-items
 	switch rel {
@@ -165,8 +175,11 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string, explicitSrcs bool
 		return
 	}
 
-	if explicitSrcs {
+	if dir.SrcsMode != Implicit {
 		p.appendFiles(dir, "Compile", rel, p.LangExt)
+		if p.LangExt == ".cs" {
+			p.appendFiles(dir, "Compile", rel, ".cshtml")
+		}
 	}
 	if p.IsWeb {
 		for _, ext := range []string{".json", ".config"} {
@@ -181,7 +194,7 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string, explicitSrcs bool
 		} else {
 			cRel = path.Join(rel, c.Base)
 		}
-		p.CollectFiles(c, cRel, false)
+		p.CollectFiles(c, cRel)
 	}
 }
 

@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/bazelbuild/bazel-gazelle/config"
+	gzflag "github.com/bazelbuild/bazel-gazelle/flag"
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
+	"log"
 	"path"
 	"strings"
 )
@@ -15,7 +17,8 @@ type dotnetConfig struct {
 	macroDefName      string
 	packageReportFile string
 	packages          map[string]*project.NugetSpec
-	explicitSrcs      bool
+	srcsMode          project.SrcsMode
+	srcsModeString    string
 }
 
 func (c *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
@@ -59,11 +62,11 @@ func (f macroFlag) String() string {
 	return ""
 }
 
-func (d dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {
+func (d *dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {
 	dc := &dotnetConfig{packages: map[string]*project.NugetSpec{}}
 	c.Exts[dotnetName] = dc
 	switch cmd {
-	case "update", "update-repos":
+	case "fix", "update", "update-repos":
 		fs.Var(macroFlag{
 			macroFileName: &dc.macroFileName,
 			macroDefName:  &dc.macroDefName,
@@ -71,16 +74,32 @@ func (d dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config
 			"deps_macro",
 			"Record nuget package versions and tfms in a macro after parsing all the project files. "+
 				"Strongly recommended for managing nuget packages.")
+		fs.Var(
+			&gzflag.AllowedStringFlag{Value: &dc.srcsModeString, Allowed: []string{"implicit", "folders", "explicit"}},
+			"srcs_mode",
+			"controls how `srcs` attributes are generated. One of (implicit, folders, explicit), defaults to implicit",
+		)
 
 	}
 }
 
-func (d dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
+func (d *dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
+	dc := getConfig(c)
+	if dc.srcsModeString != "" {
+		mode, err := getSrcsMode(dc.srcsModeString, project.Implicit)
+		dc.srcsMode = mode
+		if err != nil {
+			log.Print(err)
+		}
+	}
+
 	return nil
 }
 
-func (d dotnetLang) KnownDirectives() []string {
-	return []string{}
+func (d *dotnetLang) KnownDirectives() []string {
+	return []string{
+		"srcs_mode",
+	}
 }
 
 // Configure modifies the configuration using directives and other information
@@ -94,7 +113,7 @@ func (d dotnetLang) KnownDirectives() []string {
 //
 // f is the build file for the current directory or nil if there is no
 // existing build file.
-func (d dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
+func (d *dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
 	base := path.Base(rel)
 	if base == "node_modules" {
 		delete(c.Exts, dotnetDirName)
@@ -102,16 +121,50 @@ func (d dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
 	}
 	parent := getInfo(c)
 	if parent == nil && rel != "" {
+		// we explicitly decided to ignore this subtree
 		return
 	}
-
+	dc := getConfig(c)
 	self := project.DirectoryInfo{
 		Base:     base,
 		Children: map[string]*project.DirectoryInfo{},
 		Exts:     map[string]bool{},
+		SrcsMode: dc.srcsMode,
 	}
 	if parent != nil {
+		self.SrcsMode = parent.SrcsMode
 		parent.Children[base] = &self
 	}
 	c.Exts[dotnetDirName] = &self
+
+	if f == nil {
+		return
+	}
+
+	for _, d := range f.Directives {
+		switch d.Key {
+		case "srcs_mode":
+			mode, err := getSrcsMode(d.Value, dc.srcsMode)
+			self.SrcsMode = mode
+			if err != nil {
+				log.Print(err)
+			}
+		}
+	}
+}
+
+func getSrcsMode(stringValue string, defaultValue project.SrcsMode) (project.SrcsMode, error) {
+	value := defaultValue
+	var err error
+	switch stringValue {
+	case "implicit":
+		value = project.Implicit
+	case "folders":
+		value = project.Folders
+	case "explicit":
+		value = project.Explicit
+	default:
+		err = fmt.Errorf("invalid value %s for 'srcs_mode'", stringValue)
+	}
+	return value, err
 }

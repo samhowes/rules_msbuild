@@ -24,7 +24,7 @@ import (
 //
 // Any non-fatal errors this function encounters should be logged using
 // log.Print.
-func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
+func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	res := language.GenerateResult{}
 	info := getInfo(args.Config)
 	if info == nil {
@@ -56,7 +56,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		return res
 	}
 
-	res.Gen = append(res.Gen, info.Project.GenerateRules(info, dc.explicitSrcs)...)
+	res.Gen = append(res.Gen, info.Project.GenerateRules(info)...)
 
 	return res
 }

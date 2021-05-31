@@ -21,7 +21,7 @@ import (
 //
 // If nil is returned, the rule will not be indexed. If any non-nil slice is
 // returned, including an empty slice, the rule will be indexed.
-func (d dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
+func (d *dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	info := getInfo(c)
 
 	if info.Project != nil && info.Project.Rule == r {
@@ -50,7 +50,7 @@ type projectDep struct {
 // language.GenerateResult.Imports. Resolve generates a "deps" attribute (or
 // the appropriate language-specific equivalent) for each import according to
 // language-specific rules and heuristics.
-func (d dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.RemoteCache, r *rule.Rule, importsRaw interface{}, from label.Label) {
+func (d *dotnetLang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.RemoteCache, r *rule.Rule, importsRaw interface{}, from label.Label) {
 	var missing []bzl.Comment
 	var deps []bzl.Expr
 	for _, depRaw := range importsRaw.([]interface{}) {
