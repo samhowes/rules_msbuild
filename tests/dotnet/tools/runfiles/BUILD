@@ -1,12 +1,10 @@
-load("//dotnet:defs.bzl", "dotnet_test")
+load("//dotnet:defs.bzl", "msbuild_test")
 
-dotnet_test(
+msbuild_test(
     name = "RunfilesTests",
     size = "small",
     srcs = glob(["*.cs"]),
-    sdk = "Microsoft.NET.Sdk",
     target_framework = "netcoreapp3.1",
-    visibility = ["//visibility:public"],
     deps = [
         "//dotnet/tools/runfiles",  # keep
         "@nuget//FluentAssertions",

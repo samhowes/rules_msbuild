@@ -1,4 +1,5 @@
-load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "emit_tool_binary", "make_launcher")
+load("//dotnet/private/actions:assembly.bzl", "emit_assembly", "emit_tool_binary")
+load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("//dotnet/private/actions:publish.bzl", "publish")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
@@ -10,7 +11,7 @@ def _dotnet_tool_binary_impl(ctx):
     info, all_outputs = emit_tool_binary(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset([info.assembly, info.output_dir]),
+            files = depset([info.output_dir]),
         ),
         info,
         OutputGroupInfo(
@@ -104,6 +105,10 @@ dotnet_tool_binary = rule(
         ),
         "deps": attr.label_list(
             providers = [NuGetPackageInfo],
+        ),
+        "_project_template": attr.label(
+            default = Label("//dotnet/private/msbuild:project.tpl.proj"),
+            allow_single_file = True,
         ),
     }),
     # this is compiling a dotnet executable, but it'll be a framework dependent executable, so bazel won't be able

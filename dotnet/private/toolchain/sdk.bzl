@@ -143,13 +143,6 @@ _dotnet_download_sdk = repository_rule(
     attrs = _download_sdk_attrs,
 )
 
-def _make_filegroup(name, glob_path):
-    return """
-filegroup(
-   name = "{name}",
-   srcs = glob(["{path}/**/*"]),
-)""".format(name = name, path = glob_path)
-
 def _sdk_build_file(ctx, version):
     """Creates the BUILD file for the downloaded dotnet sdk
 
@@ -159,14 +152,10 @@ def _sdk_build_file(ctx, version):
     """
     root = ctx.file("ROOT")
 
+    ctx.template("Directory.Bazel.props", Label("//dotnet/private/msbuild:Directory.Bazel.props"), executable = False)
+    ctx.template("Directory.Bazel.targets", Label("//dotnet/private/msbuild:Directory.Bazel.targets"), executable = False)
+
     dynamics = []
-    dynamic_targets = []
-    pack_labels = []
-    packs = ctx.path("packs")
-    for p in packs.readdir():
-        pack_name = p.basename
-        pack_labels.append("\":{}\"".format(pack_name))
-        dynamics.append(_make_filegroup(pack_name, "packs/" + pack_name))
 
     # create dotnet init files so dotnet doesn't noisily print them out on the first build
     init_files = [
@@ -180,12 +169,6 @@ def _sdk_build_file(ctx, version):
 
     for f in init_files:
         ctx.file(f, "")
-
-    shared = []
-    for d in ctx.path("shared").readdir():
-        # not multi-version safe
-        dynamics.append(_make_filegroup(d.basename, paths.join("shared", d.basename)))
-        shared.append(":" + d.basename)
 
     os, arch = detect_host_platform(ctx)
     if os == "windows":
@@ -211,11 +194,8 @@ def _sdk_build_file(ctx, version):
             "{exe}": ".exe" if os == "windows" else "",
             "{version}": version,
             "{major_version}": version.split(".")[0],
-            "{pack_labels}": ",\n        ".join(pack_labels),
-            "{shared}": json.encode_indent(shared, prefix = "    ", indent = "    "),
             # sdk deps
             "{dynamics}": "\n".join(dynamics),
-            "{dynamic_targets}": ",\n        ".join(dynamic_targets),
 
             # dotnet_config
             # assumes this will be put in <output_base>/external/<sdk_name>
@@ -225,7 +205,6 @@ def _sdk_build_file(ctx, version):
             # all nuget repos have a loading time dependency on the dotnet binary that is downloaded with the sdk.
             # It's almost a circular dependency, but not quite.
             "{nuget_config}": "@{}//:{}".format(ctx.attr.nuget_repo, NUGET_BUILD_CONFIG),
-            "{init_files}": "\",\n        \"".join(init_files),
             "{tfm_mapping}": "@{}//:tfm_mapping".format(ctx.attr.nuget_repo),
             "{nuget_repo}": ctx.attr.nuget_repo,
             "{builder_deps}": "\",\n        \"".join(builder_deps),

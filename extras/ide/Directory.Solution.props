@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <BazelProjectUseSolutionItems>true</BazelProjectUseSolutionItems>
+    </PropertyGroup>
+    <Import Project="Bazel.props" />
+</Project>

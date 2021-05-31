@@ -1,0 +1,66 @@
+<Project>
+
+    <PropertyGroup>
+        <!-- Configurations for Bazel.targets -->
+        <!-- 
+            If we include Publish in the list here, we'd have to include BazelBuild in the BeforeTargets list of
+             BazelPublish, which would always set the suffix to publish, we don't want that.
+         -->
+         <_BazelTargetsCore>
+            Restore;
+            Build;
+            Rebuild
+        </_BazelTargetsCore>
+        <BazelifyBeforeTargets>$(_BazelTargetsCore);Publish;Clean</BazelifyBeforeTargets>
+        <BazelBuildAfterTargets>$(_BazelTargetsCore);BazelPublish</BazelBuildAfterTargets>
+    </PropertyGroup>
+
+    <Target 
+        Name="Bazelify"
+        BeforeTargets="$(BazelifyBeforeTargets)">
+        <ItemGroup>
+            <!-- This needs to be in a Target because in a solution build, ProjectReference items aren't populated until execution time -->
+            <_BazelProject Condition="$(BazelProjectUseSolutionItems) == 'true'" Include="@(ProjectReference)"/>
+            <!-- 
+                We can't override the Solution's targets in MSBuild so generate a no-op for any 
+                MSBuild tasks that get invoked with the list of Project References.
+            -->
+            <ProjectReference Condition="$(BazelProjectUseSolutionItems) == 'true'" Remove="@(ProjectReference)"/>
+
+            <!-- Individual project file case -->
+            <_BazelProject Condition="$(BazelProjectUseSolutionItems) == ''" Include="$(MSBuildProjectFullPath)"/>
+        </ItemGroup>
+        <ItemGroup>
+            <!-- We can't update metadata for a list of items inside a Target, so we have to use _BazelProject first -->
+            <BazelProject Include="@(_BazelProject)">
+                <!-- \foo\bar\workspace\a\b.csproj => a\b\ => a/b/ => a/b => //a/b:b -->
+                <!-- \foo\bar\workspace\a.csproj => '..\workspace\' => '\' => '' => '//:a' -->
+                <BazelLabel>//$([MSBuild]::MakeRelative($(BazelWorkspacePath), %(RootDir)%(Directory))
+                    .TrimStart('../'$(BazelWorkspace))
+                    .Replace('\','/')
+                    .Trim('/')):%(Filename)</BazelLabel>
+            </BazelProject>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="Restore">
+        <!-- We are always able to override this target because it is defined by NuGet.targets, not the top level project,
+            for both the generated solution metaproj and a normal project file -->
+        <PropertyGroup>
+            <BazelTargetSuffix>_restore</BazelTargetSuffix>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="BazelPublish"
+        AfterTargets="Publish">
+        <PropertyGroup>
+            <BazelTargetSuffix>_publish</BazelTargetSuffix>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="BazelBuild" AfterTargets="$(BazelBuildAfterTargets)">
+         <Exec Command="bazel build @(BazelProject->'%(BazelLabel)$(BazelTargetSuffix)', ' ')"/> 
+<!--        <Message Text="bazel build @(BazelProject->'%(BazelLabel)$(BazelTargetSuffix)', ' ')" Importance="High"/>-->
+    </Target>
+
+</Project>

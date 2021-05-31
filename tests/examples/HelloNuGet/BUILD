@@ -1,9 +1,10 @@
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("//dotnet:defs.bzl", "dotnet_binary")
+load("//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
+msbuild_binary(
     name = "HelloNuGet",
     srcs = ["Program.cs"],
+    project_file = "HelloNuGet.csproj",
     target_framework = "netcoreapp3.1",
     deps = [
         "@nuget//CommandLineParser",
@@ -20,5 +21,4 @@ build_test(
         ],
     },
     expected_output = "NuGet <3 Bazel\n",
-    target = "HelloNuGet",
 )

@@ -1,30 +1,24 @@
-"""Actions for dotnet restore"""
+load(":common.bzl", "get_nuget_files")
+load("//dotnet/private:context.bzl", "make_builder_cmd")
+load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//dotnet/private/msbuild:xml.bzl", "element", "prepare_project_file")
-load("//dotnet/private:context.bzl", "make_exec_cmd")
-load("//dotnet/private:providers.bzl", "DEFAULT_SDK")
+def restore(ctx, dotnet):
+    # we don't really need this since we're declaring the directory, but this way, if the restore
+    # fails, bazel will fail the build because this file wasn't created
+    assets_json = ctx.actions.declare_file("restore/project.assets.json")
+    restore_dir = ctx.actions.declare_directory("restore")
 
-def restore(ctx, dotnet, project_file, dep_files):
-    """Emits an action for generating files necessary for a nuget restore
+    outputs = [assets_json, restore_dir]
 
-    https://docs.microsoft.com/en-us/nuget/concepts/package-installation-process
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore")
 
-    Args:
-        ctx: the ctx of the dotnet rule
-        sdk: the dotnet sdk
-        packages: a list of NuGetPackageInfo providers to restore
-    Returns:
-        a list of files in the package
-    """
-    outputs = _declare_files(ctx, dotnet, project_file)
-
-    args, cmd_outputs, cmd_inputs, _ = make_exec_cmd(ctx, dotnet, "restore", project_file, None)
     outputs.extend(cmd_outputs)
 
+    dep_files = process_deps(dotnet, ctx.attr.deps)
+
     inputs = depset(
-        direct = [project_file, dotnet.sdk.config.nuget_config] + cmd_inputs,
-        transitive = [dep_files.restore, dotnet.sdk.init_files, dotnet.sdk.packs],
+        direct = [ctx.file.project_file],
+        transitive = [dep_files],
     )
 
     ctx.actions.run(
@@ -34,29 +28,40 @@ def restore(ctx, dotnet, project_file, dep_files):
         executable = dotnet.sdk.dotnet,
         arguments = [args],
         env = dotnet.env,
-        tools = dotnet.tools,
+        tools = dotnet.builder.files,
     )
 
-    return outputs
+    return DotnetRestoreInfo(
+        project_file = ctx.file.project_file,
+        dep_files = dep_files,
+        restore_dir = restore_dir,
+        target_framework = ctx.attr.target_framework,
+    ), outputs
 
-def _declare_files(ctx, dotnet, project_file):
-    file_names = []
+def process_deps(dotnet, deps):
+    tfm = dotnet.config.tfm
 
-    nuget_file_extensions = [
-        ".g.props",
-        ".g.targets",
-    ]
+    files = []
+    transitive = []
+    for dep in getattr(dotnet.config, "tfm_deps", []):
+        get_nuget_files(dep, tfm, transitive)
 
-    for ext in nuget_file_extensions:
-        file_names.append(project_file.basename + ".nuget" + ext)
+    for dep in getattr(dotnet.config, "implicit_deps", []):
+        get_nuget_files(dep, tfm, transitive)
 
-    file_names.extend([
-        "project.assets.json",
-    ])
+    for dep in deps:
+        if DotnetRestoreInfo in dep:
+            info = dep[DotnetRestoreInfo]
 
-    files = [
-        ctx.actions.declare_file(paths.join(dotnet.config.intermediate_path, file_name))
-        for file_name in file_names
-    ]
+            # MSBuild Restore is going to unconditionally traverse the entire project graph to
+            # compute the full transitive closure of package files for *every* project file via a static
+            # graph evaluation of project files. make sure the project_file is available as well as all
+            # package files that those project files reference.
+            files.append(info.project_file)
+            transitive.append(info.dep_files)
+        elif NuGetPackageInfo in dep:
+            get_nuget_files(dep, tfm, transitive)
+        else:
+            fail("Unkown dependency type: {}".format(dep))
 
-    return files
+    return depset(files, transitive = transitive)

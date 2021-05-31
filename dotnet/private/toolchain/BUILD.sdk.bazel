@@ -10,23 +10,26 @@ declare_toolchains(
     sdk = ":dotnet_sdk",
 )
 
+exports_files([
+    "Directory.Bazel.props",
+    "Directory.Bazel.targets",
+])
+
 dotnet_sdk(
     name = "dotnet_sdk",
-    all_files = ":all_files",
+    bazel_props = ":Directory.Bazel.props",
+    bazel_targets = ":Directory.Bazel.targets",
     config = ":dotnet_config",
-    dotnet = "dotnet{exe}",
+    dotnet = ":dotnet",
     dotnetarch = "{dotnetarch}",
     dotnetos = "{dotnetos}",
     fxr = ":fxr",
+    home_dir = ".dotnet",
     major_version = {major_version},
-    init_files = ":init_files",
-    packs = [
-        {pack_labels},
-    ],
+    packs = "packs",
     root_file = "ROOT",
-    sdk_files = ":sdk_files",
     sdk_root = "sdk/{version}",
-    shared = {shared},
+    shared = "shared",
 )
 
 dotnet_config(
@@ -46,34 +49,6 @@ dotnet_tool_binary(
     deps = [
         "{builder_deps}"
     ]
-)
-
-filegroup(
-    name = "all_files",
-    srcs = [
-        "dotnet{exe}",
-        ":fxr",
-        ":init_files",
-        ":sdk_files",
-        {dynamic_targets}
-    ],
-)
-
-# init files so dotnet doesn't print welcome messages
-# included because bazel sandboxes these away
-filegroup(
-    name = "init_files",
-    srcs = [
-        "{init_files}",
-    ],
-)
-
-filegroup(
-    name = "sdk_files",
-    # todo: process this glob better
-    # there are miscellaneous parts of the sdk that are unrelated
-    # like tests, FSharp, roslyn, resources, etc
-    srcs = glob(["sdk/{version}/**/*"]),
 )
 
 filegroup(

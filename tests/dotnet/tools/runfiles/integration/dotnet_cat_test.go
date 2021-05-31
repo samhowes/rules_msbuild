@@ -22,7 +22,7 @@ func TestRunGenrule(t *testing.T) {
 func TestRunDataDep(t *testing.T) {
 	config := lib.TestConfig{
 		ExpectedOutput: expected,
-		Target:         files.BinPath("dotnet_cat"),
+		Target:         files.BinPath("DotnetCat"),
 	}
 	lib.CheckExecutableOutput(t, &config)
 }

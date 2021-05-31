@@ -71,9 +71,9 @@ namespace NuGetParser
                 var buildPath = Path.Join(Path.GetDirectoryName(PackagesFolder), pkg.RequestedName, "BUILD.bazel");
                 Directory.CreateDirectory(Path.GetDirectoryName(buildPath));
                 using var b = new BuildWriter(File.Create(buildPath));
-                b.Load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_filegroup", "nuget_import", "nuget_package_version");
+                b.Load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_package", "nuget_package_framework", "nuget_package_version");
                 b.Visibility();
-                b.StartRule("nuget_import", pkg.RequestedName);
+                b.StartRule("nuget_package", pkg.RequestedName);
 
                 var frameworks = pkg.Frameworks.Values.OrderBy(f => f.Tfm).ToList();
                 b.SetAttr("frameworks", frameworks.Select(f => ":" + f.Tfm));
@@ -81,7 +81,7 @@ namespace NuGetParser
 
                 foreach (var framework in frameworks)
                 {
-                    b.StartRule("nuget_filegroup", framework.Tfm);
+                    b.StartRule("nuget_package_framework", framework.Tfm);
                     b.SetAttr("version", ":" + framework.Version);
                     b.SetAttr("deps", framework.Deps.Select(d => d.Label).OrderBy(d => d));
                     b.EndRule();

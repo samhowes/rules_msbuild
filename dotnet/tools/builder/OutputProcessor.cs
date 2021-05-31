@@ -13,7 +13,7 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class OutputProcessor
     {
-        private readonly ProcessorContext _context;
+        private readonly BuildContext _context;
         private Regex _outputFileRegex;
 
         private const string ExecRoot = "/$exec_root$";
@@ -24,12 +24,12 @@ namespace MyRulesDotnet.Tools.Builder
             BazelLogger.Fail(message);
         }
 
-        public OutputProcessor(ProcessorContext context)
+        public OutputProcessor(BuildContext context)
         {
             _context = context;
             
             var regexString =
-                $"(?<output_base>{Regex.Escape(_context.BazelOutputBase)}(?<exec_root>{Regex.Escape(_context.Suffix)})?)";
+                $"(?<output_base>{Regex.Escape(_context.Bazel.OutputBase)}(?<exec_root>{Regex.Escape(_context.Bazel.Suffix)})?)";
 
             // to support files on windows that escape backslashes i.e. json.
             regexString = regexString.Replace(@"\\", @"\\(\\)?");
@@ -74,7 +74,7 @@ namespace MyRulesDotnet.Tools.Builder
         /// </summary>
         public int PreProcess()
         {
-            var intermediatePath = Path.Combine(_context.IntermediateBase, _context.Tfm);
+            var intermediatePath = Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, _context.Tfm);
             var processedPath = Path.Combine(intermediatePath, "processed");
 
             var directory = new DirectoryInfo(processedPath);
@@ -94,9 +94,9 @@ namespace MyRulesDotnet.Tools.Builder
 
 
             var regex = new Regex($@"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})", RegexOptions.Compiled);
-            var escapedOutputBase = _context.BazelOutputBase.Replace(@"\", @"\\");
-            var escapedExecRoot = _context.ExecRoot.Replace(@"\", @"\\");
-            ProcessFiles(Path.Combine(_context.IntermediateBase, "processed"), (info, contents) =>
+            var escapedOutputBase = _context.Bazel.OutputBase.Replace(@"\", @"\\");
+            var escapedExecRoot = _context.Bazel.ExecRoot.Replace(@"\", @"\\");
+            ProcessFiles(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, "processed"), (info, contents) =>
             {
                 var replaced = regex.Replace(contents,
                     (match) =>
@@ -105,11 +105,11 @@ namespace MyRulesDotnet.Tools.Builder
                         return info.Extension switch
                         {
                             ".json" => execRoot ? escapedExecRoot : escapedOutputBase,
-                            _ => execRoot ? _context.ExecRoot : _context.BazelOutputBase
+                            _ => execRoot ? _context.Bazel.ExecRoot : _context.Bazel.OutputBase
                         };
                     });
 
-                File.WriteAllText(Path.Combine(_context.IntermediateBase, info.Name), replaced);
+                File.WriteAllText(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, info.Name), replaced);
             });
 
             var exitCode = RunCommand();

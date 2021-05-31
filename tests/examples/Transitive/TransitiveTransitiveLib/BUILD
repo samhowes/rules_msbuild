@@ -1,9 +1,10 @@
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
 
-dotnet_library(
+msbuild_library(
     name = "TransitiveTransitiveLib",
     srcs = ["TransitiveTransitiveLibClass.cs"],
+    project_file = "TransitiveTransitiveLib.csproj",
     target_framework = "netstandard2.1",
     visibility = ["//tests/examples/Transitive/TransitiveLib:__pkg__"],
 )
@@ -12,12 +13,11 @@ build_test(
     name = "TransitiveTransitiveLib_test",
     expected_files = {
         "": [
-            "TransitiveTransitiveLib.csproj.build.cache",
+            "TransitiveTransitiveLib.cache",
         ],
         "netstandard2.1": [
             "TransitiveTransitiveLib.pdb",
             "TransitiveTransitiveLib.dll",
         ],
     },
-    target = "TransitiveTransitiveLib",
 )

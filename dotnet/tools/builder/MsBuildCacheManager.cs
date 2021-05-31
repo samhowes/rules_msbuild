@@ -1,11 +1,8 @@
 #nullable enable
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
 using Microsoft.Build.Execution;
 using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
@@ -53,7 +50,9 @@ namespace MyRulesDotnet.Tools.Builder
             var configCount = 0;
             var entries = new DictionaryEntry[configurationIdsByMetadata!.Count];
             var i = 0;
+#pragma warning disable 8605
             foreach (DictionaryEntry entry in configurationIdsByMetadata)
+#pragma warning restore 8605
                 entries[i++] = entry;
 
             var metadataProjectPath = _fields.GetMetadataProjectPath(entries[0].Key);
@@ -83,8 +82,7 @@ namespace MyRulesDotnet.Tools.Builder
             Verbose(configCount.ToString());
         }
 
-        private void FixBuildResults(bool isBeforeBuild, string target,
-            string replacement)
+        private void FixBuildResults(bool isBeforeBuild, string target, string replacement)
         {
             var cache = _fields.GetResultsCache(_buildManager, isBeforeBuild);
             

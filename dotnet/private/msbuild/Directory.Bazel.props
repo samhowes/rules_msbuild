@@ -1,0 +1,37 @@
+<Project>
+    <!-- This file will be set as $(DirectoryPropsPath) by the builder, that will cause these properties to override
+        the MSBuild defaults. -->
+    <PropertyGroup>
+        <ExecRoot Condition="$(ExecRoot) == ''">$(MSBuildStartupDirectory)</ExecRoot>
+        <!-- @dotnet_sdk//:builder will set $(ExecRoot) and $(BINDIR)-->
+        <BazelPackage>$(MSBuildProjectDirectory.Substring($(ExecRoot.Length)).Replace('\','/'))</BazelPackage>
+
+        <!-- Override MSBuild output path properties -->
+
+        <!--
+            Traditionally set to `bin/Debug` and causes outputs to go in `bin/Debug/<tfm>`
+            We're in `bazel-bin/<cpu>-<config>` already, so these are silly, we'll keep <tfm> though.
+            Also, use $(BINDIR) (set by the builder) to tell MSBuild to output to Bazel's Output structure
+        -->
+        <OutputPath>$(BINDIR)/$(BazelPackage)</OutputPath>
+        <!--
+            Traditionally set to `obj`, but restore and build are two separate bazel actions, and thus they cannot
+            output to the same generated directory structure. (Well, they could, but we are only telling bazel about
+            the output directories, known as Tree Artifacts, and not the individual output files, since MSBuild has
+            _a lot_ of output files, and we just don't need to track anything other than the directory.
+         -->
+        <BaseIntermediateOutputPath>$(OutputPath)/restore/</BaseIntermediateOutputPath>
+        <!--
+            Traditionally set to `obj` then `obj/Debug` by .NET, as said before, appending the MSBuild configuration
+            is silly.
+        -->
+        <IntermediateOutputPath>$(OutputPath)/obj/</IntermediateOutputPath>
+        <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <SourceRoot Include="$(ExecRoot)/" />
+        <Compile Remove="$(MSBuildProjectDirectory)/obj"/>
+        <Compile Remove="$(MSBuildProjectDirectory)/bin"/>
+    </ItemGroup>
+</Project>

@@ -13,7 +13,6 @@ namespace MyRulesDotnet.Tools.Builder
         public string Action;
         public List<string> PositionalArgs = new List<string>();
         public Dictionary<string, string> NamedArgs = new Dictionary<string, string>();
-        public string[] PassThroughArgs { get; set; }
     }
 
     public class Program
@@ -44,31 +43,10 @@ namespace MyRulesDotnet.Tools.Builder
                     
             }
         }
-
-        public static string SdkVersion = "5.0.202";
-
         private static Command ParseArgs(string[] args)
         {
             var command = new Command {Action = args[0]};
             ParseArgsImpl(args, 1, command);
-            if (command.PassThroughArgs == null) return command;
-            
-            var startupDirectory = Environment.CurrentDirectory;
-            for (var i = 0; i < command.PassThroughArgs.Length; i++)
-            {
-                var arg = command.PassThroughArgs[i];
-                
-                command.PassThroughArgs[i] = MsBuildVariableRegex.Replace(arg, (match) =>
-                {
-                    if (match.Groups[1].Value == "MSBuildStartupDirectory")
-                    {
-                        return startupDirectory;
-                    }
-
-                    return match.Value;
-                });
-
-            }
             return command;
         }
 
@@ -93,12 +71,6 @@ namespace MyRulesDotnet.Tools.Builder
                     continue;
                 }
 
-                if (arg == "--")
-                {
-                    command.PassThroughArgs = args[(i + 1)..];
-                    break;
-                }
-
                 // assume a well formed array of args in the form [`--name` `value`]
                 var name = arg[2..];
                 var value = args[i + 1];
@@ -109,8 +81,8 @@ namespace MyRulesDotnet.Tools.Builder
 
         private static int Build(Command command)
         {
-            var context = new ProcessorContext(command);
-            MSBuildLocator.RegisterMSBuildPath(Path.Combine(context.BazelOutputBase, context.SdkRoot));
+            var context = new BuildContext(command);
+            MSBuildLocator.RegisterMSBuildPath(context.SdkRoot);
             var builder = new Builder(context);
             return builder.Build();
         }

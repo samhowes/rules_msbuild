@@ -6,19 +6,21 @@ load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo")
 def _dotnet_toolchain_impl(ctx):
     sdk = ctx.attr.sdk[DotnetSdkInfo]
     cross_compile = ctx.attr.dotnetos != sdk.dotnetos or ctx.attr.dotnetarch != sdk.dotnetarch
+    builder_info = ctx.attr.builder[DotnetLibraryInfo]
     return [platform_common.ToolchainInfo(
         # Public fields
         name = ctx.label.name,
         cross_compile = cross_compile,
         default_dotnetos = ctx.attr.dotnetos,
         default_dotnetarch = ctx.attr.dotnetarch,
-        actions = struct(
-        ),
-        flags = struct(
-            compile = (),
-        ),
         sdk = sdk,
-        _builder = ctx.attr.builder[DotnetLibraryInfo].assembly,
+        _builder = struct(
+            assembly = builder_info.assembly,
+            files = depset(
+                [builder_info.output_dir],
+                transitive = [sdk.runfiles],
+            ),
+        ),
     )]
 
 dotnet_toolchain = rule(

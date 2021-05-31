@@ -1,20 +1,28 @@
 """Dotnet Providers"""
 
-# See dotnet/providers.md#DotnetLibraryInfo for full documentation.
+DotnetRestoreInfo = provider(
+    doc = "todo",
+    fields = {
+        "project_file": "",
+        "restore_dir": "",
+        "target_framework": "",
+        "dep_files": "",
+    },
+)
+
 DotnetLibraryInfo = provider(
     doc = "Contains information about a Dotnet library",
     fields = {
         "assembly": "The primary assembly that was compiled",
         "output_dir": "The msbuild output directory as a declared file",
-        "intermediate_dir": "obj/tfm",
-        "project_file": "",
         "build_cache": "",
-        "runtime": "files (dlls) needed in the output directory for the assembly to run",
-        "build": "depset of files that are inputs to the build action",
-        "restore": "depset of files that are inputs to the restore action",
-        "target_framework": "",
+        "build_caches": "depset of build_cache and all build_caches this library depends on",
+        "srcs": "depset of the transitive closure of all source files this library depends on",
         "data": "depset of runfiles",
         "content": "depset of non-compiled files needed in the output directory as a sibling of the output assembly",
+        "restore": "DotnetRestoreInfo",
+        "dep_files": "depset of all files this library depends on",
+        "intermediate_dir": "",
     },
 )
 
@@ -87,7 +95,8 @@ DotnetSdkInfo = provider(
         "dotnetos": "The host OS the SDK was built for.",
         "dotnetarch": "The host architecture the SDK was built for.",
         "root_file": "A file in the SDK root directory",
-        "init_files": "The init files for dotnet, these prevent dotnet from printing noisy welcome messages",
+        "runfiles": "Files required to run a command with the sdk",
+        "bazel_props": "",
         "sdk_root": ("The versioned root (typically in Sdk/<{version}>/ of the " +
                      "extracted folder"),
         "major_version": "The major version of the sdk",

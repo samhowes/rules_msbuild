@@ -45,7 +45,12 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         implicit_deps.append(sdk.config.test_logger)
 
     tfm = getattr(ctx.attr, "target_framework", target_framework)
-    return dotnet_context(
+    tfm_info = sdk.config.tfm_mapping.get(tfm, None)
+    if tfm_info == None:
+        fail("Tfm {} was not configured for restore by nuget. If this was not a mistake, please add it to your " +
+             "nuget_fetch rule.".format(tfm))
+
+    dotnet = dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,
         None if toolchain == None else toolchain._builder,
@@ -56,10 +61,13 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         # todo(73) remove this
         is_precise = True if toolchain == None else False,
         implicit_deps = implicit_deps,
-        tfm_deps = sdk.config.tfm_mapping[tfm].implicit_deps,
+        tfm_deps = tfm_info.implicit_deps,
         is_test = is_test,
         intermediate_path = INTERMEDIATE_BASE,
     )
+
+    dotnet.env["BINDIR"] = ctx.bin_dir.path
+    return dotnet
 
 def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
     ext = ".exe" if os == "windows" else ""
@@ -70,7 +78,6 @@ def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
         env = _make_env(sdk_root, os),
         builder = builder,
         sdk = sdk,
-        tools = [builder] if builder != None else [],
         ext = ext,
         config = struct(
             **kwargs
@@ -102,6 +109,43 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
+def make_builder_cmd(ctx, dotnet, action):
+    outputs = []
+    binlog = None
+    if True:
+        # todo(#51) disable when not debugging the build
+        binlog = ctx.actions.declare_file(ctx.attr.name + ".binlog")
+        outputs.append(binlog)
+
+    args = ctx.actions.args()
+    args.add_all([
+        dotnet.builder.assembly.path,
+        action,
+        "--sdk_root",
+        dotnet.sdk.sdk_root.path,
+        "--project_file",
+        ctx.file.project_file,
+        "--bazel_bin_dir",
+        ctx.bin_dir.path,
+        "--tfm",
+        dotnet.config.tfm,
+        "--bazel_output_base",
+        dotnet.sdk.config.trim_path,
+        "--workspace",
+        ctx.workspace_name,
+        "--package",
+        ctx.label.package,
+        "--label_name",
+        ctx.label.name,
+        "--nuget_config",
+        dotnet.sdk.config.nuget_config,
+        "--directory_bazel_props",
+        dotnet.sdk.bazel_props,
+    ])
+    if dotnet.config.is_test:
+        args.add_all(["--is_test", True])
+    return args, outputs
+
 def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
     """Create a command for use during the execution phase"""
     outputs = []  # todo(#51) disable when not debugging the build
@@ -122,23 +166,7 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
         for arg in arg_list:
             args.add(arg)
     else:
-        intermediate_path_full = paths.join(str(proj.dirname), dotnet.config.intermediate_path)
-        args.add(dotnet.builder.path)
-        args.add(msbuild_target)
-
-        # these args specify lists of files, which could get very long. We can't take advantage of
-        # params files because the dotnet cli needs to execute the builder, and the dotnet cli doesn't have
-        # support for params files. Instead, we'll just write our own params file manually
-        builder_args = [
-            ["--package", ctx.label.package],
-            ["--sdk_root", dotnet.sdk.sdk_root.path],
-            ["--intermediate_base", intermediate_path_full],
-            ["--tfm", dotnet.config.tfm],
-            ["--bazel_output_base", dotnet.sdk.config.trim_path],
-            ["--project_file", proj.path],
-            ["--workspace", ctx.workspace_name],
-        ]
-
+        builder_args = []
         if msbuild_target == "build":
             cache_file = ctx.actions.declare_file(proj.basename + "." + msbuild_target + ".cache")
             outputs.append(cache_file)
@@ -146,7 +174,6 @@ def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
         if msbuild_target == "build" or msbuild_target == "publish":
             builder_args.extend([
                 ["--content", ";".join([f.path for f in files.content.to_list()])],
-                ["--output_directory", files.output_dir.path],
             ])
 
         if msbuild_target == "publish":

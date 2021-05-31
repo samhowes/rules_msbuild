@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
 TAGS = [
     "manual",
@@ -17,7 +17,7 @@ filegroup(
 )
 
 # DO NOT BUILD THIS TARGET
-dotnet_binary(
+msbuild_binary(
     name = "foo",
     srcs = ["foo.cs"],
     tags = TAGS,

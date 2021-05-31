@@ -1,7 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework Condition="$(TargetFramework) == ''">netcoreapp3.1</TargetFramework>
+    <TargetFramework Condition="$(BazelBuild) == ''">net5.0</TargetFramework>
+    <TargetFramework Condition="$(BazelBuild) != ''">netcoreapp$(NETCoreAppMaximumVersion)</TargetFramework>
+    <!--  Hack to detect when we're testing internally: Package will be dotnet/tools/builder when internal, but '' when
+      external as part of the sdk. -->
+    <TargetFramework Condition="$(BazelPackage) != ''">netcoreapp3.1</TargetFramework>
     <OutputType>Exe</OutputType>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.4.1" />

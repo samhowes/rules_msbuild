@@ -33,10 +33,19 @@ load(
     _dotnet_tool_binary = "dotnet_tool_binary",
 )
 load(
+    "//dotnet/private:msbuild_macros.bzl",
+    _msbuild_binary = "msbuild_binary",
+    _msbuild_library = "msbuild_library",
+    _msbuild_test = "msbuild_test",
+)
+load(
     "//dotnet/private/rules:nuget.bzl",
-    _nuget_filegroup = "nuget_filegroup",
-    _nuget_import = "nuget_import",
+    _nuget_package_framework = "nuget_package_framework",
     _nuget_package_version = "nuget_package_version",
+)
+load(
+    "//dotnet/private:nuget.bzl",
+    _nuget_package = "nuget_package",
 )
 load(
     "//dotnet/private/toolchain:nuget.bzl",
@@ -49,8 +58,8 @@ dotnet_sdk = _dotnet_sdk
 dotnet_config = _dotnet_config
 
 nuget_fetch = _nuget_fetch
-nuget_import = _nuget_import
-nuget_filegroup = _nuget_filegroup
+nuget_package = _nuget_package
+nuget_package_framework = _nuget_package_framework
 nuget_package_version = _nuget_package_version
 
 DotnetSdkInfo = _DotnetSdkInfo
@@ -62,3 +71,7 @@ dotnet_binary = _dotnet_binary
 dotnet_publish = _dotnet_publish
 dotnet_library = _dotnet_library
 dotnet_test = _dotnet_test
+
+msbuild_binary = _msbuild_binary
+msbuild_library = _msbuild_library
+msbuild_test = _msbuild_test

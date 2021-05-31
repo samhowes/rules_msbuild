@@ -1,9 +1,10 @@
-load("//dotnet:defs.bzl", "dotnet_binary")
+load("//dotnet:defs.bzl", "msbuild_binary")
 load("//tests/tools/build_test:build_test.bzl", "build_test")
 
-dotnet_binary(
+msbuild_binary(
     name = "PackageDeps",
     srcs = ["HelloTransitiveNuget.cs"],
+    project_file = "PackageDeps.csproj",
     target_framework = "netcoreapp3.1",
     deps = [
         "@nuget//xunit",
@@ -15,6 +16,7 @@ build_test(
     expected_files = {
         "netcoreapp3.1": [
             "PackageDeps.dll",
+            # @nuget//xunit references other packages that contain these dlls
             "xunit.assert.dll",
             "xunit.abstractions.dll",
             "xunit.core.dll",
@@ -22,5 +24,4 @@ build_test(
         ],
     },
     expected_output = "hello\n",
-    target = "PackageDeps",
 )

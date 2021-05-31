@@ -11,7 +11,8 @@ def artifacts_dir():
         "//conditions:default": "",
     })
 
-def build_test(name, target, expected_files, run_location = "", args = [], expected_output = ""):
+def build_test(name, expected_files, run_location = "", args = [], expected_output = ""):
+    target = name.rsplit("_", 1)[0]
     artifacts = target + "_artifacts"
     native.filegroup(
         name = artifacts,

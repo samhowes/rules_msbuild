@@ -30,6 +30,7 @@ go_library(
 
 go_test(
     name = "dotnet_test",
+    size = "small",
     srcs = ["gazelle_test.go"],
     data = [
         ":gazelle-dotnet",

@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <ProjectReference Include="..\TransitiveTransitiveLib\TransitiveTransitiveLib.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Foo>Bar</Foo>
   </PropertyGroup>
 
 </Project>
