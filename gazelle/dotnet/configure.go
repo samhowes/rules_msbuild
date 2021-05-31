@@ -128,7 +128,7 @@ func (d *dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
 	self := project.DirectoryInfo{
 		Base:     base,
 		Children: map[string]*project.DirectoryInfo{},
-		Exts:     map[string]bool{},
+		Exts:     map[string][]string{},
 		SrcsMode: dc.srcsMode,
 	}
 	if parent != nil {

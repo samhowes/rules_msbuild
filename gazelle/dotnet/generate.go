@@ -44,7 +44,12 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 			continue
 		}
 
-		info.Exts[path.Ext(f)] = true
+		ext := path.Ext(f)
+		if info.SrcsMode == project.Explicit {
+			info.Exts[ext] = append(info.Exts[ext], f)
+		} else {
+			info.Exts[ext] = nil
+		}
 	}
 
 	dc := getConfig(args.Config)

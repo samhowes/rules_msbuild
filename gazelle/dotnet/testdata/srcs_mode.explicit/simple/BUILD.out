@@ -1,0 +1,12 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "simple",
+    srcs = [
+        "Program.cs",
+        "subdir/foo.cs",
+        "subdir/subsubdir/bar.cs",
+    ],
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+)

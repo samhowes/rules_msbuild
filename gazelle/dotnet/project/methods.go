@@ -17,7 +17,7 @@ var variableRegex = regexp.MustCompile(`\$\((\w+)\)`)
 
 type DirectoryInfo struct {
 	Children map[string]*DirectoryInfo
-	Exts     map[string]bool
+	Exts     map[string][]string
 	Base     string
 	Project  *Project
 	SrcsMode SrcsMode
@@ -145,13 +145,13 @@ func (fg *FileGroup) IsExcluded(file string) bool {
 }
 
 func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
-	_, exists := dir.Exts[ext]
+	files, exists := dir.Exts[ext]
 	if !exists {
 		return
 	}
 	fg := p.GetFileGroup(key)
 	if rel != "" {
-		rel = fmt.Sprintf("%s/", forceSlash(rel))
+		rel = forceSlash(rel) + "/"
 	}
 	if dir.SrcsMode == Folders {
 		testFile := fmt.Sprintf("%sfoo%s", rel, ext)
@@ -159,6 +159,13 @@ func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
 			return
 		}
 		fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
+	} else if dir.SrcsMode == Explicit {
+		for _, f := range files {
+			if fg.IsExcluded(f) {
+				continue
+			}
+			fg.Explicit = append(fg.Explicit, &bzl.StringExpr{Value: rel + f})
+		}
 	}
 }
 
