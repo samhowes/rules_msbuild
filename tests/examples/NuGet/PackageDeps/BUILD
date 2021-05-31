@@ -6,6 +6,7 @@ msbuild_binary(
     srcs = ["HelloTransitiveNuget.cs"],
     project_file = "PackageDeps.csproj",
     target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
     deps = [
         "@nuget//xunit",
     ],

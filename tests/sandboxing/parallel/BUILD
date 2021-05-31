@@ -22,6 +22,7 @@ msbuild_binary(
     srcs = ["foo.cs"],
     tags = TAGS,
     target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
 )
 
 # DO NOT BUILD THIS TARGET

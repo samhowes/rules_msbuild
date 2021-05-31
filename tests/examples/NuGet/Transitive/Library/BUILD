@@ -8,7 +8,7 @@ msbuild_library(
     target_framework = "netcoreapp3.1",
     visibility = ["//tests/examples/NuGet/Transitive:__subpackages__"],
     deps = [
-        "@nuget//newtonsoft.json",
+        "@nuget//Newtonsoft.Json",
     ],
 )
 
