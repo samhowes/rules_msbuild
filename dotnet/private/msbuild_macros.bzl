@@ -66,7 +66,7 @@ def _msbuild_assembly(
     assembly_args = dicts.add(assembly_args, dict(
         [
             [k, kwargs.pop(k, None)]
-            for k in ["data"]
+            for k in ["data", "content"]
         ],
     ))
 

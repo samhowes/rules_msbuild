@@ -13,7 +13,7 @@ def nuget_deps():
             "Microsoft.Build.Locator:1.4.1": ["netcoreapp3.1"],
             "Microsoft.Build.Utilities.Core:16.9.0": ["netcoreapp3.1"],
             "Microsoft.NET.Test.Sdk:16.7.1": ["netcoreapp3.1"],
-            "newtonsoft.json:13.0.1": ["netcoreapp3.1"],  # keep
+            "Newtonsoft.Json:13.0.1": ["netcoreapp3.1"],  # keep
             "xunit:2.4.1": ["netcoreapp3.1"],
             "xunit.runner.visualstudio:2.4.3": ["netcoreapp3.1"],
         },
