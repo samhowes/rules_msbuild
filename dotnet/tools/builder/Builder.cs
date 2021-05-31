@@ -34,14 +34,21 @@ namespace MyRulesDotnet.Tools.Builder
 
         public int Build()
         {
-            var projectCollection = BeginBuild();
+            ProjectCollection? projectCollection = null;
+            BuildResultCode? result = null;
+            try
+            {
+                projectCollection = BeginBuild();
 
-            var (project, graph) = LoadProject(projectCollection);
-            if (project == null) return 1;
+                result = ExecuteBuild(projectCollection);
 
-            var result = ExecuteBuild(project, graph!);
-
-            EndBuild(result);
+                EndBuild(result!.Value);
+            }
+            finally
+            {
+                _buildManager.Dispose();
+                projectCollection?.Dispose();
+            }
 
             return (int) result;
         }
@@ -54,7 +61,7 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             _buildManager.EndBuild();
- 
+
             if (result == BuildResultCode.Success)
             {
                 if (_action == "restore")
@@ -78,19 +85,24 @@ namespace MyRulesDotnet.Tools.Builder
             }
         }
 
-        private BuildResultCode ExecuteBuild(ProjectGraphNode project, ProjectGraph graph)
+        private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
         {
-            var source = new TaskCompletionSource<BuildResultCode>();
-            var flags = BuildRequestDataFlags.None;
-            
+            // don't load the project ahead of time, otherwise the evaluation won't be included in the binlog output
+            var source = new TaskCompletionSource<(BuildResultCode, ProjectInstance?)>();
+            var flags = BuildRequestDataFlags.ProvideProjectStateAfterBuild;
+
             // our restore outputs are relative to the project directory
             Environment.CurrentDirectory = _context.ProjectDirectory;
             if (_context.MSBuild.GraphBuild)
             {
-                var graphData = new GraphBuildRequestData(graph, _context.MSBuild.Targets, null, flags);
+                var graphData = new GraphBuildRequestData(
+                    new ProjectGraphEntryPoint(_context.ProjectFile, projectCollection.GlobalProperties),
+                    _context.MSBuild.Targets,
+                    null,
+                    flags);
                 var submission = _buildManager.PendBuildRequest(graphData);
-                
-                submission.ExecuteAsync(_ => source.SetResult(submission.BuildResult.OverallResult), submission);
+
+                submission.ExecuteAsync(_ => source.SetResult((submission.BuildResult.OverallResult, null)), submission);
             }
             else
             {
@@ -98,7 +110,9 @@ namespace MyRulesDotnet.Tools.Builder
                 // build request only builds a single project in isolation, and any cache misses are considered errors.
                 // loading up the project graph to begin with enables some other optimizations. 
                 var data = new BuildRequestData(
-                    project.ProjectInstance,
+                    _context.ProjectFile,
+                    projectCollection.GlobalProperties,
+                    null,
                     _context.MSBuild.Targets,
                     null,
                     // replace the existing config that we'll load from cache
@@ -107,17 +121,37 @@ namespace MyRulesDotnet.Tools.Builder
                     // todo: update above comment
                     // setting to replace means that publish will discard item groups that were previoiusly built, 
                     // resulting in publish not publishing content items.
-                
+
                     // Keep the project items that we have discovered for publish so publish doesn't do a re-build.
                     flags
                 );
                 var submission = _buildManager.PendBuildRequest(data);
-                submission.ExecuteAsync(_ => source.SetResult(submission.BuildResult.OverallResult), submission);
+                submission.ExecuteAsync(
+                    _ => source.SetResult(
+                        (submission.BuildResult.OverallResult, submission.BuildResult.ProjectStateAfterBuild)),
+                    submission);
+
             }
-            return source.Task.GetAwaiter().GetResult();
+
+            var (result, project) = source.Task.GetAwaiter().GetResult();
+
+            if (project != null)
+            {
+                var actualTfm = project.GetProperty("TargetFramework")?.EvaluatedValue ?? "";
+                if (actualTfm != _context.Tfm)
+                {
+                    Error(
+                        $"Bazel expected TargetFramework {_context.Tfm}, but {_context.WorkspacePath(_context.ProjectFile)} is " +
+                        $"configured to use TargetFramework {actualTfm}. Refusing to build as this will " +
+                        $"produce unreachable output. Please reconfigure the project and/or BUILD file.");
+                    return BuildResultCode.Failure;
+                }
+            }
+
+            return result;
         }
 
-        private (ProjectGraphNode? project, ProjectGraph? graph) LoadProject(ProjectCollection projectCollection)
+        private Dictionary<string, string> GetGlobalProperties()
         {
             var noWarn = "NU1603;MSB3277";
             var globalProperties = new Dictionary<string, string>
@@ -141,58 +175,37 @@ namespace MyRulesDotnet.Tools.Builder
                 // enables a faster nuget restore compatible with isolated builds
                 // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
                 globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
-            } 
+            }
             else if (_action == "publish")
             {
                 // Setting this as a global property invalidates the input cache files from the build action.
                 // MSBuild will do that anyway because it's going to load a config from the cache that matches the entry
                 // project, but MSBuild does *not* serialize project state after a build so that
-                // BuildRequestConfiguration instance will not have a ProjectInstance attached to it, and MSBuild will 
+                // BuildRequestConfiguration instance will not have a ProjectInstance attached to it, and MSBuild will
                 // assume it ran into https://github.com/dotnet/msbuild/issues/1748, and set a global "Dummy" property
                 // to explicitly invalidate the cache. We can set BuildRequestDataFlags.ReplaceExistingProjectInstance
                 // to not invalidate the cache, but then publish won't have the right items calculated (at least
-                // Content items will be missing), and we won't get the publish output we expect. 
+                // Content items will be missing), and we won't get the publish output we expect.
                 // To get the caching we want we'd have to somehow persist ProjectInstance to disk from the build action
-                // which appears to be possible via the ITranslatable interface, but all of that code has `internal` 
+                // which appears to be possible via the ITranslatable interface, but all of that code has `internal`
                 // visibility in the MSBuild assembly, and there is no one single method that we can target to persist
-                // it to disk, but a collection of methods and classes. Might be doable with more knowledge of their 
+                // it to disk, but a collection of methods and classes. Might be doable with more knowledge of their
                 // codebase, but seems rather brittle and hacky with the knowledge I currently have.
-                
+
                 // tl;dr: we get a performance hit because we have to re-evaluate the project file, but for now, this is
                 // how we get the full proper output.
-                
+
                 globalProperties["NoBuild"] = "true";
-                // Publish re-executes the ResolveAssemblyReferences task, which uses the same .cache file as the build 
-                // action. Since we'll have all the output from the build action, this file will be readonly in the 
+                // Publish re-executes the ResolveAssemblyReferences task, which uses the same .cache file as the build
+                // action. Since we'll have all the output from the build action, this file will be readonly in the
                 // sandbox. MSBuild opens this with Read+Write, so it will get an Access Denied exception and produce
-                // a warning when trying to open that file. Suppress that warning. 
-                noWarn += ";MSB3088";
+                // a warning when trying to open that file. Suppress that warning.
+                noWarn += ";MSB3088;MSB3101";
             }
 
             globalProperties["NoWarn"] = noWarn;
-
-            // load with a project graph so we get graph properties set on evaluation
-            var graph = new ProjectGraph(_context.ProjectFile, globalProperties, projectCollection);
-            //
-            // if (_action == "publish" && graph.ProjectNodes.Count > 1)
-            // {
-            //     throw new Exception(string.Join("\n",
-            //         graph.GetTargetLists(_context.MSBuild.Targets)
-            //         .Select(p => p.Key.ProjectInstance.FullPath + ": " + string.Join(",", p.Value))));
-            // }
-
-            var project = graph.EntryPointNodes.Single();
-
-            var actualTfm = project.ProjectInstance.GetProperty("TargetFramework")?.EvaluatedValue ?? "";
-            if (actualTfm != _context.Tfm)
-            {
-                Error($"Bazel expected TargetFramework {_context.Tfm}, but {_context.WorkspacePath(_context.ProjectFile)} is " +
-                      $"configured to use TargetFramework {actualTfm}. Refusing to build as this will " +
-                      $"produce unreachable output. Please reconfigure the project and/or BUILD file.");
-                return (null,null);
-            }
-
-            return (project, graph);
+            Environment.SetEnvironmentVariable("NoWarn", noWarn);
+            return globalProperties;
         }
 
         private ProjectCollection BeginBuild()
@@ -204,23 +217,24 @@ namespace MyRulesDotnet.Tools.Builder
             // Setting it here allows the project file to read it for paths and we don't have to clear it later.
             _context.SetEnvironment();
 
-            var pc = ProjectCollection.GlobalProjectCollection;
-
-            BinaryLogger? binlog = null;
+            var loggers = new List<ILogger>() {_msbuildLog};
             if (_context.BinlogEnabled)
             {
                 var path = _context.OutputPath(_context.Bazel.Label.Name + ".binlog");
                 Debug($"added binlog {path}");
-                binlog = new BinaryLogger() {Parameters = path};
-                pc.RegisterLogger(binlog);
+                var binlog = new BinaryLogger() {Parameters = path};
+                loggers.Add(binlog);
             }
 
-            pc.RegisterLogger(_msbuildLog);
+            var pc = new ProjectCollection(GetGlobalProperties(), loggers, ToolsetDefinitionLocations.Default);
+            // pc.RegisterLoggers(loggers);
+            // var pc = new ProjectCollection(new Dictionary<string, string>(), loggers, ToolsetDefinitionLocations.Default);
+            // pc.RegisterLogger(_msbuildLog);
             var parameters = new BuildParameters(pc)
             {
                 EnableNodeReuse = false,
-                Loggers = new ILogger[] {_msbuildLog, binlog!},
                 DetailedSummary = true,
+                Loggers = pc.Loggers,
                 ResetCaches = false,
                 LogTaskInputs = _msbuildLog.Verbosity == LoggerVerbosity.Diagnostic,
                 ProjectLoadSettings = ProjectLoadSettings.RecordEvaluatedItemElements,
@@ -230,13 +244,14 @@ namespace MyRulesDotnet.Tools.Builder
                     Microsoft.Build.Evaluation.ToolsetDefinitionLocations.Registry,
             };
 
+
             if (_context.MSBuild.UseCaching)
             {
                 parameters.OutputResultsCacheFile = _context.LabelPath(".cache");
                 parameters.InputResultsCacheFiles = GetInputCaches();
-                parameters.IsolateProjects = true;  
+                parameters.IsolateProjects = true;
             }
-            
+
             _buildManager.BeginBuild(parameters);
             if (_msbuildLog.HasError)
             {
@@ -297,13 +312,13 @@ namespace MyRulesDotnet.Tools.Builder
 
                     if (isJson)
                     {
-                        path = Path.GetRelativePath(_context.ProjectDirectory, path);    
+                        path = Path.GetRelativePath(_context.ProjectDirectory, path);
                     }
                     else
                     {
                         path = Path.Combine("$(ExecRoot)", Path.GetRelativePath(_context.Bazel.ExecRoot, path));
                     }
-                    
+
                     if (needsEscaping)
                     {
                         path = Escape(path);
