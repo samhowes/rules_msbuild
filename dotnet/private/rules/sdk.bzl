@@ -19,10 +19,6 @@ def _dotnet_sdk_impl(ctx):
         runfiles = depset([
             ctx.file.bazel_props,
             ctx.file.bazel_targets,
-            ctx.file.sdk_root,
-            ctx.file.shared,
-            ctx.file.home_dir,
-            ctx.file.packs,
         ]),
         config = ctx.attr.config[DotnetConfigInfo],
     )]

@@ -49,7 +49,7 @@ namespace MyRulesDotnet.Tools.Builder
         {
             Command = command;
             Bazel = new BazelContext(command);
-            NuGetConfig = ExecPath(command.NamedArgs["nuget_config"]);
+            NuGetConfig = ToolPath(command.NamedArgs["nuget_config"]);
             Tfm = command.NamedArgs["tfm"];
             MSBuild = new MSBuildContext(
                 command.Action,

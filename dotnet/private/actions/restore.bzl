@@ -17,7 +17,7 @@ def restore(ctx, dotnet):
     dep_files = process_deps(dotnet, ctx.attr.deps)
 
     inputs = depset(
-        direct = [ctx.file.project_file, dotnet.sdk.config.nuget_config],
+        direct = [ctx.file.project_file],
         transitive = [dep_files],
     )
 
