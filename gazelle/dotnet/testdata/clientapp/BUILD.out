@@ -1,8 +1,8 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
 # gazelle-err: unsupported project element: Target
 # gazelle-err: unsupported project element: Target
-dotnet_binary(
+msbuild_binary(
     name = "clientapp",
     srcs = glob([
         "*.cs",
@@ -17,13 +17,7 @@ dotnet_binary(
         "SpaRoot": "ClientApp\\",
         "DefaultItemExcludes": "$(DefaultItemExcludes);$(SpaRoot)node_modules\\**",
     },
-    sdk = "Microsoft.NET.Sdk.Web",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = ["@nuget//Microsoft.AspNetCore.SpaServices.Extensions"],
-)
-
-dotnet_publish(
-    name = "publish",
-    target = ":clientapp",
 )

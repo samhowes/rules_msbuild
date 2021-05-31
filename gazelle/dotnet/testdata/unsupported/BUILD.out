@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
 
 # gazelle-err: unsupported project attribute: foo
 # gazelle-err: unsupported project element: Target
@@ -6,7 +6,7 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
 # gazelle-err: unsupported property attribute: Condition
 # gazelle-err: unsupported item group attribute: Condition
 # gazelle-err: unsupported item group element: Unkown
-dotnet_library(
+msbuild_library(
     name = "unsupported",
     srcs = glob(["*.cs"]) + [
         # gazelle-err: unsupported Compile attribute: Condition
@@ -21,7 +21,6 @@ dotnet_library(
         # gazelle-err: unsupported property attribute: Condition
         "Foo": "Bar",
     },
-    sdk = "Microsoft.NET.Sdk",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [
