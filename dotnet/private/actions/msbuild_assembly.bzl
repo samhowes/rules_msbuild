@@ -26,7 +26,7 @@ def build_assembly(ctx, dotnet):
     data = depset(getattr(ctx.files, "data", []))
 
     inputs = depset(
-        ctx.files.srcs + [cache_manifest],
+        ctx.files.srcs + ctx.files.content + [cache_manifest],
         transitive = [dep_files, content, dotnet.sdk.runfiles],
     )
 
@@ -54,7 +54,7 @@ def build_assembly(ctx, dotnet):
         data = data,
         dep_files = depset(
             # include srcs here because msbuild could copy them to the output directory
-            ctx.files.srcs,
+            ctx.files.srcs + ctx.files.content,
             transitive = [dep_files, content, data],
         ),
         restore = restore,

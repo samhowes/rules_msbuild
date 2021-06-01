@@ -6,6 +6,7 @@ msbuild_binary(
     srcs = ["Greeter.cs"],
     project_file = "Greeter.csproj",
     target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
 )
 
 genrule(

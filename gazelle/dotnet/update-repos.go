@@ -45,7 +45,7 @@ func (d *dotnetLang) ImportRepos(args language.ImportReposArgs) language.ImportR
 
 }
 
-func (d dotnetLang) customUpdateRepos(c *config.Config) {
+func (d *dotnetLang) customUpdateRepos(c *config.Config) {
 	dc := getConfig(c)
 	res := importReposImpl(dc.packages)
 

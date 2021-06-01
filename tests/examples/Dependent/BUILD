@@ -6,6 +6,7 @@ msbuild_binary(
     srcs = glob(["**/*.cs"]),
     project_file = "Dependent.csproj",
     target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
     deps = [
         "//tests/examples/ClassLibrary",
     ],

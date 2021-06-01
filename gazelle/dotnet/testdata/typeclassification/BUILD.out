@@ -1,0 +1,23 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+
+# gazelle:srcs_mode explicit
+
+msbuild_binary(
+    name = "implicitweb",
+    srcs = [
+        "Program.cs",
+        "Properties/foo.cs",
+        "Startup.cs",
+        "othersubdir/bar.cs",
+    ],
+    content = [
+        "appsettings.Development.json",
+        "appsettings.json",
+        "foo.content",
+        "othersubdir/foo.json",
+        "subdir/foo.config",
+    ],
+    data = glob(["wwwroot/**"]),
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+)

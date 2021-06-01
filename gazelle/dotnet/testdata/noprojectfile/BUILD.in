@@ -1,7 +1,6 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
+msbuild_binary(
     name = "Greeter",
-    srcs = ["Greeter.cs"],
-    target_framework = "netcoreapp3.1",
+target_framework = "netcoreapp3.1",
 )

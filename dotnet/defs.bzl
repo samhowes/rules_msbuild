@@ -34,9 +34,9 @@ load(
 )
 load(
     "//dotnet/private:msbuild_macros.bzl",
-    _msbuild_binary = "msbuild_binary",
-    _msbuild_library = "msbuild_library",
-    _msbuild_test = "msbuild_test",
+    "msbuild_binary_macro",
+    "msbuild_library_macro",
+    "msbuild_test_macro",
 )
 load(
     "//dotnet/private/rules:nuget.bzl",
@@ -72,6 +72,6 @@ dotnet_publish = _dotnet_publish
 dotnet_library = _dotnet_library
 dotnet_test = _dotnet_test
 
-msbuild_binary = _msbuild_binary
-msbuild_library = _msbuild_library
-msbuild_test = _msbuild_test
+msbuild_binary = msbuild_binary_macro
+msbuild_library = msbuild_library_macro
+msbuild_test = msbuild_test_macro

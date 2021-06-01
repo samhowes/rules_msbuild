@@ -24,7 +24,7 @@ import (
 //
 // Any non-fatal errors this function encounters should be logged using
 // log.Print.
-func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
+func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateResult {
 	res := language.GenerateResult{}
 	info := getInfo(args.Config)
 	if info == nil {
@@ -33,6 +33,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 		if strings.HasSuffix(f, "proj") {
 			info.Project = loadProject(args, f)
+			info.Project.Directory = info
 			if info.Project != nil {
 				res.Imports = append(res.Imports, info.Project.Deps)
 			}
@@ -44,7 +45,12 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 			continue
 		}
 
-		info.Exts[path.Ext(f)] = true
+		ext := path.Ext(f)
+		if info.SrcsMode == project.Explicit {
+			info.Exts[ext] = append(info.Exts[ext], f)
+		} else {
+			info.Exts[ext] = nil
+		}
 	}
 
 	dc := getConfig(args.Config)
@@ -56,10 +62,7 @@ func (d dotnetLang) GenerateRules(args language.GenerateArgs) language.GenerateR
 		return res
 	}
 
-	res.Gen = append(res.Gen, info.Project.GenerateRules(info)...)
-	if info.Project.IsExe {
-		res.Imports = append(res.Imports, []interface{}{})
-	}
+	res.Gen = append(res.Gen, info.Project.GenerateRules(args.File)...)
 
 	return res
 }
@@ -96,7 +99,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 				continue
 			}
 			dep.Label = l
-			proj.Deps = append(proj.Deps, dep)
+			proj.Deps = append(proj.Deps, &dep)
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
@@ -114,7 +117,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 				Pkg:  ref.Include,
 				Name: ref.Include,
 			}
-			proj.Deps = append(proj.Deps, dep)
+			proj.Deps = append(proj.Deps, &dep)
 		}
 	}
 }

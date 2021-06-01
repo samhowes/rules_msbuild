@@ -3,9 +3,10 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
     name = "HelloBazel",
-    srcs = ["Program.cs"],
+    srcs = glob(["Program.cs"]),
     project_file = "HelloBazel.csproj",
     target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
 )
 
 build_test(

@@ -1,14 +1,7 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary", "dotnet_publish")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
-dotnet_binary(
+msbuild_binary(
     name = "bin",
-    srcs = glob(["*.cs"]),
-    sdk = "Microsoft.NET.Sdk",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
-)
-
-dotnet_publish(
-    name = "publish",
-    target = ":bin",
 )

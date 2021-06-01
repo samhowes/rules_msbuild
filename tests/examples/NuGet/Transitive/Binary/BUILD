@@ -6,6 +6,7 @@ msbuild_binary(
     srcs = ["Program.cs"],
     project_file = "Binary.csproj",
     target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
     deps = [
         "//tests/examples/NuGet/Transitive/Library",
     ],

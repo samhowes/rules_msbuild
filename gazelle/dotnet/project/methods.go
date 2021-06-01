@@ -17,10 +17,19 @@ var variableRegex = regexp.MustCompile(`\$\((\w+)\)`)
 
 type DirectoryInfo struct {
 	Children map[string]*DirectoryInfo
-	Exts     map[string]bool
+	Exts     map[string][]string
 	Base     string
 	Project  *Project
+	SrcsMode SrcsMode
 }
+
+type SrcsMode int
+
+const (
+	Implicit SrcsMode = iota
+	Folders
+	Explicit
+)
 
 func Load(projectFile string) (*Project, error) {
 	var proj Project
@@ -35,6 +44,7 @@ func Load(projectFile string) (*Project, error) {
 
 	proj.LangExt = strings.TrimSuffix(path.Ext(projectFile), "proj")
 	proj.Properties = make(map[string]string)
+	proj.srcsModes = make(map[string]SrcsMode)
 
 	for _, pg := range proj.PropertyGroups {
 		for _, p := range pg.Properties {
@@ -136,20 +146,29 @@ func (fg *FileGroup) IsExcluded(file string) bool {
 }
 
 func (p *Project) appendFiles(dir *DirectoryInfo, key, rel, ext string) {
-	_, exists := dir.Exts[ext]
+	files, exists := dir.Exts[ext]
 	if !exists {
 		return
 	}
 	fg := p.GetFileGroup(key)
 	if rel != "" {
-		rel = fmt.Sprintf("%s/", forceSlash(rel))
+		rel = forceSlash(rel) + "/"
 	}
-	testFile := fmt.Sprintf("%sfoo%s", rel, ext)
-	if fg.IsExcluded(testFile) {
-		return
+	mode := p.srcsModes[key]
+	if mode == Folders {
+		testFile := fmt.Sprintf("%sfoo%s", rel, ext)
+		if fg.IsExcluded(testFile) {
+			return
+		}
+		fg.IncludeGlob(fmt.Sprintf("%s*%s", rel, ext))
+	} else if mode == Explicit {
+		for _, f := range files {
+			if fg.IsExcluded(f) {
+				continue
+			}
+			fg.Explicit = append(fg.Explicit, &bzl.StringExpr{Value: rel + f})
+		}
 	}
-
-	fg.IncludeGlobs = append(fg.IncludeGlobs, &bzl.StringExpr{Value: fmt.Sprintf("%s*%s", rel, ext)})
 }
 
 func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
@@ -165,11 +184,29 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		return
 	}
 
-	p.appendFiles(dir, "Compile", rel, p.LangExt)
-	if p.IsWeb {
-		for _, ext := range []string{".json", ".config"} {
-			p.appendFiles(dir, "Content", rel, ext)
+	key := "Compile"
+	if p.srcsModes[key] != Implicit {
+		// make sure we have an entry so we send `srcs = []` when empty to the macro
+		// to prevent it from implicitly globbing
+		_ = p.GetFileGroup(key)
+
+		p.appendFiles(dir, key, rel, p.LangExt)
+		if p.LangExt == ".cs" {
+			p.appendFiles(dir, key, rel, ".cshtml")
 		}
+	}
+
+	if p.IsWeb {
+		key = "Content"
+		originalMode, exists := p.srcsModes[key]
+		if !exists || originalMode == Implicit {
+			// do this so we don't have to write an ugly glob that excludes bin, obj, and Properties
+			p.srcsModes[key] = Folders
+		}
+		for _, ext := range []string{".json", ".config"} {
+			p.appendFiles(dir, key, rel, ext)
+		}
+		p.srcsModes[key] = originalMode
 	}
 
 	for _, c := range dir.Children {

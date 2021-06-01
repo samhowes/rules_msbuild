@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <UseAppHost>false</UseAppHost>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
     <TargetFramework Condition="$(BazelBuild) == ''">net5.0</TargetFramework>
+    <TargetFramework Condition="$(BazelBuild) != ''">netcoreapp3.1</TargetFramework>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 

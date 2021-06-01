@@ -106,6 +106,7 @@ _ASSEMBLY_ATTRS = dicts.add(_RESTORE_ATTRS, {
     "srcs": attr.label_list(allow_files = True),
     "restore": attr.label(mandatory = True, providers = [DotnetRestoreInfo]),
     "data": attr.label_list(allow_files = True),
+    "content": attr.label_list(allow_files = True),
     "deps": attr.label_list(providers = [
         [DotnetLibraryInfo],
         [NuGetPackageInfo],

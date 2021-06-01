@@ -2,6 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
 
 # gazelle:exclude testdata
+# gazelle:go_naming_convention_external go_default_library
 
 go_library(
     name = "dotnet",
@@ -18,13 +19,14 @@ go_library(
         "//gazelle/dotnet/project",
         "//gazelle/dotnet/util",
         "@bazel_gazelle//config:go_default_library",
+        "@bazel_gazelle//flag:go_default_library",
         "@bazel_gazelle//label:go_default_library",
         "@bazel_gazelle//language:go_default_library",
         "@bazel_gazelle//merger:go_default_library",
         "@bazel_gazelle//repo:go_default_library",
         "@bazel_gazelle//resolve:go_default_library",
         "@bazel_gazelle//rule:go_default_library",
-        "@com_github_bazelbuild_buildtools//build:go_default_library",
+        "@com_github_bazelbuild_buildtools//build:go_default_library",  # keep
     ],
 )
 

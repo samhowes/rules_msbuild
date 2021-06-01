@@ -2,22 +2,23 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "//dotnet/private/rules:msbuild.bzl",
+    "msbuild_binary",
+    "msbuild_library",
     "msbuild_publish",
     "msbuild_restore",
-    _msbuild_binary = "msbuild_binary",
-    _msbuild_library = "msbuild_library",
-    _msbuild_test = "msbuild_test",
+    "msbuild_test",
 )
 
-def msbuild_binary(
+def msbuild_binary_macro(
         name,
         project_file = None,
         target_framework = None,
-        srcs = [],
+        srcs = None,
         deps = [],
         **kwargs):
+    srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)
-    _msbuild_assembly(name, _msbuild_binary, project_file, target_framework, srcs, deps, kwargs)
+    _msbuild_assembly(name, msbuild_binary, project_file, target_framework, srcs, deps, kwargs)
 
     msbuild_publish(
         name = name + "_publish",
@@ -25,16 +26,16 @@ def msbuild_binary(
         target = ":" + name,
     )
 
-def msbuild_library(
+def msbuild_library_macro(
         name,
         project_file = None,
         target_framework = None,
         srcs = [],
         deps = [],
         **kwargs):
-    _msbuild_assembly(name, _msbuild_library, project_file, target_framework, srcs, deps, kwargs)
+    _msbuild_assembly(name, msbuild_library, project_file, target_framework, srcs, deps, kwargs)
 
-def msbuild_test(
+def msbuild_test_macro(
         name,
         project_file = None,
         target_framework = None,
@@ -45,7 +46,7 @@ def msbuild_test(
         size = kwargs.pop("size", None),
     )
 
-    _msbuild_assembly(name, _msbuild_test, project_file, target_framework, srcs, deps, kwargs, test_args)
+    _msbuild_assembly(name, msbuild_test, project_file, target_framework, srcs, deps, kwargs, test_args)
 
 _KNOWN_EXTS = {
     ".cs": True,
@@ -65,10 +66,11 @@ def _msbuild_assembly(
     assembly_args = dicts.add(assembly_args, dict(
         [
             [k, kwargs.pop(k, None)]
-            for k in ["data"]
+            for k in ["data", "content"]
         ],
     ))
 
+    srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)
     restore_name = name + "_restore"
 
@@ -93,6 +95,19 @@ def _msbuild_assembly(
         restore = ":" + restore_name,
         deps = deps,
         **dicts.add(kwargs, assembly_args)
+    )
+
+def _get_srcs(srcs):
+    if srcs != None:
+        return srcs
+    return native.glob(
+        ["**/*"],
+        exclude = [
+            "bin/**",
+            "obj/**",
+            "*proj",
+            "BUILD*",
+        ],
     )
 
 def _guess_project_file(name, srcs, project_file):

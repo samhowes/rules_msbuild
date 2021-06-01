@@ -9,41 +9,35 @@ import (
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
 )
 
-func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
+func (p *Project) GenerateRules(f *rule.File) []*rule.Rule {
 	var kind string
 	if p.IsTest {
-		kind = "dotnet_test"
+		kind = "msbuild_test"
 	} else if p.IsExe {
-		kind = "dotnet_binary"
+		kind = "msbuild_binary"
 	} else {
-		kind = "dotnet_library"
+		kind = "msbuild_library"
 	}
 
 	p.Rule = rule.NewRule(kind, p.Name)
 	rules := []*rule.Rule{p.Rule}
-	if p.IsExe {
-		pub := rule.NewRule("dotnet_publish", "publish")
-		pub.SetAttr("target", ":"+p.Name)
-		rules = append(rules, pub)
-	}
 
-	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Compile })
-	p.ProcessItemGroup(func(ig *ItemGroup) []*Item { return ig.Content })
+	p.ProcessItemGroup("Compile", func(ig *ItemGroup) []*Item { return ig.Compile })
+	p.ProcessItemGroup("Content", func(ig *ItemGroup) []*Item { return ig.Content })
 
-	p.CollectFiles(info, "")
+	p.CollectFiles(p.Directory, "")
 
 	p.SetFileAttributes()
-	p.SetProperties()
 
 	for _, u := range p.GetUnsupported() {
 		p.Rule.AddComment(util.CommentErr(u))
 	}
 
-	p.Rule.SetAttr("visibility", []string{"//visibility:public"})
-	p.Rule.SetAttr("target_framework", p.TargetFramework)
-	if p.Sdk != "" {
-		p.Rule.SetAttr("sdk", p.Sdk)
+	if (f == nil || !f.HasDefaultVisibility()) && !p.IsTest {
+		p.Rule.SetAttr("visibility", []string{"//visibility:public"})
 	}
+
+	p.Rule.SetAttr("target_framework", p.TargetFramework)
 	if len(p.Data) > 0 {
 		p.Rule.SetAttr("data", util.MakeGlob(util.MakeStringExprs(p.Data), nil))
 	}
@@ -51,6 +45,7 @@ func (p *Project) GenerateRules(info *DirectoryInfo) []*rule.Rule {
 	return rules
 }
 
+// todo: delete this when I decide to not re-introduce msbuild_properties
 func (p *Project) SetProperties() {
 	var exprs []*bzl.KeyValueExpr
 	for _, pg := range p.PropertyGroups {
@@ -72,7 +67,7 @@ func (p *Project) SetProperties() {
 	}
 }
 
-func (p *Project) ProcessItemGroup(getItems func(ig *ItemGroup) []*Item) {
+func (p *Project) ProcessItemGroup(fgKey string, getItems func(ig *ItemGroup) []*Item) {
 	for _, ig := range p.ItemGroups {
 		for _, i := range getItems(ig) {
 			p.EvaluateItem(i)
@@ -110,6 +105,14 @@ func (p *Project) ProcessItemGroup(getItems func(ig *ItemGroup) []*Item) {
 			}
 		}
 	}
+	p.srcsModes[fgKey] = p.Directory.SrcsMode
+	if _, exists := p.Files[fgKey]; exists {
+		// the user explicitly specified some files for these items, rather than doing some complicated globbing logic
+		// later, we'll just upgrade the srcs_mode for the directory tree
+		if p.Directory.SrcsMode == Implicit {
+			p.srcsModes[fgKey] = Folders
+		}
+	}
 }
 
 func forceSlash(p string) string {
@@ -118,7 +121,6 @@ func forceSlash(p string) string {
 
 func (p *Project) SetFileAttributes() {
 	for _, fg := range p.Files {
-		//sort.Strings(value)
 		var exprs []bzl.Expr
 		if len(fg.IncludeGlobs) > 0 {
 			exprs = append(exprs, util.MakeGlob(fg.IncludeGlobs, nil))
@@ -129,7 +131,8 @@ func (p *Project) SetFileAttributes() {
 		}
 
 		if len(exprs) <= 0 {
-			continue
+			// print `srcs = []` to prevent the macro from implicitly globbing
+			exprs = append(exprs, &bzl.ListExpr{List: []bzl.Expr{}})
 		}
 
 		expr := exprs[0]

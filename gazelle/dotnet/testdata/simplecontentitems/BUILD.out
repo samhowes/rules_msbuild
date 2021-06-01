@@ -1,10 +1,8 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_library")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
 
-dotnet_library(
+msbuild_library(
     name = "simplecontentitems",
-    srcs = glob(["*.cs"]),
     content = ["appsettings.json"],
-    sdk = "Microsoft.NET.Sdk",
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
 )

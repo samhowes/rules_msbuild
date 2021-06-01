@@ -6,7 +6,7 @@ msbuild_test(
     srcs = glob(["*.cs"]),
     target_framework = "netcoreapp3.1",
     deps = [
-        "//dotnet/tools/runfiles",  # keep
+        "//dotnet/tools/Runfiles",
         "@nuget//FluentAssertions",
         "@nuget//Microsoft.NET.Test.Sdk",
         "@nuget//xunit",

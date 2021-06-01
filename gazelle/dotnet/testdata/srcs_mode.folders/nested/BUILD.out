@@ -1,0 +1,12 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "nested",
+    srcs = glob([
+        "*.cs",
+        "a/b/*.cs",
+        "a/b/c/*.cs",
+    ]),
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+)

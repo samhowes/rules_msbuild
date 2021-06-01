@@ -5,5 +5,5 @@ go_library(
     srcs = ["bzl.go"],
     importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_bazelbuild_buildtools//build:go_default_library"],
+    deps = ["@com_github_bazelbuild_buildtools//build:go_default_library"],  # keep
 )
