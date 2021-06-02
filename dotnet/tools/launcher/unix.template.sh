@@ -108,6 +108,9 @@ set -e
 target_bin_path="$(rlocation %target_bin_path%)"
 dotnet_bin_path="$(rlocation %dotnet_bin_path%)"
 
+export DOTNET_RUNFILES_WORKSPACE="%workspace_name%"
+export DOTNET_RUNFILES_PACKAGE="%package%"
+
 if [[ "${DOTNET_LAUNCHER_DEBUG:-}" == 1 ]]; then
   set -x
   echo "INFO[dotnet.launcher]: target_bin=$target_bin_path"

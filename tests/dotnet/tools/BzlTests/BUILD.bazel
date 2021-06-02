@@ -1,0 +1,20 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_test")
+
+# gazelle:exclude testdata
+
+msbuild_test(
+    name = "BzlTests",
+    srcs = ["WorkspaceMakerTests.cs"],
+    data = glob(["testdata/**"]),
+    target_framework = "netcoreapp3.1",
+    deps = [
+        "//dotnet/tools/Bzl",
+        "//dotnet/tools/Runfiles",
+        "@nuget//FluentAssertions",
+        "@nuget//Microsoft.NET.Test.Sdk",
+        "@nuget//xunit",
+        # gazelle-err: unsupported element: IncludeAssets
+        # gazelle-err: unsupported element: PrivateAssets
+        "@nuget//xunit.runner.visualstudio",
+    ],
+)

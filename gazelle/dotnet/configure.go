@@ -8,6 +8,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
 	"log"
+	"os"
 	"path"
 	"strings"
 )
@@ -19,16 +20,20 @@ type dotnetConfig struct {
 	packages          map[string]*project.NugetSpec
 	srcsMode          project.SrcsMode
 	srcsModeString    string
+	debug             bool
 }
 
-func (c *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
-	if c.macroFileName == "" {
+func (dc *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
+	if dc.macroFileName == "" {
 		return
 	}
-	spec, exists := c.packages[ref.Include]
+	spec, exists := dc.packages[ref.Include]
 	v := project.ParseVersion(ref.Version)
 	if !exists {
-		c.packages[ref.Include] = &project.NugetSpec{
+		if dc.debug {
+			log.Printf("adding package %s/%s", ref.Include, v.Raw)
+		}
+		dc.packages[ref.Include] = &project.NugetSpec{
 			Name:    ref.Include,
 			Version: v,
 			Tfms:    map[string]bool{tfm: true},
@@ -85,6 +90,9 @@ func (d *dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Confi
 
 func (d *dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
 	dc := getConfig(c)
+	if os.Getenv("DOTNET_GAZELLE_DEBUG") != "" {
+		dc.debug = true
+	}
 	if dc.srcsModeString != "" {
 		mode, err := getSrcsMode(dc.srcsModeString, project.Implicit)
 		dc.srcsMode = mode
@@ -125,6 +133,9 @@ func (d *dotnetLang) Configure(c *config.Config, rel string, f *rule.File) {
 		return
 	}
 	dc := getConfig(c)
+	if dc.debug {
+		log.Printf(rel)
+	}
 	self := project.DirectoryInfo{
 		Base:     base,
 		Children: map[string]*project.DirectoryInfo{},

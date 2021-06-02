@@ -141,6 +141,8 @@ def make_builder_cmd(ctx, dotnet, action):
         dotnet.sdk.config.nuget_config,
         "--directory_bazel_props",
         dotnet.sdk.bazel_props,
+        "--output_type",
+        "exe" if dotnet.config.is_executable else "library",
     ])
     if dotnet.config.is_test:
         args.add_all(["--is_test", True])

@@ -66,7 +66,7 @@ func getRunfile(p string) string {
 func getBuiltPath(l LaunchInfo, key string) string {
 	outputDir := getItem(l, "output_dir")
 	value := trimWorkspaceName(getItem(l, key))
-	diag(func(){fmt.Printf("findng built path: %s using prefix %s\n", value, outputDir)})
+	diag(func() { fmt.Printf("findng built path: %s using prefix %s\n", value, outputDir) })
 	value = value[len(outputDir)+1:]
 	outputDirPath := getRunfile(outputDir)
 	return path.Join(outputDirPath, value)
@@ -125,9 +125,9 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 			if err := os.Setenv(bazel.RUNFILES_MANIFEST_FILE, manifestPath); err != nil {
 				panic(fmt.Errorf("failed to set the manifest file path: %v", err))
 			}
-			diag(func() { 
+			diag(func() {
 				abs, _ := filepath.Abs(manifestPath)
-				fmt.Printf("located manifest file: %s\n", abs) 
+				fmt.Printf("located manifest file: %s\n", abs)
 			})
 		}
 	}
@@ -141,6 +141,11 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 		}
 		_ = os.Setenv(line[0:equals], line[equals+1:])
 	}
+
+	workspace := getItem(info, "workspace_name")
+	pkg := getItem(info, "package")
+	_ = os.Setenv("DOTNET_RUNFILES_WORKSPACE", workspace)
+	_ = os.Setenv("DOTNET_RUNFILES_PACKAGE", pkg)
 
 	dotnetBinPath := getPathItem(info, "dotnet_bin_path")
 	dotnetCmd := getItem(info, "dotnet_cmd")
@@ -180,25 +185,24 @@ func launch(info LaunchInfo, args []string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-
 	if err := cmd.Start(); err != nil {
 		panic(fmt.Errorf("failed to launch command: %s\n%v", cmd.String(), err))
 	}
 
-	diag(func(){fmt.Printf("Started PID %d\n", cmd.Process.Pid)})
+	diag(func() { fmt.Printf("Started PID %d\n", cmd.Process.Pid) })
 	if launchMode == "wait" {
 		// when bazel runs a command, it will only pay attention to the parent process, not the child, so we need to
 		// wait on the cmd for bazel to report out on it
-		diag(func(){fmt.Printf("waiting...\n")})
+		diag(func() { fmt.Printf("waiting...\n") })
 		state, err := cmd.Process.Wait()
 		if err != nil {
-			panic(fmt.Errorf("failed to wait on cmd %s\n%v",cmd.String(), err))
+			panic(fmt.Errorf("failed to wait on cmd %s\n%v", cmd.String(), err))
 		}
-		diag(func(){fmt.Printf("cmd completed: %s\n", state.String())})
+		diag(func() { fmt.Printf("cmd completed: %s\n", state.String()) })
 	} else {
 		if err := cmd.Process.Release(); err != nil {
 			panic(fmt.Errorf("failed to detach from launched command %s\n%v", cmd.String(), err))
 		}
-		diag(func(){fmt.Printf("released\n")})
+		diag(func() { fmt.Printf("released\n") })
 	}
 }

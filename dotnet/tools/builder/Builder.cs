@@ -82,6 +82,26 @@ namespace MyRulesDotnet.Tools.Builder
                         File.Copy(dll, Path.Combine(tfmPath, filename));
                     }
                 }
+
+                if (_context.IsExecutable && _action == "build")
+                {
+                    var basename = _context.Bazel.Label.Name;
+                    if (Path.DirectorySeparatorChar == '\\')
+                    {
+                        // there's not a great "IsWindows" method in c#
+                        basename += ".exe";
+                    }
+                     
+                    File.WriteAllLines(_context.OutputPath(_context.Tfm, "runfiles.info"), new string[]
+                    {
+                        // first line is the expected location of the runfiles directory from the assembly location
+                        $"../{basename}.runfiles",
+                        // second line is the origin workspace (nice to have)
+                        _context.Bazel.Label.Workspace,
+                        // third is the package (nice to have)
+                        _context.Bazel.Label.Package
+                    });
+                }
             }
         }
 

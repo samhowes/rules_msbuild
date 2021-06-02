@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 // https://stackoverflow.com/questions/64749385/predefined-type-system-runtime-compilerservices-isexternalinit-is-not-defined
 namespace System.Runtime.CompilerServices
@@ -32,7 +33,7 @@ namespace MyRulesDotnet.Tools.Builder
         }
 
         public string LabelPath(string extension) => Path.Combine(Bazel.OutputDir, Bazel.Label.Name) + extension;
-        public string OutputPath(string subpath) => Path.Combine(Bazel.OutputDir, subpath);
+        public string OutputPath(params string[] subpath) => Path.Combine(subpath.Prepend(Bazel.OutputDir).ToArray());
         private string ExecPath(string subpath) => Path.Combine(Bazel.ExecRoot, subpath);
         public string BinPath(string subpath) => Path.Combine(Bazel.BinDir, subpath);
         
@@ -58,6 +59,8 @@ namespace MyRulesDotnet.Tools.Builder
                 NuGetConfig,
                 Tfm
                 );
+
+            IsExecutable = command.NamedArgs["output_type"] == "exe";
             
             SdkRoot = ToolPath(command.NamedArgs["sdk_root"]);
             
@@ -66,6 +69,8 @@ namespace MyRulesDotnet.Tools.Builder
             
             IsTest = command.NamedArgs.TryGetValue("is_test", out _);
         }
+
+        public bool IsExecutable { get; set; }
 
         public string ProjectDirectory { get; }
 

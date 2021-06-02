@@ -1,0 +1,12 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "Bzl",
+    srcs = [
+        "Files.cs",
+        "Program.cs",
+        "WorkspaceMaker.cs",
+    ],
+    target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
+)

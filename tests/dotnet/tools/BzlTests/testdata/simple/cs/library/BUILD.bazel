@@ -1,0 +1,8 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
+
+msbuild_library(
+    name = "library",
+    srcs = ["Class1.cs"],
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+)

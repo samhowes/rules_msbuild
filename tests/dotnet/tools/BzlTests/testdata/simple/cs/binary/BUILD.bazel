@@ -1,0 +1,9 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "binary",
+    srcs = ["Program.cs"],
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+    deps = ["//tests/dotnet/tools/BzlTests/testdata/simple/cs/library"],
+)
