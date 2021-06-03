@@ -92,7 +92,7 @@ def _make_env(dotnet_sdk_root, os):
         "DOTNET_MULTILEVEL_LOOKUP": "0",
         "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
         "DOTNET_NOLOGO": "1",
-        "NUGET_SHOW_STACK": "true",
+        # "NUGET_SHOW_STACK": "true",
         # "BUILDER_DEBUG": "1",
     }
 

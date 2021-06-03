@@ -1,4 +1,5 @@
 ﻿using System;
+using MyRulesDotnet.Tools.Bazel;
 
 namespace Bzl
 {
@@ -6,7 +7,7 @@ namespace Bzl
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var runfiles = Runfiles.Create<Program>("@my_rules_dotnet//dotnet/tools/Bzl");
         }
     }
 }

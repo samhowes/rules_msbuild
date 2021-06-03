@@ -1,15 +1,23 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
+using MyRulesDotnet.Tools.Bazel;
 using NuGetParser;
 
 namespace Bzl
 {
     public class WorkspaceMaker
     {
+        private readonly LabelRunfiles _runfiles;
         private readonly string _workspaceRoot;
         private readonly string _workspaceName;
 
-        public WorkspaceMaker(string workspaceRoot, string workspaceName)
+        private static readonly Regex TemplateRegex = new Regex(@"@@(\w+)@@",
+            RegexOptions.Compiled | RegexOptions.Multiline);
+
+        public WorkspaceMaker(Runfiles runfiles, string workspaceRoot, string workspaceName)
         {
+            _runfiles = new LabelRunfiles(runfiles, new Label("my_rules_dotnet", "dotnet/tools/Bzl"));
             _workspaceRoot = workspaceRoot;
             _workspaceName = workspaceName;
         }
@@ -19,8 +27,22 @@ namespace Bzl
             var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
             if (!workspaceFile.Exists)
             {
-                using var f = new BuildWriter(workspaceFile.Create());
-                f.Call("workspace", ("name", _workspaceName));
+                var variables = new Dictionary<string, string>() {["workspace_name"] = _workspaceName};
+                foreach (var (templateName, name) in new []
+                {
+                    (":BUILD.root.tpl.bazel", "BUILD.bazel"), 
+                    (":WORKSPACE.tpl", "WORKSPACE")
+                })
+                {
+                    var contents = File.ReadAllText(_runfiles.PackagePath(templateName));
+                    contents = TemplateRegex.Replace(contents, (match) =>
+                    {
+                        if (variables.TryGetValue(match.Groups[1].Value, out var replacement)) return replacement;
+                        return match.Value;
+                    });
+                    
+                    File.WriteAllText(Path.Combine(_workspaceRoot, name), contents);
+                }
             }
 
             var msbuildRoot = _workspaceRoot;

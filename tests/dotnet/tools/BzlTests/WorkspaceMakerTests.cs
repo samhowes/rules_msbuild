@@ -25,7 +25,7 @@ namespace BzlTests
         {
             _testDir = BazelEnvironment.GetTmpDir($"{nameof(WorkspaceInit)}_{workspaceName}");
             var specs = CollectSpecs(workspaceName);
-            var maker = new WorkspaceMaker(_testDir, workspaceName);
+            var maker = new WorkspaceMaker(_runfiles.Runfiles, _testDir, workspaceName);
             maker.Init();
             foreach (var spec in specs)
             {
@@ -67,6 +67,10 @@ namespace BzlTests
                                     if (!l.StartsWith("%"))
                                     {
                                         l = Regex.Escape(l);
+                                    }
+                                    else
+                                    {
+                                        l = l[1..];
                                     }
                                     return new Regex(l, RegexOptions.Multiline | RegexOptions.IgnoreCase);
                                 })

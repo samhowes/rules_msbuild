@@ -1,0 +1,17 @@
+load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+
+gazelle(
+    name = "gazelle",
+    args = [
+        "--deps_macro=deps/nuget.bzl%nuget_deps",
+        "--srcs_mode=implicit",  # change value to "explicit" for better bazel performance
+    ],
+    gazelle = ":gazelle_local",
+)
+
+gazelle_binary(
+    name = "gazelle_local",
+    languages = DEFAULT_LANGUAGES + [
+        "@my_rules_dotnet//gazelle/dotnet",
+    ],
+)

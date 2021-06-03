@@ -74,7 +74,7 @@ namespace MyRulesDotnet.Tools.Bazel
         /// <returns>An instance of <see cref="LabelRunfiles"/> which uses bazel labels to compute runfiles paths for
         /// you</returns>
         /// <exception cref="IOException">If a runfiles directory cannot be found.</exception>
-        public static LabelRunfiles Create<TEntry>() where TEntry : class
+        public static LabelRunfiles Create<TEntry>(Label defaultPackage = null) where TEntry : class
         {
             const string infoName = "runfiles.info";
             var assemblyLocation = typeof(TEntry).Assembly.Location;
@@ -93,8 +93,10 @@ namespace MyRulesDotnet.Tools.Bazel
             }
 
             var expectedLocation = lines[0];
-            var assemblyWorkspace = lines[1];
-            var assemblyPackage = lines[2];
+            if (defaultPackage == null)
+            {
+                defaultPackage = new Label(lines[1], lines[2]);
+            }
             
             if (!TryCreate(Environment.GetEnvironmentVariables(), out var runfiles))
             {
@@ -129,7 +131,7 @@ namespace MyRulesDotnet.Tools.Bazel
             }
 
 
-            return new LabelRunfiles(runfiles, assemblyWorkspace, assemblyPackage);
+            return new LabelRunfiles(runfiles, defaultPackage);
         }
 
 

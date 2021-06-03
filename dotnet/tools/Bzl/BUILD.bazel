@@ -7,7 +7,14 @@ msbuild_binary(
         "Program.cs",
         "WorkspaceMaker.cs",
     ],
+    data = [
+        "BUILD.root.tpl.bazel",
+        "WORKSPACE.tpl",
+    ],
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
-    deps = ["//dotnet/tools/NuGetParser"],
+    deps = [
+        "//dotnet/tools/NuGetParser",
+        "//dotnet/tools/Runfiles",
+    ],
 )

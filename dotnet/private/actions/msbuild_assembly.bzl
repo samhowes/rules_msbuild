@@ -17,7 +17,7 @@ def build_assembly(ctx, dotnet):
 
     build_cache = ctx.actions.declare_file(ctx.attr.name + ".cache")
 
-    dep_files, input_caches = _process_deps(ctx, dotnet, restore)
+    dep_files, input_caches, runfiles = _process_deps(ctx, dotnet, restore)
     cache_manifest = write_cache_manifest(ctx, input_caches)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
@@ -45,6 +45,8 @@ def build_assembly(ctx, dotnet):
     info = DotnetLibraryInfo(
         assembly = assembly,
         output_dir = output_dir,
+        # set runfiles as a depset here so we can use it in the publish action without including the dotnet sdk
+        runfiles = runfiles,
         intermediate_dir = intermediate_dir,
         build_cache = build_cache,
         build_caches = depset(
@@ -68,6 +70,7 @@ def _process_deps(ctx, dotnet, restore_info):
         restore_info.restore_dir,
     ]
     caches = []
+    runfiles = []
 
     # we need the full transitive closure of dependency files here because MSBuild
     # could decide to copy some of these files to the output directory
@@ -87,5 +90,10 @@ def _process_deps(ctx, dotnet, restore_info):
             ])
             transitive.append(info.dep_files)
             caches.append(info.build_caches)
+            runfiles.append(info.runfiles)
 
-    return depset(files, transitive = transitive), depset(transitive = caches)
+    return (
+        depset(files, transitive = transitive),
+        depset(transitive = caches),
+        depset(ctx.files.data, transitive = runfiles),
+    )

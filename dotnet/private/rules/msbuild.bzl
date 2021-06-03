@@ -41,7 +41,7 @@ def _make_executable(ctx, is_test):
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(
         files = [info.output_dir] + ctx.files.data,
-        transitive_files = depset([dotnet.sdk.dotnet]),
+        transitive_files = depset([dotnet.sdk.dotnet], transitive = [info.runfiles]),
     )
 
     assembly_runfiles = assembly_runfiles.merge(launcher_info.default_runfiles)
@@ -64,7 +64,7 @@ def _library_impl(ctx):
     return [
         DefaultInfo(
             files = depset([info.assembly]),
-            # todo(#6) add runfiles
+            runfiles = ctx.runfiles(transitive_files = info.runfiles),
         ),
         info,
         OutputGroupInfo(

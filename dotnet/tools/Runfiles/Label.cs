@@ -2,6 +2,11 @@ namespace MyRulesDotnet.Tools.Bazel
 {
     public class Label
     {
+        public Label(string workspace, string package)
+        {
+            Workspace = workspace;
+            Package = package;
+        }
         public Label(string rawValue)
         {
             RawValue = rawValue;
