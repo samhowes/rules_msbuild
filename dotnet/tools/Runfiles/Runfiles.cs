@@ -168,7 +168,7 @@ namespace MyRulesDotnet.Tools.Bazel
             if (TryCreate(env, out var runfiles)) return runfiles;
 
             throw new IOException(
-                "Cannot find runfiles: To use a directory, set RUNFILES_DIR, To use a manifest, set " +
+                "Cannot find runfiles: To use a directory, set $RUNFILES_DIR, To use a manifest, set " +
                 $"RUNFILES_MANIFEST_ONLY=1 set RUNFILES_MANIFEST_FILE. Alternatively, use {nameof(Create)}<TEntry>, " +
                 $"where TEntry is a class defined in an assembly copied to the output directory.");
         }
