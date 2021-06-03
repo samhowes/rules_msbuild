@@ -41,6 +41,7 @@ namespace MyRulesDotnet.Tools.Builder
                 projectCollection = BeginBuild();
 
                 result = ExecuteBuild(projectCollection);
+                
 
                 EndBuild(result!.Value);
             }
@@ -108,7 +109,7 @@ namespace MyRulesDotnet.Tools.Builder
         private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
         {
             // don't load the project ahead of time, otherwise the evaluation won't be included in the binlog output
-            var source = new TaskCompletionSource<(BuildResultCode, ProjectInstance?)>();
+            var source = new TaskCompletionSource<(object, ProjectInstance?)>();
             var flags = BuildRequestDataFlags.ProvideProjectStateAfterBuild;
 
             // our restore outputs are relative to the project directory
@@ -122,7 +123,7 @@ namespace MyRulesDotnet.Tools.Builder
                     flags);
                 var submission = _buildManager.PendBuildRequest(graphData);
 
-                submission.ExecuteAsync(_ => source.SetResult((submission.BuildResult.OverallResult, null)), submission);
+                submission.ExecuteAsync(_ => source.SetResult((submission.BuildResult, null)), submission);
             }
             else
             {
@@ -148,7 +149,7 @@ namespace MyRulesDotnet.Tools.Builder
                 var submission = _buildManager.PendBuildRequest(data);
                 submission.ExecuteAsync(
                     _ => source.SetResult(
-                        (submission.BuildResult.OverallResult, submission.BuildResult.ProjectStateAfterBuild)),
+                        (submission.BuildResult, submission.BuildResult.ProjectStateAfterBuild)),
                     submission);
 
             }
@@ -168,7 +169,21 @@ namespace MyRulesDotnet.Tools.Builder
                 }
             }
 
-            return result;
+            var overallResult = BuildResultCode.Failure;
+            Exception? ex = null;
+            switch (result)
+            {
+                case GraphBuildResult gr:
+                    overallResult = gr.OverallResult;
+                    ex = gr.Exception;
+                    break;
+                case BuildResult br:
+                    overallResult = br.OverallResult;
+                    ex = br.Exception;
+                    break;
+            }
+            
+            return overallResult;
         }
 
         private Dictionary<string, string> GetGlobalProperties()

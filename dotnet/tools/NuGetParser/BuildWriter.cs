@@ -47,6 +47,41 @@ namespace NuGetParser
             _writer.WriteLine($@"load(""{bzlSource}"", ""{string.Join("\", \"", rules)}"")");
         }
 
+        public void Call(string functionName, params (string, object)[] namedArgs)
+        {
+            _writer.Write(functionName);
+            _writer.Write("(");
+            var indent = 0;
+            if (namedArgs.Length > 1)
+            {
+                indent = 1;
+                _writer.WriteLine();
+            }
+
+            for (var index = 0; index < namedArgs.Length; index++)
+            {
+                var (name, value) = namedArgs[index];
+                _writer.Write(name);
+                _writer.Write(" = ");
+                switch (value)
+                {
+                    case string s:
+                        Quote(s);
+                        break;
+                    default:
+                        _writer.Write(value);
+                        break;
+                }
+                if (index < namedArgs.Length -1)
+                    _writer.Write(",");
+                if (indent > 0)
+                    _writer.WriteLine();
+            }
+            _writer.WriteLine(")");
+        }
+
+        public void Quote(string s) => _writer.Write($"\"{s}\"");
+        
         public void Visibility()
         {
             _writer.WriteLine();

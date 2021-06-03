@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Permissions;
+using System.Text.RegularExpressions;
 using Bzl;
 using FluentAssertions;
 using MyRulesDotnet.Tools.Bazel;
@@ -10,15 +12,12 @@ using Xunit;
 
 namespace BzlTests
 {
-    public class UnitTest1 : IDisposable
+    public class WorkspaceMakerTests : IDisposable
     {
         private static LabelRunfiles _runfiles;
         private static string _basePath;
         private string _testDir;
 
-        public UnitTest1()
-        {
-        }
         
         [Theory]
         [MemberData(nameof(GetWorkspaces), DisableDiscoveryEnumeration = true)]
@@ -28,11 +27,15 @@ namespace BzlTests
             var specs = CollectSpecs(workspaceName);
             var maker = new WorkspaceMaker(_testDir, workspaceName);
             maker.Init();
-
             foreach (var spec in specs)
             {
                 var info = new FileInfo(Path.Combine(_testDir, spec.Rel));
                 info.Exists.Should().BeTrue($"`{spec.Rel}` should have been created.");
+                var contents = File.ReadAllText(info.FullName);
+                foreach (var regex in spec.Regexes)
+                {
+                    regex.IsMatch(contents).Should().BeTrue($"`{regex}` should have matched:\n{contents}");
+                }
             }
         }
 
@@ -51,17 +54,31 @@ namespace BzlTests
                 }
                 else
                 {
-                    if (path.EndsWith(".out"))
+                    var extension = Path.GetExtension(path).ToLower();
+                    var spec = new FileSpec();
+                    
+                    switch (extension)
                     {
-                        specs.Add(new FileSpec()
-                        {
-                            Rel = relative[..^(".out".Length)]
-                        });
+                        case ".out":
+                            break;
+                        case ".match":
+                            spec.Regexes = File.ReadAllLines(path).Select(l =>
+                                {
+                                    if (!l.StartsWith("%"))
+                                    {
+                                        l = Regex.Escape(l);
+                                    }
+                                    return new Regex(l, RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                                })
+                                .ToList();
+                            break;
+                        default:
+                            File.Copy(path, dest, true);
+                            return true;
                     }
-                    else
-                    {
-                        File.Copy(path, dest, true);
-                    }
+
+                    spec.Rel = relative[..^extension.Length];
+                    specs.Add(spec);
                 }
 
                 return true;
@@ -71,7 +88,7 @@ namespace BzlTests
 
         public static IEnumerable<object[]> GetWorkspaces()
         {
-            _runfiles = Runfiles.Create<UnitTest1>();
+            _runfiles = Runfiles.Create<WorkspaceMakerTests>();
             var testdata = _runfiles.Rlocation("//tests/dotnet/tools/BzlTests:testdata");
             _basePath = testdata;
             var testcases = Directory.EnumerateDirectories(testdata);
@@ -93,5 +110,6 @@ namespace BzlTests
     public class FileSpec
     {
         public string Rel { get; set; }
+        public List<Regex> Regexes { get; set; } = new List<Regex>();
     }
 }

@@ -1,4 +1,5 @@
 using System.IO;
+using NuGetParser;
 
 namespace Bzl
 {
@@ -18,7 +19,8 @@ namespace Bzl
             var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
             if (!workspaceFile.Exists)
             {
-                workspaceFile.Create();
+                using var f = new BuildWriter(workspaceFile.Create());
+                f.Call("workspace", ("name", _workspaceName));
             }
 
             var msbuildRoot = _workspaceRoot;
@@ -43,7 +45,7 @@ namespace Bzl
                 "Bazel.props",
             })
             {
-                File.Create(Path.Combine(msbuildRoot, file));
+                using var _ = File.Create(Path.Combine(msbuildRoot, file));
             }
         }
     }

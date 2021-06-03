@@ -76,7 +76,7 @@ def _nuget_fetch_impl(ctx):
     fetch_project, tfm_projects = _generate_fetch_project(ctx, config, parser_project)
 
     args = make_cmd(paths.basename(str(fetch_project)), "restore")
-    args = [dotnet.path] + args
+    args = [dotnet.path] + args + ["-p:BazelFetch=true"]
     ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
     result = ctx.execute(
         args,
@@ -269,6 +269,9 @@ def _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects):
     args = [
         dotnet.path,
         "build",
+        "-p:BazelFetch=true",
+        "-p:OutputPath=bin",
+        "-p:AppendTargetFrameworkToOutputPath=false",
         "--no-restore",
         str(parser_project),
     ]
@@ -283,11 +286,8 @@ def _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects):
 
     args = [
         dotnet.path,
-        "run",
-        "--no-build",
-        "--project",
-        str(parser_project),
-        "--",
+        "exec",
+        paths.join(str(parser_project.dirname), "bin", paths.split_extension(parser_project.basename)[0] + ".dll"),
         "-dotnet_path",
         dotnet.path,
         "-intermediate_base",
@@ -301,9 +301,9 @@ def _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects):
     ]
     args.extend([str(p) for p in tfm_projects])
 
-    result = ctx.execute(args, quiet = False, environment = dotnet.env)
+    result = ctx.execute(args, quiet = True, environment = dotnet.env)
     if result.return_code != 0:
-        fail("failed to process restored packages, please file an issue.\nexit code: {}\nstdout: {}\nstderr: {}".format(result.return_code, result.stdout, result.stderr))
+        fail("failed to process restored packages, please file an issue.\nexit code: {}\nstdout: {}\nstderr: {}".format(result.return_code, "foo" + result.stdout + "bar", "what" + result.stderr + "how"))
 
 nuget_fetch = repository_rule(
     implementation = _nuget_fetch_impl,

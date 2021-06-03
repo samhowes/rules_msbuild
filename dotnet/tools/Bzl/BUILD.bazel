@@ -9,4 +9,5 @@ msbuild_binary(
     ],
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
+    deps = ["//dotnet/tools/NuGetParser"],
 )

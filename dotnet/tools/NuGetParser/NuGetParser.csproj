@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework Condition="$(BazelBuild) == ''">netcoreapp$(NETCoreAppMaximumVersion)</TargetFramework>
-    <TargetFramework Condition="$(BazelBuild) != ''">netcoreapp3.1</TargetFramework>
+    <TargetFramework Condition="$(BazelFetch) == 'true'">netcoreapp$(NETCoreAppMaximumVersion)</TargetFramework>
+    <TargetFramework Condition="$(BazelFetch) == ''">netcoreapp3.1</TargetFramework>
     <RootNamespace>NuGetParser</RootNamespace>
   </PropertyGroup>
 
