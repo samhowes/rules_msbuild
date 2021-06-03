@@ -10,6 +10,7 @@ msbuild_binary(
     data = [
         "BUILD.root.tpl.bazel",
         "WORKSPACE.tpl",
+        "//extras/ide",
     ],
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],

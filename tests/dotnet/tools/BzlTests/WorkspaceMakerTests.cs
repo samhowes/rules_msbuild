@@ -26,7 +26,9 @@ namespace BzlTests
             _testDir = BazelEnvironment.GetTmpDir($"{nameof(WorkspaceInit)}_{workspaceName}");
             var specs = CollectSpecs(workspaceName);
             var maker = new WorkspaceMaker(_runfiles.Runfiles, _testDir, workspaceName);
+            
             maker.Init();
+            
             foreach (var spec in specs)
             {
                 var info = new FileInfo(Path.Combine(_testDir, spec.Rel));

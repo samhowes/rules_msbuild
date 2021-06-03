@@ -36,9 +36,9 @@ git_repository(
 )
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-load("//:go_deps.bzl", "go_dependencies")
+load("//deps:go_deps.bzl", "go_dependencies")
 
-# gazelle:repository_macro go_deps.bzl%go_dependencies
+# gazelle:repository_macro deps/go_deps.bzl%go_dependencies
 go_dependencies()
 
 gazelle_dependencies()

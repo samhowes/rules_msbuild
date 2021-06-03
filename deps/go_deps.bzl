@@ -13,7 +13,6 @@ def go_dependencies():
         sum = "h1:Et1IIXrXwhpDvR5wH9REPEZ0sUtzUoJSq19nfmBqzBY=",
         version = "v0.0.0-20200718160251-b1667ff58f71",
     )
-
     go_repository(
         name = "com_github_bazelbuild_rules_go",
         importpath = "github.com/bazelbuild/rules_go",
@@ -32,7 +31,6 @@ def go_dependencies():
         sum = "h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=",
         version = "v0.3.1",
     )
-
     go_repository(
         name = "com_github_davecgh_go_spew",
         importpath = "github.com/davecgh/go-spew",
@@ -75,7 +73,6 @@ def go_dependencies():
         sum = "h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=",
         version = "v1.2.0",
     )
-
     go_repository(
         name = "com_github_pmezard_go_difflib",
         importpath = "github.com/pmezard/go-difflib",
@@ -112,7 +109,6 @@ def go_dependencies():
         sum = "h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=",
         version = "v2.2.2",
     )
-
     go_repository(
         name = "in_gopkg_yaml_v3",
         importpath = "gopkg.in/yaml.v3",
@@ -143,7 +139,6 @@ def go_dependencies():
         sum = "h1:vcxGaoTs7kV8m5Np9uUNQin4BrLOthgV7252N8V+FwY=",
         version = "v0.0.0-20190911185100-cd5d95a43a6e",
     )
-
     go_repository(
         name = "org_golang_x_sys",
         importpath = "golang.org/x/sys",

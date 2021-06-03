@@ -1,14 +1,14 @@
 <Project>
     <PropertyGroup>
         <!-- Bazel variables -->
-        <BazelWorkspaceName Condition="$(BazelWorkspaceName) == ''">@@BazelWorkspaceName@@</BazelWorkspaceName>
-        <BazelWorkspacePath Condition="$(BazelWorkspacePath) == ''">@@BazelWorkspacePath@@</BazelWorkspacePath>
-        <BazelBin Condition="$(BazelBin) == ''">@@BazelBin@@</BazelBin>
-        <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@BazelNuGetWorkspace@@</BazelNuGetWorkspace>
-        <BazelExecRoot>bazel-$(BazelWorkspace)</BazelExecRoot>
+        <BazelWorkspaceName Condition="$(BazelWorkspaceName) == ''">@@workspace_name@@</BazelWorkspaceName>
+        <BazelWorkspacePath Condition="$(BazelWorkspacePath) == ''">$(MSBuildThisFileDirectory)@@workspace_path@@</BazelWorkspacePath>
+        <BazelBin Condition="$(BazelBin) == ''">@@bazel_bin@@</BazelBin>
+        <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@nuget_workspace_name@@</BazelNuGetWorkspace>
+        <BazelExecRoot>bazel-$(BazelWorkspaceName)</BazelExecRoot>
 
         <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\\','/'))</BazelPackage>
-        <!-- If the file is at the root, msbuild will generate a relative path to this directoy, bazel wants this to be empty -->
+        <!-- If the file is at the root, msbuild will generate a relative path to this directory, bazel wants this to be empty -->
         <BazelPackage Condition="$(BazelPackage.StartsWith(../))"></BazelPackage>
     </PropertyGroup>
 

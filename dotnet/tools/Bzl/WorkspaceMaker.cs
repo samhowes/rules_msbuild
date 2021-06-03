@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -15,11 +16,19 @@ namespace Bzl
         private static readonly Regex TemplateRegex = new Regex(@"@@(\w+)@@",
             RegexOptions.Compiled | RegexOptions.Multiline);
 
+        private readonly Dictionary<string,string> _variables;
+
         public WorkspaceMaker(Runfiles runfiles, string workspaceRoot, string workspaceName)
         {
             _runfiles = new LabelRunfiles(runfiles, new Label("my_rules_dotnet", "dotnet/tools/Bzl"));
             _workspaceRoot = workspaceRoot;
             _workspaceName = workspaceName;
+            _variables = new Dictionary<string, string>()
+            {
+                ["workspace_name"] = _workspaceName,
+                ["nuget_workspace_name"] = "nuget",
+                ["bazel_bin"] = "bazel-bin",
+            };
         }
 
         public void Init()
@@ -27,21 +36,14 @@ namespace Bzl
             var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
             if (!workspaceFile.Exists)
             {
-                var variables = new Dictionary<string, string>() {["workspace_name"] = _workspaceName};
                 foreach (var (templateName, name) in new []
                 {
                     (":BUILD.root.tpl.bazel", "BUILD.bazel"), 
                     (":WORKSPACE.tpl", "WORKSPACE")
                 })
                 {
-                    var contents = File.ReadAllText(_runfiles.PackagePath(templateName));
-                    contents = TemplateRegex.Replace(contents, (match) =>
-                    {
-                        if (variables.TryGetValue(match.Groups[1].Value, out var replacement)) return replacement;
-                        return match.Value;
-                    });
-                    
-                    File.WriteAllText(Path.Combine(_workspaceRoot, name), contents);
+                    CopyTemplate(_runfiles.PackagePath(templateName), name);
+                    ReportFile(name);
                 }
             }
 
@@ -58,17 +60,38 @@ namespace Bzl
                 return true;
             });
 
-            foreach (var file in new []
+            var workspacePath = msbuildRoot == _workspaceRoot ? "" : Path.GetRelativePath(msbuildRoot, _workspaceRoot) + "/";
+            _variables["workspace_path"] = workspacePath;
+            
+            var ide = _runfiles.Rlocation("//extras/ide");
+            
+            foreach (var src in Directory.EnumerateFiles(ide))
             {
-                "Directory.Build.props",
-                "Directory.Build.targets",
-                "Directory.Solution.props",
-                "Directory.Solution.targets",
-                "Bazel.props",
-            })
-            {
-                using var _ = File.Create(Path.Combine(msbuildRoot, file));
+                var dest = Path.Combine(msbuildRoot, Path.GetFileName(src));
+                CopyTemplate(src, dest);
+                ReportFile(dest);
             }
+        }
+
+        private void ReportFile(string path)
+        {
+            if (Path.IsPathRooted(path))
+            {
+                path = path[(_workspaceRoot.Length + 1)..];
+            }
+            Console.WriteLine($"Created: {path}");
+        }
+        
+        private void CopyTemplate(string templatePath, string workspaceRelativeDest)
+        {
+            var contents = File.ReadAllText(templatePath);
+            contents = TemplateRegex.Replace(contents, (match) =>
+            {
+                if (_variables.TryGetValue(match.Groups[1].Value, out var replacement)) return replacement;
+                return match.Value;
+            });
+            
+            File.WriteAllText(Path.Combine(_workspaceRoot, workspaceRelativeDest), contents);
         }
     }
 }
