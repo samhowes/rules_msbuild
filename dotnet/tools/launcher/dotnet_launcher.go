@@ -189,6 +189,7 @@ func launch(info LaunchInfo, args []string) {
 		panic(fmt.Errorf("failed to launch command: %s\n%v", cmd.String(), err))
 	}
 
+	var code int
 	diag(func() { fmt.Printf("Started PID %d\n", cmd.Process.Pid) })
 	if launchMode == "wait" {
 		// when bazel runs a command, it will only pay attention to the parent process, not the child, so we need to
@@ -199,6 +200,8 @@ func launch(info LaunchInfo, args []string) {
 			panic(fmt.Errorf("failed to wait on cmd %s\n%v", cmd.String(), err))
 		}
 		diag(func() { fmt.Printf("cmd completed: %s\n", state.String()) })
+		code = state.ExitCode()
+		os.Exit(code)
 	} else {
 		if err := cmd.Process.Release(); err != nil {
 			panic(fmt.Errorf("failed to detach from launched command %s\n%v", cmd.String(), err))

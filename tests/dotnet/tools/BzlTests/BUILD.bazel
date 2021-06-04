@@ -6,6 +6,7 @@ msbuild_test(
     name = "BzlTests",
     srcs = ["WorkspaceMakerTests.cs"],
     data = ["testdata"],
+    size = "small",
     target_framework = "netcoreapp3.1",
     deps = [
         "//dotnet/tools/Bzl",

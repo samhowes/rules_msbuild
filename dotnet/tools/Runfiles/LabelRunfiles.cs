@@ -25,11 +25,23 @@ namespace MyRulesDotnet.Tools.Bazel
         }
         public string Rlocation(Label label)
         {
-            var workspace = label.Workspace == Label.DefaultWorkspace ? DefaultPackage.Workspace : label.Workspace;
-            var rpath = $"{workspace}/{label.RelativeRpath}";
+            var rpath = Rpath(label);
             return Runfiles.Rlocation(rpath);
         }
 
+        private string Rpath(Label label)
+        {
+            var workspace = label.Workspace == Label.DefaultWorkspace ? DefaultPackage.Workspace : label.Workspace;
+            var rpath = $"{workspace}/{label.RelativeRpath}";
+            return rpath;
+        }
+
         public void SetEnvVars(IDictionary<string, string> env) => Runfiles.SetEnvVars(env);
+
+        public IEnumerable<string> ListRunfiles(Label label)
+        {
+            var rpath = Rpath(label);
+            return Runfiles.ListRunfiles(rpath);
+        }
     }
 }

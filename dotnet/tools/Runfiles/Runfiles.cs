@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -266,6 +267,7 @@ namespace MyRulesDotnet.Tools.Bazel
             return value;
         }
 
+        public abstract IEnumerable<string> ListRunfiles(string directory = null);
         public abstract string RlocationChecked(string path);
 
         public static Runfiles CreateManifestBasedForTesting(string manifestPath)
@@ -339,6 +341,11 @@ namespace MyRulesDotnet.Tools.Bazel
                 return realPath;
             }
 
+            public override IEnumerable<string> ListRunfiles(string directory)
+            {
+                return _runfiles.Where(p => p.Key.StartsWith(directory)).Select(p => p.Value);
+            }
+
             public override Dictionary<string, string> GetEnvVars()
             {
                 var result = new Dictionary<string, string>(3);
@@ -368,6 +375,25 @@ namespace MyRulesDotnet.Tools.Bazel
             public override string RlocationChecked(string path)
             {
                 return _runfilesRoot + "/" + path;
+            }
+
+            public override IEnumerable<string> ListRunfiles(string directory = null)
+            {
+                directory = directory != null
+                    ? Path.Combine(_runfilesRoot, directory)
+                    : _runfilesRoot;
+
+                IEnumerable<string> Walk(string path)
+                {
+                    foreach (var dir in Directory.EnumerateDirectories(path))
+                        foreach (var file in Walk(dir))
+                            yield return file;
+
+                    foreach (var file in Directory.EnumerateFiles(path))
+                        yield return file;
+                }
+
+                return Walk(directory);
             }
 
             public override Dictionary<string, string> GetEnvVars()

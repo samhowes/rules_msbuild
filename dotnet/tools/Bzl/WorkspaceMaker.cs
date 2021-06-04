@@ -62,10 +62,8 @@ namespace Bzl
 
             var workspacePath = msbuildRoot == _workspaceRoot ? "" : Path.GetRelativePath(msbuildRoot, _workspaceRoot) + "/";
             _variables["workspace_path"] = workspacePath;
-            
-            var ide = _runfiles.Rlocation("//extras/ide");
-            
-            foreach (var src in Directory.EnumerateFiles(ide))
+
+            foreach (var src in _runfiles.ListRunfiles("//extras/ide"))
             {
                 var dest = Path.Combine(msbuildRoot, Path.GetFileName(src));
                 CopyTemplate(src, dest);
