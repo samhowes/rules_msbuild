@@ -1,5 +1,5 @@
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+load("//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
     name = "HelloBazel",

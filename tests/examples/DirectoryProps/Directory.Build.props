@@ -1,0 +1,6 @@
+<Project>
+    <Import Condition="$(BazelBuild) == ''" Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+    <ItemGroup>
+        <SpecialFiles Include="foo.txt" Condition="Exists('foo.txt')" />
+    </ItemGroup>
+</Project>

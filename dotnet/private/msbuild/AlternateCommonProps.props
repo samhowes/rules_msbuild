@@ -1,0 +1,4 @@
+<Project>
+    <Import Project="$(MSBuildThisFileDirectory)/Directory.Bazel.props"/>
+    <Import Project="$(MSBuildExtensionsPath)/$(MSBuildToolsVersion)/Microsoft.Common.props" />
+</Project>

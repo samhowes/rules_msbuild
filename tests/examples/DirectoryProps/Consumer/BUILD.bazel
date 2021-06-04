@@ -1,0 +1,22 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
+
+msbuild_library(
+    name = "Consumer",
+    srcs = ["Class1.cs"],
+    content = [
+        "//tests/examples/DirectoryProps:defaults",
+        "foo.txt",
+    ],
+    target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
+)
+
+build_test(
+    name = "Consumer_test",
+    expected_files = {
+        "netstandard2.1": [
+            "foo.txt",
+        ],
+    },
+)

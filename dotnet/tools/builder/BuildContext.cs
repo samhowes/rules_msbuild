@@ -133,12 +133,11 @@ namespace MyRulesDotnet.Tools.Builder
             BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
 
-            var targetsName = Path.GetFileNameWithoutExtension(directoryBazelPropsPath) + ".targets";
-            
+            var propsDirectory = Path.GetDirectoryName(directoryBazelPropsPath);
+
             BuildEnvironment = new Dictionary<string, string>()
             {
-                ["DirectoryBuildPropsPath"] = directoryBazelPropsPath,
-                ["DirectoryBuildTargetsPath"] = Path.Combine(Path.GetDirectoryName(directoryBazelPropsPath)!, targetsName),
+                ["AlternateCommonProps"] = Path.Combine(propsDirectory!, "AlternateCommonProps.props"),
                 ["ExecRoot"] = bazel.ExecRoot,
                 ["BINDIR"] = bazel.BinDir,
                 ["RestoreConfigFile"] = nuGetConfig,

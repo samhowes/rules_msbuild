@@ -1,8 +1,0 @@
-<Project>
-    <ItemGroup>
-        <!-- In case an IDE or some other build process ran in the source tree, must be in .targets so it runs after
-            the default item includes.-->
-        <Compile Remove="obj/**"/>
-        <Compile Remove="bin/**"/>
-    </ItemGroup>
-</Project>
