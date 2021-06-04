@@ -61,7 +61,6 @@ namespace MyRulesDotnet.Tools.Bazel
                     break;
             }
 
-            var defaultTargetIndex = -1;
             for (var i = RawValue.Length - 1; i >= nextIndex; --i)
             {
                 switch (RawValue[i])
@@ -70,12 +69,6 @@ namespace MyRulesDotnet.Tools.Bazel
                         Package = RawValue[nextIndex..i];
                         Target = RawValue[(i + 1)..];
                         return true;
-                    // case '/':
-                    //     if (defaultTargetIndex == -1 && RawValue[i] == '/')
-                    //     {
-                    //         defaultTargetIndex = i + 1;
-                    //     }
-                    //     break;
                 }
             }
 
