@@ -5,7 +5,7 @@ load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_test")
 msbuild_test(
     name = "BzlTests",
     srcs = ["WorkspaceMakerTests.cs"],
-    data = ["testdata"],
+    data = glob(["testdata/**"]),
     size = "small",
     target_framework = "netcoreapp3.1",
     deps = [
