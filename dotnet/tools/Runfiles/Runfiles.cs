@@ -64,7 +64,12 @@ namespace MyRulesDotnet.Tools.Bazel
         internal Runfiles()
         {
         }
-        
+
+        /// <summary>
+        /// Bazel always uses forward slash for paths.
+        /// </summary>
+        public const char PathSeparator = '/';
+
         /// <summary>
         /// The most resilient runfiles creation method. Uses a file created by MyRulesDotnet to find runfiles if no
         /// environment variables have been set. This method makes it safe to execute this assembly from an IDE or

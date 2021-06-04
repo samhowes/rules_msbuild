@@ -95,13 +95,18 @@ namespace BzlTests
         public static IEnumerable<object[]> GetWorkspaces()
         {
             _runfiles = Runfiles.Create<WorkspaceMakerTests>();
-            var testdata = _runfiles.Rlocation("//tests/dotnet/tools/BzlTests:testdata");
-            _basePath = testdata;
-            var testcases = Directory.EnumerateDirectories(testdata);
-            return testcases.Select(d => new object[]
-            {
-                d.Split(Path.DirectorySeparatorChar).Last()
-            }).ToArray();
+
+            var list = _runfiles.ListRunfiles("//tests/dotnet/tools/BzlTests:testdata").ToList();
+            var first = list.First();
+            _basePath = first[..(first.IndexOf("testdata", StringComparison.Ordinal) + "testdata".Length)];
+
+            return list
+                .Select(d => d[(_basePath.Length + 1)..].Split(Runfiles.PathSeparator, 2)[0])
+                .Distinct()
+                .Select(d => new object[]
+                {
+                    d
+                }).ToArray();
         }
 
         public void Dispose()
