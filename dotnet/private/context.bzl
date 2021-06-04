@@ -92,7 +92,7 @@ def _make_env(dotnet_sdk_root, os):
         "DOTNET_MULTILEVEL_LOOKUP": "0",
         "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1",
         "DOTNET_NOLOGO": "1",
-        "NUGET_SHOW_STACK": "true",
+        # "NUGET_SHOW_STACK": "true",
         # "BUILDER_DEBUG": "1",
     }
 
@@ -141,6 +141,8 @@ def make_builder_cmd(ctx, dotnet, action):
         dotnet.sdk.config.nuget_config,
         "--directory_bazel_props",
         dotnet.sdk.bazel_props,
+        "--output_type",
+        "exe" if dotnet.config.is_executable else "library",
     ])
     if dotnet.config.is_test:
         args.add_all(["--is_test", True])

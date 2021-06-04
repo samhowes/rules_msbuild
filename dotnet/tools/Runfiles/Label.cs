@@ -2,13 +2,30 @@ namespace MyRulesDotnet.Tools.Bazel
 {
     public class Label
     {
+        public Label(string workspace, string package)
+        {
+            Workspace = workspace;
+            Package = package;
+        }
         public Label(string rawValue)
         {
             RawValue = rawValue;
             IsValid = Parse();
             if (!IsValid) return;
 
-            RelativeRpath = Package == "" ? Target : $"{Package}/{Target}";
+            if (Package == "")
+            {
+                RelativeRpath = Target;
+            }
+            else if (Target == "")
+            {
+                RelativeRpath = Package;
+            }
+            else
+            {
+                RelativeRpath = $"{Package}/{Target}";
+            }
+            
         }
 
         public string RelativeRpath { get; }
@@ -22,9 +39,9 @@ namespace MyRulesDotnet.Tools.Bazel
                     var endIndex = RawValue.IndexOf('/');
                     if (endIndex < 0)
                         return false;
-                    Workspace = RawValue[1..endIndex];
-                    if (RawValue[endIndex + 1] != '/') return false;
-                    nextIndex = endIndex + 2;
+                    Workspace = RawValue[1..endIndex++];
+                    if (RawValue[endIndex++] != '/') return false;
+                    nextIndex = endIndex;
                     break;
                 case ':':
                     IsRelative = true;
@@ -44,24 +61,19 @@ namespace MyRulesDotnet.Tools.Bazel
                     break;
             }
 
-            var defaultTargetIndex = -1;
             for (var i = RawValue.Length - 1; i >= nextIndex; --i)
             {
-                if (RawValue[i] == ':')
+                switch (RawValue[i])
                 {
-                    Package = RawValue[nextIndex..i];
-                    Target = RawValue[(i + 1)..];
-                    return true;
-                }
-
-                if (defaultTargetIndex == -1 && RawValue[i] == '/')
-                {
-                    defaultTargetIndex = i + 1;
+                    case ':':
+                        Package = RawValue[nextIndex..i];
+                        Target = RawValue[(i + 1)..];
+                        return true;
                 }
             }
 
             Package = RawValue[nextIndex..];
-            Target = RawValue[defaultTargetIndex..];
+            Target = "";
             return true;
         }
 

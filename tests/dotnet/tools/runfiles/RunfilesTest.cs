@@ -13,14 +13,14 @@ namespace MyRulesDotnet.Tools.RunfilesTests
     {
         public static string CreateTempDirectory()
         {
-            var path = Path.Combine(BazelEnvironment.GetTestTmpDir(), Path.GetRandomFileName());
+            var path = Path.Combine(BazelEnvironment.GetTmpDir(), Path.GetRandomFileName());
             Directory.CreateDirectory(path);
             return path;
         }
 
         public static string CreateTempFile()
         {
-            var testTmpdir = BazelEnvironment.GetTestTmpDir();
+            var testTmpdir = BazelEnvironment.GetTmpDir();
             return Path.Combine(testTmpdir, Path.GetRandomFileName());
         }
     }
@@ -240,7 +240,7 @@ namespace MyRulesDotnet.Tools.RunfilesTests
             // The DirectoryBased implementation simply joins the runfiles directory and the runfile's path
             // on a "/". DirectoryBased does not perform any normalization, nor does it check that the path
             // exists.
-            var dir = Path.Combine(BazelEnvironment.GetTestTmpDir()!, "mock/runfiles");
+            var dir = Path.Combine(BazelEnvironment.GetTmpDir()!, "mock/runfiles");
             Directory.CreateDirectory(dir).Exists.Should().Be(true);
 
             var r = Runfiles.CreateDirectoryBasedForTesting(dir);
@@ -272,7 +272,7 @@ namespace MyRulesDotnet.Tools.RunfilesTests
             AssertThrows<ArgumentException>(
                 () => Runfiles.CreateDirectoryBasedForTesting("non-existent directory is bad"));
 
-            Runfiles.CreateDirectoryBasedForTesting(BazelEnvironment.GetTestTmpDir());
+            Runfiles.CreateDirectoryBasedForTesting(BazelEnvironment.GetTmpDir());
         }
 
         [Fact]

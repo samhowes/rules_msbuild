@@ -13,6 +13,7 @@ namespace MyRulesDotnet.Tools.RunfilesTests
         [InlineData(":bar/bam/baz", true, Label.DefaultWorkspace, "", "bar/bam/baz", "bar/bam/baz")]
         [InlineData("bar:bam/baz", true, Label.DefaultWorkspace, "bar", "bam/baz", "bar/bam/baz")]
         [InlineData("//:bar/bam/baz", true, Label.DefaultWorkspace, "", "bar/bam/baz", "bar/bam/baz")]
+        [InlineData("//bar/bam", true, Label.DefaultWorkspace, "bar/bam", "", "bar/bam")]
         public void Parsing_Works(
             string rawValue, bool isValid, string workspace, string package, string target, string rpath)
         {

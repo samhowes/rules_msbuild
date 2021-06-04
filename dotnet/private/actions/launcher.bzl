@@ -22,6 +22,7 @@ def make_launcher(ctx, dotnet, info):
         "dotnet_args": _format_launcher_args([], is_bin_launcher),
         "assembly_args": _format_launcher_args([], is_bin_launcher),
         "workspace_name": ctx.workspace_name,
+        "package": ctx.label.package,
         "dotnet_cmd": "exec",
         "dotnet_logger": "junit",
         "log_path_arg_name": "LogFilePath",

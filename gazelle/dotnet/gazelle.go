@@ -50,7 +50,7 @@ func (d *dotnetLang) Loads() []rule.LoadInfo {
 
 var commonInfo = rule.KindInfo{
 	MergeableAttrs: map[string]bool{
-		//"srcs":             true,
+		"srcs":             true,
 		"target_framework": true,
 	},
 	ResolveAttrs: map[string]bool{"deps": true},

@@ -12,7 +12,7 @@ gazelle(
     name = "gazelle_repos",
     args = [
         "-from_file=go.mod",
-        "-to_macro=go_deps.bzl%go_dependencies",
+        "-to_macro=deps/go_deps.bzl%go_dependencies",
     ],
     command = "update-repos",
 )
@@ -22,7 +22,7 @@ GO_ARGS = [
 ]
 
 DOTNET_ARGS = [
-    "-deps_macro=deps/nuget.bzl%nuget_deps",
+    "--deps_macro=deps/nuget.bzl%nuget_deps",
     "--srcs_mode=explicit",
 ]
 
