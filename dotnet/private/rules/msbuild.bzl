@@ -1,10 +1,25 @@
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "NuGetPackageInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "DotnetSdkInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load("//dotnet/private/actions:publish.bzl", "publish")
-load("//dotnet/private/actions:msbuild_assembly.bzl", "build_assembly")
+load("//dotnet/private/actions:tool_binary.bzl", "build_tool_binary")
+load("//dotnet/private/actions:assembly.bzl", "build_assembly")
 load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
+def _msbuild_tool_binary_impl(ctx):
+    dotnet = dotnet_exec_context(ctx, True)
+
+    info, all_outputs = build_tool_binary(ctx, dotnet)
+    return [
+        DefaultInfo(
+            files = depset([info.output_dir]),
+        ),
+        info,
+        OutputGroupInfo(
+            all = depset(all_outputs),
+        ),
+    ]
 
 def _publish_impl(ctx):
     output_dir = publish(ctx)
@@ -76,6 +91,24 @@ _TOOLCHAINS = ["@my_rules_dotnet//dotnet:toolchain"]
 _COMMON_ATTRS = {
     "project_file": attr.label(allow_single_file = True, mandatory = True),
 }
+
+msbuild_tool_binary = rule(
+    implementation = _msbuild_tool_binary_impl,
+    attrs = dicts.add(_COMMON_ATTRS, {
+        "srcs": attr.label_list(allow_files = True),
+        "target_framework": attr.string(),
+        "dotnet_sdk": attr.label(
+            mandatory = True,
+            providers = [DotnetSdkInfo],
+        ),
+        "deps": attr.label_list(
+            providers = [NuGetPackageInfo],
+        ),
+    }),
+    # this is compiling a dotnet executable, but it'll be a framework dependent executable, so bazel won't be able
+    # to execute it directly
+    executable = False,
+)
 
 msbuild_publish = rule(
     _publish_impl,

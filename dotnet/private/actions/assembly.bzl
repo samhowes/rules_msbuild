@@ -1,216 +1,93 @@
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo")
+load("//dotnet/private:context.bzl", "make_builder_cmd")
+load(":common.bzl", "get_nuget_files", "write_cache_manifest")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "NuGetPackageInfo")
-load("//dotnet/private/msbuild:xml.bzl", "INTERMEDIATE_BASE", "STARTUP_DIR", "make_project_file")
-load("//dotnet/private/actions:restore.bzl", "restore")
-load(
-    "//dotnet/private:context.bzl",
-    "make_exec_cmd",
-)
 
-def emit_tool_binary(ctx, dotnet):
-    """Create a binary used for the dotnet toolchain itself.
+def build_assembly(ctx, dotnet):
+    restore = ctx.attr.restore[DotnetRestoreInfo]
 
-    This implementation assumes that no other targets will depend on this binary for anything other than executing as a
-    tool. Since this is part of the toolchain itself, it can't execute a multiphase restore, build, publish,
-    because bazel's sandboxing/remote execution will cause msbuild to not be able to find reference paths between
-    actions. So instead, we execute all msbuild steps in a single action via invoking the publish target directly.
-    """
-    output_dir = ctx.actions.declare_directory(paths.join(dotnet.config.output_dir_name, "publish"))
-    dep_files = process_deps(dotnet, ctx.attr.deps)
-    project_file = make_project_file(ctx, dotnet, dep_files, STARTUP_DIR)
-    assembly = ctx.actions.declare_file(paths.join(output_dir.short_path, ctx.attr.name + ".dll"))
-    files = struct(
-        output_dir = output_dir,
-    )
+    output_dir = ctx.actions.declare_directory(dotnet.config.output_dir_name)
+    assembly = ctx.actions.declare_file(paths.join(output_dir.basename, ctx.attr.name + ".dll"))
 
-    args, cmd_outputs, _, _ = make_exec_cmd(ctx, dotnet, "publish", project_file, files)
+    intermediate_dir = ctx.actions.declare_directory(paths.join("obj", dotnet.config.tfm))
 
-    args.add("-restore")
+    # we don't need this file, but adding will make sure bazel fails the build if it isn't created because msbuild
+    # didn't listen to our paths
+    intermediate_assembly = ctx.actions.declare_file(paths.join("obj", dotnet.config.tfm, assembly.basename))
 
-    direct_inputs = ctx.files.srcs + [project_file, dotnet.sdk.config.nuget_config]
-    source_project_file = getattr(ctx.file, "project_file", None)
-    if source_project_file != None:
-        direct_inputs.append(source_project_file)
+    build_cache = ctx.actions.declare_file(ctx.attr.name + ".cache")
+
+    dep_files, input_caches, runfiles = _process_deps(ctx, dotnet, restore)
+    cache_manifest = write_cache_manifest(ctx, input_caches)
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
+
     inputs = depset(
-        direct = direct_inputs,
-        transitive = [dep_files.build, dotnet.sdk.runfiles],
+        [cache_manifest],
+        transitive = [dep_files, dotnet.sdk.runfiles],
     )
-    outputs = [output_dir, assembly] + cmd_outputs
+
+    outputs = [output_dir, assembly, intermediate_dir, intermediate_assembly, build_cache] + cmd_outputs
 
     ctx.actions.run(
-        mnemonic = "DotnetBuild",
-        inputs = inputs,
-        outputs = outputs,
-        executable = dotnet.sdk.dotnet,
-        arguments = [args],
-        env = dicts.add(dotnet.env, {"BazelBuild": "true"}),
-    )
-    return DotnetLibraryInfo(
-        assembly = assembly,
-        output_dir = output_dir,
-    ), outputs + [project_file]
-
-def emit_assembly(ctx, dotnet):
-    """Compile a dotnet assembly with the provided project template
-
-    Args:
-        ctx: a ctx with //dotnet/private/rules:common.bzl.DOTNET_ATTRS
-        is_executable: if the assembly should be executable
-    Returns:
-        Tuple: the emitted assembly and all outputs
-    """
-    sdk = dotnet.sdk
-
-    output_dir = None
-    if not dotnet.config.is_precise:
-        output_dir = ctx.actions.declare_directory(dotnet.config.output_dir_name)
-
-    ### declare and prepare all the build inputs/outputs
-    dep_files = process_deps(dotnet, ctx.attr.deps)
-    project_file = make_project_file(ctx, dotnet, dep_files)
-
-    restore_outputs = restore(ctx, dotnet, project_file, dep_files)
-    assembly, runtime, private = _declare_assembly_files(ctx, dotnet.config.output_dir_name, dotnet.config.is_executable)
-    files = struct(
-        output_dir = output_dir,
-        # todo(#6) make this a full depset including dependencies
-        content = depset(getattr(ctx.files, "content", [])),
-        data = depset(getattr(ctx.files, "data", [])),
-    )
-    args, cmd_outputs, cmd_inputs, build_cache = make_exec_cmd(ctx, dotnet, "build", project_file, files)
-
-    content = getattr(ctx.files, "content", [])
-
-    ### collect build inputs/outputs
-    inputs = depset(
-        direct = ctx.files.srcs + content + [project_file] + restore_outputs + cmd_inputs,
-        transitive = [dep_files.build, sdk.init_files],
-    )
-
-    intermediate_dir = ctx.actions.declare_directory(paths.join(dotnet.config.intermediate_path, dotnet.config.tfm))
-
-    outputs = runtime + private + cmd_outputs + [intermediate_dir]
-
-    for f in [output_dir]:
-        if f != None:
-            outputs.append(f)
-
-    ctx.actions.run(
-        mnemonic = "DotnetBuild",
+        mnemonic = "MSBuild",
         inputs = inputs,
         outputs = outputs,
         executable = dotnet.sdk.dotnet,
         arguments = [args],
         env = dotnet.env,
-        tools = dotnet.tools,
+        tools = dotnet.builder.files,
     )
-
-    runtime_files = runtime
-    if getattr(dotnet.config, "is_executable", False):
-        runtime_files += private
 
     info = DotnetLibraryInfo(
         assembly = assembly,
-        intermediate_dir = intermediate_dir,
         output_dir = output_dir,
-        project_file = project_file,
+        # set runfiles here so we can use it in the publish action without including the dotnet sdk
+        runfiles = runfiles,
+        intermediate_dir = intermediate_dir,
         build_cache = build_cache,
-        runtime = depset(runtime),
-        build = depset(
-            runtime + [project_file, build_cache],
-            transitive = [dep_files.build],
+        build_caches = depset(
+            [build_cache],
+            transitive = [input_caches],
         ),
-        restore = depset(
-            [project_file],
-            transitive = [dep_files.restore],
-        ),
-        target_framework = ctx.attr.target_framework,
-        data = files.data,
-        content = files.content,
-    )
-    return info, outputs + restore_outputs + [project_file], private
-
-def _declare_assembly_files(ctx, output_dir, is_executable):
-    name = ctx.attr.name
-    assembly = ctx.actions.declare_file(paths.join(output_dir, name + ".dll"))
-    runtime = [assembly]
-
-    private = [ctx.actions.declare_file(name + ".deps.json", sibling = assembly)]
-
-    if True:
-        # todo(#21) toggle this when not debug
-        runtime.append(ctx.actions.declare_file(name + ".pdb", sibling = assembly))
-
-    if is_executable:
-        private.extend([
-            ctx.actions.declare_file(name + ext, sibling = assembly)
-            for ext in [
-                ".runtimeconfig.json",
-                # todo(#22) find out when this is NOT output
-                ".runtimeconfig.dev.json",
-            ]
-        ])
-
-    return assembly, runtime, private
-
-def process_deps(dotnet, deps):
-    """Split deps into assembly references and packages
-
-    Args:
-        deps: the deps of a dotnet assembly ctx
-        tfm: the target framework moniker being built
-        copy_packages: Whether to copy package files to the output directory. NuGet packages are only copied for
-            executables.
-    Returns:
-        references, packages
-    """
-
-    tfm = dotnet.config.tfm
-
-    references = []
-    packages = []
-
-    build = []
-    restore_list = []
-    common = []
-    for dep in getattr(dotnet.config, "tfm_deps", []):
-        _get_nuget_files(dep, tfm, [], common)
-
-    for dep in getattr(dotnet.config, "implicit_deps", []):
-        _get_nuget_files(dep, tfm, packages, common)
-
-    for dep in deps:
-        if DotnetLibraryInfo in dep:
-            info = dep[DotnetLibraryInfo]
-            references.append(info.project_file)
-            build.append(info.build)
-            restore_list.append(info.restore)
-
-        elif NuGetPackageInfo in dep:
-            _get_nuget_files(dep, tfm, packages, common)
-        else:
-            fail("Unkown dependency type: {}".format(dep))
-
-    build.extend(common)
-    restore_list.extend(common)
-    return struct(
-        references = references,
-        packages = packages,
-        build = depset(transitive = build),
-        restore = depset(transitive = restore_list),
+        dep_files = dep_files,
+        restore = restore,
     )
 
-def _get_nuget_files(dep, tfm, packages, inputs):
-    pkg = dep[NuGetPackageInfo]
-    framework_info = pkg.frameworks.get(tfm, None)
-    if framework_info == None:
-        fail("TargetFramework {} was not fetched for pkg dep {}. Fetched tfms: {}.".format(
-            tfm,
-            pkg.name,
-            ", ".join([k for k, v in pkg.frameworks.items()]),
-        ))
-    packages.append(struct(name = pkg.name, version = framework_info.version))
+    return info, outputs
 
-    # todo(#67) restrict these inputs
-    inputs.append(framework_info.all_dep_files)
+def _process_deps(ctx, dotnet, restore_info):
+    files = [
+        restore_info.project_file,
+        restore_info.restore_dir,
+    ] + (ctx.files.msbuild_directory +
+         # include and content because msbuild could copy them to the output directory of any dependent assembly
+         ctx.files.srcs +
+         ctx.files.content)
+    caches = []
+    runfiles = []
+
+    # we need the full transitive closure of dependency files here because MSBuild
+    # could decide to copy some of these files to the output directory
+    # this will definitely happen for an exe build, and may happen for other assemblies
+    # depending on the user's project settings
+    transitive = [restore_info.dep_files]
+
+    for d in dotnet.config.implicit_deps:
+        get_nuget_files(d, dotnet.config.tfm, transitive)
+
+    for d in ctx.attr.deps:
+        if DotnetLibraryInfo in d:
+            info = d[DotnetLibraryInfo]
+            files.extend([
+                info.output_dir,
+                info.build_cache,
+            ])
+            transitive.append(info.dep_files)
+            caches.append(info.build_caches)
+            runfiles.append(info.runfiles)
+
+    return (
+        depset(files, transitive = transitive),
+        depset(transitive = caches),
+        depset(ctx.files.data, transitive = runfiles),
+    )

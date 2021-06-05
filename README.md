@@ -24,7 +24,6 @@ looking for a working implementation of rules for dotnet head over to
 
 ## Quick links
 
--   [Core Rules Reference](./dotnet/rules.md) (dotnet_binary, dotnet_library, dotnet_test)
 -   [Repository Rules Reference](./dotnet/repository_rules.md)
 -   [NuGet Management](./dotnet/nuget.md)
 -   [Understanding the Build](./dotnet/understanding.md)

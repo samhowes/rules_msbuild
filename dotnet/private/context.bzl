@@ -50,6 +50,13 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         fail("Tfm {} was not configured for restore by nuget. If this was not a mistake, please add it to your " +
              "nuget_fetch rule.".format(tfm))
 
+    mode = ctx.var["COMPILATION_MODE"]
+    configuration = "fastbuild"
+    if mode == "opt":
+        configuration = "Release"
+    elif mode == "dbg":
+        configuration = "Debug"
+
     dotnet = dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,
@@ -147,57 +154,6 @@ def make_builder_cmd(ctx, dotnet, action):
     if dotnet.config.is_test:
         args.add_all(["--is_test", True])
     return args, outputs
-
-def make_exec_cmd(ctx, dotnet, msbuild_target, proj, files):
-    """Create a command for use during the execution phase"""
-    outputs = []  # todo(#51) disable when not debugging the build
-    binlog_path = None
-    if True:
-        binlog_path = proj.path + ".{}.binlog".format(msbuild_target)
-        outputs.append(ctx.actions.declare_file(paths.basename(binlog_path)))
-
-    args = ctx.actions.args()
-    inputs = []
-    cache_file = None
-    if dotnet.builder == None:
-        arg_list = make_cmd(
-            proj.path,
-            msbuild_target,
-            binlog_path,
-        )
-        for arg in arg_list:
-            args.add(arg)
-    else:
-        builder_args = []
-        if msbuild_target == "build":
-            cache_file = ctx.actions.declare_file(proj.basename + "." + msbuild_target + ".cache")
-            outputs.append(cache_file)
-
-        if msbuild_target == "build" or msbuild_target == "publish":
-            builder_args.extend([
-                ["--content", ";".join([f.path for f in files.content.to_list()])],
-            ])
-
-        if msbuild_target == "publish":
-            runfiles_directory = paths.replace_extension(paths.basename(proj.path), ".dll") + ".runfiles"
-            builder_args.extend([
-                ["--runfiles", ";".join([f.path for f in files.data.to_list()])],
-                ["--runfiles_directory", runfiles_directory],
-            ])
-
-        params_file = ctx.actions.declare_file(paths.basename(proj.path) + "." + msbuild_target + ".params")
-        ctx.actions.write(
-            params_file,
-            "\n".join([
-                " ".join(a)
-                for a in builder_args
-            ]),
-        )
-        inputs.append(params_file)
-
-        args.add("@file", params_file.path)
-
-    return args, outputs, inputs, cache_file
 
 def make_cmd(project_path, msbuild_target, binlog_path = None):
     args_list = [

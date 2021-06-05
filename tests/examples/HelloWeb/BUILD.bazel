@@ -11,8 +11,7 @@ msbuild_binary(
     content = [
         "appsettings.Development.json",
         "appsettings.json",
-    ],
-    data = glob(["wwwroot/**"]),
+    ] + glob(["wwwroot/**"]),
     project_file = "HelloWeb.csproj",
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],

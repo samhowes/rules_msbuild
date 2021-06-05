@@ -19,7 +19,6 @@ DotnetLibraryInfo = provider(
         "build_cache": "",
         "build_caches": "depset of build_cache and all build_caches this library depends on",
         "srcs": "depset of the transitive closure of all source files this library depends on",
-        "data": "depset of runfiles",
         "content": "depset of non-compiled files needed in the output directory as a sibling of the output assembly",
         "restore": "DotnetRestoreInfo",
         "dep_files": "depset of all files this library depends on",
