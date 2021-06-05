@@ -1,3 +1,3 @@
 <Project>
-    <Import Project="Bazel.props" />
+    <Import Condition="$(BazelBuild) == ''" Project="Bazel.props" />
 </Project>

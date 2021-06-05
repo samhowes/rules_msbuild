@@ -12,7 +12,7 @@
         <BazelPackage Condition="$(BazelPackage.StartsWith(../))"></BazelPackage>
     </PropertyGroup>
 
-    <PropertyGroup>
+    <PropertyGroup  Condition="$(BazelBuild) == ''">
         <!-- Override MSBuild properties -->
         <OutputPath>$(BazelWorkspacePath)$(BazelBin)/$(BazelPackage)</OutputPath>
         <BaseIntermediateOutputPath>$(OutputPath)/obj</BaseIntermediateOutputPath>
