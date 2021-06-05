@@ -71,9 +71,9 @@ namespace NuGetParser
                 var buildPath = Path.Join(Path.GetDirectoryName(PackagesFolder), pkg.RequestedName, "BUILD.bazel");
                 Directory.CreateDirectory(Path.GetDirectoryName(buildPath));
                 using var b = new BuildWriter(File.Create(buildPath));
-                b.Load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_package", "nuget_package_framework", "nuget_package_version");
+                b.Load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_package_download", "nuget_package_framework", "nuget_package_version");
                 b.Visibility();
-                b.StartRule("nuget_package", pkg.RequestedName);
+                b.StartRule("nuget_package_download", pkg.RequestedName);
 
                 var frameworks = pkg.Frameworks.Values.OrderBy(f => f.Tfm).ToList();
                 b.SetAttr("frameworks", frameworks.Select(f => ":" + f.Tfm));

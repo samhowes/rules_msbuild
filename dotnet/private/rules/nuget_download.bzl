@@ -11,7 +11,7 @@ load(
     "TfmMappingInfo",
 )
 
-def _nuget_package_impl(ctx):
+def _nuget_package_download_impl(ctx):
     tfms = {}
     for target in ctx.attr.frameworks:
         info = target[NuGetFilegroupInfo]
@@ -61,8 +61,8 @@ def _tfm_mapping_impl(ctx):
 def _framework_info_impl(ctx):
     return [FrameworkInfo(tfm = ctx.attr.name, implicit_deps = ctx.attr.implicit_deps)]
 
-nuget_package = rule(
-    _nuget_package_impl,
+nuget_package_download = rule(
+    _nuget_package_download_impl,
     attrs = {
         "frameworks": attr.label_list(mandatory = True, providers = [NuGetFilegroupInfo]),
     },
