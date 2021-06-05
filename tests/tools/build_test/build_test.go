@@ -6,8 +6,11 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/samhowes/my_rules_dotnet/tests/tools/executable"
 	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
+	"github.com/stretchr/testify/assert"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -40,10 +43,19 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		for k := range config.Data {
 			fmt.Println(k)
 		}
-		config.Target = files.Path(path.Base("%target%"))
+		config.Package = `%package%`
+		if config.ExpectedOutput != "" {
+			config.Target = path.Base("%target%")
+			config.Target, err = bazel.Runfile(path.Join(config.Package, config.Target))
+			if err != nil {
+				t.Fatalf("failed to find target: %v", err)
+			}
+		}
+
 		config.RunLocation = `%run_location%`
 		config.Debug = strings.ToLower(`%compilation_mode%`) == "dbg"
 		config.Diag = strings.ToLower(`%diag%`) == "1"
+
 		fmt.Println(config.Target)
 	})
 }
@@ -53,23 +65,37 @@ func TestBuildOutput(t *testing.T) {
 	cwd, _ := os.Getwd()
 	fmt.Printf("Current working directory: \n%s\n", cwd)
 	fmt.Printf("target: %s\n", config.Target)
+
+	exitingFiles := map[string]bool{}
+	runfiles, _ := bazel.ListRunfiles()
+	for _, f := range runfiles {
+		_ = filepath.WalkDir(f.Path, func(p string, info fs.DirEntry, err error) error {
+			if os.PathSeparator == '\\' {
+				p = strings.Replace(p, "\\", "/", -1)
+			}
+			bin := "/bin/"
+			bindex := strings.Index(p, bin)
+			// we're only testing files from this package
+			p = p[(bindex + len(bin) + len(config.Package) + 1):]
+
+			exitingFiles[p] = true
+			t.Logf(p)
+
+			return nil
+		})
+	}
+
 	// go_test starts us in our runfiles_tree (on unix) so we can base our assertions off of the current directory
 	for dir, filesA := range config.Data["expectedFiles"].(map[string]interface{}) {
-		if len(dir) > 0 && dir[0] == '@' {
-			t.Fatalf("external?")
-			parts := strings.SplitN(dir[1:], "/", 2)
-			//workspace = parts[0]
-			if len(parts) == 2 {
-				dir = parts[1]
-			} else {
-				dir = ""
-			}
-		}
-
-		fmt.Printf("%s\n", dir)
+		t.Log(dir)
 		expectedFiles := filesA.([]interface{})
 		for _, fA := range expectedFiles {
 			f := fA.(string)
+
+			ext := path.Ext(f)
+			if !config.Debug && ext == ".pdb" || !config.Diag && ext == ".binlog" {
+				continue
+			}
 
 			shouldExist := true
 			if f[0] == '!' {
@@ -78,24 +104,12 @@ func TestBuildOutput(t *testing.T) {
 			}
 
 			fullPath := path.Join(dir, f)
-
-			ext := path.Ext(f)
-			if !config.Debug && ext == ".pdb" || !config.Diag && ext == ".binlog" {
-				continue
-			}
-
-			fullPath, err := bazel.Runfile(path.Join(dir, f))
-			if shouldExist && err != nil {
-				t.Errorf("Failed to find runfile %s: %v", fullPath, err)
-				continue
-			}
-
 			fmt.Printf(fullPath + "\n")
-			_, err = os.Stat(fullPath)
-			if !shouldExist && err == nil {
-				t.Errorf("expected file to not exist: \n%s", fullPath)
-			} else if shouldExist && err != nil {
-				t.Errorf("error finding expected file '%s':\n%v", fullPath, err)
+			_, exists := exitingFiles[fullPath]
+			if shouldExist {
+				assert.Equal(t, true, exists, "expected file to exist: %s", fullPath)
+			} else {
+				assert.Equal(t, false, exists, "expected file not to exist: %s", fullPath)
 			}
 		}
 	}

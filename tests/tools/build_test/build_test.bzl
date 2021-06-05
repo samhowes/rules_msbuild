@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
-def build_test(name, expected_files, args = [], expected_output = ""):
+def build_test(name, expected_files, run_location = "", args = [], expected_output = ""):
     target = name.rsplit("_", 1)[0]
     artifacts = target + "_artifacts"
     native.filegroup(
@@ -17,6 +17,7 @@ def build_test(name, expected_files, args = [], expected_output = ""):
         expected_output = expected_output,
         args = args,
         target = target,
+        run_location = run_location,
         json = json.encode({"expectedFiles": expected_files}),
         deps = [":" + target],
         visibility = ["//visibility:public"],
@@ -34,6 +35,7 @@ def build_test(name, expected_files, args = [], expected_output = ""):
         deps = [
             "//tests/tools/executable",
             "//tests/tools/files",
+            "@com_github_stretchr_testify//assert",
             "@io_bazel_rules_go//go/tools/bazel",
         ],
     )
@@ -53,6 +55,7 @@ def _test_config_impl(ctx):
             "%exec_path%": ctx.expand_location("$(execpath {})".format(ctx.attr.target.label)),
             "%run_location%": ctx.attr.run_location,
             "%compilation_mode%": ctx.var["COMPILATION_MODE"],
+            "%package%": ctx.label.package,
         },
     )
 

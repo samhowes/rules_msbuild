@@ -27,6 +27,7 @@ build_test(
         ],
     },
     expected_output = "The special value is: 42!\n",
+    run_location = "standard",
 )
 
 build_test(
