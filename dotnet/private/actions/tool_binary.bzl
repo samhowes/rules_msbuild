@@ -30,7 +30,7 @@ def build_tool_binary(ctx, dotnet):
     )
     outputs = [output_dir, assembly]
 
-    binlog = add_binlog(ctx, outputs)
+    binlog = add_binlog(ctx, dotnet, outputs)
     if binlog != None:
         args.add("-bl:" + binlog.path)
 

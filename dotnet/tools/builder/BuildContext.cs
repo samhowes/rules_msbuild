@@ -83,8 +83,7 @@ namespace MyRulesDotnet.Tools.Builder
         public string Tfm { get; init; }
         public string SdkRoot { get; }
         public bool DiagnosticsEnabled { get; set; }
-        // todo(#51) disable when no build diagnostics are requested
-        public bool BinlogEnabled { get; } = true;
+        public bool BinlogEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }
 
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];

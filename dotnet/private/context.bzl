@@ -24,6 +24,7 @@ still want to perform the same fundamental actions with the dotnet binary.
 load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
 load("//dotnet/private/msbuild:xml.bzl", "EXEC_ROOT", "INTERMEDIATE_BASE")
+load("//dotnet/private/actions:common.bzl", "add_binlog")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
@@ -57,6 +58,8 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
     elif mode == "dbg":
         configuration = "Debug"
 
+    diag = ctx.var.get("BUILD_DIAG", False) == "1"
+
     dotnet = dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,
@@ -65,6 +68,7 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         tfm = tfm,
         output_dir_name = tfm,
         is_executable = is_executable,
+        diag = diag,
         configuration = configuration,
         implicit_deps = implicit_deps,
         tfm_deps = tfm_info.implicit_deps,
@@ -73,6 +77,8 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
     )
 
     dotnet.env["BINDIR"] = ctx.bin_dir.path
+    if diag:
+        dotnet.env["BUILD_DIAG"] = "1"
     return dotnet
 
 def dotnet_context(sdk_root, os, builder = None, sdk = None, **kwargs):
@@ -117,11 +123,7 @@ def _make_env(dotnet_sdk_root, os):
 
 def make_builder_cmd(ctx, dotnet, action):
     outputs = []
-    binlog = None
-    if True:
-        # todo(#51) disable when not debugging the build
-        binlog = ctx.actions.declare_file(ctx.attr.name + ".binlog")
-        outputs.append(binlog)
+    add_binlog(ctx, dotnet, outputs)
 
     args = ctx.actions.args()
     args.add_all([

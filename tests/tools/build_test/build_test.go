@@ -43,6 +43,7 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		config.Target = files.Path(path.Base("%target%"))
 		config.RunLocation = `%run_location%`
 		config.Debug = strings.ToLower(`%compilation_mode%`) == "dbg"
+		config.Diag = strings.ToLower(`%diag%`) == "1"
 		fmt.Println(config.Target)
 	})
 }
@@ -54,9 +55,6 @@ func TestBuildOutput(t *testing.T) {
 	fmt.Printf("target: %s\n", config.Target)
 	// go_test starts us in our runfiles_tree (on unix) so we can base our assertions off of the current directory
 	for dir, filesA := range config.Data["expectedFiles"].(map[string]interface{}) {
-
-		//workspace := "my_rules_dotnet"
-
 		if len(dir) > 0 && dir[0] == '@' {
 			t.Fatalf("external?")
 			parts := strings.SplitN(dir[1:], "/", 2)
@@ -81,7 +79,8 @@ func TestBuildOutput(t *testing.T) {
 
 			fullPath := path.Join(dir, f)
 
-			if !config.Debug && strings.HasSuffix(f, "pdb") {
+			ext := path.Ext(f)
+			if !config.Debug && ext == ".pdb" || !config.Diag && ext == ".binlog" {
 				continue
 			}
 

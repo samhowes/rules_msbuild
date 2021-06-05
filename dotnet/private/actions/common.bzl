@@ -16,9 +16,8 @@ def get_nuget_files(dep, tfm, files):
         ))
     files.append(framework_info.all_dep_files)
 
-def add_binlog(ctx, outputs):
-    if True:
-        # todo(#51) disable when not debugging the build
+def add_binlog(ctx, dotnet, outputs):
+    if dotnet.config.diag:
         binlog = ctx.actions.declare_file(ctx.attr.name + ".binlog")
         outputs.append(binlog)
         return binlog

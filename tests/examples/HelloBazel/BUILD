@@ -29,12 +29,14 @@ build_test(
     expected_files = {
         "": [
             "HelloBazel.cache",
+            # binlog is only output with --define=BUILD_DIAG=1
             "HelloBazel.binlog",
         ],
         "obj/netcoreapp3.1": [
             "HelloBazel.dll",
         ],
         "netcoreapp3.1": [
+            # pdb is only output with compilation mode=dbg
             "HelloBazel.pdb",
             "HelloBazel.dll",
             "HelloBazel.deps.json",
