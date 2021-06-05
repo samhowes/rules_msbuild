@@ -68,16 +68,28 @@ func TestBuildOutput(t *testing.T) {
 
 	exitingFiles := map[string]bool{}
 	runfiles, _ := bazel.ListRunfiles()
-	for _, f := range runfiles {
-		_ = filepath.WalkDir(f.Path, func(p string, info fs.DirEntry, err error) error {
-			if os.PathSeparator == '\\' {
-				p = strings.Replace(p, "\\", "/", -1)
-			}
-			bin := "/bin/"
-			bindex := strings.Index(p, bin)
-			// we're only testing files from this package
-			p = p[(bindex + len(bin) + len(config.Package) + 1):]
 
+	relpath := func(p string) string {
+		if os.PathSeparator == '\\' {
+			p = strings.Replace(p, "\\", "/", -1)
+		}
+
+		for _, prefix := range []string{"/bin/", "/my_rules_dotnet/", config.Package + "/"} {
+			index := strings.Index(p, prefix)
+			if index >= 0 {
+				p = p[index+len(prefix):]
+			}
+		}
+		return p
+	}
+
+	for _, f := range runfiles {
+		if exitingFiles[f.ShortPath] {
+			continue
+		}
+		_ = filepath.WalkDir(f.Path, func(p string, info fs.DirEntry, err error) error {
+
+			p = relpath(p)
 			exitingFiles[p] = true
 			t.Logf(p)
 
