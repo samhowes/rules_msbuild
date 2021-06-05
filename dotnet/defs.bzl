@@ -38,7 +38,7 @@ load(
     _nuget_package_version = "nuget_package_version",
 )
 load(
-    "//dotnet/private:nuget.bzl",
+    "//dotnet/private:nuget_macros.bzl",
     _nuget_package_download = "nuget_package_download",
 )
 load(
