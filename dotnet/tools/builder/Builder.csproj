@@ -3,7 +3,7 @@
     <BINDIR>$(MSBuildStartupDirectory)/$(BINDIR)</BINDIR>
     <ExecRoot>$(MSBuildStartupDirectory)</ExecRoot>
     <RestoreConfigFile>$(MSBuildStartupDirectory)/$(RestoreConfigFile)</RestoreConfigFile>
-    <AssemblyName>builder.dll</AssemblyName>
+    <AssemblyName>builder</AssemblyName>
   </PropertyGroup>
 
   <Import Project="$(ExecRoot)/external/dotnet_sdk/Directory.Bazel.props" Condition="$(_IsBootstrapping) == 'true'" />
