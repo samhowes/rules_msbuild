@@ -8,11 +8,13 @@ filegroup(
         "BuildContext.cs",
         "BuildManagerFields.cs",
         "Builder.cs",
+        "Diagnostics.cs",
         "LaunchDataWriter.cs",
         "LauncherFactory.cs",
         "MsBuildCacheManager.cs",
         "OutputProcessor.cs",
         "Program.cs",
+        "TargetGraph.cs",
     ],
     visibility = ["//visibility:public"],
 )

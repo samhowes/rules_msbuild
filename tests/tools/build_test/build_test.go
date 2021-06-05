@@ -84,7 +84,7 @@ func TestBuildOutput(t *testing.T) {
 	}
 
 	for _, f := range runfiles {
-		if exitingFiles[f.ShortPath] {
+		if exitingFiles[relpath(f.ShortPath)] {
 			continue
 		}
 		_ = filepath.WalkDir(f.Path, func(p string, info fs.DirEntry, err error) error {
@@ -105,8 +105,17 @@ func TestBuildOutput(t *testing.T) {
 			f := fA.(string)
 
 			ext := path.Ext(f)
-			if !config.Debug && ext == ".pdb" || !config.Diag && ext == ".binlog" {
-				continue
+			switch ext {
+			case ".pdb":
+				if !config.Debug {
+					continue
+				}
+				break
+			case ".binlog":
+			case ".dot":
+				if !config.Diag {
+					continue
+				}
 			}
 
 			shouldExist := true

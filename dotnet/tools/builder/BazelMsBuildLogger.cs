@@ -1,4 +1,6 @@
+#nullable enable
 using System;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
@@ -7,23 +9,62 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class BazelMsBuildLogger : ConsoleLogger
     {
-        public BazelMsBuildLogger(LoggerVerbosity verbosity, string trimPath) : base(
+        public BazelMsBuildLogger(LoggerVerbosity verbosity, string trimPath, TargetGraph? targetGraph) : base(
             verbosity,
             (m) => Console.Out.Write(m.Replace(trimPath, "")),
             SetColor,
             ResetColor)
         {
+            _targetGraph = targetGraph;
         }
 
         public override void Initialize(IEventSource eventSource)
         {
             base.Initialize(eventSource);
-            eventSource.ErrorRaised += (sender, args) => HasError = true;
+            eventSource!.ErrorRaised += (sender, args) => HasError = true;
+            if (_targetGraph != null)
+            {
+                eventSource.AnyEventRaised += ((sender, args) =>
+                {
+                    string? name = null;
+                    string? parentName = null;
+                    var wasSkipped = false;
+                    var wasBuilt = false;
+                    TargetBuiltReason reason;
+                    switch (args)
+                    {
+                        case TargetSkippedEventArgs skipped:
+                            name = skipped.TargetName;
+                            parentName = skipped.ParentTarget;
+                            wasSkipped = true;
+                            reason = skipped.BuildReason;
+                            break;
+                        case TargetStartedEventArgs started:
+                            name = started.TargetName;
+                            parentName = started.ParentTarget;
+                            wasBuilt = true;
+                            reason = started.BuildReason;
+                            break;
+                        default:
+                            return;
+                    }
+
+                    var node = _targetGraph.GetOrAdd(name);
+                    node.WasBuilt = node.WasBuilt || wasBuilt;
+                    if (parentName != null)
+                    {
+                        var parent = _targetGraph.GetOrAdd(parentName);
+                        var edge = new TargetGraph.Edge(parent, node, wasSkipped);
+                        parent.Dependencies.Add(edge);
+                        edge.Reason = reason;
+                    }
+                });
+            }
         }
         public override void Initialize(IEventSource eventSource, int nodeCount)
         {
             base.Initialize(eventSource, nodeCount);
-            eventSource!.ErrorRaised += (sender, args) => HasError = true;
+            Initialize(eventSource);
         }
 
         public bool HasError { get; set; }
@@ -47,6 +88,8 @@ namespace MyRulesDotnet.Tools.Builder
         /// When set, we'll try reading background color.
         /// </summary>
         private static bool _supportReadingBackgroundColor = true;
+
+        private TargetGraph? _targetGraph;
 
         /// <summary>
         /// Some platforms do not allow getting current background color. There

@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
-load(":common.bzl", "add_binlog", "get_nuget_files")
+load(":common.bzl", "add_diagnostics", "get_nuget_files")
 
 def build_tool_binary(ctx, dotnet):
     """Create a binary used for the dotnet toolchain itself.
@@ -30,7 +30,7 @@ def build_tool_binary(ctx, dotnet):
     )
     outputs = [output_dir, assembly]
 
-    binlog = add_binlog(ctx, dotnet, outputs)
+    binlog = add_diagnostics(ctx, dotnet, outputs)
     if binlog != None:
         args.add("-bl:" + binlog.path)
 

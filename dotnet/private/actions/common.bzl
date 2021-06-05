@@ -16,9 +16,12 @@ def get_nuget_files(dep, tfm, files):
         ))
     files.append(framework_info.all_dep_files)
 
-def add_binlog(ctx, dotnet, outputs):
+def add_diagnostics(ctx, dotnet, outputs):
     if dotnet.config.diag:
         binlog = ctx.actions.declare_file(ctx.attr.name + ".binlog")
         outputs.append(binlog)
+        if dotnet.builder != None:
+            dot = ctx.actions.declare_file(ctx.attr.name + ".dot")
+            outputs.append(dot)
         return binlog
     return None

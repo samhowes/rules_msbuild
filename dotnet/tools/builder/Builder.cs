@@ -20,6 +20,7 @@ namespace MyRulesDotnet.Tools.Builder
         private readonly BuildManager _buildManager;
         private readonly MsBuildCacheManager _cacheManager;
         private readonly BazelMsBuildLogger _msbuildLog;
+        private readonly TargetGraph? _targetGraph;
 
         public Builder(BuildContext context)
         {
@@ -27,9 +28,14 @@ namespace MyRulesDotnet.Tools.Builder
             _action = _context.Command.Action.ToLower();
             _buildManager = BuildManager.DefaultBuildManager;
             _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot);
+            if (_context.DiagnosticsEnabled)
+            {
+                _targetGraph = new TargetGraph(_context.ProjectFile);
+            }
+
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                _context.Bazel.ExecRoot + Path.DirectorySeparatorChar);
+                _context.Bazel.ExecRoot + Path.DirectorySeparatorChar, _targetGraph!);
         }
 
         public int Build()
@@ -41,7 +47,6 @@ namespace MyRulesDotnet.Tools.Builder
                 projectCollection = BeginBuild();
 
                 result = ExecuteBuild(projectCollection);
-                
 
                 EndBuild(result!.Value);
             }
@@ -92,7 +97,7 @@ namespace MyRulesDotnet.Tools.Builder
                         // there's not a great "IsWindows" method in c#
                         basename += ".exe";
                     }
-                     
+
                     File.WriteAllLines(_context.OutputPath(_context.Tfm, "runfiles.info"), new string[]
                     {
                         // first line is the expected location of the runfiles directory from the assembly location
@@ -102,6 +107,11 @@ namespace MyRulesDotnet.Tools.Builder
                         // third is the package (nice to have)
                         _context.Bazel.Label.Package
                     });
+                }
+
+                if (_targetGraph != null)
+                {
+                    File.WriteAllText(_context.LabelPath(".dot"), _targetGraph.ToDot());
                 }
             }
         }
@@ -151,7 +161,6 @@ namespace MyRulesDotnet.Tools.Builder
                     _ => source.SetResult(
                         (submission.BuildResult, submission.BuildResult.ProjectStateAfterBuild)),
                     submission);
-
             }
 
             var (result, project) = source.Task.GetAwaiter().GetResult();
@@ -182,7 +191,7 @@ namespace MyRulesDotnet.Tools.Builder
                     ex = br.Exception;
                     break;
             }
-            
+
             return overallResult;
         }
 
@@ -207,7 +216,7 @@ namespace MyRulesDotnet.Tools.Builder
                     globalProperties["DebugType"] = "none";
                     break;
             }
-            
+
             if (_action == "restore")
             {
                 // we aren't using restore's cache files in the Build actions, so different global properties are fine
@@ -286,6 +295,7 @@ namespace MyRulesDotnet.Tools.Builder
                 ToolsetDefinitionLocations =
                     Microsoft.Build.Evaluation.ToolsetDefinitionLocations.ConfigurationFile |
                     Microsoft.Build.Evaluation.ToolsetDefinitionLocations.Registry,
+                // ProjectCacheDescriptor = (ProjectCacheDescriptor.FromInstance(new MyCache(_targetGraph), null, null, null))
             };
 
 
@@ -375,19 +385,6 @@ namespace MyRulesDotnet.Tools.Builder
                 output.Flush();
             }
         }
-
-        private void WaitForDebugger()
-        {
-            // Process currentProcess = Process.GetCurrentProcess();
-            // Console.WriteLine($"Waiting for debugger to attach... ({currentProcess.MainModule.FileName} PID {currentProcess.Id})");
-            // while (!Debugger.IsAttached)
-            // {
-            //     Thread.Sleep(100);
-            // }
-            // Console.WriteLine("debugger attached!");
-            // Debugger.Break();
-        }
-
 
         private string[] GetInputCaches()
         {

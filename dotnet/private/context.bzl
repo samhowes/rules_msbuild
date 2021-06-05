@@ -24,7 +24,7 @@ still want to perform the same fundamental actions with the dotnet binary.
 load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
 load("//dotnet/private/msbuild:xml.bzl", "EXEC_ROOT", "INTERMEDIATE_BASE")
-load("//dotnet/private/actions:common.bzl", "add_binlog")
+load("//dotnet/private/actions:common.bzl", "add_diagnostics")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
@@ -59,7 +59,6 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         configuration = "Debug"
 
     diag = ctx.var.get("BUILD_DIAG", False) == "1"
-
     dotnet = dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,
@@ -123,7 +122,7 @@ def _make_env(dotnet_sdk_root, os):
 
 def make_builder_cmd(ctx, dotnet, action):
     outputs = []
-    add_binlog(ctx, dotnet, outputs)
+    add_diagnostics(ctx, dotnet, outputs)
 
     args = ctx.actions.args()
     args.add_all([
