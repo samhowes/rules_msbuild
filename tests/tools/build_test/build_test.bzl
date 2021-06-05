@@ -1,17 +1,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
-def artifacts_dir():
-    return select({
-        # windows doesn't have a symlink farm, cd to the artifact directory
-        # by default, on windows bazel starts us in <pkg_path>/target_/target.exe.runfiles/worksapce_name
-        # we want to start in <pkg_path>. Go compiles things into the target_ directory
-        "@bazel_tools//src/conditions:host_windows": "../../..",
-        # unix has a symlink farm and the default is nice: its the artifact directory
-        "//conditions:default": "",
-    })
-
-def build_test(name, expected_files, run_location = "", args = [], expected_output = ""):
+def build_test(name, expected_files, args = [], expected_output = ""):
     target = name.rsplit("_", 1)[0]
     artifacts = target + "_artifacts"
     native.filegroup(
@@ -27,7 +17,6 @@ def build_test(name, expected_files, run_location = "", args = [], expected_outp
         expected_output = expected_output,
         args = args,
         target = target,
-        run_location = run_location,
         json = json.encode({"expectedFiles": expected_files}),
         deps = [":" + target],
         visibility = ["//visibility:public"],
@@ -42,8 +31,6 @@ def build_test(name, expected_files, run_location = "", args = [], expected_outp
             ":" + target,
             ":" + artifacts,
         ],
-        # make locating artifacts simple and not need runfiles library (as much)
-        rundir = artifacts_dir(),
         deps = [
             "//tests/tools/executable",
             "//tests/tools/files",
@@ -65,6 +52,7 @@ def _test_config_impl(ctx):
             "%config_json%": ctx.attr.json,
             "%exec_path%": ctx.expand_location("$(execpath {})".format(ctx.attr.target.label)),
             "%run_location%": ctx.attr.run_location,
+            "%compilation_mode%": ctx.var["COMPILATION_MODE"],
         },
     )
 

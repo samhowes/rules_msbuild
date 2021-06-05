@@ -193,12 +193,21 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 ["BazelBuild"] = "true",
                 ["ImportDirectoryBuildProps"] = "true",
-                // ["EnableDefaultItems"] = "false",
-                // ["EnableDefaultContentItems"] = "false",
-                // ["EnableDefaultCompileItems"] = "false",
-                // ["EnableDefaultEmbeddedResourceItems"] = "false",
-                // ["EnableDefaultNoneItems"] = "false",
+                ["Configuration"] = _context.MSBuild.Configuration,
             };
+
+            switch (_context.MSBuild.Configuration.ToLower())
+            {
+                case "debug":
+                    globalProperties["DebugSymbols"] = "true";
+                    break;
+                case "release":
+                case "fastbuild":
+                    globalProperties["DebugSymbols"] = "false";
+                    globalProperties["DebugType"] = "none";
+                    break;
+            }
+            
             if (_action == "restore")
             {
                 // we aren't using restore's cache files in the Build actions, so different global properties are fine

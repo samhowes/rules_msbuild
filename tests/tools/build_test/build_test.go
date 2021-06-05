@@ -42,6 +42,7 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		}
 		config.Target = files.Path(path.Base("%target%"))
 		config.RunLocation = `%run_location%`
+		config.Debug = strings.ToLower(`%compilation_mode%`) == "dbg"
 		fmt.Println(config.Target)
 	})
 }
@@ -53,11 +54,11 @@ func TestBuildOutput(t *testing.T) {
 	fmt.Printf("target: %s\n", config.Target)
 	// go_test starts us in our runfiles_tree (on unix) so we can base our assertions off of the current directory
 	for dir, filesA := range config.Data["expectedFiles"].(map[string]interface{}) {
-		useRunfiles := false
+
 		//workspace := "my_rules_dotnet"
 
 		if len(dir) > 0 && dir[0] == '@' {
-			useRunfiles = true
+			t.Fatalf("external?")
 			parts := strings.SplitN(dir[1:], "/", 2)
 			//workspace = parts[0]
 			if len(parts) == 2 {
@@ -79,16 +80,19 @@ func TestBuildOutput(t *testing.T) {
 			}
 
 			fullPath := path.Join(dir, f)
-			if useRunfiles {
-				fullPath, err := bazel.Runfile(path.Join(dir, f))
-				if shouldExist && err != nil {
-					t.Errorf("Failed to find runfile %s: %v", fullPath, err)
-					continue
-				}
+
+			if !config.Debug && strings.HasSuffix(f, "pdb") {
+				continue
+			}
+
+			fullPath, err := bazel.Runfile(path.Join(dir, f))
+			if shouldExist && err != nil {
+				t.Errorf("Failed to find runfile %s: %v", fullPath, err)
+				continue
 			}
 
 			fmt.Printf(fullPath + "\n")
-			_, err := os.Stat(fullPath)
+			_, err = os.Stat(fullPath)
 			if !shouldExist && err == nil {
 				t.Errorf("expected file to not exist: \n%s", fullPath)
 			} else if shouldExist && err != nil {

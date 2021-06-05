@@ -65,8 +65,7 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         tfm = tfm,
         output_dir_name = tfm,
         is_executable = is_executable,
-        # todo(73) remove this
-        is_precise = True if toolchain == None else False,
+        configuration = configuration,
         implicit_deps = implicit_deps,
         tfm_deps = tfm_info.implicit_deps,
         is_test = is_test,
@@ -148,6 +147,8 @@ def make_builder_cmd(ctx, dotnet, action):
         dotnet.sdk.config.nuget_config,
         "--directory_bazel_props",
         dotnet.sdk.bazel_props,
+        "--configuration",
+        dotnet.config.configuration,
         "--output_type",
         "exe" if dotnet.config.is_executable else "library",
     ])
