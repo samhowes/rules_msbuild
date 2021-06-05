@@ -9,11 +9,28 @@ load(
     "msbuild_test",
 )
 
+def msbuild_directory_macro(
+        name = "msbuild_directory",
+        srcs = [],
+        deps = []):
+    msbuild_project(name, srcs, deps, [":__subpackages__"])
+
+def msbuild_project(
+        name,
+        srcs = [],
+        deps = [],
+        visibility = ["//visibility:private"]):
+    native.filegroup(
+        name = name,
+        srcs = srcs + deps,
+        visibility = visibility,
+    )
+
 def msbuild_binary_macro(
         name,
+        srcs = None,
         project_file = None,
         target_framework = None,
-        srcs = None,
         deps = [],
         **kwargs):
     srcs = _get_srcs(srcs)
@@ -28,18 +45,18 @@ def msbuild_binary_macro(
 
 def msbuild_library_macro(
         name,
+        srcs = [],
         project_file = None,
         target_framework = None,
-        srcs = [],
         deps = [],
         **kwargs):
     _msbuild_assembly(name, msbuild_library, project_file, target_framework, srcs, deps, kwargs)
 
 def msbuild_test_macro(
         name,
+        srcs = [],
         project_file = None,
         target_framework = None,
-        srcs = [],
         deps = [],
         **kwargs):
     test_args = dict(
@@ -69,6 +86,7 @@ def _msbuild_assembly(
             for k in ["data", "content"]
         ],
     ))
+    kwargs.setdefault("msbuild_directory", "//:msbuild_directory")
 
     srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)

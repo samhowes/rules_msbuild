@@ -18,7 +18,6 @@ exports_files([
 dotnet_sdk(
     name = "dotnet_sdk",
     bazel_props = ":Directory.Bazel.props",
-    bazel_targets = ":Directory.Bazel.targets",
     config = ":dotnet_config",
     dotnet = ":dotnet",
     dotnetarch = "{dotnetarch}",

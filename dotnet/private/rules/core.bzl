@@ -121,7 +121,6 @@ dotnet_tool_binaries cannot have any dependencies and are used to build other do
 
 # used by all end-user assemblies (libraries, tests & binaries)
 ASSEMBLY_ATTRS = dicts.add(BASE_ASSEMBLY_ATTRS, {
-    "_dotnet_context_data": attr.label(default = "//:dotnet_context_data"),
     "data": attr.label_list(
         allow_files = True,
         doc = """Standard bazel runfiles data. These files will be made available in the runfiles tree at the location

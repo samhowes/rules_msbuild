@@ -1,21 +1,30 @@
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
 
-msbuild_library(
+msbuild_binary(
     name = "Consumer",
-    srcs = ["Class1.cs"],
+    srcs = ["Program.cs"],
     content = [
-        "//tests/examples/DirectoryProps:defaults",
         "foo.txt",
     ],
-    target_framework = "netstandard2.1",
+    msbuild_directory = "//tests/examples/DirectoryProps:msbuild_directory",
+    target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
 )
 
 build_test(
     name = "Consumer_test",
     expected_files = {
-        "netstandard2.1": [
+        "netcoreapp3.1": [
+            "foo.txt",
+        ],
+    },
+)
+
+build_test(
+    name = "Consumer_publish_test",
+    expected_files = {
+        "publish/netcoreapp3.1": [
             "foo.txt",
         ],
     },

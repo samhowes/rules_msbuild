@@ -87,6 +87,7 @@ msbuild_publish = rule(
 )
 
 _RESTORE_ATTRS = dicts.add(_COMMON_ATTRS, {
+    "msbuild_directory": attr.label(allow_files = True),
     "target_framework": attr.string(mandatory = True),
 })
 

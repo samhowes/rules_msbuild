@@ -1,8 +1,9 @@
-filegroup(
-    name = "defaults",
+load("//dotnet:defs.bzl", "msbuild_directory")
+
+msbuild_directory(
     srcs = [
         "Directory.Build.props",
         "Directory.Build.targets",
     ],
-    visibility = [":__subpackages__"],
+    deps = ["//:msbuild_directory"],
 )

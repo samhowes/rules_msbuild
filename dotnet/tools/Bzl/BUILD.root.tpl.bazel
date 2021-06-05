@@ -1,4 +1,7 @@
+load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_directory")
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+
+msbuild_directory()
 
 gazelle(
     name = "gazelle",
