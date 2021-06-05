@@ -44,7 +44,7 @@ def emit_tool_binary(ctx, dotnet):
         outputs = outputs,
         executable = dotnet.sdk.dotnet,
         arguments = [args],
-        env = dotnet.env,
+        env = dicts.add(dotnet.env, {"BazelBuild": "true"}),
     )
     return DotnetLibraryInfo(
         assembly = assembly,
