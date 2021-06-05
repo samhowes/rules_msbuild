@@ -20,6 +20,8 @@ def build_tool_binary(ctx, dotnet):
         "publish",
         ctx.file.project_file,
         "-p:RestoreConfigFile=" + dotnet.sdk.config.nuget_config.path,
+        "-v:quiet",
+        "-nologo",
     ])
 
     inputs = depset(
@@ -28,7 +30,7 @@ def build_tool_binary(ctx, dotnet):
     )
     outputs = [output_dir, assembly]
 
-    binlog = add_binlog(ctx, outputs)
+    binlog = add_binlog(ctx, dotnet, outputs)
     if binlog != None:
         args.add("-bl:" + binlog.path)
 

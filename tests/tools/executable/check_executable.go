@@ -25,6 +25,9 @@ type TestConfig struct {
 	Cwd            string
 	Result         string
 	RunLocation    string
+	Debug          bool
+	Diag           bool
+	Package        string
 }
 
 func SetupFakeRunfiles(t *testing.T, binName string) string {

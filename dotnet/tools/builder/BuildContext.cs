@@ -57,7 +57,8 @@ namespace MyRulesDotnet.Tools.Builder
                 Bazel,
                 ToolPath(command.NamedArgs["directory_bazel_props"]),
                 NuGetConfig,
-                Tfm
+                Tfm,
+                command.NamedArgs["configuration"]
                 );
 
             IsExecutable = command.NamedArgs["output_type"] == "exe";
@@ -82,8 +83,7 @@ namespace MyRulesDotnet.Tools.Builder
         public string Tfm { get; init; }
         public string SdkRoot { get; }
         public bool DiagnosticsEnabled { get; set; }
-        // todo(#51) disable when no build diagnostics are requested
-        public bool BinlogEnabled { get; } = true;
+        public bool BinlogEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }
 
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];
@@ -127,8 +127,14 @@ namespace MyRulesDotnet.Tools.Builder
     // ReSharper disable once InconsistentNaming
     public class MSBuildContext
     {
-        public MSBuildContext(string action, BazelContext bazel, string directoryBazelPropsPath, string nuGetConfig, string tfm)
+        public MSBuildContext(string action, 
+            BazelContext bazel, 
+            string directoryBazelPropsPath, 
+            string nuGetConfig, 
+            string tfm,
+            string configuration)
         {
+            Configuration = configuration;
             OutputPath = bazel.OutputDir;
             BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
@@ -182,6 +188,8 @@ namespace MyRulesDotnet.Tools.Builder
                     throw new ArgumentException($"Unknown action {action}");
             }
         }
+        
+        public string Configuration { get; }
 
         public Dictionary<string,string> BuildEnvironment { get; }
 
