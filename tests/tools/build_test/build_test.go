@@ -55,8 +55,6 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		config.RunLocation = `%run_location%`
 		config.Debug = strings.ToLower(`%compilation_mode%`) == "dbg"
 		config.Diag = strings.ToLower(`%diag%`) == "1"
-
-		fmt.Println(config.Target)
 	})
 }
 
@@ -111,8 +109,7 @@ func TestBuildOutput(t *testing.T) {
 					continue
 				}
 				break
-			case ".binlog":
-			case ".dot":
+			case ".dot", ".binlog":
 				if !config.Diag {
 					continue
 				}

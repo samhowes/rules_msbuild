@@ -56,6 +56,7 @@ def _test_config_impl(ctx):
             "%run_location%": ctx.attr.run_location,
             "%compilation_mode%": ctx.var["COMPILATION_MODE"],
             "%package%": ctx.label.package,
+            "%diag%": ctx.var.get("BUILD_DIAG", ""),
         },
     )
 
