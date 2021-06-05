@@ -51,59 +51,6 @@ def import_sdk(name, version = None):
         _import_sdk(name, "targets", version),
     )
 
-def make_project_file(ctx, dotnet, dep_files, exec_root = EXEC_ROOT):
-    (intermediate_path, nuget_config, is_executable) = dotnet.config.intermediate_path, dotnet.sdk.config.nuget_config, dotnet.config.is_executable
-    post_sdk_properties = dicts.add(getattr(ctx.attr, "msbuild_properties", {}))
-    if is_executable:
-        post_sdk_properties["OutputType"] = "Exe"
-        post_sdk_properties["UseAppHost"] = "false"
-
-    nuget_config_path = paths.join(exec_root, nuget_config.path)
-    pre_sdk_properties = {
-        # we'll take care of making sure deps are built, no need to traverse
-        "BuildProjectReferences": "false",
-        "RestoreRecursive": "false",
-    }
-    source_project_file = getattr(ctx.file, "project_file", None)
-    substitutionas = None
-    if source_project_file != None:
-        pre_sdk_properties["TargetFramework"] = ctx.attr.target_framework
-        substitutions = prepare_project_file(
-            None,
-            intermediate_path,
-            [],
-            [],
-            nuget_config_path,
-            None,
-            pre_sdk_properties = pre_sdk_properties,
-            post_sdk_properties = post_sdk_properties,
-            srcs = ctx.files.srcs,
-            imports = [source_project_file, dotnet.sdk.bazel_props],
-            exec_root = exec_root,
-        )
-    else:
-        substitutions = prepare_project_file(
-            MSBuildSdk(ctx.attr.sdk, None),
-            intermediate_path,
-            [paths.join(EXEC_ROOT, r.path) for r in dep_files.references],
-            dep_files.packages,
-            nuget_config_path,
-            tfm = ctx.attr.target_framework,
-            pre_sdk_properties = pre_sdk_properties,
-            post_sdk_properties = post_sdk_properties,
-            srcs = ctx.files.srcs,
-            exec_root = exec_root,
-        )
-
-    project_file = ctx.actions.declare_file(ctx.label.name + ".csproj")
-    ctx.actions.expand_template(
-        template = ctx.file._project_template,
-        output = project_file,
-        is_executable = False,
-        substitutions = substitutions,
-    )
-    return project_file
-
 def prepare_project_file(
         msbuild_sdk,
         intermediate_path,

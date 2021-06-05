@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_config", "dotnet_sdk", "dotnet_tool_binary")
+load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_config", "dotnet_sdk", "msbuild_tool_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -18,7 +18,6 @@ exports_files([
 dotnet_sdk(
     name = "dotnet_sdk",
     bazel_props = ":Directory.Bazel.props",
-    bazel_targets = ":Directory.Bazel.targets",
     config = ":dotnet_config",
     dotnet = ":dotnet",
     dotnetarch = "{dotnetarch}",
@@ -40,7 +39,7 @@ dotnet_config(
     trim_path = "{trim_path}",
 )
 
-dotnet_tool_binary(
+msbuild_tool_binary(
     name = "builder",
     srcs = ["@my_rules_dotnet//dotnet/tools/builder:builder_srcs"],
     dotnet_sdk = ":dotnet_sdk",

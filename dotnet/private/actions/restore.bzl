@@ -17,7 +17,7 @@ def restore(ctx, dotnet):
     dep_files = process_deps(dotnet, ctx.attr.deps)
 
     inputs = depset(
-        direct = [ctx.file.project_file],
+        direct = [ctx.file.project_file] + ctx.files.msbuild_directory,
         transitive = [dep_files],
     )
 

@@ -1,16 +1,29 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <PropertyGroup Condition="$(_IsBootstrapping) == 'true'">
+    <BINDIR>$(MSBuildStartupDirectory)/$(BINDIR)</BINDIR>
+    <ExecRoot>$(MSBuildStartupDirectory)</ExecRoot>
+    <RestoreConfigFile>$(MSBuildStartupDirectory)/$(RestoreConfigFile)</RestoreConfigFile>
+    <AssemblyName>builder</AssemblyName>
+  </PropertyGroup>
+
+  <Import Project="$(ExecRoot)/external/dotnet_sdk/Directory.Bazel.props" Condition="$(_IsBootstrapping) == 'true'" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
   <PropertyGroup>
+    <PublishDir Condition="$(_IsBootstrapping) == 'true'">$(BINDIR)/external/dotnet_sdk/publish</PublishDir>
     <TargetFramework Condition="$(BazelBuild) == ''">net5.0</TargetFramework>
     <TargetFramework Condition="$(BazelBuild) != ''">netcoreapp$(NETCoreAppMaximumVersion)</TargetFramework>
     <!--  Hack to detect when we're testing internally: Package will be dotnet/tools/builder when internal, but '' when
       external as part of the sdk. -->
-    <TargetFramework Condition="$(BazelPackage) != ''">netcoreapp3.1</TargetFramework>
+    <TargetFramework Condition="$(_IsBootstrapping) != 'true'">netcoreapp3.1</TargetFramework>
     <OutputType>Exe</OutputType>
     <LangVersion>9.0</LangVersion>
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.4.1" />
     <PackageReference Include="Microsoft.Build" Version="16.9.0" ExcludeAssets="Runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.9.0" ExcludeAssets="Runtime" />
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

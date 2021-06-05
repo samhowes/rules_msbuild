@@ -1,5 +1,5 @@
 <Project>
-
+    <!--  DO NOT import this project when bazel is building. use  Condition="$(BazelBuild) == ''" when importing.  -->
     <PropertyGroup>
         <!-- Configurations for Bazel.targets -->
         <!-- 
@@ -43,6 +43,18 @@
         </ItemGroup>
     </Target>
 
+    <!-- Generate No-ops for msubild targets. We'll call bazel build after these.
+    These target definitions only affect project files, they are ignored in the solution metaproject, because that
+      defines these targets directly -->
+    <Target Name="Build" />
+    <Target Name="Rebuild" />
+    <Target Name="Clean">
+        <Error Text="Refusing to clean project. Cleaning an individual project is not possible with bazel. If you need to do a clean, clean the entire solution."/>
+    </Target>
+    <!-- Microsoft.NET.Publish.targets is imported after Directory.Build.targets, so unfortunately we can't do much for that here.
+    <Target Name="Publish" /> -->
+
+
     <Target Name="Restore">
         <!-- We are always able to override this target because it is defined by NuGet.targets, not the top level project,
             for both the generated solution metaproj and a normal project file -->
@@ -59,8 +71,7 @@
     </Target>
 
     <Target Name="BazelBuild" AfterTargets="$(BazelBuildAfterTargets)">
-         <Exec Command="bazel build @(BazelProject->'%(BazelLabel)$(BazelTargetSuffix)', ' ')"/> 
-<!--        <Message Text="bazel build @(BazelProject->'%(BazelLabel)$(BazelTargetSuffix)', ' ')" Importance="High"/>-->
+         <Exec Command="bazel build @(BazelProject->'%(BazelLabel)$(BazelTargetSuffix)', ' ')"/>
     </Target>
 
 </Project>
