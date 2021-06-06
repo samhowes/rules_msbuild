@@ -69,6 +69,11 @@ namespace MyRulesDotnet.Tools.Builder
             ProjectDirectory = Path.GetDirectoryName(ProjectFile)!;
             
             IsTest = command.NamedArgs.TryGetValue("is_test", out _);
+
+            if (DiagnosticsEnabled)
+            {
+                MSBuild.BuildEnvironment["NUGET_SHOW_STACK"] = "true";
+            }
         }
 
         public bool IsExecutable { get; set; }
@@ -139,6 +144,25 @@ namespace MyRulesDotnet.Tools.Builder
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
 
             var propsDirectory = Path.GetDirectoryName(directoryBazelPropsPath);
+            
+            var noWarn = "NU1603;MSB3277";
+            GlobalProperties = new Dictionary<string, string>
+            {
+                ["Configuration"] = Configuration,
+                ["BuildProjectReferences"] = "false"
+            };
+
+            switch (Configuration.ToLower())
+            {
+                case "debug":
+                    GlobalProperties["DebugSymbols"] = "true";
+                    break;
+                case "release":
+                case "fastbuild":
+                    GlobalProperties["DebugSymbols"] = "false";
+                    GlobalProperties["DebugType"] = "none";
+                    break;
+            }
 
             BuildEnvironment = new Dictionary<string, string>()
             {
@@ -151,12 +175,23 @@ namespace MyRulesDotnet.Tools.Builder
                 // msbuild's shared compilation is not compatible with sandboxing because it wll delegate compilation to aonother 
                 // process that won't have access to the sandbox requesting the build.
                 ["UseSharedCompilation"] = "false",
+                ["BazelBuild"] = "true",
+                ["ImportDirectoryBuildProps"] = "true",
             };
-            
+
             switch (action)
             {
                 case "restore":
                     Targets = new[] {"Restore"};
+                    // we aren't using restore's cache files in the Build actions, so different global properties are fine
+
+                    // this is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
+                    // ahead of time, there will be a cache miss on the restored project.
+                    // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L69
+                    GlobalProperties["ExcludeRestorePackageImports"] = "true";
+                    // enables a faster nuget restore compatible with isolated builds
+                    // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
+                    GlobalProperties["RestoreUseStaticGraphEvaluation"] = "true";
                     break;
                 case "build":
                     // https://github.com/dotnet/msbuild/issues/5204
@@ -174,8 +209,7 @@ namespace MyRulesDotnet.Tools.Builder
                 case "publish":
                     Targets = new[] {"Publish"};
                     
-                    // Required, otherwise publish will try to re-build and discard the previous build results
-                    BuildEnvironment["NoBuild"] = "true";
+                    
                     UseCaching = false;
                     // msbuild is going to evaluate all the project files anyways, and we can't use any input caches
                     // from the builds because for some reason the caches discard some items that are computed
@@ -183,6 +217,31 @@ namespace MyRulesDotnet.Tools.Builder
                     // current implementation is quite slower than a standard `dotnet publish /graph` anyways, so 
                     // i'll be taking more of a look at optimizations later. 
                     GraphBuild = true;
+                    // Setting this as a global property invalidates the input cache files from the build action.
+                    // MSBuild will do that anyway because it's going to load a config from the cache that matches the entry
+                    // project, but MSBuild does *not* serialize project state after a build so that
+                    // BuildRequestConfiguration instance will not have a ProjectInstance attached to it, and MSBuild will
+                    // assume it ran into https://github.com/dotnet/msbuild/issues/1748, and set a global "Dummy" property
+                    // to explicitly invalidate the cache. We can set BuildRequestDataFlags.ReplaceExistingProjectInstance
+                    // to not invalidate the cache, but then publish won't have the right items calculated (at least
+                    // Content items will be missing), and we won't get the publish output we expect.
+                    // To get the caching we want we'd have to somehow persist ProjectInstance to disk from the build action
+                    // which appears to be possible via the ITranslatable interface, but all of that code has `internal`
+                    // visibility in the MSBuild assembly, and there is no one single method that we can target to persist
+                    // it to disk, but a collection of methods and classes. Might be doable with more knowledge of their
+                    // codebase, but seems rather brittle and hacky with the knowledge I currently have.
+
+                    // tl;dr: we get a performance hit because we have to re-evaluate the project file, but for now,
+                    // this is how we get the full proper output.
+                    
+                    // Required, otherwise publish will try to re-build and discard the previous build results
+                    GlobalProperties["NoBuild"] = "true";
+                    // Publish re-executes the ResolveAssemblyReferences task, which uses the same .cache file as the build
+                    // action. Since we'll have all the output from the build action, this file will be readonly in the
+                    // sandbox. MSBuild opens this with Read+Write, so it will get an Access Denied exception and produce
+                    // a warning when trying to open that file. Suppress that warning.
+                    noWarn += ";MSB3088;MSB3101";
+                    
                     break;
                 case "pack":
                     Targets = new[] {"Pack"};
@@ -190,8 +249,11 @@ namespace MyRulesDotnet.Tools.Builder
                 default:
                     throw new ArgumentException($"Unknown action {action}");
             }
+            GlobalProperties["NoWarn"] = noWarn;
         }
-        
+
+        public Dictionary<string,string> GlobalProperties { get; set; }
+
         public string Configuration { get; }
 
         public Dictionary<string,string> BuildEnvironment { get; }

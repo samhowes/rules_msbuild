@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -54,7 +53,7 @@ namespace MyRulesDotnet.Tools.Builder
         {
             var configCache = _fields.GetConfigCache(_buildManager, isBeforeBuild);
             var configurationIdsByMetadata = _fields.GetConfigIdsByMetadata(configCache);
-            
+            if (configurationIdsByMetadata!.Count <= 0) return; 
             var configCount = 0;
             var entries = new DictionaryEntry[configurationIdsByMetadata!.Count];
             var i = 0;

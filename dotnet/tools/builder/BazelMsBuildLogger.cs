@@ -1,9 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 
@@ -11,6 +9,13 @@ namespace MyRulesDotnet.Tools.Builder
 {
     public class BazelMsBuildLogger : ConsoleLogger
     {
+        private readonly string _trimPath;
+        private readonly TargetGraph? _targetGraph;
+        private readonly Stack<Cluster> _projectStack = new Stack<Cluster>();
+        private Cluster? _cluster;
+        private Stack<string> _targetStack = new Stack<string>();
+        public bool HasError { get; set; }
+
         public BazelMsBuildLogger(LoggerVerbosity verbosity, string trimPath, TargetGraph? targetGraph) : base(
             verbosity, (m) => Console.Out.Write(Trim(trimPath, m)),
             SetColor,
@@ -18,6 +23,7 @@ namespace MyRulesDotnet.Tools.Builder
         {
             _trimPath = trimPath;
             _targetGraph = targetGraph;
+            _cluster = targetGraph;
         }
 
         private static string Trim(string trimPath, string message)
@@ -56,17 +62,15 @@ namespace MyRulesDotnet.Tools.Builder
                 case ProjectStartedEventArgs pStart:
                     var clusterNameS = Trim(pStart.ProjectFile);
                     var cluster = _targetGraph!.GetOrAddCluster(clusterNameS, pStart.GlobalProperties);
-                    if (_cluster == null || cluster.UniqueName != _cluster.UniqueName)
-                    {
-                        if (_cluster != null)
-                            _projectStack.Push(_cluster);
-                        _cluster = cluster;
-                    }
+                    if (_cluster != null)
+                        _projectStack.Push(_cluster);
+                    _cluster = cluster;
                     return;
                 case ProjectFinishedEventArgs pEnd:
                     var clusterNameE = Trim(pEnd.ProjectFile);
                     if (_cluster!.Name != clusterNameE) throw new Exception(":(");
                     _projectStack.TryPop(out _cluster);
+                    
                     return;
                 case TargetSkippedEventArgs skipped:
                     AddNode(
@@ -100,7 +104,10 @@ namespace MyRulesDotnet.Tools.Builder
             _targetStack.TryPeek(out var stackParent);
             if (!wasSkipped)
                 _targetStack.Push(name);
-
+            
+            if (_cluster == null)
+                Diagnostics.WaitForDebugger();
+            
             var node = _cluster!.GetOrAdd(name);
             
             node.WasBuilt = node.WasBuilt || !wasSkipped;
@@ -128,10 +135,6 @@ namespace MyRulesDotnet.Tools.Builder
             }
         }
 
-        private Stack<string> _targetStack = new Stack<string>();
-        
-        public bool HasError { get; set; }
-
         /// <summary>
         /// Sets foreground color to color specified
         /// </summary>
@@ -151,12 +154,7 @@ namespace MyRulesDotnet.Tools.Builder
         /// When set, we'll try reading background color.
         /// </summary>
         private static bool _supportReadingBackgroundColor = true;
-
-        private readonly string _trimPath;
-        private TargetGraph? _targetGraph;
-        private Stack<Cluster> _projectStack = new Stack<Cluster>();
-        private Cluster? _cluster;
-
+        
         /// <summary>
         /// Some platforms do not allow getting current background color. There
         /// is not way to check, but not-supported exception is thrown. Assume

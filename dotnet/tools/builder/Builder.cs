@@ -32,10 +32,11 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 _targetGraph = new TargetGraph(trimPath, _context.ProjectFile, null);
             }
+
             _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot, _targetGraph);
 
             _msbuildLog = new BazelMsBuildLogger(
-                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,trimPath
+                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet, trimPath
                 , _targetGraph!);
         }
 
@@ -140,10 +141,18 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 // this is a *Build* Request, NOT a *Graph* build request
                 // build request only builds a single project in isolation, and any cache misses are considered errors.
-                // loading up the project graph to begin with enables some other optimizations. 
+                // loading up the project graph to begin with enables some other optimizations.
+                var projectGlobalProperties = new Dictionary<string, string>(projectCollection.GlobalProperties);
+                if (_action != "restore")
+                {
+                    // for some reason, setting this in restore results in:
+                    // NuGet.RestoreEx.targets(19,5): error : Object reference not set to an instance of an object.
+                    // that's fine though, we're not really using the caching from that action
+                    // projectGlobalProperties["TargetFramework"] = _context.Tfm;
+                }
                 var data = new BuildRequestData(
                     _context.ProjectFile,
-                    projectCollection.GlobalProperties,
+                    projectGlobalProperties,
                     null,
                     _context.MSBuild.Targets,
                     null,
@@ -196,72 +205,6 @@ namespace MyRulesDotnet.Tools.Builder
             return overallResult;
         }
 
-        private Dictionary<string, string> GetGlobalProperties()
-        {
-            var noWarn = "NU1603;MSB3277";
-            var globalProperties = new Dictionary<string, string>
-            {
-                ["BazelBuild"] = "true",
-                ["ImportDirectoryBuildProps"] = "true",
-                ["Configuration"] = _context.MSBuild.Configuration,
-            };
-
-            switch (_context.MSBuild.Configuration.ToLower())
-            {
-                case "debug":
-                    globalProperties["DebugSymbols"] = "true";
-                    break;
-                case "release":
-                case "fastbuild":
-                    globalProperties["DebugSymbols"] = "false";
-                    globalProperties["DebugType"] = "none";
-                    break;
-            }
-
-            if (_action == "restore")
-            {
-                // we aren't using restore's cache files in the Build actions, so different global properties are fine
-
-                // this is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
-                // ahead of time, there will be a cache miss on the restored project.
-                // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L69
-                globalProperties["ExcludeRestorePackageImports"] = "true";
-                // enables a faster nuget restore compatible with isolated builds
-                // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
-                globalProperties["RestoreUseStaticGraphEvaluation"] = "true";
-            }
-            else if (_action == "publish")
-            {
-                // Setting this as a global property invalidates the input cache files from the build action.
-                // MSBuild will do that anyway because it's going to load a config from the cache that matches the entry
-                // project, but MSBuild does *not* serialize project state after a build so that
-                // BuildRequestConfiguration instance will not have a ProjectInstance attached to it, and MSBuild will
-                // assume it ran into https://github.com/dotnet/msbuild/issues/1748, and set a global "Dummy" property
-                // to explicitly invalidate the cache. We can set BuildRequestDataFlags.ReplaceExistingProjectInstance
-                // to not invalidate the cache, but then publish won't have the right items calculated (at least
-                // Content items will be missing), and we won't get the publish output we expect.
-                // To get the caching we want we'd have to somehow persist ProjectInstance to disk from the build action
-                // which appears to be possible via the ITranslatable interface, but all of that code has `internal`
-                // visibility in the MSBuild assembly, and there is no one single method that we can target to persist
-                // it to disk, but a collection of methods and classes. Might be doable with more knowledge of their
-                // codebase, but seems rather brittle and hacky with the knowledge I currently have.
-
-                // tl;dr: we get a performance hit because we have to re-evaluate the project file, but for now, this is
-                // how we get the full proper output.
-
-                globalProperties["NoBuild"] = "true";
-                // Publish re-executes the ResolveAssemblyReferences task, which uses the same .cache file as the build
-                // action. Since we'll have all the output from the build action, this file will be readonly in the
-                // sandbox. MSBuild opens this with Read+Write, so it will get an Access Denied exception and produce
-                // a warning when trying to open that file. Suppress that warning.
-                noWarn += ";MSB3088;MSB3101";
-            }
-
-            globalProperties["NoWarn"] = noWarn;
-            Environment.SetEnvironmentVariable("NoWarn", noWarn);
-            return globalProperties;
-        }
-
         private ProjectCollection BeginBuild()
         {
             // GlobalProjectCollection loads EnvironmentVariables on Init. We use ExecRoot in the project files, we 
@@ -280,7 +223,9 @@ namespace MyRulesDotnet.Tools.Builder
                 loggers.Add(binlog);
             }
 
-            var pc = new ProjectCollection(GetGlobalProperties(), loggers, ToolsetDefinitionLocations.Default);
+            var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
+                ToolsetDefinitionLocations.Default);
+            // pc.ProjectAdded += (sender, args) => { Diagnostics.WaitForDebugger(); };
             // pc.RegisterLoggers(loggers);
             // var pc = new ProjectCollection(new Dictionary<string, string>(), loggers, ToolsetDefinitionLocations.Default);
             // pc.RegisterLogger(_msbuildLog);

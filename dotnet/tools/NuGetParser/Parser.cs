@@ -109,7 +109,7 @@ namespace NuGetParser
         {
             using var b =
                 new BuildWriter(File.Create(Path.Join(Path.GetDirectoryName(PackagesFolder), "BUILD.bazel")));
-            b.Load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "tfm_mapping", "framework_info");
+            b.Load("@my_rules_dotnet//dotnet:defs.bzl", "tfm_mapping", "framework_info");
             b.Visibility();
             b.StartRule("tfm_mapping", "tfm_mapping");
             b.SetAttr("frameworks", Tfms.OrderBy(t => t.Key).Select(t => ":" + t.Key));

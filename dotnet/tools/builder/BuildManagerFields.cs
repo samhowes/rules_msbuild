@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Build.Execution;
 using static MyRulesDotnet.Tools.Builder.BazelLogger;
