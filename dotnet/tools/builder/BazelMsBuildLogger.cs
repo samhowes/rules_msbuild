@@ -1,7 +1,9 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 
@@ -10,63 +12,124 @@ namespace MyRulesDotnet.Tools.Builder
     public class BazelMsBuildLogger : ConsoleLogger
     {
         public BazelMsBuildLogger(LoggerVerbosity verbosity, string trimPath, TargetGraph? targetGraph) : base(
-            verbosity,
-            (m) => Console.Out.Write(m.Replace(trimPath, "")),
+            verbosity, (m) => Console.Out.Write(Trim(trimPath, m)),
             SetColor,
             ResetColor)
         {
+            _trimPath = trimPath;
             _targetGraph = targetGraph;
         }
 
+        private static string Trim(string trimPath, string message)
+        {
+            return message.Replace(trimPath, "");
+        }
+
+
+        private string Trim(string s) => Trim(_trimPath, s);
+        
         public override void Initialize(IEventSource eventSource)
         {
             base.Initialize(eventSource);
-            eventSource!.ErrorRaised += (sender, args) => HasError = true;
-            if (_targetGraph != null)
-            {
-                eventSource.AnyEventRaised += ((sender, args) =>
-                {
-                    string? name = null;
-                    string? parentName = null;
-                    var wasSkipped = false;
-                    var wasBuilt = false;
-                    TargetBuiltReason reason;
-                    switch (args)
-                    {
-                        case TargetSkippedEventArgs skipped:
-                            name = skipped.TargetName;
-                            parentName = skipped.ParentTarget;
-                            wasSkipped = true;
-                            reason = skipped.BuildReason;
-                            break;
-                        case TargetStartedEventArgs started:
-                            name = started.TargetName;
-                            parentName = started.ParentTarget;
-                            wasBuilt = true;
-                            reason = started.BuildReason;
-                            break;
-                        default:
-                            return;
-                    }
-
-                    var node = _targetGraph.GetOrAdd(name);
-                    node.WasBuilt = node.WasBuilt || wasBuilt;
-                    if (parentName != null)
-                    {
-                        var parent = _targetGraph.GetOrAdd(parentName);
-                        var edge = new TargetGraph.Edge(parent, node, wasSkipped);
-                        parent.Dependencies.Add(edge);
-                        edge.Reason = reason;
-                    }
-                });
-            }
+            InitializeImpl(eventSource);
         }
+        
         public override void Initialize(IEventSource eventSource, int nodeCount)
         {
             base.Initialize(eventSource, nodeCount);
-            Initialize(eventSource);
+            InitializeImpl(eventSource);
+        }
+        
+        private void InitializeImpl(IEventSource eventSource)
+        {
+            eventSource!.ErrorRaised += (sender, args) => HasError = true;
+            if (_targetGraph != null)
+            {
+                eventSource.AnyEventRaised += AnyEvent;
+            }
         }
 
+        private void AnyEvent(object sender, BuildEventArgs args)
+        {
+            switch (args)
+            {
+                case ProjectStartedEventArgs pStart:
+                    var clusterNameS = Trim(pStart.ProjectFile);
+                    var cluster = _targetGraph!.GetOrAddCluster(clusterNameS, pStart.GlobalProperties);
+                    if (_cluster == null || cluster.UniqueName != _cluster.UniqueName)
+                    {
+                        if (_cluster != null)
+                            _projectStack.Push(_cluster);
+                        _cluster = cluster;
+                    }
+                    return;
+                case ProjectFinishedEventArgs pEnd:
+                    var clusterNameE = Trim(pEnd.ProjectFile);
+                    if (_cluster!.Name != clusterNameE) throw new Exception(":(");
+                    _projectStack.TryPop(out _cluster);
+                    return;
+                case TargetSkippedEventArgs skipped:
+                    AddNode(
+                        skipped.TargetName,
+                        true,
+                        skipped.ParentTarget,
+                        skipped.BuildReason,
+                        skipped.ProjectFile
+                        );
+                    break;
+                case TargetStartedEventArgs started:
+                    AddNode(
+                        started.TargetName,
+                        false,
+                        started.ParentTarget,
+                        started.BuildReason,
+                        started.ProjectFile
+                        );
+                    break;
+                case TargetFinishedEventArgs finished:
+                    if (_targetStack.Peek() != finished.TargetName) throw new Exception(":(");
+                    _targetStack.Pop();
+                    return;
+                default:
+                    return;
+            }
+        }
+
+        private void AddNode(string name, bool wasSkipped, string? parentName, TargetBuiltReason reason, string projectFile)
+        {
+            _targetStack.TryPeek(out var stackParent);
+            if (!wasSkipped)
+                _targetStack.Push(name);
+
+            var node = _cluster!.GetOrAdd(name);
+            
+            node.WasBuilt = node.WasBuilt || !wasSkipped;
+            // was the MSBuild task called on this target directly?
+            
+            bool forced = false;
+            if (parentName == null)
+            {
+                forced = true;
+                parentName = stackParent;
+            }
+            if (parentName != null)
+            {
+                Cluster? parentCluster = null;
+                if (forced)
+                    _projectStack.TryPeek(out parentCluster);
+                var parent = (parentCluster ?? _cluster).GetOrAdd(parentName);
+                var edge = new TargetGraph.Edge(parent, node, wasSkipped) {Forced = forced};
+                parent.Dependencies.Add(edge);
+                edge.Reason = reason;
+            }
+            else
+            {
+                node.EntryPoint = true;
+            }
+        }
+
+        private Stack<string> _targetStack = new Stack<string>();
+        
         public bool HasError { get; set; }
 
         /// <summary>
@@ -89,7 +152,10 @@ namespace MyRulesDotnet.Tools.Builder
         /// </summary>
         private static bool _supportReadingBackgroundColor = true;
 
+        private readonly string _trimPath;
         private TargetGraph? _targetGraph;
+        private Stack<Cluster> _projectStack = new Stack<Cluster>();
+        private Cluster? _cluster;
 
         /// <summary>
         /// Some platforms do not allow getting current background color. There

@@ -27,15 +27,16 @@ namespace MyRulesDotnet.Tools.Builder
             _context = context;
             _action = _context.Command.Action.ToLower();
             _buildManager = BuildManager.DefaultBuildManager;
-            _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot);
+            var trimPath = _context.Bazel.ExecRoot + Path.DirectorySeparatorChar;
             if (_context.DiagnosticsEnabled)
             {
-                _targetGraph = new TargetGraph(_context.ProjectFile);
+                _targetGraph = new TargetGraph(trimPath, _context.ProjectFile, null);
             }
+            _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot, _targetGraph);
 
             _msbuildLog = new BazelMsBuildLogger(
-                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                _context.Bazel.ExecRoot + Path.DirectorySeparatorChar, _targetGraph!);
+                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,trimPath
+                , _targetGraph!);
         }
 
         public int Build()
@@ -271,7 +272,7 @@ namespace MyRulesDotnet.Tools.Builder
             _context.SetEnvironment();
 
             var loggers = new List<ILogger>() {_msbuildLog};
-            if (_context.BinlogEnabled)
+            if (_context.DiagnosticsEnabled)
             {
                 var path = _context.OutputPath(_context.Bazel.Label.Name + ".binlog");
                 Debug($"added binlog {path}");

@@ -32,7 +32,8 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 case "launcher":
                     return MakeLauncher(command);
-                    
+                
+                case "pack":
                 case "restore":
                 case "publish":
                 case "build":

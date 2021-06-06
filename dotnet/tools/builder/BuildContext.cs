@@ -82,8 +82,7 @@ namespace MyRulesDotnet.Tools.Builder
         public string NuGetConfig { get; }
         public string Tfm { get; init; }
         public string SdkRoot { get; }
-        public bool DiagnosticsEnabled { get; set; }
-        public bool BinlogEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
+        public bool DiagnosticsEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }
 
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];
@@ -163,12 +162,13 @@ namespace MyRulesDotnet.Tools.Builder
                     // https://github.com/dotnet/msbuild/issues/5204
                     Targets = new[]
                     {
+                        "ResolveReferences",
                         "GetTargetFrameworks", 
                         "Build",
                         "GetCopyToOutputDirectoryItems",
                         "GetNativeManifest",
                         // included so Publish doesn't produce MSB3088
-                        "ResolveAssemblyReferences"
+                        "ResolveAssemblyReferences",
                     };
                     break;
                 case "publish":
@@ -178,11 +178,14 @@ namespace MyRulesDotnet.Tools.Builder
                     BuildEnvironment["NoBuild"] = "true";
                     UseCaching = false;
                     // msbuild is going to evaluate all the project files anyways, and we can't use any input caches
-                    // from the builds, so just do a graph build. It might be faster to use publish caches, but this 
+                    // from the builds because for some reason the caches discard some items that are computed
+                    // so just do a graph build. It might be faster to use publish caches, but this 
                     // current implementation is quite slower than a standard `dotnet publish /graph` anyways, so 
                     // i'll be taking more of a look at optimizations later. 
                     GraphBuild = true;
-                    
+                    break;
+                case "pack":
+                    Targets = new[] {"Pack"};
                     break;
                 default:
                     throw new ArgumentException($"Unknown action {action}");

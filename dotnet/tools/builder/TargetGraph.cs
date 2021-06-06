@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,19 +7,68 @@ using Microsoft.Build.Framework;
 
 namespace MyRulesDotnet.Tools.Builder
 {
-    public class TargetGraph
+    public class Cluster
     {
+        public string Name { get; }
+        public IDictionary<string, string>? Properties { get; }
+        public string UniqueName { get; set; }
+        public string PropertiesString { get; set; } = "";
+        public int Id { get; set; }
+        public HashSet<string> Cache { get; set; }
+
+        public Dictionary<string, TargetGraph.Node> Nodes = new(StringComparer.OrdinalIgnoreCase);
+        
+        private Dictionary<string, List<Action<TargetGraph.Node>>> _actions = new(StringComparer.OrdinalIgnoreCase);
+        public Cluster(string name, IDictionary<string,string>? properties)
+        {
+            Name = name;
+            UniqueName = name;
+            Properties = properties;
+            SetProperties(properties);
+        }
+
+        public bool SetProperties(IDictionary<string, string>? properties)
+        {
+            if (properties == null) return false;
+            PropertiesString = string.Join(";", properties.OrderBy(g => g.Key).Select(g => $"{g.Key}={g.Value}"));
+            UniqueName = Name + ";" + PropertiesString;
+            return true;
+        }
+
+        public TargetGraph.Node GetOrAdd(string name)
+        {
+            if (!Nodes.TryGetValue(name, out var node))
+            {
+                node = new TargetGraph.Node(name)
+                {
+                    Cluster = this, 
+                    Id = name + Id,
+                    FromCache = Cache.Contains(name)
+                };
+                Nodes[name] = node;
+            }
+
+            return node;
+        }
+    }
+    
+    public class TargetGraph : Cluster
+    {
+        private readonly string _trimPath;
+
         public class Node
         {
             public string Name { get; }
-            public Dictionary<string, string> Properties { get; set; } = new();
             public List<Edge> Dependencies { get; } = new();
             public bool WasBuilt { get; set; }
+            public bool EntryPoint { get; set; }
+            public bool FromCache { get; set; }
+            public Cluster? Cluster { get; set; }
+            public string Id { get; set; }
 
             public Node(string name)
             {
                 Name = name;
-                
             }
         }
         
@@ -28,6 +78,7 @@ namespace MyRulesDotnet.Tools.Builder
             public Node To { get; }
             public bool WasSkipped { get; }
             public TargetBuiltReason Reason { get; set; }
+            public bool Forced { get; set; }
 
             public Edge(Node from, Node to, bool wasSkipped = false)
             {
@@ -36,81 +87,155 @@ namespace MyRulesDotnet.Tools.Builder
                 WasSkipped = wasSkipped;
             }
         }
+        public Dictionary<string, Cluster> Clusters { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-        public TargetGraph(string entryProject)
+        public Dictionary<string, HashSet<string>> Cached { get; } =
+            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+        public string ToDot() => new DotWriter().Write(this);
+
+        public Cluster GetOrAddCluster(string name, IDictionary<string, string>? properties) 
         {
-            EntryProject = entryProject;
-        }
-        
-        public string EntryProject { get; }
-
-        public Dictionary<string, Node> Nodes = new(StringComparer.OrdinalIgnoreCase);
-        public string ToDot()
-        {
-            var sb = new StringBuilder();
-
-            sb.Append("digraph g\n{\n\tnode [shape=box style=filled]\n");
-
-            foreach (var (_,node) in Nodes)
+            var cluster = new Cluster(name, properties);
+            if (!Clusters.TryGetValue(cluster.UniqueName, out var existing))
             {
-                var nodeId = node.Name;
-                var nodeName = nodeId;
-                
-                var globalPropertiesString = string.Join(
-                    "<br/>",
-                    node.Properties.OrderBy(kvp => kvp.Key)
-                        .Select(kvp => $"{kvp.Key}={kvp.Value}"));
-
-                sb.Append('\t')
-                    .Append(nodeId)
-                    .Append(" [label=<").Append(nodeName).Append("<br/>")
-                    .Append(globalPropertiesString).Append(">");
-                var fill = node.WasBuilt ? "aliceblue" : "white";
-                sb.Append($" fillcolor={fill}");
-
-                sb.AppendLine("]");
-
-                foreach (var dep in node.Dependencies)
+                cluster.Id = Clusters.Count;
+                Clusters[cluster.UniqueName] = cluster;
+                Cached.TryGetValue(name, out var cache);
+                cluster.Cache = cache ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                cluster = existing;
+                var oldName = cluster.UniqueName;
+                if (cluster.SetProperties(properties))
                 {
-                    // var dep = (Node)node.Dependencies[depKey!];
-                    var referenceId = dep.To.Name;
-
-                    sb.Append('\t').Append(nodeId).Append(" -> ").Append(referenceId);
-                    var color = dep.WasSkipped ? "darkgray" : "blue";
-                    var attrs = new Dictionary<string, string>();
-                    
-                    if (dep.Reason == TargetBuiltReason.BeforeTargets)
-                    {
-                        color = "darkorange2";
-                        attrs["dir"] = "back";
-                    }
-
-                    attrs["color"] = color;
-                    sb.Append("[");
-                    sb.AppendJoin(" ", attrs.Select(p => $"{p.Key}={p.Value}"));
-                    sb.AppendLine("]");
+                    Clusters.Remove(oldName);
+                    Clusters[cluster.UniqueName] = cluster;
                 }
             }
 
-            sb.Append("}");
-
-            return sb.ToString();
+            return cluster;
         }
 
-        public Node Add(string name)
+        public TargetGraph(string trimPath, string projectPath, IDictionary<string, string>? properties)
+            : base(projectPath.Replace(trimPath, ""), properties)
         {
-            if (!Nodes.TryGetValue(name, out var node))
+            _trimPath = trimPath;
+            Cached[Name] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        public void AddCached(string projectPath, string targetName)
+        {
+            var trimmed = projectPath.Replace(_trimPath, "");
+            if (!Cached.TryGetValue(trimmed, out var targets))
             {
-                node = new Node(name);
-                Nodes[name] = node;
+                targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                Cached[trimmed] = targets;
             }
 
-            return node;
+            targets.Add(targetName);
+        }
+    }
+
+    public class DotWriter
+    {
+        private StringBuilder _sb = new StringBuilder();
+        private int _indentLevel;
+
+        void InlineAttributes(params (string name, string value)[] attrs)
+        {
+            _sb.Append(" [");
+            Attributes(attrs);
+            _sb.AppendLine("]");
+        }
+        void Attributes(params (string name, string value)[] attrs)
+        {
+            _sb.AppendJoin(" ", attrs.Select(p => $"{p.name}={p.value}"));
         }
 
-        public Node GetOrAdd(string name)
+        StringBuilder Indent()
         {
-            return Add(name);
+            for (int i = 0; i < _indentLevel; i++)
+            {
+                _sb.Append('\t');
+            }
+
+            return _sb;
+        }
+        public string Write(TargetGraph g)
+        {
+            _sb.Append("digraph g\n{\n\tnode [shape=box style=filled]\n");
+            _indentLevel++;
+
+            var clusters = g.Clusters.Values.ToList();
+            foreach (var cluster in clusters)
+            {
+                Indent().AppendLine($"subgraph cluster_{cluster.Id} {{");
+                _indentLevel++;
+                Indent();
+                Attributes(("label", $"<{cluster.Name}<br/>{cluster.PropertiesString}>"));
+                _sb.AppendLine();
+                
+                foreach (var node in cluster.Nodes.Values)
+                {
+                    Indent().Append(node.Id);
+
+                    var nodeAttrs = new List<(string, string)>();
+                    nodeAttrs.Add(("label", $"<{node.Name}>"));
+
+                    string fill = "white";
+                    if (node.EntryPoint) fill = "chartreuse2";
+                    else if (node.WasBuilt && node.FromCache) fill = "tomato";
+                    else if (node.WasBuilt) fill = "aliceblue";
+                    nodeAttrs.Add(("fillcolor", fill));
+
+                    if (node.FromCache)
+                    {
+                        nodeAttrs.Add(("penwidth", "2.0"));
+                        nodeAttrs.Add(("color", "darkgoldenrod1"));
+                    }
+
+                    InlineAttributes(nodeAttrs.ToArray());
+
+                    foreach (var dep in node.Dependencies)
+                    {
+                        Indent().Append(node.Id).Append(" -> ").Append(dep.To.Id);
+                        string? color = null;
+                        if (dep.WasSkipped)
+                            color = "darkgray";
+                        var attrs = new List<(string, string)>();
+
+                        if (dep.Forced)
+                        {
+                            color ??= "darkorchid";
+                            attrs.Add(("style", "bold"));
+                        }
+                        else if (dep.Reason == TargetBuiltReason.BeforeTargets ||
+                                 dep.Reason == TargetBuiltReason.AfterTargets)
+                        {
+                            color ??= "darkorange2";
+                            attrs.Add(("dir", "back"));
+                        }
+                        else
+                        {
+                            color ??= "blue";
+                        }
+
+                        attrs.Add(("color", color));
+                        InlineAttributes(attrs.ToArray());
+                    }
+                }
+
+                _indentLevel--;
+                Indent();
+                _sb.AppendLine("}");
+            }
+
+            _indentLevel--;
+            _sb.Append("}");
+
+            return _sb.ToString();
         }
     }
 }
