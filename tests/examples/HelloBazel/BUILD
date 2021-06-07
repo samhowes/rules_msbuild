@@ -4,8 +4,10 @@ load("//dotnet:defs.bzl", "msbuild_binary")
 msbuild_binary(
     name = "HelloBazel",
     srcs = glob(["Program.cs"]),
+    packable = True,
     project_file = "HelloBazel.csproj",
     target_framework = "netcoreapp3.1",
+    version = "1.2.3",
     visibility = ["//visibility:public"],
 )
 
@@ -17,6 +19,7 @@ build_test(
         ],
         "restore": [
             "project.assets.json",
+            "HelloBazel.csproj.bazel.props",
             "HelloBazel.csproj.nuget.dgspec.json",
             "HelloBazel.csproj.nuget.g.props",
             "HelloBazel.csproj.nuget.g.targets",
@@ -56,6 +59,15 @@ build_test(
             "HelloBazel.dll",
             "HelloBazel.deps.json",
             "HelloBazel.runtimeconfig.json",
+        ],
+    },
+)
+
+build_test(
+    name = "HelloBazel_nuget_test",
+    expected_files = {
+        "": [
+            "HelloBazel.1.2.3.nupkg",
         ],
     },
 )

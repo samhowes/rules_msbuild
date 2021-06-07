@@ -23,7 +23,7 @@ namespace MyRulesDotnet.Tools.Builder
             _context = context;
             
             var regexString =
-                $"(?<output_base>{Regex.Escape(_context.Bazel.OutputBase)}(?<exec_root>{Regex.Escape(_context.Bazel.Suffix)})?)";
+                $"(?<output_base>{Regex.Escape(_context.Bazel.OutputBase)}(?<exec_root>{Regex.Escape("")})?)";
 
             // to support files on windows that escape backslashes i.e. json.
             regexString = regexString.Replace(@"\\", @"\\(\\)?");

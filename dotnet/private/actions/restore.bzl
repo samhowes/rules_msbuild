@@ -11,6 +11,12 @@ def restore(ctx, dotnet):
     outputs = [assets_json, restore_dir]
 
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore")
+    args.add_all([
+        "--version",
+        ctx.attr.version,
+        "--package_version",
+        ctx.attr.package_version,
+    ])
 
     outputs.extend(cmd_outputs)
 

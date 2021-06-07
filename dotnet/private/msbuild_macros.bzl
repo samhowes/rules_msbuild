@@ -8,6 +8,10 @@ load(
     "msbuild_restore",
     "msbuild_test",
 )
+load(
+    "//dotnet/private/rules:nuget.bzl",
+    "nuget_package",
+)
 
 def msbuild_directory_macro(
         name = "msbuild_directory",
@@ -97,12 +101,19 @@ def _msbuild_assembly(
         l = Label(d)
         restore_deps.append(l.relative(":{}_restore".format(l.name)))
 
+    is_packable = kwargs.pop("packable", False)
+    version = kwargs.pop("version", None)
+    package_version = kwargs.pop("package_version", version)
+
     msbuild_restore(
         name = restore_name,
         target_framework = target_framework,
         project_file = project_file,
         deps = restore_deps,
-        **kwargs
+        **dicts.add(kwargs, dict(
+            version = version,
+            package_version = package_version,
+        ))
     )
 
     assembly_impl(
@@ -114,6 +125,13 @@ def _msbuild_assembly(
         deps = deps,
         **dicts.add(kwargs, assembly_args)
     )
+
+    if is_packable:
+        nuget_package(
+            name = name + "_nuget",
+            version = package_version,
+            target = ":" + name,
+        )
 
 def _get_srcs(srcs):
     if srcs != None:

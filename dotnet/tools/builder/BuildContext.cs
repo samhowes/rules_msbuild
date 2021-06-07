@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,15 +15,6 @@ namespace MyRulesDotnet.Tools.Builder
     public class BuildContext
     {
         public Command Command { get; }
-
-        // bazel always sends us POSIX paths
-        private const char BazelPathChar = '/';
-
-        public BuildContext()
-        {
-            // for testing
-            Command = new Command();
-        }
 
         public void SetEnvironment()
         {
@@ -70,14 +62,24 @@ namespace MyRulesDotnet.Tools.Builder
             
             IsTest = command.NamedArgs.TryGetValue("is_test", out _);
 
+            ProjectBazelProps = new Dictionary<string, string>();
+            void TrySetProp(string arg, string name)
+            {
+                if (command.NamedArgs.TryGetValue(arg, out var value)
+                    && !string.IsNullOrEmpty(value))
+                    ProjectBazelProps![name] = value;
+            }
+            TrySetProp("version", "Version");
+            TrySetProp("package_version", "PackageVersion");
+            
             if (DiagnosticsEnabled)
             {
                 MSBuild.BuildEnvironment["NUGET_SHOW_STACK"] = "true";
             }
         }
 
-        public bool IsExecutable { get; set; }
-
+        public Dictionary<string,string> ProjectBazelProps { get; }
+        public bool IsExecutable { get; }
         public string ProjectDirectory { get; }
 
         // ReSharper disable once InconsistentNaming
@@ -89,7 +91,8 @@ namespace MyRulesDotnet.Tools.Builder
         public string SdkRoot { get; }
         public bool DiagnosticsEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }
-
+        public string? Version { get; }
+        public string? PackageVersion { get; }
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];
     }
     
@@ -97,9 +100,16 @@ namespace MyRulesDotnet.Tools.Builder
     {
         public class BazelLabel
         {
-            public string Workspace { get; init; }
-            public string Package { get; init; }
-            public string Name { get; init; }
+            public BazelLabel(string workspace, string package, string name)
+            {
+                Workspace = workspace;
+                Package = package;
+                Name = name;
+            }
+
+            public string Workspace { get; }
+            public string Package { get; }
+            public string Name { get; }
         }
         public BazelContext(Command command)
         {
@@ -109,12 +119,10 @@ namespace MyRulesDotnet.Tools.Builder
             // Suffix = ExecRoot[OutputBase.Length..];
             BinDir = Path.Combine(ExecRoot, command.NamedArgs["bazel_bin_dir"]);
                 
-            Label = new BazelLabel()
-            {
-                Workspace = command.NamedArgs["workspace"],
-                Package = command.NamedArgs["package"],
-                Name = command.NamedArgs["label_name"],
-            };
+            Label = new BazelLabel(
+                command.NamedArgs["workspace"], 
+                command.NamedArgs["package"], 
+                command.NamedArgs["label_name"]);
 
             OutputDir = Path.Combine(BinDir, Label.Package);
         }
@@ -122,7 +130,6 @@ namespace MyRulesDotnet.Tools.Builder
         public string OutputBase { get; }
         public string OutputDir { get; }
         public BazelLabel Label { get; }
-        public string Suffix { get; set; }
         public string BinDir { get; }
         public string ExecRoot { get; }
             
@@ -265,6 +272,7 @@ namespace MyRulesDotnet.Tools.Builder
         public string[] Targets { get; }
 
         public string BaseIntermediateOutputPath { get; }
+        public string RestoreDir => BaseIntermediateOutputPath;
         public string IntermediateOutputPath { get; }
         public string OutputPath { get; }
     }

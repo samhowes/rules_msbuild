@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
@@ -148,7 +149,10 @@ namespace MyRulesDotnet.Tools.Builder
                     // for some reason, setting this in restore results in:
                     // NuGet.RestoreEx.targets(19,5): error : Object reference not set to an instance of an object.
                     // that's fine though, we're not really using the caching from that action
-                    // projectGlobalProperties["TargetFramework"] = _context.Tfm;
+                    // setting this as a global property for the project allows nuget pack to re-use the cache produced
+                    // from the build action, because the Pack target builds certain child targets with this as a global
+                    // property
+                    projectGlobalProperties["TargetFramework"] = _context.Tfm;
                 }
                 var data = new BuildRequestData(
                     _context.ProjectFile,
@@ -156,23 +160,25 @@ namespace MyRulesDotnet.Tools.Builder
                     null,
                     _context.MSBuild.Targets,
                     null,
-                    // replace the existing config that we'll load from cache
-                    // not setting this results in MSBuild setting a global unique property to protect against 
-                    // https://github.com/dotnet/msbuild/issues/1748
-                    // todo: update above comment
-                    // setting to replace means that publish will discard item groups that were previoiusly built, 
-                    // resulting in publish not publishing content items.
-
                     // Keep the project items that we have discovered for publish so publish doesn't do a re-build.
                     flags
                 );
                 var submission = _buildManager.PendBuildRequest(data);
+
+                
+                if (_action == "restore" && !Directory.Exists(_context.MSBuild.RestoreDir))
+                {
+                    Directory.CreateDirectory(_context.MSBuild.RestoreDir);
+                }
+                
                 submission.ExecuteAsync(
                     _ => source.SetResult(
                         (submission.BuildResult, submission.BuildResult.ProjectStateAfterBuild)),
                     submission);
             }
 
+            WriteBazelProps();
+            
             var (result, project) = source.Task.GetAwaiter().GetResult();
 
             if (project != null)
@@ -203,6 +209,24 @@ namespace MyRulesDotnet.Tools.Builder
             }
 
             return overallResult;
+        }
+
+        private void WriteBazelProps()
+        {
+            if (_action != "restore" || !_context.ProjectBazelProps.Any()) return;
+
+            var props = string.Join("\n        ",
+                _context.ProjectBazelProps.Select((pair) => $"<{pair.Key}>{pair.Value}</{pair.Key}>"));
+            File.WriteAllText(
+                // msbuild auto-imports <project-file>.*.props from the restore dir
+                Path.Combine(_context.MSBuild.RestoreDir, Path.GetFileName(_context.ProjectFile) + ".bazel.props"),
+                $@"<Project>
+    <PropertyGroup>
+        {props}
+    </PropertyGroup>
+</Project>
+"
+            );
         }
 
         private ProjectCollection BeginBuild()
