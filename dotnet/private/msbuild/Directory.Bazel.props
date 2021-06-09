@@ -6,23 +6,29 @@
         <!-- Override MSBuild output path properties -->
 
         <!--
-            Traditionally set to `bin/Debug` and causes outputs to go in `bin/Debug/<tfm>`
+            Defaults to `bin/Debug` and causes outputs to go in `bin/Debug/<tfm>`
             We're in `bazel-bin/<cpu>-<config>` already, so these are silly, we'll keep <tfm> though.
             Also, use $(BINDIR) (set by the builder) to tell MSBuild to output to Bazel's Output structure
         -->
         <OutputPath>$(BINDIR)/$(BazelPackage)</OutputPath>
         <!--
-            Traditionally set to `obj`, but restore and build are two separate bazel actions, and thus they cannot
+            Defaults to `obj`, but restore and build are two separate bazel actions, and thus they cannot
             output to the same generated directory structure. (Well, they could, but we are only telling bazel about
             the output directories, known as Tree Artifacts, and not the individual output files, since MSBuild has
             _a lot_ of output files, and we just don't need to track anything other than the directory.
          -->
         <BaseIntermediateOutputPath>$(OutputPath)/restore/</BaseIntermediateOutputPath>
         <!--
-            Traditionally set to `obj` then `obj/Debug` by .NET, as said before, appending the MSBuild configuration
+            Defaults to `obj` then `obj/Debug` by .NET, as said before, appending the MSBuild configuration
             is silly.
         -->
         <IntermediateOutputPath>$(OutputPath)/obj/</IntermediateOutputPath>
+
+        <!--  Defaults to $(BaseOutputPath)$(Configuration)\ in NuGet.Build.Tasks.Pack.targets -->
+        <PackageOutputPath>$(OutputPath)</PackageOutputPath>
+        <!--  Defaults to $(BaseIntermediateOutputPath)$(Configuration)\ NuGet.Build.Tasks.Pack.targets -->
+        <NuspecOutputPath>$(OutputPath)</NuspecOutputPath>
+
         <DeterministicSourcePaths>true</DeterministicSourcePaths>
     </PropertyGroup>
 

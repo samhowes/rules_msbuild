@@ -1,12 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Linq;
 using static MyRulesDotnet.Tools.Builder.BazelLogger;
 
 namespace MyRulesDotnet.Tools.Builder
@@ -29,7 +23,7 @@ namespace MyRulesDotnet.Tools.Builder
             _context = context;
             
             var regexString =
-                $"(?<output_base>{Regex.Escape(_context.Bazel.OutputBase)}(?<exec_root>{Regex.Escape(_context.Bazel.Suffix)})?)";
+                $"(?<output_base>{Regex.Escape(_context.Bazel.OutputBase)}(?<exec_root>{Regex.Escape("")})?)";
 
             // to support files on windows that escape backslashes i.e. json.
             regexString = regexString.Replace(@"\\", @"\\(\\)?");

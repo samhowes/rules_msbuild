@@ -1,0 +1,22 @@
+digraph g
+{
+	node [shape=box style=filled]
+	subgraph cluster_1 {
+		label=<tests/examples/HelloBazel/HelloBazel.csproj<br/>BuildProjectReferences=false;Configuration=fastbuild;DebugSymbols=false;DebugType=none;ExcludeRestorePackageImports=true;NoWarn=NU1603;MSB3277;RestoreUseStaticGraphEvaluation=true>
+		_CheckForUnsupportedTargetFramework1 [label=<_CheckForUnsupportedTargetFramework> fillcolor=white]
+		Restore1 [label=<Restore> fillcolor=chartreuse2]
+		Restore1 -> _CheckForUnsupportedTargetFramework1 [dir=back color=darkgray]
+		Restore1 -> _CollectTargetFrameworkForTelemetry1 [dir=back color=darkorange2]
+		Restore1 -> _CheckForUnsupportedNETCoreVersion1 [dir=back color=darkorange2]
+		Restore1 -> _CheckForEolTargetFrameworks1 [dir=back color=darkgray]
+		Restore1 -> _CheckForUnsupportedCppNETCoreVersion1 [dir=back color=darkorange2]
+		Restore1 -> _CheckForUnsupportedNETStandardVersion1 [dir=back color=darkgray]
+		Restore1 -> _CheckForUnsupportedTargetFrameworkAndFeatureCombination1 [dir=back color=darkgray]
+		_CollectTargetFrameworkForTelemetry1 [label=<_CollectTargetFrameworkForTelemetry> fillcolor=aliceblue]
+		_CheckForUnsupportedNETCoreVersion1 [label=<_CheckForUnsupportedNETCoreVersion> fillcolor=aliceblue]
+		_CheckForEolTargetFrameworks1 [label=<_CheckForEolTargetFrameworks> fillcolor=white]
+		_CheckForUnsupportedCppNETCoreVersion1 [label=<_CheckForUnsupportedCppNETCoreVersion> fillcolor=aliceblue]
+		_CheckForUnsupportedNETStandardVersion1 [label=<_CheckForUnsupportedNETStandardVersion> fillcolor=white]
+		_CheckForUnsupportedTargetFrameworkAndFeatureCombination1 [label=<_CheckForUnsupportedTargetFrameworkAndFeatureCombination> fillcolor=white]
+	}
+}

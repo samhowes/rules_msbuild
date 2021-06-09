@@ -47,14 +47,14 @@ namespace MyRulesDotnet.Tests.Tools
             {
 
             };
-            _context = new BuildContext()
-            {
-                Command = {},
-                Tfm = "foo",
-                // BaseIntermediateOutputPath = _testDir,
-                // BazelOutputBase = _outputBase,
-                // ExecRoot = Combine(_outputBase, "baz")
-            };
+            // _context = new BuildContext()
+            // {
+            //     Command = {},
+            //     Tfm = "foo",
+            //     // BaseIntermediateOutputPath = _testDir,
+            //     // BazelOutputBase = _outputBase,
+            //     // ExecRoot = Combine(_outputBase, "baz")
+            // };
             
             _contents = Combine(_outputBase, "bam");
             _processor = new FakeCommandOutputProcessor(_context);

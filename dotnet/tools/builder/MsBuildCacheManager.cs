@@ -11,14 +11,21 @@ namespace MyRulesDotnet.Tools.Builder
     public class MsBuildCacheManager
     {
         private readonly string _execRoot;
+        private readonly TargetGraph? _targetGraph;
         private readonly BuildManager _buildManager;
         private readonly BuildManagerFields _fields;
 
         private static readonly string Root = Path.DirectorySeparatorChar == '\\' ? "C:\\" : "/";
+        private Dictionary<int, string>? _projectPathsByConfigId;
 
-        public MsBuildCacheManager(BuildManager buildManager, string execRoot)
+        public MsBuildCacheManager(BuildManager buildManager, string execRoot, TargetGraph? targetGraph)
         {
             _execRoot = execRoot;
+            _targetGraph = targetGraph;
+            if (_targetGraph != null)
+            {
+                _projectPathsByConfigId = new Dictionary<int, string>();
+            }
             _buildManager = buildManager;
             _fields = new BuildManagerFields();
         }
@@ -46,7 +53,7 @@ namespace MyRulesDotnet.Tools.Builder
         {
             var configCache = _fields.GetConfigCache(_buildManager, isBeforeBuild);
             var configurationIdsByMetadata = _fields.GetConfigIdsByMetadata(configCache);
-            
+            if (configurationIdsByMetadata!.Count <= 0) return; 
             var configCount = 0;
             var entries = new DictionaryEntry[configurationIdsByMetadata!.Count];
             var i = 0;
@@ -61,11 +68,16 @@ namespace MyRulesDotnet.Tools.Builder
             foreach (var entry in entries)
             {
                 var metadata = entry.Key;
-                var configId = entry.Value;
+                var configId = (int)entry.Value!;
                 
                 configurationIdsByMetadata.Remove(metadata);
                 var path = (string) metadataProjectPath.GetValue(metadata)!;
-                metadataProjectPath.SetValue(metadata,path.Replace(target, replacement));
+                var expandedPath = path.Replace(target, replacement);
+                if (isBeforeBuild && _projectPathsByConfigId != null)
+                {
+                    _projectPathsByConfigId[configId] = expandedPath;
+                }
+                metadataProjectPath.SetValue(metadata, expandedPath);
                 configurationIdsByMetadata[metadata] = configId;
             }
 
@@ -93,6 +105,11 @@ namespace MyRulesDotnet.Tools.Builder
             {
                 foreach (var (targetName, targetResult) in buildResult.ResultsByTarget)
                 {
+                    if (isBeforeBuild && _targetGraph != null)
+                    {
+                        _targetGraph.AddCached(_projectPathsByConfigId![buildResult.ConfigurationId], targetName);
+                    }
+                    
                     Verbose(targetName);
                     foreach (var item in targetResult.Items)
                     {

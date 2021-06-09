@@ -120,7 +120,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_builder_cmd(ctx, dotnet, action):
+def make_builder_cmd(ctx, dotnet, action, project_file = None):
     outputs = []
     add_diagnostics(ctx, dotnet, outputs)
 
@@ -131,7 +131,7 @@ def make_builder_cmd(ctx, dotnet, action):
         "--sdk_root",
         dotnet.sdk.sdk_root.path,
         "--project_file",
-        ctx.file.project_file,
+        project_file if project_file != None else ctx.file.project_file,
         "--bazel_bin_dir",
         ctx.bin_dir.path,
         "--tfm",

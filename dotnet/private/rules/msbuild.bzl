@@ -1,11 +1,13 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "DotnetSdkInfo", "NuGetPackageInfo")
-load("//dotnet/private:context.bzl", "dotnet_context", "dotnet_exec_context")
+load("//dotnet/private:context.bzl", "dotnet_exec_context")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load("//dotnet/private/actions:publish.bzl", "publish")
 load("//dotnet/private/actions:tool_binary.bzl", "build_tool_binary")
 load("//dotnet/private/actions:assembly.bzl", "build_assembly")
 load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
+TOOLCHAINS = ["@my_rules_dotnet//dotnet:toolchain"]
 
 def _msbuild_tool_binary_impl(ctx):
     dotnet = dotnet_exec_context(ctx, True)
@@ -87,7 +89,6 @@ def _library_impl(ctx):
         ),
     ]
 
-_TOOLCHAINS = ["@my_rules_dotnet//dotnet:toolchain"]
 _COMMON_ATTRS = {
     "project_file": attr.label(allow_single_file = True, mandatory = True),
 }
@@ -116,7 +117,7 @@ msbuild_publish = rule(
         "target": attr.label(mandatory = True, providers = [DotnetLibraryInfo]),
     }),
     executable = False,
-    toolchains = _TOOLCHAINS,
+    toolchains = TOOLCHAINS,
 )
 
 _RESTORE_ATTRS = dicts.add(_COMMON_ATTRS, {
@@ -131,9 +132,11 @@ msbuild_restore = rule(
             [DotnetRestoreInfo],
             [NuGetPackageInfo],
         ]),
+        "version": attr.string(),
+        "package_version": attr.string(),
     }),
     executable = False,
-    toolchains = _TOOLCHAINS,
+    toolchains = TOOLCHAINS,
 )
 
 _ASSEMBLY_ATTRS = dicts.add(_RESTORE_ATTRS, {
@@ -151,7 +154,7 @@ msbuild_library = rule(
     _library_impl,
     attrs = _ASSEMBLY_ATTRS,
     executable = False,
-    toolchains = _TOOLCHAINS,
+    toolchains = TOOLCHAINS,
 )
 
 _EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, {
@@ -165,7 +168,7 @@ msbuild_binary = rule(
     _binary_impl,
     attrs = _EXECUTABLE_ATTRS,
     executable = True,
-    toolchains = _TOOLCHAINS,
+    toolchains = TOOLCHAINS,
 )
 
 msbuild_test = rule(
@@ -173,5 +176,5 @@ msbuild_test = rule(
     attrs = _EXECUTABLE_ATTRS,
     executable = True,
     test = True,
-    toolchains = _TOOLCHAINS,
+    toolchains = TOOLCHAINS,
 )

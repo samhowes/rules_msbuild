@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,15 +15,6 @@ namespace MyRulesDotnet.Tools.Builder
     public class BuildContext
     {
         public Command Command { get; }
-
-        // bazel always sends us POSIX paths
-        private const char BazelPathChar = '/';
-
-        public BuildContext()
-        {
-            // for testing
-            Command = new Command();
-        }
 
         public void SetEnvironment()
         {
@@ -69,10 +61,25 @@ namespace MyRulesDotnet.Tools.Builder
             ProjectDirectory = Path.GetDirectoryName(ProjectFile)!;
             
             IsTest = command.NamedArgs.TryGetValue("is_test", out _);
+
+            ProjectBazelProps = new Dictionary<string, string>();
+            void TrySetProp(string arg, string name)
+            {
+                if (command.NamedArgs.TryGetValue(arg, out var value)
+                    && !string.IsNullOrEmpty(value))
+                    ProjectBazelProps![name] = value;
+            }
+            TrySetProp("version", "Version");
+            TrySetProp("package_version", "PackageVersion");
+            
+            if (DiagnosticsEnabled)
+            {
+                MSBuild.BuildEnvironment["NUGET_SHOW_STACK"] = "true";
+            }
         }
 
-        public bool IsExecutable { get; set; }
-
+        public Dictionary<string,string> ProjectBazelProps { get; }
+        public bool IsExecutable { get; }
         public string ProjectDirectory { get; }
 
         // ReSharper disable once InconsistentNaming
@@ -82,10 +89,10 @@ namespace MyRulesDotnet.Tools.Builder
         public string NuGetConfig { get; }
         public string Tfm { get; init; }
         public string SdkRoot { get; }
-        public bool DiagnosticsEnabled { get; set; }
-        public bool BinlogEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
+        public bool DiagnosticsEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }
-
+        public string? Version { get; }
+        public string? PackageVersion { get; }
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];
     }
     
@@ -93,9 +100,16 @@ namespace MyRulesDotnet.Tools.Builder
     {
         public class BazelLabel
         {
-            public string Workspace { get; init; }
-            public string Package { get; init; }
-            public string Name { get; init; }
+            public BazelLabel(string workspace, string package, string name)
+            {
+                Workspace = workspace;
+                Package = package;
+                Name = name;
+            }
+
+            public string Workspace { get; }
+            public string Package { get; }
+            public string Name { get; }
         }
         public BazelContext(Command command)
         {
@@ -105,12 +119,10 @@ namespace MyRulesDotnet.Tools.Builder
             // Suffix = ExecRoot[OutputBase.Length..];
             BinDir = Path.Combine(ExecRoot, command.NamedArgs["bazel_bin_dir"]);
                 
-            Label = new BazelLabel()
-            {
-                Workspace = command.NamedArgs["workspace"],
-                Package = command.NamedArgs["package"],
-                Name = command.NamedArgs["label_name"],
-            };
+            Label = new BazelLabel(
+                command.NamedArgs["workspace"], 
+                command.NamedArgs["package"], 
+                command.NamedArgs["label_name"]);
 
             OutputDir = Path.Combine(BinDir, Label.Package);
         }
@@ -118,7 +130,6 @@ namespace MyRulesDotnet.Tools.Builder
         public string OutputBase { get; }
         public string OutputDir { get; }
         public BazelLabel Label { get; }
-        public string Suffix { get; set; }
         public string BinDir { get; }
         public string ExecRoot { get; }
             
@@ -140,6 +151,25 @@ namespace MyRulesDotnet.Tools.Builder
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
 
             var propsDirectory = Path.GetDirectoryName(directoryBazelPropsPath);
+            
+            var noWarn = "NU1603;MSB3277";
+            GlobalProperties = new Dictionary<string, string>
+            {
+                ["Configuration"] = Configuration,
+                ["BuildProjectReferences"] = "false"
+            };
+
+            switch (Configuration.ToLower())
+            {
+                case "debug":
+                    GlobalProperties["DebugSymbols"] = "true";
+                    break;
+                case "release":
+                case "fastbuild":
+                    GlobalProperties["DebugSymbols"] = "false";
+                    GlobalProperties["DebugType"] = "none";
+                    break;
+            }
 
             BuildEnvironment = new Dictionary<string, string>()
             {
@@ -152,43 +182,107 @@ namespace MyRulesDotnet.Tools.Builder
                 // msbuild's shared compilation is not compatible with sandboxing because it wll delegate compilation to aonother 
                 // process that won't have access to the sandbox requesting the build.
                 ["UseSharedCompilation"] = "false",
+                ["BazelBuild"] = "true",
+                ["ImportDirectoryBuildProps"] = "true",
             };
-            
+
             switch (action)
             {
                 case "restore":
                     Targets = new[] {"Restore"};
+                    // we aren't using restore's cache files in the Build actions, so different global properties are fine
+
+                    // this is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
+                    // ahead of time, there will be a cache miss on the restored project.
+                    // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L69
+                    GlobalProperties["ExcludeRestorePackageImports"] = "true";
+                    // enables a faster nuget restore compatible with isolated builds
+                    // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
+                    GlobalProperties["RestoreUseStaticGraphEvaluation"] = "true";
                     break;
                 case "build":
                     // https://github.com/dotnet/msbuild/issues/5204
-                    Targets = new[]
+                    Requests = new[]
                     {
-                        "GetTargetFrameworks", 
-                        "Build",
-                        "GetCopyToOutputDirectoryItems",
-                        "GetNativeManifest",
-                        // included so Publish doesn't produce MSB3088
-                        "ResolveAssemblyReferences"
+                        // for some reason, setting this in restore results in:
+                        // NuGet.RestoreEx.targets(19,5): error : Object reference not set to an instance of an object.
+                        // that's fine though, we're not really using the caching from that action
+                        // setting this as a global property for the project allows nuget pack to re-use the cache produced
+                        // from the build action, because the Pack target builds certain child targets with this as a global
+                        // property
+                        // new BuildRequest(new[]
+                        // {
+                        //     "Build",
+                        //     "GetCopyToOutputDirectoryItems"
+                        // }, ("TargetFramework", tfm)),
+                        new BuildRequest(new[]
+                        {
+                            // "ResolveReferences",
+                            "GetTargetFrameworks",
+                            "Build",
+                            "GetCopyToOutputDirectoryItems",
+                            "GetTargetPath",
+                            "GetNativeManifest",
+                            // included so Publish doesn't produce MSB3088
+                            // "ResolveAssemblyReferences",
+                        })
                     };
                     break;
                 case "publish":
                     Targets = new[] {"Publish"};
                     
-                    // Required, otherwise publish will try to re-build and discard the previous build results
-                    BuildEnvironment["NoBuild"] = "true";
+                    
                     UseCaching = false;
                     // msbuild is going to evaluate all the project files anyways, and we can't use any input caches
-                    // from the builds, so just do a graph build. It might be faster to use publish caches, but this 
+                    // from the builds because for some reason the caches discard some items that are computed
+                    // so just do a graph build. It might be faster to use publish caches, but this 
                     // current implementation is quite slower than a standard `dotnet publish /graph` anyways, so 
                     // i'll be taking more of a look at optimizations later. 
                     GraphBuild = true;
+                    // Setting this as a global property invalidates the input cache files from the build action.
+                    // MSBuild will do that anyway because it's going to load a config from the cache that matches the entry
+                    // project, but MSBuild does *not* serialize project state after a build so that
+                    // BuildRequestConfiguration instance will not have a ProjectInstance attached to it, and MSBuild will
+                    // assume it ran into https://github.com/dotnet/msbuild/issues/1748, and set a global "Dummy" property
+                    // to explicitly invalidate the cache. We can set BuildRequestDataFlags.ReplaceExistingProjectInstance
+                    // to not invalidate the cache, but then publish won't have the right items calculated (at least
+                    // Content items will be missing), and we won't get the publish output we expect.
+                    // To get the caching we want we'd have to somehow persist ProjectInstance to disk from the build action
+                    // which appears to be possible via the ITranslatable interface, but all of that code has `internal`
+                    // visibility in the MSBuild assembly, and there is no one single method that we can target to persist
+                    // it to disk, but a collection of methods and classes. Might be doable with more knowledge of their
+                    // codebase, but seems rather brittle and hacky with the knowledge I currently have.
+
+                    // tl;dr: we get a performance hit because we have to re-evaluate the project file, but for now,
+                    // this is how we get the full proper output.
                     
+                    // Required, otherwise publish will try to re-build and discard the previous build results
+                    GlobalProperties["NoBuild"] = "true";
+                    // Publish re-executes the ResolveAssemblyReferences task, which uses the same .cache file as the build
+                    // action. Since we'll have all the output from the build action, this file will be readonly in the
+                    // sandbox. MSBuild opens this with Read+Write, so it will get an Access Denied exception and produce
+                    // a warning when trying to open that file. Suppress that warning.
+                    noWarn += ";MSB3088;MSB3101";
+                    
+                    break;
+                case "pack":
+                    Targets = new[] {"Pack"};
                     break;
                 default:
                     throw new ArgumentException($"Unknown action {action}");
             }
+            GlobalProperties["NoWarn"] = noWarn;
+
+            if (Requests == null)
+            {
+                Requests = new[] {new BuildRequest(Targets!)};
+            }
         }
-        
+
+        public BuildRequest[] Requests { get; }
+
+        public Dictionary<string,string> GlobalProperties { get; set; }
+
         public string Configuration { get; }
 
         public Dictionary<string,string> BuildEnvironment { get; }
@@ -200,7 +294,21 @@ namespace MyRulesDotnet.Tools.Builder
         public string[] Targets { get; }
 
         public string BaseIntermediateOutputPath { get; }
+        public string RestoreDir => BaseIntermediateOutputPath;
         public string IntermediateOutputPath { get; }
         public string OutputPath { get; }
+
+        public class BuildRequest
+        {
+            public string[] Targets { get; }
+            public Dictionary<string,string> Properties { get; }
+            public BuildRequest(string[] targets, params (string name, string value)[] properties)
+            {
+                Targets = targets;
+                Properties =
+                    new Dictionary<string, string>(properties.Select(p =>
+                        new KeyValuePair<string, string>(p.name, p.value)));
+            }
+        }
     }
 }

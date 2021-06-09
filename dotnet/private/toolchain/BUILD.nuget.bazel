@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet/private/rules:nuget.bzl", "tfm_mapping", "framework_info")
+load("@my_rules_dotnet//dotnet/private/rules:nuget_download.bzl", "tfm_mapping", "framework_info")
 
 package(default_visibility = ["//visibility:public"])
 
