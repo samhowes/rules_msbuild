@@ -93,6 +93,7 @@ namespace MyRulesDotnet.Tools.Builder
                 case TargetFinishedEventArgs finished:
                     if (_targetStack.Peek() != finished.TargetName) throw new Exception(":(");
                     _targetStack.Pop();
+                    _cluster!.GetOrAdd(finished.TargetName).Finished = true;
                     return;
                 default:
                     return;
@@ -111,6 +112,7 @@ namespace MyRulesDotnet.Tools.Builder
             var node = _cluster!.GetOrAdd(name);
             
             node.WasBuilt = node.WasBuilt || !wasSkipped;
+            node.Finished = wasSkipped;
             // was the MSBuild task called on this target directly?
             
             bool forced = false;

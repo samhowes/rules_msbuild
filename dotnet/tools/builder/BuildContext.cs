@@ -202,15 +202,30 @@ namespace MyRulesDotnet.Tools.Builder
                     break;
                 case "build":
                     // https://github.com/dotnet/msbuild/issues/5204
-                    Targets = new[]
+                    Requests = new[]
                     {
-                        "ResolveReferences",
-                        "GetTargetFrameworks", 
-                        "Build",
-                        "GetCopyToOutputDirectoryItems",
-                        "GetNativeManifest",
-                        // included so Publish doesn't produce MSB3088
-                        "ResolveAssemblyReferences",
+                        // for some reason, setting this in restore results in:
+                        // NuGet.RestoreEx.targets(19,5): error : Object reference not set to an instance of an object.
+                        // that's fine though, we're not really using the caching from that action
+                        // setting this as a global property for the project allows nuget pack to re-use the cache produced
+                        // from the build action, because the Pack target builds certain child targets with this as a global
+                        // property
+                        // new BuildRequest(new[]
+                        // {
+                        //     "Build",
+                        //     "GetCopyToOutputDirectoryItems"
+                        // }, ("TargetFramework", tfm)),
+                        new BuildRequest(new[]
+                        {
+                            // "ResolveReferences",
+                            "GetTargetFrameworks",
+                            "Build",
+                            "GetCopyToOutputDirectoryItems",
+                            "GetTargetPath",
+                            "GetNativeManifest",
+                            // included so Publish doesn't produce MSB3088
+                            // "ResolveAssemblyReferences",
+                        })
                     };
                     break;
                 case "publish":
@@ -257,7 +272,14 @@ namespace MyRulesDotnet.Tools.Builder
                     throw new ArgumentException($"Unknown action {action}");
             }
             GlobalProperties["NoWarn"] = noWarn;
+
+            if (Requests == null)
+            {
+                Requests = new[] {new BuildRequest(Targets!)};
+            }
         }
+
+        public BuildRequest[] Requests { get; }
 
         public Dictionary<string,string> GlobalProperties { get; set; }
 
@@ -275,5 +297,18 @@ namespace MyRulesDotnet.Tools.Builder
         public string RestoreDir => BaseIntermediateOutputPath;
         public string IntermediateOutputPath { get; }
         public string OutputPath { get; }
+
+        public class BuildRequest
+        {
+            public string[] Targets { get; }
+            public Dictionary<string,string> Properties { get; }
+            public BuildRequest(string[] targets, params (string name, string value)[] properties)
+            {
+                Targets = targets;
+                Properties =
+                    new Dictionary<string, string>(properties.Select(p =>
+                        new KeyValuePair<string, string>(p.name, p.value)));
+            }
+        }
     }
 }

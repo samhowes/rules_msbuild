@@ -16,6 +16,8 @@ namespace MyRulesDotnet.Tools.Builder
         public int Id { get; set; }
         public HashSet<string> Cache { get; set; } = null!;
         public Dictionary<string, TargetGraph.Node> Nodes { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Dupes { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         public Cluster(string name, IDictionary<string,string>? properties)
         {
             Name = name;
@@ -42,6 +44,7 @@ namespace MyRulesDotnet.Tools.Builder
                     FromCache = Cache.Contains(name)
                 };
                 Nodes[name] = node;
+                node.IsDuplicate = !Dupes.Add(name);
             }
 
             return node;
@@ -52,6 +55,9 @@ namespace MyRulesDotnet.Tools.Builder
     {
         private readonly string _trimPath;
 
+        private Dictionary<string, HashSet<string>>
+            Duplicates = new Dictionary<string,HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
         public class Node
         {
             public string Name { get; }
@@ -61,6 +67,8 @@ namespace MyRulesDotnet.Tools.Builder
             public bool FromCache { get; set; }
             public Cluster? Cluster { get; set; }
             public string Id { get; }
+            public bool Finished { get; set; }
+            public bool IsDuplicate { get; set; }
 
             public Node(string name, string id)
             {
@@ -97,6 +105,8 @@ namespace MyRulesDotnet.Tools.Builder
             Cache = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             Cached[Name] = Cache;
         }
+
+        public string TrimPath(string p) => p.Replace(_trimPath, "");
         public string ToDot() => new DotWriter().Write(this);
 
         public Cluster GetOrAddCluster(string name, IDictionary<string, string>? properties) 
@@ -107,6 +117,13 @@ namespace MyRulesDotnet.Tools.Builder
                 cluster.Id = Clusters.Count + 1;
                 Clusters[cluster.UniqueName] = cluster;
                 Cached.TryGetValue(name, out var cache);
+                if (!Duplicates.TryGetValue(name, out var dupes))
+                {
+                    dupes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    Duplicates[name] = dupes;
+                }
+
+                cluster.Dupes = dupes;
                 cluster.Cache = cache ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
             else
@@ -135,6 +152,22 @@ namespace MyRulesDotnet.Tools.Builder
 
             targets.Add(targetName);
         }
+
+        public void CanCache(string projectFullPath, ICollection<string> targetNames)
+        {
+            var name = TrimPath(projectFullPath);
+            if (!CachePossible.TryGetValue(name, out var canCache))
+            {
+                canCache = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                CachePossible[name] = canCache;
+            }
+
+            foreach (var targetName in targetNames)
+                canCache.Add(targetName);
+        }
+
+        public Dictionary<string, HashSet<string>> CachePossible { get; } =
+            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
     }
 
     public class DotWriter
@@ -167,7 +200,7 @@ namespace MyRulesDotnet.Tools.Builder
             _sb.Append("digraph g\n{\n\tnode [shape=box style=filled]\n");
             _indentLevel++;
             
-            WriteCluster(g);
+            WriteCluster(g, g);
             
             var clusters = g.Clusters.Values.ToList();
             foreach (var cluster in clusters)
@@ -178,7 +211,7 @@ namespace MyRulesDotnet.Tools.Builder
                 Attributes(("label", $"<{cluster.Name}<br/>{cluster.PropertiesString}>"));
                 _sb.AppendLine();
                 
-                WriteCluster(cluster);
+                WriteCluster(g, cluster);
 
                 _indentLevel--;
                 Indent();
@@ -191,8 +224,15 @@ namespace MyRulesDotnet.Tools.Builder
             return _sb.ToString();
         }
 
-        private void WriteCluster(Cluster cluster)
+        private void WriteCluster(TargetGraph g, Cluster cluster)
         {
+            g.CachePossible.TryGetValue(cluster.Name, out var canCache);
+
+            if (g != cluster && cluster.Nodes.Count == 0)
+            {
+                cluster.GetOrAdd("empty");
+            }
+            
             foreach (var node in cluster.Nodes.Values)
             {
                 Indent().Append(node.Id);
@@ -200,18 +240,42 @@ namespace MyRulesDotnet.Tools.Builder
                 var nodeAttrs = new List<(string, string)>();
                 nodeAttrs.Add(("label", $"<{node.Name}>"));
 
+                string style = "filled";
                 string fill = "white";
-                if (node.EntryPoint) fill = "chartreuse2";
+                string? penwidth = null;
+                if (node.IsDuplicate) fill = "tomato";
+                else if (node.EntryPoint) fill = "lightgreen";
                 else if (node.WasBuilt && node.FromCache) fill = "tomato";
                 else if (node.WasBuilt) fill = "aliceblue";
+                else if (node.Finished)
+                {
+                    fill = "gray94";
+                    penwidth = "0";
+                }
                 nodeAttrs.Add(("fillcolor", fill));
 
                 if (node.FromCache)
                 {
-                    nodeAttrs.Add(("penwidth", "2.0"));
+                    penwidth = "2.0";
                     nodeAttrs.Add(("color", "darkgoldenrod1"));
                 }
+                else if (!node.Finished)
+                {
+                    penwidth = "2.0";
+                    nodeAttrs.Add(("color", "red"));
+                }
 
+                if (canCache?.Contains(node.Name) == true)
+                {
+                    penwidth = "2.0";
+                    nodeAttrs.Add(("color", "green"));
+                    style += ",dashed";
+                }
+                
+                if (penwidth != null)
+                    nodeAttrs.Add(("penwidth", penwidth));
+                
+                nodeAttrs.Add(("style", $"\"{style}\""));
                 InlineAttributes(nodeAttrs.ToArray());
 
                 foreach (var dep in node.Dependencies)
