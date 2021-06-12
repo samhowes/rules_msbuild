@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "util",
     srcs = ["bzl.go"],
-    importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util",
+    importpath = "github.com/samhowes/rules_msbuild/gazelle/dotnet/util",
     visibility = ["//visibility:public"],
     deps = ["@com_github_bazelbuild_buildtools//build:go_default_library"],  # keep
 )

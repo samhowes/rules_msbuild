@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MyRulesDotnet.Tools.Bazel
+namespace RulesMSBuild.Tools.Bazel
 {
     public static class BazelEnvironment
     {

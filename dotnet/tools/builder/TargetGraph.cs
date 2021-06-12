@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.Build.Framework;
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public class Cluster
     {

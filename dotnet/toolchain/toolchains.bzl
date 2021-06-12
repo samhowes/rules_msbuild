@@ -1,5 +1,5 @@
 load(
-    "@my_rules_dotnet//dotnet/private:platforms.bzl",
+    "@rules_msbuild//dotnet/private:platforms.bzl",
     "DOTNETARCH_CONSTRAINTS",
     "DOTNETOS_CONSTRAINTS",
     "PLATFORMS",
@@ -20,7 +20,7 @@ def declare_constraints():
     @bazel_tools//platforms:default_platform will be used most of the time).
     """
     for dotnetos, constraint in DOTNETOS_CONSTRAINTS.items():
-        if constraint.startswith("@my_rules_dotnet//dotnet/toolchain:"):
+        if constraint.startswith("@rules_msbuild//dotnet/toolchain:"):
             native.constraint_value(
                 name = dotnetos,
                 constraint_setting = "@platforms//os:os",
@@ -32,7 +32,7 @@ def declare_constraints():
             )
 
     for dotnetarch, constraint in DOTNETARCH_CONSTRAINTS.items():
-        if constraint.startswith("@my_rules_dotnet//dotnet/toolchain:"):
+        if constraint.startswith("@rules_msbuild//dotnet/toolchain:"):
             native.constraint_value(
                 name = dotnetarch,
                 constraint_setting = "@platforms//cpu:cpu",

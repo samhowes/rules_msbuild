@@ -12,9 +12,9 @@ using Microsoft.Build.Experimental.ProjectCache;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Graph;
 using Microsoft.Build.Logging;
-using static MyRulesDotnet.Tools.Builder.BazelLogger;
+using static RulesMSBuild.Tools.Builder.BazelLogger;
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public class Builder
     {

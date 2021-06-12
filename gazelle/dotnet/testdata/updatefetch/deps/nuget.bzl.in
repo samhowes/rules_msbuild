@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_fetch")
+load("@rules_msbuild//dotnet:defs.bzl", "nuget_fetch")
 
 def nuget_deps():
     nuget_fetch(

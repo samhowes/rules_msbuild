@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Execution;
-using static MyRulesDotnet.Tools.Builder.BazelLogger;
+using static RulesMSBuild.Tools.Builder.BazelLogger;
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public class MsBuildCacheManager
     {

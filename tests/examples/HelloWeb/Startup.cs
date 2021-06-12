@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace MyRulesDotnet.Tests.Examples.HelloWeb
+namespace RulesMSBuild.Tests.Examples.HelloWeb
 {
     public class Startup
     {

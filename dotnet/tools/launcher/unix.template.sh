@@ -104,7 +104,7 @@ fi
 set -e
 # --- end runfiles.bash initialization v2 ---
 
-# --- begin my_rules_dotnet code
+# --- begin rules_msbuild code
 target_bin_path="$(rlocation %target_bin_path%)"
 dotnet_bin_path="$(rlocation %dotnet_bin_path%)"
 

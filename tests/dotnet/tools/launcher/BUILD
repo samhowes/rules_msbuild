@@ -1,5 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_binary")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
     name = "Greeter",

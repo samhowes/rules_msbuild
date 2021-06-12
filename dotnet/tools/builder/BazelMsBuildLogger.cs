@@ -5,7 +5,7 @@ using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public class BazelMsBuildLogger : ConsoleLogger
     {

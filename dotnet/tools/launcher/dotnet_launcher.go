@@ -60,7 +60,7 @@ func getRunfile(p string) string {
 	return fPath
 }
 
-// getBuiltPath assumes that key is a short_path to the output directory of an assembly built by my_rules_dotnet
+// getBuiltPath assumes that key is a short_path to the output directory of an assembly built by rules_msbuild
 // this means that the output directory is listed in the runfiles manifest, and since the output directory is a prefix
 // of all the items in the output directory, the actual output items are not listed explicitly in the manifest
 func getBuiltPath(l LaunchInfo, key string) string {

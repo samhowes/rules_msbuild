@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
     internal static class IsExternalInit {}
 }
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public class BuildContext
     {

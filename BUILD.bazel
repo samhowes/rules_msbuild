@@ -3,7 +3,7 @@ load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary
 
 msbuild_directory()
 
-# gazelle:prefix github.com/samhowes/my_rules_dotnet
+# gazelle:prefix github.com/samhowes/rules_msbuild
 gazelle(
     name = "gazelle_repos",
     args = [

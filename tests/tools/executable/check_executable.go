@@ -3,7 +3,7 @@ package lib
 import (
 	"bytes"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
+	"github.com/samhowes/rules_msbuild/tests/tools/files"
 	"github.com/stretchr/testify/assert"
 	"github.com/termie/go-shutil"
 	"golang.org/x/sys/execabs"

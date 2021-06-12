@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MyRulesDotnet.Tools
+namespace RulesMSBuild.Tools
 {
     internal static class Check
     {

@@ -7,7 +7,7 @@ using System.Security.Permissions;
 using System.Text.RegularExpressions;
 using Bzl;
 using FluentAssertions;
-using MyRulesDotnet.Tools.Bazel;
+using RulesMSBuild.Tools.Bazel;
 using Xunit;
 
 namespace BzlTests

@@ -178,7 +178,7 @@ def _generate_nuget_configs(ctx, config):
     )
     ctx.template(
         ctx.path(NUGET_BUILD_CONFIG),
-        Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),
+        Label("@rules_msbuild//dotnet/private/msbuild:NuGet.tpl.config"),
         executable = False,
         substitutions = substitutions,
     )
@@ -327,28 +327,28 @@ nuget_fetch = repository_rule(
         ),
         "target_frameworks": attr.string_list(),
         "_master_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/msbuild:project.tpl.proj"),
+            default = Label("@rules_msbuild//dotnet/private/msbuild:project.tpl.proj"),
         ),
         "_tfm_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/msbuild:project.tpl.proj"),
+            default = Label("@rules_msbuild//dotnet/private/msbuild:project.tpl.proj"),
         ),
         "_config_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/msbuild:NuGet.tpl.config"),
+            default = Label("@rules_msbuild//dotnet/private/msbuild:NuGet.tpl.config"),
             allow_single_file = True,
         ),
         "_nuget_import_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.nuget_import.bazel"),
+            default = Label("@rules_msbuild//dotnet/private/toolchain:BUILD.nuget_import.bazel"),
             allow_single_file = True,
         ),
         "_root_template": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.nuget.bazel"),
+            default = Label("@rules_msbuild//dotnet/private/toolchain:BUILD.nuget.bazel"),
             allow_single_file = True,
         ),
         "_parser_project": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/tools/NuGetParser:NuGetParser.csproj"),
+            default = Label("@rules_msbuild//dotnet/tools/NuGetParser:NuGetParser.csproj"),
         ),
         "_parser_srcs": attr.label(
-            default = Label("@my_rules_dotnet//dotnet/tools/NuGetParser:NuGetParser_srcs"),
+            default = Label("@rules_msbuild//dotnet/tools/NuGetParser:NuGetParser_srcs"),
         ),
     },
 )

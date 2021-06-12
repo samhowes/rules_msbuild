@@ -71,10 +71,10 @@ def declare_toolchains(host, sdk, builder):
         )
         native.toolchain(
             name = toolchain_name,
-            toolchain_type = "@my_rules_dotnet//dotnet:toolchain",
+            toolchain_type = "@rules_msbuild//dotnet:toolchain",
             exec_compatible_with = [
-                "@my_rules_dotnet//dotnet/toolchain:" + host_dotnetos,
-                "@my_rules_dotnet//dotnet/toolchain:" + host_dotnetarch,
+                "@rules_msbuild//dotnet/toolchain:" + host_dotnetos,
+                "@rules_msbuild//dotnet/toolchain:" + host_dotnetarch,
             ],
             target_compatible_with = constraints,
             toolchain = ":" + impl_name,

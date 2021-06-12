@@ -1,9 +1,9 @@
 
 using FluentAssertions;
-using MyRulesDotnet.Tools.Bazel;
+using RulesMSBuild.Tools.Bazel;
 using Xunit;
 
-namespace MyRulesDotnet.Tools.RunfilesTests
+namespace RulesMSBuild.Tools.RunfilesTests
 {
     public class LabelTests
     {

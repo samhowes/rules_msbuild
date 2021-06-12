@@ -1,4 +1,4 @@
-workspace(name = "my_rules_dotnet")
+workspace(name = "rules_msbuild")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
@@ -50,7 +50,7 @@ bazel_skylib_workspace()
 
 ### dotnet ###
 
-load("@my_rules_dotnet//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
+load("@rules_msbuild//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
 dotnet_rules_dependencies()
 

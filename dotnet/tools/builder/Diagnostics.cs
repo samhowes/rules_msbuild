@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public static class Diagnostics
     {

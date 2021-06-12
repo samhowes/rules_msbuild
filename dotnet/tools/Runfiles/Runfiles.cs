@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace MyRulesDotnet.Tools.Bazel
+namespace RulesMSBuild.Tools.Bazel
 {
     /// <summary>
     /// Runfiles lookup library for Bazel-built Dotnet binaries and tests.
@@ -20,7 +20,7 @@ namespace MyRulesDotnet.Tools.Bazel
     /// dotnet_binary(
     ///     name = "my_binary",
     ///     ...
-    ///     deps = ["@my_rules_dotnet//dotnet/tools/Runfiles"],
+    ///     deps = ["@rules_msbuild//dotnet/tools/Runfiles"],
     /// )
     /// </code>
     /// </description>
@@ -28,7 +28,7 @@ namespace MyRulesDotnet.Tools.Bazel
     /// <item>
     /// Use the runfiles library.
     /// <code>
-    /// using MyRulesDotnet.Runfiles;
+    /// using RulesMSBuild.Runfiles;
     /// </code>
     /// </item>
     /// <item>
@@ -71,7 +71,7 @@ namespace MyRulesDotnet.Tools.Bazel
         public const char PathSeparator = '/';
 
         /// <summary>
-        /// The most resilient runfiles creation method. Uses a file created by MyRulesDotnet to find runfiles if no
+        /// The most resilient runfiles creation method. Uses a file created by RulesMSBuild to find runfiles if no
         /// environment variables have been set. This method makes it safe to execute this assembly from an IDE or
         /// directory using `dotnet <AssemblyName>.dll`.
         /// </summary>

@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
-using MyRulesDotnet.Tools.Builder;
+using RulesMSBuild.Tools.Builder;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace MyRulesDotnet.Tests.Tools
+namespace RulesMSBuild.Tests.Tools
 {
     internal class FakeCommandOutputProcessor : OutputProcessor
     {

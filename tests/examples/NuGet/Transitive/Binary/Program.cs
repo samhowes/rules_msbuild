@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MyRulesDotnet.Tests.NuGet.Transitive
+namespace RulesMSBuild.Tests.NuGet.Transitive
 {
     class Program
     {

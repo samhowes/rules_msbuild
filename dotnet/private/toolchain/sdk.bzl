@@ -186,7 +186,7 @@ def _sdk_build_file(ctx, version):
     builder_tfm = default_tfm(version)
     ctx.template(
         "BUILD.bazel",
-        Label("@my_rules_dotnet//dotnet/private/toolchain:BUILD.sdk.bazel"),
+        Label("@rules_msbuild//dotnet/private/toolchain:BUILD.sdk.bazel"),
         executable = False,
         substitutions = {
             "{dotnetos}": os,

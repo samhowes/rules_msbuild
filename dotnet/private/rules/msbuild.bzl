@@ -7,7 +7,7 @@ load("//dotnet/private/actions:assembly.bzl", "build_assembly")
 load("//dotnet/private/actions:launcher.bzl", "make_launcher")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
-TOOLCHAINS = ["@my_rules_dotnet//dotnet:toolchain"]
+TOOLCHAINS = ["@rules_msbuild//dotnet:toolchain"]
 
 def _msbuild_tool_binary_impl(ctx):
     dotnet = dotnet_exec_context(ctx, True)

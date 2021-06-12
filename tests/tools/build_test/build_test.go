@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/samhowes/my_rules_dotnet/tests/tools/executable"
-	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
+	"github.com/samhowes/rules_msbuild/tests/tools/executable"
+	"github.com/samhowes/rules_msbuild/tests/tools/files"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
 	"os"
@@ -72,7 +72,7 @@ func TestBuildOutput(t *testing.T) {
 			p = strings.Replace(p, "\\", "/", -1)
 		}
 
-		for _, prefix := range []string{"/bin/", "/my_rules_dotnet/", config.Package + "/"} {
+		for _, prefix := range []string{"/bin/", "/rules_msbuild/", config.Package + "/"} {
 			index := strings.Index(p, prefix)
 			if index >= 0 {
 				p = p[index+len(prefix):]

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/samhowes/my_rules_dotnet/tests/tools/executable"
-	"github.com/samhowes/my_rules_dotnet/tests/tools/files"
+	"github.com/samhowes/rules_msbuild/tests/tools/executable"
+	"github.com/samhowes/rules_msbuild/tests/tools/files"
 	"os"
 	"path"
 	"testing"

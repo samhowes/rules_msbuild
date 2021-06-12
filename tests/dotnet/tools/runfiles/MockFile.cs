@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace MyRulesDotnet.Tools.RunfilesTests
+namespace RulesMSBuild.Tools.RunfilesTests
 {
     public class MockFile : IDisposable
     {
