@@ -82,3 +82,19 @@ http_archive(
 load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 
 rules_pkg_dependencies()
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "build_bazel_integration_testing",
+    sha256 = "bfc43a94d42e08c89a26a4711ea396a0a594bd5d55394d76aae861b299628dca",
+    strip_prefix = "bazel-integration-testing-3a6136e8f6287b04043217d94d97ba17edcb7feb",
+    type = "zip",
+    url = "https://github.com/bazelbuild/bazel-integration-testing/archive/3a6136e8f6287b04043217d94d97ba17edcb7feb.zip",
+)
+
+load("@build_bazel_integration_testing//tools:repositories.bzl", "bazel_binaries")
+load("@rules_msbuild//dotnet:defs.bzl", "BAZEL_VERSION")
+
+#depend on the Bazel binaries, also accepts an array of versions
+bazel_binaries([BAZEL_VERSION])

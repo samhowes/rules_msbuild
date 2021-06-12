@@ -38,8 +38,10 @@ namespace RulesMSBuild.Tools.Builder
 
             _cacheManager = new MsBuildCacheManager(_buildManager, _context.Bazel.ExecRoot, _targetGraph);
 
+            var pathTrimmer = new PathReplacer(context.Bazel);
             _msbuildLog = new BazelMsBuildLogger(
-                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet, trimPath
+                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet, 
+                (m) => pathTrimmer.ReplacePath(m) 
                 , _targetGraph!);
         }
 
@@ -292,7 +294,7 @@ namespace RulesMSBuild.Tools.Builder
 
             return pc;
         }
-
+        
         /// <summary>
         /// Restore writes absolute paths to project.assets.json and to .props and .targets files.
         /// We can't have absolute paths for these, because they will be re-used in future actions in a different

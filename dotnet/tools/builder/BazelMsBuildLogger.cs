@@ -9,15 +9,15 @@ namespace RulesMSBuild.Tools.Builder
 {
     public class BazelMsBuildLogger : ConsoleLogger
     {
-        private readonly string _trimPath;
+        private readonly Func<string, string> _trimPath;
         private readonly TargetGraph? _targetGraph;
         private readonly Stack<Cluster> _projectStack = new Stack<Cluster>();
         private Cluster? _cluster;
         private Stack<string> _targetStack = new Stack<string>();
         public bool HasError { get; set; }
 
-        public BazelMsBuildLogger(LoggerVerbosity verbosity, string trimPath, TargetGraph? targetGraph) : base(
-            verbosity, (m) => Console.Out.Write(Trim(trimPath, m)),
+        public BazelMsBuildLogger(LoggerVerbosity verbosity, Func<string,string> trimPath, TargetGraph? targetGraph) 
+            : base(verbosity, (m) => Console.Out.Write(trimPath(m)),
             SetColor,
             ResetColor)
         {
@@ -26,14 +26,6 @@ namespace RulesMSBuild.Tools.Builder
             _cluster = targetGraph;
         }
 
-        private static string Trim(string trimPath, string message)
-        {
-            return message.Replace(trimPath, "");
-        }
-
-
-        private string Trim(string s) => Trim(_trimPath, s);
-        
         public override void Initialize(IEventSource eventSource)
         {
             base.Initialize(eventSource);
@@ -48,7 +40,18 @@ namespace RulesMSBuild.Tools.Builder
         
         private void InitializeImpl(IEventSource eventSource)
         {
-            eventSource!.ErrorRaised += (sender, args) => HasError = true;
+            eventSource!.ErrorRaised += (sender, args) =>
+            {
+                HasError = true;
+                if (
+                    args.Message.Contains("are you missing an assembly reference?") 
+                    || args.Message.Contains(
+                        "The project file could not be loaded. Could not find a part of the path")
+                    )
+                {
+                    Console.WriteLine("\n\tdo you need to execute `bazel run //:gazelle` to update your build files?\n");
+                } 
+            };
             if (_targetGraph != null)
             {
                 eventSource.AnyEventRaised += AnyEvent;
@@ -60,14 +63,14 @@ namespace RulesMSBuild.Tools.Builder
             switch (args)
             {
                 case ProjectStartedEventArgs pStart:
-                    var clusterNameS = Trim(pStart.ProjectFile);
+                    var clusterNameS = _trimPath(pStart.ProjectFile);
                     var cluster = _targetGraph!.GetOrAddCluster(clusterNameS, pStart.GlobalProperties);
                     if (_cluster != null)
                         _projectStack.Push(_cluster);
                     _cluster = cluster;
                     return;
                 case ProjectFinishedEventArgs pEnd:
-                    var clusterNameE = Trim(pEnd.ProjectFile);
+                    var clusterNameE = _trimPath(pEnd.ProjectFile);
                     if (_cluster!.Name != clusterNameE) throw new Exception(":(");
                     _projectStack.TryPop(out _cluster);
                     

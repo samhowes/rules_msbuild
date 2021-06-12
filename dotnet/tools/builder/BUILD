@@ -13,6 +13,7 @@ filegroup(
         "LauncherFactory.cs",
         "MsBuildCacheManager.cs",
         "OutputProcessor.cs",
+        "PathReplacer.cs",
         "Program.cs",
         "TargetGraph.cs",
     ],

@@ -5,7 +5,7 @@ obj
 .vs
 .ijwb
 .clwb
-*.bazelrc
+.bazelrc.user
 .vscode/c_cpp_properties.json
 .idea
 tmp
