@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace MyRulesDotnet.Tests.NuGet.Transitive
+namespace RulesMSBuild.Tests.NuGet.Transitive
 {
     public class MyObject
     {

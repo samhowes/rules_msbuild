@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
-using static MyRulesDotnet.Tools.Builder.BazelLogger;
+using static RulesMSBuild.Tools.Builder.BazelLogger;
 
-namespace MyRulesDotnet.Tools.Builder
+namespace RulesMSBuild.Tools.Builder
 {
     public class OutputProcessor
     {

@@ -2,7 +2,7 @@ package dotnet
 
 import (
 	"fmt"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
+	"github.com/samhowes/rules_msbuild/gazelle/dotnet/util"
 	"log"
 	"strings"
 

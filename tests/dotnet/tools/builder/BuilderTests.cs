@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using FluentAssertions;
-using MyRulesDotnet.Tools.Builder;
+using RulesMSBuild.Tools.Builder;
 using Xunit;
 
-namespace MyRulesDotnet.Tests.Tools
+namespace RulesMSBuild.Tests.Tools
 {
     public class BuilderTests
     {

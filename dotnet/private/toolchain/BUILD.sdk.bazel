@@ -1,4 +1,4 @@
-load("@my_rules_dotnet//dotnet:defs.bzl", "declare_toolchains", "dotnet_config", "dotnet_sdk", "msbuild_tool_binary")
+load("@rules_msbuild//dotnet:defs.bzl", "declare_toolchains", "dotnet_config", "dotnet_sdk", "msbuild_tool_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,10 +41,10 @@ dotnet_config(
 
 msbuild_tool_binary(
     name = "builder",
-    srcs = ["@my_rules_dotnet//dotnet/tools/builder:builder_srcs"],
+    srcs = ["@rules_msbuild//dotnet/tools/builder:builder_srcs"],
     dotnet_sdk = ":dotnet_sdk",
     target_framework = "{builder_tfm}",
-    project_file = "@my_rules_dotnet//dotnet/tools/builder:Builder.csproj",
+    project_file = "@rules_msbuild//dotnet/tools/builder:Builder.csproj",
     deps = [
         "{builder_deps}"
     ]

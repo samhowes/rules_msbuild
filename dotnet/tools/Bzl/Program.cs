@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using MyRulesDotnet.Tools.Bazel;
+using RulesMSBuild.Tools.Bazel;
 
 namespace Bzl
 {
@@ -17,7 +17,7 @@ namespace Bzl
                 workspaceRoot = Path.Combine(cwd, workspaceName);
             }
 
-            var runfiles = Runfiles.Create<Program>("@my_rules_dotnet//dotnet/tools/Bzl");
+            var runfiles = Runfiles.Create<Program>("@rules_msbuild//dotnet/tools/Bzl");
 
             var workspaceMaker = new WorkspaceMaker(runfiles.Runfiles, workspaceRoot, workspaceName);
             workspaceMaker.Init();

@@ -15,7 +15,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/merger"
 	"github.com/bazelbuild/bazel-gazelle/rule"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
+	"github.com/samhowes/rules_msbuild/gazelle/dotnet/project"
 )
 
 // RepoUpdater may be implemented by languages that support updating

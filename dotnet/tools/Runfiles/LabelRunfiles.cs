@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MyRulesDotnet.Tools.Bazel
+namespace RulesMSBuild.Tools.Bazel
 {
     public class LabelRunfiles
     {

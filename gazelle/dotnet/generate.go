@@ -8,7 +8,7 @@ import (
 
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
+	"github.com/samhowes/rules_msbuild/gazelle/dotnet/project"
 )
 
 // GenerateRules extracts build metadata from source files in a directory.

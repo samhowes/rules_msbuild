@@ -1,7 +1,7 @@
 using System;
 using Xunit;
 
-namespace MyRulesDotnet.Tests.Examples.NuGet.Transitive
+namespace RulesMSBuild.Tests.Examples.NuGet.Transitive
 {
     public class Program
     {

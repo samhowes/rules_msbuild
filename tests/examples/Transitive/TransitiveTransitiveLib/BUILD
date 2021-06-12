@@ -1,5 +1,5 @@
 load("//tests/tools/build_test:build_test.bzl", "build_test")
-load("@my_rules_dotnet//dotnet:defs.bzl", "msbuild_library")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_library")
 
 msbuild_library(
     name = "TransitiveTransitiveLib",

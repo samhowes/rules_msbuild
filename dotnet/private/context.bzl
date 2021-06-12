@@ -37,7 +37,7 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
     if sdk_attr != None:
         sdk = sdk_attr[DotnetSdkInfo]
     else:
-        toolchain = ctx.toolchains["@my_rules_dotnet//dotnet:toolchain"]
+        toolchain = ctx.toolchains["@rules_msbuild//dotnet:toolchain"]
         sdk = toolchain.sdk
 
     implicit_deps = []

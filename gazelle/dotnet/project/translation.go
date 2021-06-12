@@ -6,7 +6,7 @@ import (
 
 	"github.com/bazelbuild/bazel-gazelle/rule"
 	bzl "github.com/bazelbuild/buildtools/build"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/util"
+	"github.com/samhowes/rules_msbuild/gazelle/dotnet/util"
 )
 
 func (p *Project) GenerateRules(f *rule.File) []*rule.Rule {

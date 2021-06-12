@@ -2,7 +2,7 @@
 
 | Windows                                                                                                                                                                                                                                                        | Mac                                                                                                                                                                                                                                                    | Linux                                                                                                                                                                                                                                                      |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=windows)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master&jobName=windows) | [![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=mac)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master&jobName=mac) | [![Build Status](https://dev.azure.com/samhowes/my_rules_dotnet/_apis/build/status/samhowes.my_rules_dotnet?branchName=master&jobName=linux)](https://dev.azure.com/samhowes/my_rules_dotnet/_build/latest?definitionId=3&branchName=master&jobName=linux) |
+| [![Build Status](https://dev.azure.com/samhowes/rules_msbuild/_apis/build/status/samhowes.rules_msbuild?branchName=master&jobName=windows)](https://dev.azure.com/samhowes/rules_msbuild/_build/latest?definitionId=3&branchName=master&jobName=windows) | [![Build Status](https://dev.azure.com/samhowes/rules_msbuild/_apis/build/status/samhowes.rules_msbuild?branchName=master&jobName=mac)](https://dev.azure.com/samhowes/rules_msbuild/_build/latest?definitionId=3&branchName=master&jobName=mac) | [![Build Status](https://dev.azure.com/samhowes/rules_msbuild/_apis/build/status/samhowes.rules_msbuild?branchName=master&jobName=linux)](https://dev.azure.com/samhowes/rules_msbuild/_build/latest?definitionId=3&branchName=master&jobName=linux) |
 
 <!--
 Links
@@ -42,12 +42,12 @@ looking for a working implementation of rules for dotnet head over to
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "http_archive")
 
 git_repository(
-    name = "my_rules_dotnet",
+    name = "rules_msbuild",
     tag = "stable",
-    remote = "https://github.com/samhowes/my_rules_dotnet"
+    remote = "https://github.com/samhowes/rules_msbuild"
 )
 
-load("@my_rules_dotnet//dotnet:py_deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
+load("@rules_msbuild//dotnet:py_deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
 dotnet_rules_dependencies()
 # TODO(#10) allow user-specified sdks
@@ -57,7 +57,7 @@ dotnet_register_toolchains(version = "3.1.100")
 
 ```python
 # //hello/BUILD
-load("@my_rules_dotnet//dotnet:def.bzl", "dotnet_binary")
+load("@rules_msbuild//dotnet:def.bzl", "dotnet_binary")
 
 dotnet_binary(
     name = "hello",
@@ -175,7 +175,7 @@ Can be converted to:
 
 ```python
 # //foo/ConsoleApp/BUILD
-load("@my_rules_dotnet//dotnet:defs.bzl", "dotnet_binary")
+load("@rules_msbuild//dotnet:defs.bzl", "dotnet_binary")
 
 dotnet_binary(
     name = "ConsoleApp",
@@ -193,7 +193,7 @@ Given the workspace file:
 
 ```python
 # other setup omitted
-load("@my_rules_dotnet//dotnet:defs.bzl", "nuget_restore") # TODO(#4)
+load("@rules_msbuild//dotnet:defs.bzl", "nuget_restore") # TODO(#4)
 nuget_restore(
     lock_file = ":nuget_package_lock.json",
     packages = [
@@ -209,7 +209,7 @@ The Package Management solution (#4) is not implemented or designed yet, but now
 an approach similar to [rules_jvm_external](https://github.com/bazelbuild/rules_jvm_external#usage)
 appears to be possible. NuGet is still developing the spec for
 [Repository wide package management](https://github.com/NuGet/Home/wiki/Centrally-managing-NuGet-package-versions)
-though, so there may be some unforseen roadbloacks to that implementation in my_rules_dotnet.
+though, so there may be some unforseen roadbloacks to that implementation in rules_msbuild.
 
 This was my initial motivation for contributing to rules_dotnet: checking large amounts ofgenerated
 starlark code into the repository such as
@@ -223,10 +223,10 @@ Ideally, there is one implementation of bazel rules that downloads and uses the 
 building with bazel that accounts for all use cases of the dotnet sdk. Once an implementation is
 settled on, the goal is to merge the strategies used in this repository with rules_dotnet.
 
-Key Differences in my_rules_dotnet and io_bazel_rules_dotnet:
+Key Differences in rules_msbuild and io_bazel_rules_dotnet:
 
 1. "High Level" build vs "Low Level" compilation
-    1. my_rules_dotnet rules like `dotnet_binary` utilize `dotnet build` to do the building, package
+    1. rules_msbuild rules like `dotnet_binary` utilize `dotnet build` to do the building, package
        and framework dependency detection loosely treating `dotnet` as the "compiler" and invokes a
        "high level" MsBuild that invokes MsBuild targets defined by the dotnet sdk and .targets
        files.

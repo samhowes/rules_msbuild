@@ -13,7 +13,7 @@ go_library(
         "resolve.go",
         "update-repos.go",
     ],
-    importpath = "github.com/samhowes/my_rules_dotnet/gazelle/dotnet",
+    importpath = "github.com/samhowes/rules_msbuild/gazelle/dotnet",
     visibility = ["//visibility:public"],
     deps = [
         "//gazelle/dotnet/project",

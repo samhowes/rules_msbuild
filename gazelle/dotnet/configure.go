@@ -6,7 +6,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/config"
 	gzflag "github.com/bazelbuild/bazel-gazelle/flag"
 	"github.com/bazelbuild/bazel-gazelle/rule"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
+	"github.com/samhowes/rules_msbuild/gazelle/dotnet/project"
 	"log"
 	"os"
 	"path"

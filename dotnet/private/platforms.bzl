@@ -21,7 +21,7 @@ DOTNETOS_DOTNETARCH = (
 
 def _generate_constraints(names, bazel_constraints):
     return {
-        name: bazel_constraints.get(name, "@my_rules_dotnet//dotnet/toolchain:" + name)
+        name: bazel_constraints.get(name, "@rules_msbuild//dotnet/toolchain:" + name)
         for name in names
     }
 

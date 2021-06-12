@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Xml.Linq;
-using static MyRulesDotnet.Tools.NuGetParser.BazelLogger;
+using static RulesMSBuild.Tools.NuGetParser.BazelLogger;
 using static NuGetParser.Package;
 
 namespace NuGetParser

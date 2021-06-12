@@ -11,7 +11,7 @@ go_binary(
 go_library(
     name = "library",
     srcs = ["library.go"],
-    importpath = "github.com/bazelbuild/my_rules_dotnet/tests/sanity",
+    importpath = "github.com/bazelbuild/rules_msbuild/tests/sanity",
 )
 
 go_library(
@@ -20,6 +20,6 @@ go_library(
         "hello.go",
         "library.go",
     ],
-    importpath = "github.com/samhowes/my_rules_dotnet/tests/sanity",
+    importpath = "github.com/samhowes/rules_msbuild/tests/sanity",
     visibility = ["//visibility:private"],
 )

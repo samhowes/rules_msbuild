@@ -1,7 +1,7 @@
 using System;
 using Xunit;
 
-namespace MyRulesDotnet.Tests.Examples.HelloTest
+namespace RulesMSBuild.Tests.Examples.HelloTest
 {
     public class HelloTestTest
     {

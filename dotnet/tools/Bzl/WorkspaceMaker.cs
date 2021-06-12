@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using MyRulesDotnet.Tools.Bazel;
+using RulesMSBuild.Tools.Bazel;
 using NuGetParser;
 
 namespace Bzl
@@ -20,7 +20,7 @@ namespace Bzl
 
         public WorkspaceMaker(Runfiles runfiles, string workspaceRoot, string workspaceName)
         {
-            _runfiles = new LabelRunfiles(runfiles, new Label("my_rules_dotnet", "dotnet/tools/Bzl"));
+            _runfiles = new LabelRunfiles(runfiles, new Label("rules_msbuild", "dotnet/tools/Bzl"));
             _workspaceRoot = workspaceRoot;
             _workspaceName = workspaceName;
             _variables = new Dictionary<string, string>()

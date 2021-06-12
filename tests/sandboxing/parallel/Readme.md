@@ -1,6 +1,6 @@
 # //tests/sandboxing/parallel
 
-This package is to demonstrate [#33](https://github.com/samhowes/my_rules_dotnet/issues/33). The
+This package is to demonstrate [#33](https://github.com/samhowes/rules_msbuild/issues/33). The
 goal is to get bazel to invoke a dotnet\_\* target for two different configurations at the same
 time. MsBuild uses "Shared Compilation" which apparently starts a central MsBuild server, and if an
 instance of MsBuild detects that the server is compiling its output already, then it will simply

@@ -1,4 +1,4 @@
-module github.com/samhowes/my_rules_dotnet
+module github.com/samhowes/rules_msbuild
 
 go 1.15
 

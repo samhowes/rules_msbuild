@@ -29,7 +29,7 @@ go_library(
         "dotnet_launcher.go",
         "launcher_main.go",
     ],
-    importpath = "github.com/samhowes/my_rules_dotnet/dotnet/tools/launcher",
+    importpath = "github.com/samhowes/rules_msbuild/dotnet/tools/launcher",
     visibility = ["//visibility:private"],
     deps = [
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",

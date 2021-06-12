@@ -6,7 +6,7 @@ A set of tests that verifies that the launcher is functioning appropriately
    variables if no arguments are specified
 1. `:run_greeter`: causes `:Greeter` to be compiled to `bazel-out/host`. This causes `:Greeter` to
    get its own runfiles.
-    1. This also reproduces [#33](https://github.com/samhowes/my_rules_dotnet/issues/33) when built
+    1. This also reproduces [#33](https://github.com/samhowes/rules_msbuild/issues/33) when built
        simultaneously with `:Greeter`, see
        [`//tests/sandboxing/parallel`](../../../sandboxing/parallel/Readme.md) for coverage of that issue.
 1. `:launcher_test`: the primary set of tests for this package, a set of assertions that the

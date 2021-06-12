@@ -5,7 +5,7 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/rule"
-	"github.com/samhowes/my_rules_dotnet/gazelle/dotnet/project"
+	"github.com/samhowes/rules_msbuild/gazelle/dotnet/project"
 )
 
 type dotnetLang struct{}
@@ -43,7 +43,7 @@ func (d *dotnetLang) Loads() []rule.LoadInfo {
 		symbols = append(symbols, k)
 	}
 	return []rule.LoadInfo{{
-		Name:    "@my_rules_dotnet//dotnet:defs.bzl",
+		Name:    "@rules_msbuild//dotnet:defs.bzl",
 		Symbols: symbols,
 	}}
 }

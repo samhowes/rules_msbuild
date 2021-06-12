@@ -46,7 +46,7 @@ The dependency on (Framework, Package, Verion) lends nicely to managing packages
 
 Bazel encourages [managing packages at the repository level](https://docs.bazel.build/versions/master/external.html#shadowing-dependencies) and [not using versions in target names](https://docs.bazel.build/versions/4.0.0/best-practices.html#versioning).
 
-The strategy my_rules_dotnet will attempt to take is naming the lastest version of a package `package` and previous versions of a package `package-v1`.
+The strategy rules_msbuild will attempt to take is naming the lastest version of a package `package` and previous versions of a package `package-v1`.
 
 # Modes of NuGet Operation
 

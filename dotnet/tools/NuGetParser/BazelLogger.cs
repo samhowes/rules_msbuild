@@ -1,6 +1,6 @@
 using System;
 
-namespace MyRulesDotnet.Tools.NuGetParser
+namespace RulesMSBuild.Tools.NuGetParser
 {
     public static class BazelLogger
     {
