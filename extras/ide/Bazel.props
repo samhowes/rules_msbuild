@@ -7,7 +7,7 @@
         <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@nuget_workspace_name@@</BazelNuGetWorkspace>
         <BazelExecRoot>bazel-$(BazelWorkspaceName)</BazelExecRoot>
 
-        <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\\','/'))</BazelPackage>
+        <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\','/'))</BazelPackage>
         <!-- If the file is at the root, msbuild will generate a relative path to this directory, bazel wants this to be empty -->
         <BazelPackage Condition="$(BazelPackage.StartsWith(../))"></BazelPackage>
     </PropertyGroup>
