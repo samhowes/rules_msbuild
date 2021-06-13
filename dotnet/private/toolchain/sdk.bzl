@@ -1,9 +1,6 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
-load("//dotnet/private/msbuild:xml.bzl", "prepare_nuget_config")
-load("//dotnet/private/toolchain:nuget.bzl", "NUGET_BUILD_CONFIG")
+load("//dotnet/private/msbuild:nuget.bzl", "NUGET_BUILD_CONFIG", "prepare_nuget_config")
 load("//dotnet/private/toolchain:common.bzl", "BUILDER_PACKAGES", "default_tfm", "detect_host_platform")
 
 SDK_NAME = "dotnet_sdk"
@@ -123,7 +120,8 @@ def _dotnet_download_sdk_impl(ctx):
 
     attr_udpates = {}
     if sdk_sha == "":
-        orig = dicts.add(getattr(ctx.attr, "shas", {}))
+        shas = getattr(ctx.attr, "shas", {})
+        orig = dict(shas.items())
         orig[platform] = res.sha256
         attr_udpates["shas"] = orig
 

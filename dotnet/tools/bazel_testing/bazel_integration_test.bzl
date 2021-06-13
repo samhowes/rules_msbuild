@@ -5,14 +5,24 @@ def _rules_msbuild_integration_test_impl(ctx):
     if len(ctx.files.workspace_files) == 0:
         fail("no workspace files")
 
+    bazel = None
+    for b in ctx.files.bazel_binary:
+        if b.basename.find("-") >= 0:
+            continue
+        bazel = b
+        break
+
     config = ctx.actions.declare_file("%s.config.json" % ctx.attr.name)
     ctx.actions.write(
         output = config,
         content = json.encode(dict(
             workspaceRoot = paths.join(
+                ctx.workspace_name,
                 paths.dirname(ctx.build_file_path),
                 ctx.attr.name.split("_", 1)[1],
             ),
+            releaseTar = to_manifest_path(ctx, ctx.file.release),
+            bazel = to_manifest_path(ctx, bazel),
         )),
     )
     test_runner = to_manifest_path(ctx, ctx.executable._test_runner)
@@ -40,7 +50,7 @@ ${{COMMAND}}
         ),
     )
 
-    runfiles = ([config] +
+    runfiles = ([config, ctx.file.release] +
                 ctx.files.bazel_binary +
                 ctx.files.workspace_files)
     return [DefaultInfo(
@@ -55,6 +65,7 @@ rules_msbuild_integration_test = rule(
             doc = "A filegroup of all files in the workspace-under-test",
             allow_files = True,
         ),
+        "release": attr.label(allow_single_file = True),
         "bazel_binary": attr.label(mandatory = True, allow_files = True),
         "_test_runner": attr.label(
             executable = True,

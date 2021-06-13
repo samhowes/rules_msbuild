@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\builder\Builder.csproj" />
     <ProjectReference Include="..\Bzl\Bzl.csproj" />
     <ProjectReference Include="..\Runfiles\Runfiles.csproj" />
   </ItemGroup>

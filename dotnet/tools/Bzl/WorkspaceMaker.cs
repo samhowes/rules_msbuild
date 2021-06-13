@@ -31,10 +31,10 @@ namespace Bzl
             };
         }
 
-        public void Init()
+        public void Init(bool force=false, bool workspaceOnly=false)
         {
             var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
-            if (!workspaceFile.Exists)
+            if (!workspaceFile.Exists || force)
             {
                 foreach (var (templateName, name) in new []
                 {
@@ -47,6 +47,7 @@ namespace Bzl
                 }
             }
 
+            if (workspaceOnly) return;
             var msbuildRoot = _workspaceRoot;
             Files.Walk(_workspaceRoot, (path, isDirectory) =>
             {

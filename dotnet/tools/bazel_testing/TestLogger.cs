@@ -15,12 +15,12 @@ namespace TestRunner
         {
             Console.WriteLine(message);
         }
-        public static bool Fail(string message)
+        public static int Fail(string message)
         {
             Console.Error.WriteLine(message);
             Console.Error.Flush();
             Environment.Exit(1);
-            return false;
+            return 1;
         }
     }
 }
