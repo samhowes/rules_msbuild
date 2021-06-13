@@ -78,13 +78,14 @@ namespace TestRunner
                 return true;
             });
 
+            var originalWorkspace = File.ReadAllText("WORKSPACE");
             var workspaceMaker = new WorkspaceMaker(runfiles, tmpDir, tmpDir.Split(Path.DirectorySeparatorChar).Last());
             workspaceMaker.Init(true,true);
 
             var workspace = File.ReadAllText("WORKSPACE");
             workspace = Regex.Replace(workspace, @"http_archive\(.*\n\s+name = ""rules_msbuild"",\n.*\n\s+(?<urls>.*)",
                 match => match.Value.Replace(match.Groups["urls"].Value, $"urls = [\"file:{config.ReleaseTar}\"],"));
-            File.WriteAllText("WORKSPACE", workspace);
+            File.WriteAllText("WORKSPACE", workspace + originalWorkspace);
 
             using var bazel = new Process()
             {

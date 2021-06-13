@@ -1,1 +1,12 @@
-# placeholder, this will be auto-replaced
+# this will be appended to the templated WORKSPACE fragment in Bzl
+
+load("@rules_msbuild//dotnet:defs.bzl", "nuget_fetch")
+
+nuget_fetch(
+    name = "nuget",
+    packages = {
+        "CommandLineParser:2.9.0-preview1": ["netcoreapp3.1"],
+    },
+    target_frameworks = ["netcoreapp3.1"],
+    use_host = True,
+)

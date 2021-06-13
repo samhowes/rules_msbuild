@@ -7,8 +7,25 @@ using NuGetParser;
 
 namespace Bzl
 {
+    public class Template
+    {
+        public string Target { get; }
+        public string DestinationPath { get; }
+
+        public Template(string target, string destinationPath)
+        {
+            Target = target;
+            DestinationPath = destinationPath;
+        }
+    }
     public class WorkspaceMaker
     {
+        private static class Templates
+        {
+            public static readonly Template Workspace = new Template(":WORKSPACE.tpl", "WORKSPACE");
+            public static readonly Template RootBuild = new Template(":BUILD.root.tpl.bazel", "BUILD.bazel");
+        }
+        
         private readonly LabelRunfiles _runfiles;
         private readonly string _workspaceRoot;
         private readonly string _workspaceName;
@@ -36,15 +53,9 @@ namespace Bzl
             var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
             if (!workspaceFile.Exists || force)
             {
-                foreach (var (templateName, name) in new []
-                {
-                    (":BUILD.root.tpl.bazel", "BUILD.bazel"), 
-                    (":WORKSPACE.tpl", "WORKSPACE")
-                })
-                {
-                    CopyTemplate(_runfiles.PackagePath(templateName), name);
-                    ReportFile(name);
-                }
+                ExpandTemplate(Templates.Workspace);
+                if (!workspaceOnly)
+                    ExpandTemplate(Templates.RootBuild);
             }
 
             if (workspaceOnly) return;
@@ -70,6 +81,12 @@ namespace Bzl
                 CopyTemplate(src, dest);
                 ReportFile(dest);
             }
+        }
+
+        private void ExpandTemplate(Template t)
+        {
+            CopyTemplate(_runfiles.PackagePath(t.Target), t.DestinationPath);
+            ReportFile(t.DestinationPath);
         }
 
         private void ReportFile(string path)

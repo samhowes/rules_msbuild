@@ -3,7 +3,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _rules_msbuild_integration_test_impl(ctx):
     if len(ctx.files.workspace_files) == 0:
-        fail("no workspace files")
+        fail("no workspace files, do you need to run `eng/update_deleted.sh`?")
 
     bazel = None
     for b in ctx.files.bazel_binary:
