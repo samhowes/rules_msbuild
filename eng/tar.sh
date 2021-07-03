@@ -12,9 +12,17 @@ tar -czvf "$tmp_tar" -T tmp/tar.files
 
 sha=$(shasum -a 256 "$tmp_tar" | cut -d " " -f1)
 
+function replace() {
+  args=( "$@" )
+  if [[ "$(uname)" == *"Darwin"* ]]; then
+      args=("-i" '' "${args[@]}")
+  fi
+  sed "${args[@]}"
+}
+
 for f in ReleaseNotes.md dotnet/tools/Bzl/WORKSPACE.tpl
 do
-  sed -i '' "s|download/.*.tar.gz|download/$tag/$tarfile|" "$f"
-  sed -i '' -E "s|sha256 = \"[0-9a-f]+\"|sha256 = \"$sha\"|g" "$f"
+  replace "s|download/.*.tar.gz|download/$tag/$tarfile|" "$f"
+  replace -E "s|sha256 = \"[0-9a-f]+\"|sha256 = \"$sha\"|g" "$f"
 done
 
