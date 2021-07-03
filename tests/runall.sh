@@ -21,4 +21,4 @@ bazel test //... --test_tag_filters=-e2e
 # targets that __must__ be run by themselves
 bazel build //tests/sandboxing/parallel
 
-bazel --host_jvm_args=-Xms256m --host_jvm_args=-Xmx1280m test --test_tag_filters=e2e --local_ram_resources=792 --test_arg=--local_ram_resources=13288
+bazel --host_jvm_args=-Xms256m --host_jvm_args=-Xmx1280m test --test_tag_filters=e2e --local_ram_resources=792 //...

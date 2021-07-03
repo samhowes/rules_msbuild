@@ -28,7 +28,7 @@ namespace TestRunner
             Debug(string.Join(" ", args));
             Debug(Environment.CurrentDirectory);
             if (args.Length != 1)
-                return Fail($"Expected config file as only argument. Got {args}");
+                return Fail($"Expected config file as only argument. Got {String.Join(" ", args)}");
 
             var runfiles = Runfiles.Create();
             
