@@ -1,9 +1,11 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -23,6 +25,35 @@ namespace TestRunner
         public string Bazel { get; set; }
     }
 
+    public static class PosixPath
+    {
+        public const char Separator = '/';
+        public static string? GetDirectoryName(string path)
+        {
+            var parts = path.Split(Separator);
+            if (parts.Length == 1) return null;
+            return string.Join(Separator, parts[..^1]);
+        }
+
+        public static string Combine(params string[] parts)
+        {
+            var builder = new StringBuilder();
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+
+                if (i > 0 && part.StartsWith(Separator))
+                    part = part[1..];
+
+                builder.Append(part);
+                if (i < parts.Length -1 && !part.EndsWith(Separator))
+                    builder.Append(Separator);
+            }
+
+            return builder.ToString();
+        }
+    }
+    
     public static class Program
     {
         static int Main(string[] args)
@@ -39,7 +70,6 @@ namespace TestRunner
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            config!.WorkspaceRoot = runfiles.Rlocation(config.WorkspaceRoot);
             config!.ReleaseTar = runfiles.Rlocation(config.ReleaseTar);
             config!.Bazel = runfiles.Rlocation(config.Bazel);
 
@@ -85,20 +115,26 @@ namespace TestRunner
             
             Directory.CreateDirectory(testDir);
             Directory.SetCurrentDirectory(testDir);
-            Files.Walk(_config.WorkspaceRoot, (path, isDirectory) =>
-            {
-                var rel = path[(_config.WorkspaceRoot.Length + 1)..];
-                var dest = Path.Combine(testDir, rel);
-                if (isDirectory)
-                {
-                    Directory.CreateDirectory(dest);
-                    return true;
-                }
 
-                Debug(rel);
+            var sourceWorkspaceRpath = PosixPath.Combine(_config.WorkspaceRoot, "WORKSPACE");
+            var sourceWorkspace = _runfiles.Rlocation(sourceWorkspaceRpath);
+            if (sourceWorkspace == null)
+                throw new Exception($"Could not find workspace file with runfile path " +
+                                    $"{sourceWorkspaceRpath}, source test workspace must include a WORKSPACE file.");
+
+            var workspaceRoot = PosixPath.GetDirectoryName(sourceWorkspace)!;
+            var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var path in _runfiles.ListRunfiles(_config.WorkspaceRoot))
+            {
+                var rel = path[(workspaceRoot.Length + 1)..];
+                var dest = PosixPath.Combine(testDir, rel);
+                var directoryName = PosixPath.GetDirectoryName(dest)!;
+                if (!directories.Contains(directoryName) && !Directory.Exists(directoryName))
+                    Directory.CreateDirectory(directoryName);
+                directories.Add(directoryName);
                 File.Copy(path, dest);
-                return true;
-            });
+                Debug(dest);
+            }
 
             var originalWorkspace = File.ReadAllText("WORKSPACE");
             var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName, _config.WorkspaceTpl);
@@ -126,7 +162,7 @@ namespace TestRunner
             return bazel.ExitCode;
         }
 
-        private static void SetEnv(IDictionary<string,string> env, string workspaceRoot)
+        private static void SetEnv(IDictionary<string,string?> env, string workspaceRoot)
         {
             // credit to rules_nodejs: https://github.com/bazelbuild/rules_nodejs/blob/stable/internal/bazel_integration_test/test_runner.js#L356
             var bazelKeys = new List<string>()
