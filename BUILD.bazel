@@ -64,9 +64,3 @@ genrule(
     tags = ["local"],
     visibility = ["//:__subpackages__"],
 )
-
-filegroup(
-    name = "release",
-    srcs = ["tmp/rules_msbuild-0.0.1.tar.gz"],
-    visibility = ["//:__subpackages__"],
-)
