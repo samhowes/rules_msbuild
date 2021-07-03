@@ -48,6 +48,14 @@ gazelle(
     gazelle = "//gazelle/dotnet:gazelle-dotnet",
 )
 
+genrule(
+    name = "tar",
+    srcs = [],
+    outs = ["release.tar"],
+    cmd = "$(location :eng/tar.sh) $@",
+    exec_tools = ["eng/tar.sh"],
+)
+
 filegroup(
     name = "release",
     srcs = ["tmp/rules_msbuild-0.0.1.tar.gz"],

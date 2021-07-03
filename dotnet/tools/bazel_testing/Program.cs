@@ -15,13 +15,14 @@ using static TestRunner.TestLogger;
 
 namespace TestRunner
 {
-    class TestConfig
+    public class TestConfig
     {
         public string WorkspaceRoot { get; set; }
         public string ReleaseTar { get; set; }
         public string Bazel { get; set; }
     }
-    class Program
+
+    public static class Program
     {
         static int Main(string[] args)
         {
@@ -31,42 +32,62 @@ namespace TestRunner
                 return Fail($"Expected config file as only argument. Got {String.Join(" ", args)}");
 
             var runfiles = Runfiles.Create();
-            
+
             var config = JsonSerializer.Deserialize<TestConfig>(File.ReadAllText(args[0]), new JsonSerializerOptions()
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
-            
-            var tmpDir = BazelEnvironment.GetTmpDir(config!.WorkspaceRoot);
-            
+
             config!.WorkspaceRoot = runfiles.Rlocation(config.WorkspaceRoot);
             config!.ReleaseTar = runfiles.Rlocation(config.ReleaseTar);
             config!.Bazel = runfiles.Rlocation(config.Bazel);
-            
+
             Info($"Using release tar {config!.ReleaseTar}");
             Info($"Using input workspace {config!.WorkspaceRoot}");
-            Info($"Using tmp workspace {tmpDir}");
 
-            try
-            {
-                return RunTest(runfiles, tmpDir, config);
-            }
-            finally
-            {
-                if (!DebugEnabled)
-                    if (Directory.Exists(tmpDir))
-                        Directory.Delete(tmpDir, true);
-            }
+            using var testRunner = new TestRunner(runfiles, config);
+            return testRunner.Run();
         }
 
-        private static int RunTest(Runfiles runfiles, string tmpDir, TestConfig config)
+    }
+    public class TestRunner : IDisposable
+    {
+        private readonly Runfiles _runfiles;
+        private readonly TestConfig _config;
+        private List<string> _cleanup = new List<string>();
+
+        public TestRunner(Runfiles runfiles, TestConfig config)
         {
-            Directory.CreateDirectory(tmpDir);
-            Directory.SetCurrentDirectory(tmpDir);
-            Files.Walk(config.WorkspaceRoot, (path, isDirectory) =>
+            _runfiles = runfiles;
+            _config = config;
+        }
+
+
+        public int Run()
+        {
+            var testTmpDir = BazelEnvironment.GetTmpDir();
+            var execRootIndex = testTmpDir.IndexOf("/execroot/", StringComparison.OrdinalIgnoreCase);
+            if (execRootIndex < 0) throw new Exception($"Bad tmpdir: {testTmpDir}");
+            var outputBaseDir = testTmpDir[..execRootIndex];
+            var outputUserRoot = Path.GetDirectoryName(outputBaseDir);
+            var cacheDir = Path.Join(outputBaseDir, "bazel_testing");
+            var execDir = Path.Join(cacheDir, "bazel_dotnet_test");
+            if (Directory.Exists(execDir))
+                Directory.Delete(execDir, true);
+            _cleanup.Add(execDir);
+
+            var workspaceName = Path.GetFileName(_config.WorkspaceRoot);
+            var testDir = Path.Combine(execDir, workspaceName!);
+            
+            Info($"Using workspace root: {testDir}");
+            Info($"Using output user root: {outputUserRoot}");
+            
+            Directory.CreateDirectory(testDir);
+            Directory.SetCurrentDirectory(testDir);
+            Files.Walk(_config.WorkspaceRoot, (path, isDirectory) =>
             {
-                var rel = path[(config.WorkspaceRoot.Length + 1)..];
-                var dest = Path.Combine(tmpDir, rel);
+                var rel = path[(_config.WorkspaceRoot.Length + 1)..];
+                var dest = Path.Combine(testDir, rel);
                 if (isDirectory)
                 {
                     Directory.CreateDirectory(dest);
@@ -79,31 +100,29 @@ namespace TestRunner
             });
 
             var originalWorkspace = File.ReadAllText("WORKSPACE");
-            var workspaceMaker = new WorkspaceMaker(runfiles, tmpDir, tmpDir.Split(Path.DirectorySeparatorChar).Last());
+            var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName);
             workspaceMaker.Init(true,true);
 
             var workspace = File.ReadAllText("WORKSPACE");
             workspace = Regex.Replace(workspace, @"http_archive\(.*\n\s+name = ""rules_msbuild"",\n.*\n\s+(?<urls>.*)",
-                match => match.Value.Replace(match.Groups["urls"].Value, $"urls = [\"file:{config.ReleaseTar}\"],"));
+                match => match.Value.Replace(match.Groups["urls"].Value, $"urls = [\"file:{_config.ReleaseTar}\"],"));
             File.WriteAllText("WORKSPACE", workspace + originalWorkspace);
 
             using var bazel = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = config.Bazel,
-                    Arguments = "build //...", 
-                    WorkingDirectory = tmpDir
+                    FileName = _config.Bazel,
+                    Arguments = $"--output_user_root={outputUserRoot} build //...", 
+                    WorkingDirectory = testDir
                 }
             };
 
-            SetEnv(bazel.StartInfo.Environment, tmpDir);
+            SetEnv(bazel.StartInfo.Environment, testDir);
             bazel.Start();
             bazel.WaitForExit();
 
             return bazel.ExitCode;
-
-
         }
 
         private static void SetEnv(IDictionary<string,string> env, string workspaceRoot)
@@ -173,6 +192,17 @@ namespace TestRunner
             Debug($"home: {home}");
             env["HOME"] = home;
             env["DOTNET_CLI_HOME"] = home;
+        }
+
+        public void Dispose()
+        {
+            if (DebugEnabled) return;
+            foreach (var path in _cleanup)
+            {
+                if (Directory.Exists(path))
+                    Directory.Delete(path, true);    
+            }
+
         }
     }
 }
