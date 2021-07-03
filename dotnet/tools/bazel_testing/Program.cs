@@ -69,7 +69,7 @@ namespace TestRunner
             var execRootIndex = testTmpDir.IndexOf("/execroot/", StringComparison.OrdinalIgnoreCase);
             if (execRootIndex < 0) throw new Exception($"Bad tmpdir: {testTmpDir}");
             var outputBaseDir = testTmpDir[..execRootIndex];
-            var outputUserRoot = outputBaseDir; // Path.GetDirectoryName(outputBaseDir);
+            var outputUserRoot = Path.GetDirectoryName(outputBaseDir);
             var cacheDir = Path.Join(outputBaseDir, "bazel_testing");
             var execDir = Path.Join(cacheDir, "bazel_dotnet_test");
             if (Directory.Exists(execDir))

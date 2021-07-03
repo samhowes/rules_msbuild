@@ -11,9 +11,16 @@ def e2e_test(name):
         ]),
     )
 
+    # Set tags.
+    # local: don't run in sandbox or on remote executor.
+    # exclusive: run one test at a time, since they share a Bazel
+    #   output directory. If we don't do this, tests must extract the bazel
+    #   installation and start with a fresh cache every time, making them
+    #   much slower.
+    tags = ["e2e", "local", "exclusive"]
     rules_msbuild_integration_test(
         name = name,
-        tags = ["e2e"],
+        tags = tags,
         release = "//:release",
         workspace_files = srcs_name,
         bazel_binary = "@build_bazel_bazel_%s//:bazel_binary" % BAZEL_VERSION.replace(".", "_"),
