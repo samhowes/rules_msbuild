@@ -8,8 +8,6 @@ export MSYS2_ARG_CONV_EXCL="*"
 # if these don't build, nothing will
 bazel build //tests/sanity //tests/examples/HelloBazel
 
-eng/tar.sh
-
 bazel test //... --test_tag_filters=-e2e
 
 bazel run //:gazelle-dotnet
