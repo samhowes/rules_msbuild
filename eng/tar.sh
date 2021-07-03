@@ -16,6 +16,8 @@ function replace() {
   args=( "$@" )
   if [[ "$(uname)" == *"Darwin"* ]]; then
       args=("-i" '' "${args[@]}")
+  else
+      args=("-i" "${args[@]}")
   fi
   sed "${args[@]}"
 }
