@@ -50,10 +50,19 @@ gazelle(
 
 genrule(
     name = "tar",
-    srcs = [],
-    outs = ["release.tar"],
-    cmd = "$(location :eng/tar.sh) $@",
+    srcs = [
+        "//dotnet/tools/Bzl:WORKSPACE.tpl",
+        ":ReleaseNotes.md",
+    ],
+    outs = [
+        "rules_msbuild.tar.gz",
+        "WORKSPACE.tpl",
+        "ReleaseNotes.gen.md",
+    ],
+    cmd = "$(location :eng/tar.sh) $(SRCS) -- $(OUTS)",
     exec_tools = ["eng/tar.sh"],
+    tags = ["local"],
+    visibility = ["//:__subpackages__"],
 )
 
 filegroup(

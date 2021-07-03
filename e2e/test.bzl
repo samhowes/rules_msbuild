@@ -21,7 +21,6 @@ def e2e_test(name):
     rules_msbuild_integration_test(
         name = name,
         tags = tags,
-        release = "//:release",
         workspace_files = srcs_name,
         bazel_binary = "@build_bazel_bazel_%s//:bazel_binary" % BAZEL_VERSION.replace(".", "_"),
     )

@@ -19,6 +19,7 @@ namespace TestRunner
     {
         public string WorkspaceRoot { get; set; }
         public string ReleaseTar { get; set; }
+        public string WorkspaceTpl { get; set; }
         public string Bazel { get; set; }
     }
 
@@ -54,7 +55,7 @@ namespace TestRunner
     {
         private readonly Runfiles _runfiles;
         private readonly TestConfig _config;
-        private List<string> _cleanup = new List<string>();
+        private readonly List<string> _cleanup = new List<string>();
 
         public TestRunner(Runfiles runfiles, TestConfig config)
         {
@@ -62,10 +63,10 @@ namespace TestRunner
             _config = config;
         }
 
-
         public int Run()
         {
             var testTmpDir = BazelEnvironment.GetTmpDir();
+            // assumes we're not in a sandbox i.e. tags = ["local"]
             var execRootIndex = testTmpDir.IndexOf("/execroot/", StringComparison.OrdinalIgnoreCase);
             if (execRootIndex < 0) throw new Exception($"Bad tmpdir: {testTmpDir}");
             var outputBaseDir = testTmpDir[..execRootIndex];
@@ -100,7 +101,7 @@ namespace TestRunner
             });
 
             var originalWorkspace = File.ReadAllText("WORKSPACE");
-            var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName);
+            var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName, _config.WorkspaceTpl);
             workspaceMaker.Init(true,true);
 
             var workspace = File.ReadAllText("WORKSPACE");

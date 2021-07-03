@@ -13,6 +13,8 @@ def _rules_msbuild_integration_test_impl(ctx):
         break
 
     config = ctx.actions.declare_file("%s.config.json" % ctx.attr.name)
+    tar = [f for f in ctx.files._tar if "tar" in f.path][0]
+    tpl = [f for f in ctx.files._tar if "WORKSPACE" in f.path][0]
     ctx.actions.write(
         output = config,
         content = json.encode(dict(
@@ -21,7 +23,8 @@ def _rules_msbuild_integration_test_impl(ctx):
                 paths.dirname(ctx.build_file_path),
                 ctx.attr.name.split("_", 1)[1],
             ),
-            releaseTar = to_manifest_path(ctx, ctx.file.release),
+            releaseTar = to_manifest_path(ctx, tar),
+            workspaceTpl = to_manifest_path(ctx, tpl),
             bazel = to_manifest_path(ctx, bazel),
         )),
     )
@@ -50,7 +53,7 @@ ${{COMMAND}}
         ),
     )
 
-    runfiles = ([config, ctx.file.release] +
+    runfiles = ([config] + ctx.files._tar +
                 ctx.files.bazel_binary +
                 ctx.files.workspace_files)
     return [DefaultInfo(
@@ -65,8 +68,8 @@ rules_msbuild_integration_test = rule(
             doc = "A filegroup of all files in the workspace-under-test",
             allow_files = True,
         ),
-        "release": attr.label(allow_single_file = True),
         "bazel_binary": attr.label(mandatory = True, allow_files = True),
+        "_tar": attr.label(allow_files = True, default = Label("//:tar")),
         "_test_runner": attr.label(
             executable = True,
             cfg = "host",

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,21 +29,23 @@ namespace Bzl
         
         private readonly LabelRunfiles _runfiles;
         private readonly string _workspaceRoot;
-        private readonly string _workspaceName;
 
         private static readonly Regex TemplateRegex = new Regex(@"@@(\w+)@@",
             RegexOptions.Compiled | RegexOptions.Multiline);
 
         private readonly Dictionary<string,string> _variables;
+        private readonly Template _workspaceTemplate;
 
-        public WorkspaceMaker(Runfiles runfiles, string workspaceRoot, string workspaceName)
+        public WorkspaceMaker(Runfiles runfiles, string workspaceRoot, string workspaceName, string? workspaceTemplate = null)
         {
             _runfiles = new LabelRunfiles(runfiles, new Label("rules_msbuild", "dotnet/tools/Bzl"));
             _workspaceRoot = workspaceRoot;
-            _workspaceName = workspaceName;
+            _workspaceTemplate = workspaceTemplate != null
+                ? new Template(workspaceTemplate, Templates.Workspace.DestinationPath)
+                : Templates.Workspace;
             _variables = new Dictionary<string, string>()
             {
-                ["workspace_name"] = _workspaceName,
+                ["workspace_name"] = workspaceName,
                 ["nuget_workspace_name"] = "nuget",
                 ["bazel_bin"] = "bazel-bin",
             };
@@ -53,7 +56,7 @@ namespace Bzl
             var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
             if (!workspaceFile.Exists || force)
             {
-                ExpandTemplate(Templates.Workspace);
+                ExpandTemplate(_workspaceTemplate);
                 if (!workspaceOnly)
                     ExpandTemplate(Templates.RootBuild);
             }
@@ -85,7 +88,10 @@ namespace Bzl
 
         private void ExpandTemplate(Template t)
         {
-            CopyTemplate(_runfiles.PackagePath(t.Target), t.DestinationPath);
+            var sourcePath = t.Target.StartsWith("//") || t.Target.StartsWith(":")
+                ? _runfiles.PackagePath(t.Target)
+                : _runfiles.Runfiles.Rlocation(t.Target); 
+            CopyTemplate(sourcePath, t.DestinationPath);
             ReportFile(t.DestinationPath);
         }
 

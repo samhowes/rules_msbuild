@@ -1,16 +1,30 @@
 #!/usr/bin/env bash
+set -e
 
-if [[ ! -d "tmp" ]]; then mkdir tmp; fi
+ins=()
+dest=()
+tarfile=""
+for ((i=1; i <= $#; i++))
+do
+  a="${!i}"
+  if [[ $a == "--" ]]; then
+    ins=("${dest[@]}")
+    dest=()
+    i=$((i+1));
+    tarfile="${!i}"
+    continue
+  fi
+  dest+=("$a")
+done
+outs=("${dest[@]}")
 
 tag="0.0.1"
-tarfile="rules_msbuild-$tag.tar.gz"
-tmp_tar="tmp/$tarfile"
+base_out="$(dirname "$tarfile")"
+git ls-files > "$tarfile".files
 
-git ls-files > tmp/tar.files
+tar -czf "$tarfile" -T "$tarfile.files"
 
-tar -czvf "$tmp_tar" -T tmp/tar.files
-
-sha=$(shasum -a 256 "$tmp_tar" | cut -d " " -f1)
+sha=$(shasum -a 256 "$tarfile" | cut -d " " -f1)
 
 function replace() {
   args=( "$@" )
@@ -21,10 +35,12 @@ function replace() {
   fi
   sed "${args[@]}"
 }
-
-for f in ReleaseNotes.md dotnet/tools/Bzl/WORKSPACE.tpl
+n=${#ins[@]}
+for ((i=0; i < n; i++))
 do
-  replace "s|download/.*.tar.gz|download/$tag/$tarfile|" "$f"
-  replace -E "s|sha256 = \"[0-9a-f]+\"|sha256 = \"$sha\"|g" "$f"
-done
 
+  f="${ins[i]}"
+  o="${outs[i]}"
+  sed "s|download/.*.tar.gz|download/$tag/$tarfile|" "$f" > "$o"
+  replace -E "s|sha256 = \"[0-9a-f]+\"|sha256 = \"$sha\"|g" "$o"
+done
