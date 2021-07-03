@@ -107,8 +107,6 @@ def _configure_host_packages(ctx, dotnet, config):
     if result.return_code != 0:
         fail("failed to find global-packages folder with dotnet: " + result.stderr)
 
-    print(result.stdout)
-
     # example dotnet5 output: `global-packages: /Users/samh/.nuget/packages/`
     # example dotnet3.1 output: `info : global-packages: /Users/samh/.nuget/packages/`
     ind = result.stdout.index(cache_type)

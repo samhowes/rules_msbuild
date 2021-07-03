@@ -6,6 +6,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 load("@rules_msbuild//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
 
+# gazelle:repo bazel_gazelle
 dotnet_rules_dependencies()
 
 dotnet_register_toolchains(
@@ -26,17 +27,16 @@ nuget_deps()
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("//deps:go_deps.bzl", "go_dependencies")
+
+# gazelle:repository_macro deps/go_deps.bzl%go_dependencies
+go_dependencies()
 
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.16.2")
 
 gazelle_dependencies()
-
-load("//deps:go_deps.bzl", "go_dependencies")
-
-# gazelle:repository_macro deps/go_deps.bzl%go_dependencies
-go_dependencies()
 
 http_archive(
     name = "rules_pkg",
