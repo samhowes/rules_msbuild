@@ -323,7 +323,7 @@ nuget_fetch = repository_rule(
                    "host machine's global packages folder will be used. This is determined by executing " +
                    "`dotnet nuget locals global-packages --list"),
         ),
-        "target_frameworks": attr.string_list(),
+        "target_frameworks": attr.string_list(mandatory = True),
         "_master_template": attr.label(
             default = Label("@rules_msbuild//dotnet/private/msbuild:project.tpl.proj"),
         ),

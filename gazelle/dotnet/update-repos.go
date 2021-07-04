@@ -56,9 +56,14 @@ func (d *dotnetLang) customUpdateRepos(c *config.Config) {
 
 	f, err := rule.LoadMacroFile(macroPath, "", dc.macroDefName)
 	if os.IsNotExist(err) {
+		directory := filepath.Dir(macroPath)
+		if err = os.MkdirAll(directory, os.ModePerm); err != nil {
+			log.Fatalf("error creating directory %s: %v", directory, err)
+		}
+
 		f, err = rule.EmptyMacroFile(macroPath, "", dc.macroDefName)
 		if err != nil {
-			log.Fatalf("error creating %q: %v", macroPath, err)
+			log.Fatalf("error creating %s: %v", macroPath, err)
 		}
 	} else if err != nil {
 		log.Fatalf("error loading %q: %v", macroPath, err)
@@ -169,6 +174,7 @@ func mergePackages(gen *rule.Rule, old *rule.Rule) {
 func importReposImpl(packages map[string]*project.NugetSpec) language.ImportReposResult {
 	r := rule.NewRule("nuget_fetch", "nuget")
 
+	frameworks := map[string]bool{}
 	rValue := map[string][]string{}
 	for _, p := range packages {
 		k := fmt.Sprintf("%s:%s", p.Name, p.Version.Raw)
@@ -176,12 +182,21 @@ func importReposImpl(packages map[string]*project.NugetSpec) language.ImportRepo
 		i := 0
 		for tfm, _ := range p.Tfms {
 			tfms[i] = tfm
+			frameworks[tfm] = true
 			i++
 		}
 		sort.Strings(tfms)
 		rValue[k] = tfms
 	}
+
+	r.SetAttr("use_host", true)
 	r.SetAttr("packages", rValue)
+	frameworksList := make([]string, 0, len(frameworks))
+	for k, _ := range frameworks {
+		frameworksList = append(frameworksList, k)
+	}
+	sort.Strings(frameworksList)
+	r.SetAttr("target_frameworks", frameworksList)
 
 	res := language.ImportReposResult{
 		Gen: []*rule.Rule{r},

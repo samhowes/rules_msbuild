@@ -3,8 +3,10 @@ load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
 msbuild_binary(
     name = "TestRunner",
     srcs = [
+        "PosixPath.cs",
         "Program.cs",
         "TestLogger.cs",
+        "TestRunner.cs",
     ],
     project_file = "TestRunner.csproj",
     target_framework = "net5.0",

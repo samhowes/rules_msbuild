@@ -26,6 +26,7 @@ def _rules_msbuild_integration_test_impl(ctx):
             releaseTar = to_manifest_path(ctx, tar),
             workspaceTpl = to_manifest_path(ctx, tpl),
             bazel = to_manifest_path(ctx, bazel),
+            commands = ctx.attr.commands,
         )),
     )
     test_runner = to_manifest_path(ctx, ctx.executable._test_runner)
@@ -68,6 +69,7 @@ rules_msbuild_integration_test = rule(
             doc = "A filegroup of all files in the workspace-under-test",
             allow_files = True,
         ),
+        "commands": attr.string_list(default = ["build //..."]),
         "bazel_binary": attr.label(mandatory = True, allow_files = True),
         "_tar": attr.label(allow_files = True, default = Label("//:tar")),
         "_test_runner": attr.label(
