@@ -73,8 +73,8 @@ def declare_toolchains(host, sdk, builder):
             name = toolchain_name,
             toolchain_type = "@rules_msbuild//dotnet:toolchain",
             exec_compatible_with = [
-                "@rules_msbuild//dotnet/toolchain:" + host_dotnetos,
-                "@rules_msbuild//dotnet/toolchain:" + host_dotnetarch,
+                "@rules_msbuild//dotnet:" + host_dotnetos,
+                "@rules_msbuild//dotnet:" + host_dotnetarch,
             ],
             target_compatible_with = constraints,
             toolchain = ":" + impl_name,

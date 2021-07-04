@@ -55,6 +55,8 @@ load(
     _nuget_fetch = "nuget_fetch",
 )
 
+BAZEL_VERSION = "4.1.0"
+
 # primary end-user rules
 msbuild_directory = msbuild_directory_macro
 msbuild_binary = msbuild_binary_macro

@@ -3,6 +3,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//dotnet/private:providers.bzl", "MSBuildSdk")
+load(":xml_util.bzl", "inline_element")
 
 INTERMEDIATE_BASE = "obj"
 STARTUP_DIR = "$(MSBuildStartupDirectory)"
@@ -28,13 +29,6 @@ def element(name, value, attrs = {}):
         open_tag = " ".join(open_tag_items),
         value = value,
     )
-
-def inline_element(name, attrs):
-    attr_strings = [
-        "{}=\"{}\"".format(a, attrs[a])
-        for a in attrs
-    ]
-    return "<{name} {attrs} />".format(name = name, attrs = " ".join(attr_strings))
 
 def _import_sdk(name, project_type, version = None):
     attrs = {
@@ -123,19 +117,3 @@ def prepare_project_file(
     }
 
     return substitutions
-
-def prepare_nuget_config(packages_folder, restore_enabled, package_sources):
-    sources = []
-    for name, url in package_sources.items():
-        attrs = {"key": name, "value": url}
-
-        # todo(#46)
-        if True:
-            attrs["protocolVersion"] = "3"
-        sources.append(inline_element("add", attrs))
-
-    return {
-        "{packages_folder}": packages_folder,
-        "{restore_enabled}": str(restore_enabled),
-        "{package_sources}": "\n    ".join(sources),
-    }

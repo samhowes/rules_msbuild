@@ -1,0 +1,11 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "Binary",
+    srcs = ["Program.cs"],
+    target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@nuget//CommandLineParser",
+    ],
+)

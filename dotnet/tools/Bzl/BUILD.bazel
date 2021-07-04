@@ -1,5 +1,7 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
 
+exports_files(["WORKSPACE.tpl"])
+
 msbuild_binary(
     name = "Bzl",
     srcs = [

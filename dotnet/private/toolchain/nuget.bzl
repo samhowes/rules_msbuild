@@ -42,14 +42,12 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
     "//dotnet/private/msbuild:xml.bzl",
     "STARTUP_DIR",
-    "prepare_nuget_config",
     "prepare_project_file",
 )
+load("//dotnet/private/msbuild:nuget.bzl", "NUGET_BUILD_CONFIG", "prepare_nuget_config")
 load("//dotnet/private/toolchain:common.bzl", "BUILDER_PACKAGES", "default_tfm", "detect_host_platform")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
 load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
-
-NUGET_BUILD_CONFIG = "NuGet.Build.Config"
 
 _TfmInfo = provider(fields = ["tfn", "implicit_deps"])
 
@@ -246,7 +244,7 @@ def _process_packages(ctx, config):
         _record_package(config, seen_names, requested_name, version_spec, frameworks)
 
     pkg_name, version, tfm = ctx.attr.test_logger.split(":")
-    _record_package(config, seen_names, pkg_name, version, frameworks)
+    _record_package(config, seen_names, pkg_name, version, ctx.attr.target_frameworks)
 
 def _record_package(config, seen_names, requested_name, version_spec, frameworks, use_existing = False):
     # todo(#53) don't count on the Version Spec being a precise version

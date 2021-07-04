@@ -13,6 +13,7 @@ filegroup(
         "LauncherFactory.cs",
         "MsBuildCacheManager.cs",
         "OutputProcessor.cs",
+        "PathReplacer.cs",
         "Program.cs",
         "TargetGraph.cs",
     ],
@@ -25,7 +26,7 @@ msbuild_binary(
     name = "Builder",
     srcs = glob(["*.cs"]),
     target_framework = "netcoreapp3.1",
-    visibility = ["//tests:__subpackages__"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@nuget//Microsoft.Build",
         "@nuget//Microsoft.Build.Locator",

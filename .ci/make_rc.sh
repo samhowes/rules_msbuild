@@ -2,7 +2,7 @@
 
 ./.buildbuddy/make_rc.sh
 
-cat >.bazelrc <<EOF
+cat >>.bazelrc <<EOF
 build --announce_rc
 build --verbose_failures
 test --test_output=errors

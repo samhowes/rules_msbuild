@@ -1,5 +1,6 @@
 load("//dotnet:defs.bzl", "msbuild_directory")
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 msbuild_directory()
 
@@ -45,4 +46,21 @@ gazelle(
     name = "gazelle-dotnet",
     args = DOTNET_ARGS,
     gazelle = "//gazelle/dotnet:gazelle-dotnet",
+)
+
+genrule(
+    name = "tar",
+    srcs = [
+        "//dotnet/tools/Bzl:WORKSPACE.tpl",
+        ":ReleaseNotes.md",
+    ],
+    outs = [
+        "rules_msbuild.tar.gz",
+        "WORKSPACE.tpl",
+        "ReleaseNotes.gen.md",
+    ],
+    cmd = "$(location :eng/tar.sh) $(SRCS) -- $(OUTS)",
+    exec_tools = ["eng/tar.sh"],
+    tags = ["local"],
+    visibility = ["//:__subpackages__"],
 )

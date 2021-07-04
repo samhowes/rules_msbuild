@@ -291,7 +291,7 @@ namespace RulesMSBuild.Tools.Builder
 
         public bool UseCaching { get; } = true;
 
-        public string[] Targets { get; }
+        public string[]? Targets { get; }
 
         public string BaseIntermediateOutputPath { get; }
         public string RestoreDir => BaseIntermediateOutputPath;
