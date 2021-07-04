@@ -4,10 +4,9 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 ### dotnet ###
 
-load("@rules_msbuild//dotnet:deps.bzl", "dotnet_register_toolchains", "dotnet_rules_dependencies")
+load("@rules_msbuild//dotnet:repositories.bzl", "dotnet_register_toolchains", "dotnet_rules_repositories")
 
-# gazelle:repo bazel_gazelle
-dotnet_rules_dependencies()
+dotnet_rules_repositories()
 
 dotnet_register_toolchains(
     shas = {

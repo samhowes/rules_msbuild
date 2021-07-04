@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 ins=()
 dest=()
@@ -24,7 +24,16 @@ git ls-files > "$tarfile".files
 
 tar -czf "$tarfile" -T "$tarfile.files"
 
-sha=$(shasum -a 256 "$tarfile" | cut -d " " -f1)
+case "$(uname)" in
+  MSYS*)
+    shautil="sha256sum"
+    ;;
+  *)
+    shautil="shasum -a 256"
+    ;;
+esac
+
+sha=$($shautil "$tarfile" | cut -d " " -f1)
 
 function replace() {
   args=( "$@" )
