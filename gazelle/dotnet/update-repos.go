@@ -56,14 +56,14 @@ func (d *dotnetLang) customUpdateRepos(c *config.Config) {
 
 	f, err := rule.LoadMacroFile(macroPath, "", dc.macroDefName)
 	if os.IsNotExist(err) {
-		directory := path.Dir(macroPath)
+		directory := filepath.Dir(macroPath)
 		if err = os.MkdirAll(directory, os.ModePerm); err != nil {
-			log.Fatalf("error creating directory %q: %v", directory, err)
+			log.Fatalf("error creating directory %s: %v", directory, err)
 		}
 
 		f, err = rule.EmptyMacroFile(macroPath, "", dc.macroDefName)
 		if err != nil {
-			log.Fatalf("error creating %q: %v", macroPath, err)
+			log.Fatalf("error creating %s: %v", macroPath, err)
 		}
 	} else if err != nil {
 		log.Fatalf("error loading %q: %v", macroPath, err)
