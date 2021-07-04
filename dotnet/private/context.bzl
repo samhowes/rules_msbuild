@@ -59,6 +59,9 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
         configuration = "Debug"
 
     diag = ctx.var.get("BUILD_DIAG", False) == "1"
+    if diag:
+        configuration = "Debug"
+
     dotnet = dotnet_context(
         sdk.root_file.dirname,
         sdk.dotnetos,

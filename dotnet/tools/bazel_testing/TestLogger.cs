@@ -4,7 +4,7 @@ namespace TestRunner
 {
     public static class TestLogger
     {
-        public static bool DebugEnabled { get; set; } = true;
+        public static bool DebugEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public static void Debug(string message)
         {
             if (!DebugEnabled) return;
