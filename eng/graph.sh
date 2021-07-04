@@ -2,8 +2,10 @@
 set -e
 if [[ ! -f WORKSPACE ]]; then echo >&2 "not at root"; exit 1; fi
 
+arg_string=" $* "
 target="${1/\/\//}"
-if [[ -n "${target:-}" ]]; then
+# shellcheck disable=SC2199
+if [[ -n "${target:-}" && ! "$arg_string" =~ "--no_build" ]]; then
   set +e
   bazel build "//$target"
   set -e
@@ -16,14 +18,18 @@ if [[ -d "$tmp" ]]; then rm -rf "$tmp"; fi
 mkdir "$tmp"
 pushd bazel-bin
 
-pkg="$(dirname "${target/://}")"
-
+if [[ "$target" == *":"* ]]; then
+  pkg="$(dirname "${target/://}")"
+else
+  pkg="$target"
+fi
 # shellcheck disable=SC2207
 input=($(find "$pkg"/* -name "*.dot" -not \( -path '*runfiles/*' \)))
 for i in "${input[@]}"
 do
   src="$i"
+  dest="$tmp/$src.svg"
   echo "$src"
-  mkdir -p "$tmp/$pkg"
-  dot -Tsvg -o "$tmp/$src.svg" "$(pwd)/$src"
+  mkdir -p "$(dirname "$dest")"
+  dot -Tsvg -o "$dest" "$(pwd)/$src"
 done
