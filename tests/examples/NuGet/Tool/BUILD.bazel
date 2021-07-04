@@ -21,7 +21,7 @@ msbuild_binary(
 build_test(
     name = "Tool_test",
     expected_files = {},
-    expected_output = "runfile contents: bar\n\n",
+    expected_output = "bar\n\n",
 )
 
 build_test(
