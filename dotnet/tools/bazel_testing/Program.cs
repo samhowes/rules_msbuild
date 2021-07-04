@@ -19,10 +19,11 @@ namespace TestRunner
 {
     public class TestConfig
     {
-        public string WorkspaceRoot { get; set; }
-        public string ReleaseTar { get; set; }
-        public string WorkspaceTpl { get; set; }
-        public string Bazel { get; set; }
+        public string WorkspaceRoot { get; set; } = null!;
+        public string ReleaseTar { get; set; } = null!;
+        public string WorkspaceTpl { get; set; } = null!;
+        public string Bazel { get; set; } = null!;
+        public List<string> Commands { get; set; } = null!;
     }
 
     public static class PosixPath
@@ -109,10 +110,10 @@ namespace TestRunner
 
             var workspaceName = Path.GetFileName(_config.WorkspaceRoot);
             var testDir = Path.Combine(execDir, workspaceName!);
-            
+
             Info($"Using workspace root: {testDir}");
             Info($"Using output user root: {outputUserRoot}");
-            
+
             Directory.CreateDirectory(testDir);
             Directory.SetCurrentDirectory(testDir);
 
@@ -136,32 +137,103 @@ namespace TestRunner
                 Debug(dest);
             }
 
-            var originalWorkspace = File.ReadAllText("WORKSPACE");
             var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName, _config.WorkspaceTpl);
-            workspaceMaker.Init(true,true);
+            
+            var bazel = new BazelRunner(_config.Bazel, outputUserRoot!, testDir);
 
+            var originalWorkspace = File.ReadAllText("WORKSPACE");
+            var commandIndex = 0;
+            if (_config.Commands[0] == "init")
+            {
+                commandIndex++;
+                workspaceMaker.Init(true);
+                UpdateWorkspaceForLocal(originalWorkspace);
+                
+                if (!bazel.Run("run //:gazelle", out var exitCode))
+                    return exitCode;
+                // this is cheating, but oh well
+                File.WriteAllText("WORKSPACE",
+                    File.ReadAllText("WORKSPACE") 
+                    + "\nload(\"deps/nuget.bzl\", \"nuget_deps\")\nnuget_deps()\n");    
+            }
+            else
+            {
+                workspaceMaker.Init(true, true);
+                UpdateWorkspaceForLocal(originalWorkspace);
+            }
+
+            foreach (var command in _config.Commands.Skip(commandIndex))
+            {
+                if (!bazel.Run(command, out var exitCode))
+                    return exitCode;
+            }
+
+            return 0;
+        }
+
+        private void UpdateWorkspaceForLocal(string originalWorkspace)
+        {
             var workspace = File.ReadAllText("WORKSPACE");
+            bool replaced = false;
             workspace = Regex.Replace(workspace, @"http_archive\(.*\n\s+name = ""rules_msbuild"",\n.*\n\s+(?<urls>.*)",
-                match => match.Value.Replace(match.Groups["urls"].Value, $"urls = [\"file:{_config.ReleaseTar}\"],"));
-            File.WriteAllText("WORKSPACE", workspace + originalWorkspace);
+                match =>
+                {
+                    replaced = true;
+                    return match.Value.Replace(match.Groups["urls"].Value, $"urls = [\"file:{_config.ReleaseTar}\"],");
+                });
+            if (!replaced)
+                throw new Exception("Failed to replace url in workspace");
 
+            File.WriteAllText("WORKSPACE", workspace + originalWorkspace);
+        }
+
+        public void Dispose()
+        {
+            if (DebugEnabled) return;
+            foreach (var path in _cleanup)
+            {
+                if (Directory.Exists(path))
+                    Directory.Delete(path, true);    
+            }
+
+        }
+    }
+
+    public class BazelRunner
+    {
+        private readonly string _binaryPath;
+        private readonly string _outputUserRoot;
+        private readonly string _workingDirectory;
+
+        public BazelRunner(string binaryPath, string outputUserRoot, string workingDirectory)
+        {
+            _binaryPath = binaryPath;
+            _outputUserRoot = outputUserRoot;
+            _workingDirectory = workingDirectory;
+        }
+
+        public bool Run(string command, out int exitCode)
+        {
+            exitCode = -1;
             using var bazel = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = _config.Bazel,
-                    Arguments = $"--output_user_root={outputUserRoot} build //...", 
-                    WorkingDirectory = testDir
+                    FileName = _binaryPath,
+                    Arguments = $"--output_user_root={_outputUserRoot} {command}", 
+                    WorkingDirectory = _workingDirectory
                 }
             };
 
-            SetEnv(bazel.StartInfo.Environment, testDir);
+            SetEnv(bazel.StartInfo.Environment, _workingDirectory);
             bazel.Start();
             bazel.WaitForExit();
-
-            return bazel.ExitCode;
+            exitCode = bazel.ExitCode;
+            if (bazel.ExitCode != 0)
+                return false;
+            return true;
         }
-
+        
         private static void SetEnv(IDictionary<string,string?> env, string workspaceRoot)
         {
             // credit to rules_nodejs: https://github.com/bazelbuild/rules_nodejs/blob/stable/internal/bazel_integration_test/test_runner.js#L356
@@ -229,17 +301,6 @@ namespace TestRunner
             Debug($"home: {home}");
             env["HOME"] = home;
             env["DOTNET_CLI_HOME"] = home;
-        }
-
-        public void Dispose()
-        {
-            if (DebugEnabled) return;
-            foreach (var path in _cleanup)
-            {
-                if (Directory.Exists(path))
-                    Directory.Delete(path, true);    
-            }
-
         }
     }
 }

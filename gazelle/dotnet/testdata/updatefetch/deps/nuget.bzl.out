@@ -12,4 +12,6 @@ def nuget_deps():
                 "net5.0",
             ],
         },
+        target_frameworks = ["net5.0"],
+        use_host = True,
     )
