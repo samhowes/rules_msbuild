@@ -9,9 +9,9 @@ import (
 
 func TestRunPublishOutput(t *testing.T) {
 
-	publishDir, _ := files.Path("publish/netcoreapp3.1")
-	if publishDir == "" {
-		t.Fatalf("can't locate publish directory")
+	publishDir, err := files.Path("publish/netcoreapp3.1")
+	if err != nil {
+		t.Fatalf("can't locate publish directory: %v", err)
 	}
 	assemblyPath := path.Join(publishDir, "HelloWeb.dll")
 
