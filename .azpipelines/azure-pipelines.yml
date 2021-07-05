@@ -49,7 +49,7 @@ jobs:
               bash tests/runall.sh
             displayName: 'Build & Test'
             env:
-              - BAZEL_ARGS: ${{bazel_args}}
+              BAZEL_ARGS: ${{bazel_args}}
 
           - script: |
               bash .ci/tar.sh
