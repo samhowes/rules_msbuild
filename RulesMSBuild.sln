@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet", "dotnet", "{055159
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{F8C0FD8F-420E-49BC-8461-9CB41ED92699}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderTest", "tests\dotnet\tools\builder\BuilderTest.csproj", "{82F2EB1F-71AC-47F7-91A9-2952857A7CC5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderTests", "tests\dotnet\tools\builder\BuilderTests.csproj", "{82F2EB1F-71AC-47F7-91A9-2952857A7CC5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Greeter", "tests\dotnet\tools\launcher\Greeter.csproj", "{57171589-B4C5-476D-9F7F-A6FC0F991BE0}"
 EndProject
