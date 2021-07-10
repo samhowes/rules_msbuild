@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.Build.BackEnd;
 using RulesMSBuild.Tools.Builder.MSBuild;
 
 namespace RulesMSBuild.Tools.Builder
@@ -103,7 +102,7 @@ namespace RulesMSBuild.Tools.Builder
     
     public class BazelContext
     {
-        public class BazelLabel : ITranslatable
+        public class BazelLabel //: ITranslatable
         {
             public BazelLabel(string workspace, string package, string name)
             {
@@ -118,12 +117,12 @@ namespace RulesMSBuild.Tools.Builder
 
             public BazelLabel(){}
 
-            public void Translate(ITranslator translator)
-            {
-                translator.Translate(ref Workspace);
-                translator.Translate(ref Package);
-                translator.Translate(ref Name);
-            }
+            // public void Translate(ITranslator translator)
+            // {
+            //     translator.Translate(ref Workspace);
+            //     translator.Translate(ref Package);
+            //     translator.Translate(ref Name);
+            // }
         }
         public BazelContext(Command command)
         {

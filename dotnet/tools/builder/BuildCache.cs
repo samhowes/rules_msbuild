@@ -17,7 +17,7 @@ namespace RulesMSBuild.Tools.Builder
         
         public void Translate(ITranslator translator)
         {
-            translator.Translate(ref Label);
+            // translator.Translate(ref Label);
             translator.Translate(ref Project, ProjectInstance.FactoryForDeserialization);
             translator.Translate(ref BuildResult);
         }

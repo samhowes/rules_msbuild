@@ -29,7 +29,7 @@ namespace RulesMSBuild.Tools.Builder
         private readonly BuildManager _buildManager;
         private readonly BazelMsBuildLogger _msbuildLog;
         private readonly TargetGraph? _targetGraph;
-        private BuildCache? _cache;
+        private readonly BuildCache _cache;
 
         public Builder(BuildContext context)
         {
@@ -41,11 +41,12 @@ namespace RulesMSBuild.Tools.Builder
             {
                 _targetGraph = new TargetGraph(trimPath, _context.ProjectFile, null);
             }
-
-            var pathTrimmer = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
+            
+            var pathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
+            _cache = new BuildCache(new CacheManifest(), pathMapper, new Files());
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                (m) => pathTrimmer.ToBazel(m)
+                (m) => pathMapper.ToBazel(m)
                 , _targetGraph!);
         }
 
@@ -262,11 +263,6 @@ namespace RulesMSBuild.Tools.Builder
 
         private void EndBuild(BuildResultCode result)
         {
-            if (result == BuildResultCode.Success)
-            {
-                // _cacheManager.AfterExecuteBuild();
-            }
-
             _buildManager.EndBuild();
 
             if (_targetGraph != null)
@@ -274,45 +270,51 @@ namespace RulesMSBuild.Tools.Builder
                 File.WriteAllText(_context.LabelPath(".dot"), _targetGraph.ToDot());
             }
 
-            if (result == BuildResultCode.Success)
+            if (result != BuildResultCode.Success) return;
+            
+            _cache.Save(_context.LabelPath(".cache"));
+            switch (_action)
             {
-                if (_action == "restore")
-                {
+                case "restore":
                     FixRestoreOutputs();
-                }
-
-                if (_action == "build" && _context.IsTest)
+                    break;
+                case "build":
                 {
-                    // todo make this less hacky
-                    var loggerPath = Path.Combine(
-                        Path.GetDirectoryName(_context.NuGetConfig)!,
-                        "packages/junitxml.testlogger/3.0.87/build/_common");
-                    var tfmPath = Path.Combine(_context.MSBuild.OutputPath, _context.Tfm);
-                    foreach (var dll in Directory.EnumerateFiles(loggerPath))
+                    if (_context.IsTest)
                     {
-                        var filename = Path.GetFileName(dll);
-                        File.Copy(dll, Path.Combine(tfmPath, filename));
-                    }
-                }
-
-                if (_context.IsExecutable && _action == "build")
-                {
-                    var basename = _context.Bazel.Label.Name;
-                    if (Path.DirectorySeparatorChar == '\\')
-                    {
-                        // there's not a great "IsWindows" method in c#
-                        basename += ".exe";
+                        // todo make this less hacky
+                        var loggerPath = Path.Combine(
+                            Path.GetDirectoryName(_context.NuGetConfig)!,
+                            "packages/junitxml.testlogger/3.0.87/build/_common");
+                        var tfmPath = Path.Combine(_context.MSBuild.OutputPath, _context.Tfm);
+                        foreach (var dll in Directory.EnumerateFiles(loggerPath))
+                        {
+                            var filename = Path.GetFileName(dll);
+                            File.Copy(dll, Path.Combine(tfmPath, filename));
+                        }    
                     }
 
-                    File.WriteAllLines(_context.OutputPath(_context.Tfm, "runfiles.info"), new string[]
+                    if (_context.IsExecutable)
                     {
-                        // first line is the expected location of the runfiles directory from the assembly location
-                        $"../{basename}.runfiles",
-                        // second line is the origin workspace (nice to have)
-                        _context.Bazel.Label.Workspace,
-                        // third is the package (nice to have)
-                        _context.Bazel.Label.Package
-                    });
+                        var basename = _context.Bazel.Label.Name;
+                        if (Path.DirectorySeparatorChar == '\\')
+                        {
+                            // there's not a great "IsWindows" method in c#
+                            basename += ".exe";
+                        }
+
+                        File.WriteAllLines(_context.OutputPath(_context.Tfm, "runfiles.info"), new string[]
+                        {
+                            // first line is the expected location of the runfiles directory from the assembly location
+                            $"../{basename}.runfiles",
+                            // second line is the origin workspace (nice to have)
+                            _context.Bazel.Label.Workspace,
+                            // third is the package (nice to have)
+                            _context.Bazel.Label.Package
+                        });
+                    }
+
+                    break;
                 }
             }
         }

@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Microsoft.Build.Locator;
 using RulesMSBuild.Tools.Builder.Launcher;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
@@ -83,6 +86,8 @@ namespace RulesMSBuild.Tools.Builder
 
         private static int Build(Command command)
         {
+            CustomAssemblyLoader.Register();
+            
             var context = new BuildContext(command);
             var dotNetSdkPath = context.SdkRoot + Path.DirectorySeparatorChar;
             foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
@@ -98,10 +103,50 @@ namespace RulesMSBuild.Tools.Builder
             return builder.Build();
         }
 
+
         private static int MakeLauncher(Command command)
         {
             var factory = new LauncherFactory();
             return factory.Create(command.PositionalArgs.ToArray());
+        }
+    }
+
+    public static class CustomAssemblyLoader
+    {
+        private static readonly Dictionary<string, Assembly> LoadedAssemblies = new ();
+        private static readonly string SearchDirectory = Path.GetDirectoryName(typeof(CustomAssemblyLoader).Assembly.Location)!;
+
+        public static void Register()
+        {
+            AssemblyLoadContext.Default.Resolving += TryLoadAssembly;
+        }
+
+        private static Assembly? TryLoadAssembly(AssemblyLoadContext arg1, AssemblyName assemblyName)
+        {
+            Dictionary<string, Assembly> dictionary = LoadedAssemblies;
+            bool lockTaken = false;
+            try
+            {
+                Monitor.Enter((object) dictionary, ref lockTaken);
+                Assembly? assembly;
+                if (LoadedAssemblies.TryGetValue(assemblyName.FullName, out assembly))
+                    return assembly;
+                
+                string str = Path.Combine(SearchDirectory, assemblyName.Name + ".dll");
+                if (File.Exists(str))
+                {
+                    assembly = Assembly.LoadFrom(str);
+                    LoadedAssemblies.Add(assemblyName.FullName, assembly);
+                    return assembly;
+                }
+            
+                return null;
+            }
+            finally
+            {
+                if (lockTaken)
+                    Monitor.Exit((object) dictionary);
+            }
         }
     }
 }
