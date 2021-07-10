@@ -26,10 +26,10 @@ namespace RulesMSBuild.Tools.Builder
         public Dictionary<string, string> ProjectResults { get; set; }
     }
     
-    public class BuildCache
+    public class BuildCache : ITranslatable
     {
         private readonly CacheManifest _manifest;
-        private ProjectInstance _project;
+        public ProjectInstance Project;
         private readonly PathMapper _pathMapper;
         private readonly Files _files;
 
@@ -43,7 +43,7 @@ namespace RulesMSBuild.Tools.Builder
         public void RecordResult(BuildResult buildResult)
         {
             var project = buildResult.ProjectStateAfterBuild;
-            _project = project;
+            Project = project;
         }
 
         public void Save(string path)
@@ -52,15 +52,24 @@ namespace RulesMSBuild.Tools.Builder
             var writer = new PathMappingBinaryWriter(stream, _pathMapper);
             var translator = new BinaryTranslator.BinaryWriteTranslator(stream, writer);
             
-            translator.Translate(ref _project, ProjectInstance.FactoryForDeserialization);
+            Translate(translator);
         }
 
-        public void LoadProject(string path)
+        public void Load(string path)
         {
-            using var stream = File.OpenRead(path);
-            var reader = InterningBinaryReader.Create(stream, null);
+            using var stream = _files.OpenRead(path);
+
+            SharedReadBuffer buffer = new InterningBinaryReader.Buffer();
+            var reader = InterningBinaryReader.Create(stream, buffer);
             reader.OpportunisticIntern = new PathMappingInterner(_pathMapper);
-            var translator = new BinaryTranslator.BinaryReadTranslator(stream, null);
+            var translator = new BinaryTranslator.BinaryReadTranslator(stream, buffer, reader);
+            
+            Translate(translator);
+        }
+
+        public void Translate(ITranslator translator)
+        {
+            translator.Translate(ref Project, ProjectInstance.FactoryForDeserialization);
         }
     }
 }

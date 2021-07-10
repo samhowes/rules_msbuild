@@ -43,7 +43,7 @@ namespace RulesMSBuild.Tools.Builder
             var pathTrimmer = new PathMapper(context.Bazel);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                (m) => pathTrimmer.ReplacePath(m)
+                (m) => pathTrimmer.ToBazel(m)
                 , _targetGraph!);
         }
 

@@ -10,5 +10,6 @@ namespace RulesMSBuild.Tools.Builder
         public virtual IEnumerable<string> GetFiles(string path) => Directory.EnumerateFiles(path);
         public virtual IEnumerable<string> GetDirectories(string path) => Directory.EnumerateDirectories(path);
         public virtual Stream Create(string path) => File.Create(path);
+        public virtual Stream OpenRead(string path) => File.OpenRead(path);
     }
 }

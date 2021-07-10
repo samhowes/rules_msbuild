@@ -19,6 +19,7 @@ namespace RulesMSBuild.Tools.Builder
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
         }
 
-        public virtual string ReplacePath(string path) => _regex.Replace(path, "");
+        public virtual string ToBazel(string path) => _regex.Replace(path, "");
+        public virtual string FromBazel(string path) => _regex.Replace(path, "");
     }
 }

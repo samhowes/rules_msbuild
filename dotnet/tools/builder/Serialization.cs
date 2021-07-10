@@ -18,7 +18,7 @@ namespace RulesMSBuild.Tools.Builder
         public string ExpensiveConvertToString()
         {
             var original = _wrapped.ExpensiveConvertToString();
-            return _pathMapper.ReplacePath(original);
+            return _pathMapper.FromBazel(original);
         }
 
         public bool StartsWithStringByOrdinalComparison(string other) =>
@@ -53,21 +53,6 @@ namespace RulesMSBuild.Tools.Builder
         }
     }
     
-    public class PathMappingReader : BinaryReader
-    {
-        public PathMappingReader(Stream input) : base(input)
-        {
-        }
-
-        public PathMappingReader(Stream input, Encoding encoding) : base(input, encoding)
-        {
-        }
-
-        public PathMappingReader(Stream input, Encoding encoding, bool leaveOpen) : base(input, encoding, leaveOpen)
-        {
-        }
-    }
-    
     public class PathMappingBinaryWriter : BinaryWriter
     {
         private readonly PathMapper _pathMapper;
@@ -79,7 +64,7 @@ namespace RulesMSBuild.Tools.Builder
 
         public override void Write(string value)
         {
-            base.Write(_pathMapper.ReplacePath(value));
+            base.Write(_pathMapper.ToBazel(value));
         }
     }
 }
