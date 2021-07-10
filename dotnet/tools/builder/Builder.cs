@@ -16,6 +16,8 @@ using Microsoft.Build.Experimental.ProjectCache;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Graph;
 using Microsoft.Build.Logging;
+using RulesMSBuild.Tools.Builder.Diagnostics;
+using RulesMSBuild.Tools.Builder.MSBuild;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder
@@ -175,7 +177,7 @@ namespace RulesMSBuild.Tools.Builder
                             result = BuildResultCode.Failure;
 
                         if (result == BuildResultCode.Success)
-                            _cache.RecordResult(submission.BuildResult);
+                            _cache!.RecordResult(submission.BuildResult);
                         
                         source.SetResult(result);
                     }, new object());

@@ -4,15 +4,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.BackEnd;
-
-// https://stackoverflow.com/questions/64749385/predefined-type-system-runtime-compilerservices-isexternalinit-is-not-defined
-namespace System.Runtime.CompilerServices
-{
-    internal static class IsExternalInit {}
-}
+using RulesMSBuild.Tools.Builder.MSBuild;
 
 namespace RulesMSBuild.Tools.Builder
 {
+    // https://stackoverflow.com/questions/64749385/predefined-type-system-runtime-compilerservices-isexternalinit-is-not-defined
+    internal static class IsExternalInit {}
+
     public class BuildContext
     {
         public Command Command { get; }
@@ -55,7 +53,7 @@ namespace RulesMSBuild.Tools.Builder
                 NuGetConfig,
                 Tfm,
                 command.NamedArgs["configuration"]
-                );
+            );
 
             IsExecutable = command.NamedArgs["output_type"] == "exe";
             
@@ -94,7 +92,7 @@ namespace RulesMSBuild.Tools.Builder
         public string ProjectFile { get; }
         public BazelContext Bazel { get; }
         public string NuGetConfig { get; }
-        public string Tfm { get; init; }
+        public string Tfm { get; set; }
         public string SdkRoot { get; }
         public bool DiagnosticsEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }

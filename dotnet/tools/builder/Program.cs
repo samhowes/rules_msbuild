@@ -4,15 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Build.Locator;
+using RulesMSBuild.Tools.Builder.Launcher;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder
 {
     public class Command
     {
-        public string Action;
-        public List<string> PositionalArgs = new List<string>();
-        public Dictionary<string, string> NamedArgs = new Dictionary<string, string>();
+        public string Action = null!;
+        public readonly List<string> PositionalArgs = new List<string>();
+        public readonly Dictionary<string, string> NamedArgs = new Dictionary<string, string>();
     }
 
     public class Program

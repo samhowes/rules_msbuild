@@ -5,7 +5,7 @@ using System.Reflection;
 using Microsoft.Build.Execution;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
-namespace RulesMSBuild.Tools.Builder
+namespace RulesMSBuild.Tools.Builder.MSBuild
 {
     public class BuildManagerFields
     {

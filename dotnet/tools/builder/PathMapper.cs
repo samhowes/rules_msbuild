@@ -8,7 +8,9 @@ namespace RulesMSBuild.Tools.Builder
         private readonly BazelContext _bazel;
         private readonly Regex _regex;
 
+#pragma warning disable 8618
         protected PathMapper(){} // for Moq
+#pragma warning restore 8618
         public PathMapper(BazelContext bazel)
         {
             _bazel = bazel;

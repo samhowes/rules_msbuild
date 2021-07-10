@@ -3,6 +3,9 @@ using System.IO;
 using Microsoft.Build;
 using Microsoft.Build.BackEnd;
 using Microsoft.Build.Execution;
+using RulesMSBuild.Tools.Builder.MSBuild;
+
+#pragma warning disable 8618
 
 namespace RulesMSBuild.Tools.Builder
 {
@@ -22,8 +25,8 @@ namespace RulesMSBuild.Tools.Builder
 
     public class CacheManifest
     {
-        public Dictionary<string, string> Projects { get; set; }
-        public Dictionary<string, string> ProjectResults { get; set; }
+        public Dictionary<string, string> Projects { get; set; } = null!;
+        public Dictionary<string, string> ProjectResults { get; set; } = null!;
     }
     
     public class BuildCache : ITranslatable

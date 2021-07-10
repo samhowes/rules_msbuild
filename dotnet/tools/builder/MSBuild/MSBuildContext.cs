@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace RulesMSBuild.Tools.Builder
+namespace RulesMSBuild.Tools.Builder.MSBuild
 {
     // ReSharper disable once InconsistentNaming
     public class MSBuildContext

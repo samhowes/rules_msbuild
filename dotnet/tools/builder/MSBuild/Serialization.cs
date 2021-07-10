@@ -2,7 +2,7 @@ using System.IO;
 using System.Text;
 using Microsoft.Build;
 
-namespace RulesMSBuild.Tools.Builder
+namespace RulesMSBuild.Tools.Builder.MSBuild
 {
     public readonly struct PathMappingInternable : IInternable
     {

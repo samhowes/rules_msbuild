@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
+using RulesMSBuild.Tools.Builder.Diagnostics;
 
-namespace RulesMSBuild.Tools.Builder
+namespace RulesMSBuild.Tools.Builder.MSBuild
 {
     public class BazelMsBuildLogger : ConsoleLogger
     {
@@ -110,7 +111,7 @@ namespace RulesMSBuild.Tools.Builder
                 _targetStack.Push(name);
             
             if (_cluster == null)
-                Diagnostics.WaitForDebugger();
+                Debugger.WaitForAttach();
             
             var node = _cluster!.GetOrAdd(name);
             
