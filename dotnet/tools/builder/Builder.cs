@@ -42,7 +42,7 @@ namespace RulesMSBuild.Tools.Builder
                 _targetGraph = new TargetGraph(trimPath, _context.ProjectFile, null);
             }
 
-            var pathTrimmer = new PathMapper(context.Bazel);
+            var pathTrimmer = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
                 (m) => pathTrimmer.ToBazel(m)

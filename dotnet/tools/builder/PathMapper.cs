@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -5,23 +6,38 @@ namespace RulesMSBuild.Tools.Builder
 {
     public class PathMapper
     {
-        private readonly BazelContext _bazel;
-        private readonly Regex _regex;
-
-#pragma warning disable 8618
+        private readonly string _outputBase;
+        private readonly string _execRoot;
+        const string OutputBase = "$output_base";
+        const string ExecRoot = "$exec_root";
+        private readonly Regex _toBazelRegex;
+        private readonly Regex _fromBazelRegex;
         protected PathMapper(){} // for Moq
-#pragma warning restore 8618
-        public PathMapper(BazelContext bazel)
+
+        public PathMapper(string outputBase, string execRoot)
         {
-            _bazel = bazel;
+            if (!execRoot.StartsWith(outputBase))
+                throw new ArgumentException($"Unexpected output_base<>exec_root combination: {outputBase}<>{execRoot}");
+            _outputBase = outputBase;
+            _execRoot = execRoot;
+            
+            var execRootSegment = execRoot[(outputBase.Length)..];
 
-            var execRoot = bazel.ExecRoot[(bazel.OutputBase.Length)..];
-
-            _regex = new Regex($"({Regex.Escape(bazel.OutputBase)})({Regex.Escape(execRoot)})?/",
+            _toBazelRegex = new Regex($"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            
+            _fromBazelRegex = new Regex($"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
         }
 
-        public virtual string ToBazel(string path) => _regex.Replace(path, "");
-        public virtual string FromBazel(string path) => _regex.Replace(path, "");
+        public virtual string ToBazel(string path) => _toBazelRegex.Replace(path, (match) =>
+        {
+            return match.Groups[2].Success ? ExecRoot : OutputBase;
+        });
+        
+        public virtual string FromBazel(string path) => _fromBazelRegex.Replace(path, (match) =>
+        {
+            return match.Groups[2].Success ? _execRoot : _outputBase; 
+        });
     }
 }
