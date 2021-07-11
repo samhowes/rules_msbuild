@@ -113,7 +113,7 @@ namespace RulesMSBuild.Tests.Tools
             stream.Seek(0, SeekOrigin.Begin);
             ResetCache();
             
-            _cache.Load("foo");
+            // _cache.Load("foo");
 
             var path = _cache.Project.Properties.FirstOrDefault(p => p.Name == "FilePath");
             path.Should().NotBeNull();

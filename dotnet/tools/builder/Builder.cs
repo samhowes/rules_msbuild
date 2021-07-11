@@ -141,13 +141,15 @@ namespace RulesMSBuild.Tools.Builder
 
             // don't load the project ahead of time, otherwise the evaluation won't be included in the binlog output
             var source = new TaskCompletionSource<BuildResultCode>();
-            var flags = BuildRequestDataFlags.ProvideProjectStateAfterBuild;
+            var flags = BuildRequestDataFlags.None;
 
             // our restore outputs are relative to the project directory
             Environment.CurrentDirectory = _context.ProjectDirectory;
 
             var project = _loader.Load(projectCollection);
             
+            if (!ValidateTfm(project))
+                return BuildResultCode.Failure;
             
             if (_action == "restore")
             {
@@ -174,8 +176,8 @@ namespace RulesMSBuild.Tools.Builder
                     if (!ValidateTfm(_cache.Project))
                         result = BuildResultCode.Failure;
 
-                    if (result == BuildResultCode.Success)
-                        _cache!.RecordResult(submission.BuildResult);
+                    // if (result == BuildResultCode.Success)
+                        // _cache!.RecordResult(submission.BuildResult);
                         
                     source.SetResult(result);
                 }, new object());
@@ -197,11 +199,8 @@ namespace RulesMSBuild.Tools.Builder
                             Error(submission.BuildResult.Exception.ToString());
                         }
                         
-                        if (!ValidateTfm(submission.BuildResult.ProjectStateAfterBuild))
-                            result = BuildResultCode.Failure;
-
-                        // if (result == BuildResultCode.Success)
-                            // _cache!.RecordResult(submission.BuildResult);
+                        if (result == BuildResultCode.Success)
+                            _cache!.RecordResult(submission.BuildResult);
                         
                         source.SetResult(result);
                     }, new object());
@@ -306,7 +305,6 @@ namespace RulesMSBuild.Tools.Builder
                     // the restore sandbox doesn't have access to the source files, only project files so we re-save 
                     // the evaluation with the updated items for this phase of the build.
                     saveEvaluation = true;
-                    _cache.Save(_context.LabelPath(".cache"));
                     if (_context.IsTest)
                     {
                         // todo make this less hacky
@@ -417,13 +415,6 @@ namespace RulesMSBuild.Tools.Builder
             }
         }
 
-        private string[] GetInputCaches()
-        {
-            var cacheManifest = _context.LabelPath(".cache_manifest");
-            if (!File.Exists(cacheManifest)) return Array.Empty<string>();
-            return File.ReadAllLines(cacheManifest);
-        }
-
         private void CopyFiles(string filesKey, string destinationDirectory, bool trimPackage = false)
         {
             if (!_context.Command.NamedArgs.TryGetValue(filesKey, out var contentListString) ||
@@ -463,11 +454,11 @@ namespace RulesMSBuild.Tools.Builder
         }
     }
     
-    internal class MyCache : ProjectCachePluginBase
+    public class CachePlugin : ProjectCachePluginBase
     {
         private readonly TargetGraph? _targetGraph;
 
-        public MyCache(TargetGraph? targetGraph)
+        public CachePlugin(TargetGraph? targetGraph)
         {
             _targetGraph = targetGraph;
         }
