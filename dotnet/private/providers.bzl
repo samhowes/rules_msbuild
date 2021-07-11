@@ -8,6 +8,7 @@ DotnetRestoreInfo = provider(
         "target_framework": "",
         "dep_files": "",
         "cache": "",
+        "project_cache": "",
     },
 )
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Build.BackEnd;
 using RulesMSBuild.Tools.Builder.MSBuild;
 
 namespace RulesMSBuild.Tools.Builder

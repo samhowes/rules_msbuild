@@ -1,6 +1,8 @@
+using System;
 using System.IO;
 using System.Text;
 using Microsoft.Build;
+using RulesMSBuild.Tools.Builder.Diagnostics;
 
 namespace RulesMSBuild.Tools.Builder.MSBuild
 {
@@ -18,7 +20,10 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
         public string ExpensiveConvertToString()
         {
             var original = _wrapped.ExpensiveConvertToString();
-            return _pathMapper.FromBazel(original);
+            var replaced = _pathMapper.FromBazel(original);
+            if (replaced.Contains("output_base"))
+                throw new Exception(replaced);
+            return replaced;
         }
 
         public bool StartsWithStringByOrdinalComparison(string other) =>

@@ -12,10 +12,10 @@
   <PropertyGroup>
     <PublishDir Condition="$(_IsBootstrapping) == 'true'">$(BINDIR)/external/dotnet_sdk/publish</PublishDir>
     <TargetFramework Condition="$(BazelBuild) == ''">net5.0</TargetFramework>
-    <TargetFramework Condition="$(BazelBuild) != ''">netcoreapp$(NETCoreAppMaximumVersion)</TargetFramework>
+    <TargetFramework>netcoreapp$(NETCoreAppMaximumVersion)</TargetFramework>
     <!--  Hack to detect when we're testing internally: Package will be dotnet/tools/builder when internal, but '' when
       external as part of the sdk. -->
-    <TargetFramework Condition="$(_IsBootstrapping) != 'true'">netcoreapp3.1</TargetFramework>
+<!--    <TargetFramework Condition="$(_IsBootstrapping) != 'true'">netcoreapp3.1</TargetFramework>-->
     <OutputType>Exe</OutputType>
     <LangVersion>9.0</LangVersion>
     <NoWarn>$(NoWarn);NU1603</NoWarn>
@@ -30,6 +30,7 @@
     <None Include="$(PkgSamHowes_Microsoft_Build)/lib/**/*.dll">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
     </None>
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.9.0" ExcludeAssets="Runtime" />
   </ItemGroup>

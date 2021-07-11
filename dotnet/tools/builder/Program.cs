@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Microsoft.Build.Evaluation;
+using Microsoft.Build.Execution;
 using Microsoft.Build.Locator;
 using RulesMSBuild.Tools.Builder.Launcher;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
@@ -25,6 +27,7 @@ namespace RulesMSBuild.Tools.Builder
         
         static int Main(string[] args)
         {
+            // Environment.SetEnvironmentVariable("MSBUILDDONOTTHROWINTERNAL", "1");
             if (DebugEnabled)
             {
                 Debug($"Received {args.Length} arguments: {string.Join(" ", args)}");
@@ -34,6 +37,9 @@ namespace RulesMSBuild.Tools.Builder
 
             switch (command.Action)
             {
+                case "inspect":
+                    return Inspect(command);
+                
                 case "launcher":
                     return MakeLauncher(command);
                 
@@ -48,6 +54,47 @@ namespace RulesMSBuild.Tools.Builder
                     
             }
         }
+
+        private static int Inspect(Command command)
+        {
+            RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
+            var file = command.PositionalArgs[0];
+            InspectImpl(file);
+            return 0;
+        }
+
+        private static void InspectImpl(string file)
+        {
+            var execRootIndex = file.IndexOf("bazel-", StringComparison.OrdinalIgnoreCase);
+            var execRoot = file[0..(execRootIndex-1)];
+            var outputBase = execRoot;
+
+            BuildCache MakeCache()
+            {
+                return new BuildCache(new CacheManifest(){ Projects = new Dictionary<string, string>(){[file] = file}}, new PathMapper(execRoot, outputBase), new Files());
+            }
+
+            var cache = MakeCache();
+            ProjectInstance? project;
+            if (file.EndsWith(".csproj"))
+            {
+                var loader = new ProjectLoader(file, cache);
+                project = loader.Load(ProjectCollection.GlobalProjectCollection);
+                var path = Path.GetTempFileName();
+                cache.Project = project;
+                cache.SaveProject(path);
+                cache = MakeCache();
+                project = cache.LoadProjectImpl(path);
+                
+                
+            }
+            else
+            {
+                project = cache.LoadProjectImpl(file);    
+            }
+            var itemGroups = project.Items.GroupBy(i => i.ItemType).OrderBy(g => g.Key).ToList();
+        }
+
         private static Command ParseArgs(string[] args)
         {
             var command = new Command {Action = args[0]};
@@ -86,10 +133,16 @@ namespace RulesMSBuild.Tools.Builder
 
         private static int Build(Command command)
         {
-            CustomAssemblyLoader.Register();
-            
             var context = new BuildContext(command);
-            var dotNetSdkPath = context.SdkRoot + Path.DirectorySeparatorChar;
+            RegisterSdk(context.SdkRoot);
+            var builder = new Builder(context);
+            return builder.Build();
+        }
+
+        private static void RegisterSdk(string sdkRoot)
+        {
+            CustomAssemblyLoader.Register();
+            var dotNetSdkPath = sdkRoot.EndsWith('/') ? sdkRoot : sdkRoot + Path.DirectorySeparatorChar;
             foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
             {
                 ["MSBUILD_EXE_PATH"] = dotNetSdkPath + "MSBuild.dll",
@@ -97,10 +150,8 @@ namespace RulesMSBuild.Tools.Builder
                 ["MSBuildSDKsPath"] = dotNetSdkPath + "Sdks"
             })
                 Environment.SetEnvironmentVariable(keyValuePair.Key, keyValuePair.Value);
-            
-            MSBuildLocator.RegisterMSBuildPath(context.SdkRoot);
-            var builder = new Builder(context);
-            return builder.Build();
+
+            MSBuildLocator.RegisterMSBuildPath(sdkRoot);
         }
 
 

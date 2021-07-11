@@ -23,7 +23,7 @@ namespace RulesMSBuild.Tools.Builder
             
             var execRootSegment = execRoot[(outputBase.Length)..];
 
-            _toBazelRegex = new Regex($"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?",
+            _toBazelRegex = new Regex(@$"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?(/|\\)",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
             
             _fromBazelRegex = new Regex($"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})",
@@ -32,12 +32,22 @@ namespace RulesMSBuild.Tools.Builder
 
         public virtual string ToBazel(string path) => _toBazelRegex.Replace(path, (match) =>
         {
-            return match.Groups[2].Success ? ExecRoot : OutputBase;
+            return (match.Groups[2].Success ? ExecRoot : OutputBase) + match.Groups[3].Value;
         });
         
         public virtual string FromBazel(string path) => _fromBazelRegex.Replace(path, (match) =>
         {
             return match.Groups[2].Success ? _execRoot : _outputBase; 
         });
+
+        public string ToManifestPath(string absolutePath)
+        {
+            return _toBazelRegex.Replace(absolutePath, "");
+        }
+
+        public string ToAbsolute(string manifestPath)
+        {
+            return Path.Combine(_execRoot, manifestPath);
+        }
     }
 }

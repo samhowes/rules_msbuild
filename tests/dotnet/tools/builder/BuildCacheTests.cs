@@ -87,11 +87,12 @@ namespace RulesMSBuild.Tests.Tools
     </PropertyGroup>
 </Project>
 ")));
-            
-            _cache.RecordResult(new BuildResult()
-            {
-                ProjectStateAfterBuild = project.CreateProjectInstance()
-            });
+
+            _cache.Project = project.CreateProjectInstance();
+            // _cache.RecordResult(new BuildResult()
+            // {
+            //     ProjectStateAfterBuild = project.CreateProjectInstance()
+            // });
             
             _cache.Save("foo");
 

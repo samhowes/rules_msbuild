@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -16,6 +18,7 @@ using Microsoft.Build.Experimental.ProjectCache;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Graph;
 using Microsoft.Build.Logging;
+using Microsoft.Build.Shared;
 using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.MSBuild;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
@@ -30,6 +33,7 @@ namespace RulesMSBuild.Tools.Builder
         private readonly BazelMsBuildLogger _msbuildLog;
         private readonly TargetGraph? _targetGraph;
         private readonly BuildCache _cache;
+        private readonly ProjectLoader _loader;
 
         public Builder(BuildContext context)
         {
@@ -44,6 +48,7 @@ namespace RulesMSBuild.Tools.Builder
             
             var pathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
             _cache = new BuildCache(new CacheManifest(), pathMapper, new Files());
+            _loader = new ProjectLoader(_context.ProjectFile, _cache);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
                 (m) => pathMapper.ToBazel(m)
@@ -107,6 +112,7 @@ namespace RulesMSBuild.Tools.Builder
                 ToolsetDefinitionLocations =
                     ToolsetDefinitionLocations.ConfigurationFile |
                     ToolsetDefinitionLocations.Registry,
+                ProjectRootElementCache = pc.ProjectRootElementCache
                 // ProjectCacheDescriptor = ProjectCacheDescriptor.FromInstance(new MyCache(_targetGraph),
                 //     new[] {new ProjectGraphEntryPoint(_context.ProjectFile)}, null, null)
             };
@@ -122,7 +128,17 @@ namespace RulesMSBuild.Tools.Builder
 
         private void InstantiateCache()
         {
-            // _cache = new BuildCache(new CacheManifest());
+            var cacheManifestPath = _context.LabelPath(".cache_manifest");
+            // Debugger.WaitForAttach();
+            if (!File.Exists(cacheManifestPath))
+            {
+                Debug("No input caches found");
+                return;
+            }
+            var cacheManifestJson = File.ReadAllText(cacheManifestPath);
+            var cacheManifest = JsonSerializer.Deserialize<CacheManifest>(cacheManifestJson,
+                new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
+            _cache.Manifest = cacheManifest;
         }
 
         private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
@@ -142,6 +158,20 @@ namespace RulesMSBuild.Tools.Builder
 
             // our restore outputs are relative to the project directory
             Environment.CurrentDirectory = _context.ProjectDirectory;
+
+            var project = _loader.Load(projectCollection);
+            
+            
+            if (_action == "restore")
+            {
+                if (!Directory.Exists(_context.MSBuild.RestoreDir))
+                {
+                    Directory.CreateDirectory(_context.MSBuild.RestoreDir);
+                }
+                
+                WriteBazelProps();
+            }
+            
             if (false)
             {
                 var graphData = new GraphBuildRequestData(
@@ -151,46 +181,52 @@ namespace RulesMSBuild.Tools.Builder
                     flags);
                 var submission = _buildManager.PendBuildRequest(graphData);
 
-                submission.ExecuteAsync(_ => source.SetResult((submission.BuildResult.OverallResult)), submission);
+                submission.ExecuteAsync(submission =>
+                {
+                    var result = submission.BuildResult.OverallResult;
+                    if (!ValidateTfm(_cache.Project))
+                        result = BuildResultCode.Failure;
+
+                    if (result == BuildResultCode.Success)
+                        _cache!.RecordResult(submission.BuildResult);
+                        
+                    source.SetResult(result);
+                }, new object());
             }
             else
             {
-                if (_action == "restore" && !Directory.Exists(_context.MSBuild.RestoreDir))
-                {
-                    Directory.CreateDirectory(_context.MSBuild.RestoreDir);
-                }
-
                 var data = new BuildRequestData(
-                    _context.ProjectFile,
-                    projectCollection.GlobalProperties,
-                    null,
-                    _context.MSBuild.Targets,
-                    null,
-                    // Keep the project items that we have discovered for publish so publish doesn't do a re-build.
-                    flags
+                    project,
+                    _context.MSBuild.Targets, null, flags
                 );
                 
                 _buildManager.PendBuildRequest(data)
                     .ExecuteAsync(submission =>
                     {
                         var result = submission.BuildResult.OverallResult;
+
+                        if (submission.BuildResult.Exception != null)
+                        {
+                            Error(submission.BuildResult.Exception.ToString());
+                        }
+                        
                         if (!ValidateTfm(submission.BuildResult.ProjectStateAfterBuild))
                             result = BuildResultCode.Failure;
 
-                        if (result == BuildResultCode.Success)
-                            _cache!.RecordResult(submission.BuildResult);
+                        // if (result == BuildResultCode.Success)
+                            // _cache!.RecordResult(submission.BuildResult);
                         
                         source.SetResult(result);
                     }, new object());
 
             }
 
-            WriteBazelProps();
-
             var result = source.Task.GetAwaiter().GetResult();
 
             return result;
         }
+
+        
 
         private void WriteRunfilesProps(string[] runfilesEntries)
         {
@@ -236,8 +272,6 @@ namespace RulesMSBuild.Tools.Builder
 
         private void WriteBazelProps()
         {
-            if (_action != "restore") return;
-
             var props =
                 _context.ProjectBazelProps.Select((pair) => new XElement(pair.Key, pair.Value));
 
@@ -271,15 +305,21 @@ namespace RulesMSBuild.Tools.Builder
             }
 
             if (result != BuildResultCode.Success) return;
-            
-            _cache.Save(_context.LabelPath(".cache"));
+
+
+            var saveEvaluation = false;
             switch (_action)
             {
                 case "restore":
+                    saveEvaluation = true;
                     FixRestoreOutputs();
                     break;
                 case "build":
                 {
+                    // the restore sandbox doesn't have access to the source files, only project files so we re-save 
+                    // the evaluation with the updated items for this phase of the build.
+                    saveEvaluation = true;
+                    _cache.Save(_context.LabelPath(".cache"));
                     if (_context.IsTest)
                     {
                         // todo make this less hacky
@@ -317,6 +357,10 @@ namespace RulesMSBuild.Tools.Builder
                     break;
                 }
             }
+            
+            _cache.Save(_context.LabelPath(".cache"));
+            if (saveEvaluation)
+                _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) + ".cache"));
         }
 
         /// <summary>
@@ -388,7 +432,7 @@ namespace RulesMSBuild.Tools.Builder
 
         private string[] GetInputCaches()
         {
-            var cacheManifest = _context.LabelPath(".input_caches");
+            var cacheManifest = _context.LabelPath(".cache_manifest");
             if (!File.Exists(cacheManifest)) return Array.Empty<string>();
             return File.ReadAllLines(cacheManifest);
         }

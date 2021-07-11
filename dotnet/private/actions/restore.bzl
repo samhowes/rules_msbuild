@@ -10,8 +10,9 @@ def restore(ctx, dotnet):
     restore_dir = ctx.actions.declare_directory("restore")
 
     cache = declare_cache(ctx)
+    project_cache = ctx.actions.declare_file(ctx.file.project_file.basename + ".cache")
 
-    outputs = [assets_json, restore_dir, cache]
+    outputs = [assets_json, restore_dir, cache, project_cache]
 
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore")
     args.add_all([
@@ -23,6 +24,7 @@ def restore(ctx, dotnet):
 
     outputs.extend(cmd_outputs)
 
+    # todo get restore caches from these deps
     dep_files = process_deps(dotnet, ctx.attr.deps)
 
     inputs = depset(
@@ -46,6 +48,7 @@ def restore(ctx, dotnet):
         restore_dir = restore_dir,
         target_framework = ctx.attr.target_framework,
         cache = cache,
+        project_cache = project_cache,
     ), outputs
 
 def process_deps(dotnet, deps):

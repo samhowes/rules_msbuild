@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Build;
 using Microsoft.Build.BackEnd;
 using Microsoft.Build.Execution;
+using Microsoft.Build.Graph;
+using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.MSBuild;
+using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 #pragma warning disable 8618
 
@@ -18,7 +22,6 @@ namespace RulesMSBuild.Tools.Builder
         public void Translate(ITranslator translator)
         {
             // translator.Translate(ref Label);
-            translator.Translate(ref Project, ProjectInstance.FactoryForDeserialization);
             translator.Translate(ref BuildResult);
         }
     }
@@ -31,48 +34,99 @@ namespace RulesMSBuild.Tools.Builder
     
     public class BuildCache : ITranslatable
     {
-        private readonly CacheManifest _manifest;
-        public ProjectInstance Project;
+        public  CacheManifest Manifest;
+        public ProjectInstance? Project;
         private readonly PathMapper _pathMapper;
         private readonly Files _files;
 
         public BuildCache(CacheManifest manifest, PathMapper pathMapper, Files files)
         {
-            _manifest = manifest;
+            Manifest = manifest;
             _pathMapper = pathMapper;
             _files = files;
         }
 
-        public void RecordResult(BuildResult buildResult)
+        public void RecordResult(GraphBuildResult buildResult)
         {
-            var project = buildResult.ProjectStateAfterBuild;
-            Project = project;
         }
 
         public void Save(string path)
         {
-            using var stream = _files.Create(path);;
+            using var stream = _files.Create(path);
+            var translator = CreateWriteTranslator(stream);
+            Translate(translator);
+        }
+
+        private BinaryTranslator.BinaryWriteTranslator CreateWriteTranslator(Stream stream)
+        {
             var writer = new PathMappingBinaryWriter(stream, _pathMapper);
             var translator = new BinaryTranslator.BinaryWriteTranslator(stream, writer);
-            
-            Translate(translator);
+            return translator;
         }
 
         public void Load(string path)
         {
             using var stream = _files.OpenRead(path);
+            var translator = CreateReadTranslator(stream);
+            Translate(translator);
+        }
 
+        private BinaryTranslator.BinaryReadTranslator CreateReadTranslator(Stream stream)
+        {
             SharedReadBuffer buffer = new InterningBinaryReader.Buffer();
             var reader = InterningBinaryReader.Create(stream, buffer);
             reader.OpportunisticIntern = new PathMappingInterner(_pathMapper);
             var translator = new BinaryTranslator.BinaryReadTranslator(stream, buffer, reader);
-            
-            Translate(translator);
+            return translator;
         }
 
         public void Translate(ITranslator translator)
         {
-            translator.Translate(ref Project, ProjectInstance.FactoryForDeserialization);
+            
+        }
+
+        public void SaveProject(string path)
+        {
+            Project.TranslateEntireState = true;
+            DoTranslate(path, CreateWriteTranslator, (translator) =>
+            {
+                TranslateProject(ref Project, translator);
+            });
+        }
+
+        public ProjectInstance? LoadProject(string projectPath)
+        {
+            var manifestPath = _pathMapper.ToManifestPath(projectPath);
+            string? cachePath = null;
+            if (Manifest.Projects?.TryGetValue(manifestPath, out cachePath) != true)
+            {
+                Debug($"Project cache miss: {manifestPath}");
+                return null;
+            }
+            
+            cachePath = _pathMapper.ToAbsolute(cachePath!);
+            return LoadProjectImpl(cachePath);
+        }
+
+        public ProjectInstance? LoadProjectImpl(string cachePath)
+        {
+            ProjectInstance project = null!;
+            // Debugger.WaitForAttach();
+            DoTranslate(cachePath, CreateReadTranslator, (translator) => { TranslateProject(ref project, translator); });
+
+            return project;
+        }
+
+        private void DoTranslate(string path, Func<Stream, ITranslator> createTranslator, Action<ITranslator> translate)
+        {
+            using var stream = createTranslator == CreateReadTranslator ? _files.OpenRead(path) : _files.Create(path);
+            var translator = createTranslator(stream);
+            translate(translator);
+        }
+
+        private void TranslateProject(ref ProjectInstance project, ITranslator translator)
+        {
+            translator.Translate(ref project, ProjectInstance.FactoryForDeserialization);
         }
     }
 }

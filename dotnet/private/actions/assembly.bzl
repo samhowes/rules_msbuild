@@ -17,8 +17,8 @@ def build_assembly(ctx, dotnet):
 
     build_cache = declare_cache(ctx)
 
-    dep_files, input_caches, runfiles = _process_deps(ctx, dotnet, restore)
-    cache_manifest = write_cache_manifest(ctx, input_caches)
+    dep_files, input_caches, runfiles, projects = _process_deps(ctx, dotnet, restore)
+    cache_manifest = write_cache_manifest(ctx, projects)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
     inputs = depset(
@@ -59,13 +59,16 @@ def _process_deps(ctx, dotnet, restore_info):
     files = [
         restore_info.project_file,
         restore_info.restore_dir,
-        restore_info.cache,
     ] + (ctx.files.msbuild_directory +
          # include and content because msbuild could copy them to the output directory of any dependent assembly
          ctx.files.srcs +
          ctx.files.content)
     caches = []
     runfiles = []
+
+    # don't use the restore project file evaluation: it's evaluation won't have the source files as project items because
+    # we don't list the source files as inputs to that action
+    project_files = {}
 
     # we need the full transitive closure of dependency files here because MSBuild
     # could decide to copy some of these files to the output directory
@@ -87,8 +90,12 @@ def _process_deps(ctx, dotnet, restore_info):
             caches.append(info.build_caches)
             runfiles.append(info.runfiles)
 
+            # we can't use the restore cache because it won't have source items in it
+            project_files[info.restore.project_file] = info.project_cache
+
     return (
         depset(files, transitive = transitive),
-        depset([restore_info.cache], transitive = caches),
+        depset([], transitive = caches),
         depset(ctx.files.data, transitive = runfiles),
+        project_files,
     )

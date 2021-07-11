@@ -21,6 +21,7 @@ filegroup(
         "OutputProcessor.cs",
         "PathMapper.cs",
         "Program.cs",
+        "ProjectLoader.cs",
     ],
     visibility = ["//visibility:public"],
 )
