@@ -88,7 +88,7 @@ namespace RulesMSBuild.Tools.Builder
                 var projectCollection = new ProjectCollection(new Dictionary<string, string>()
                 {
                     ["RestoreUseStaticGraphEvaluation"] = "true",
-                    // ["NoBuild"] = "true",
+                    ["NoBuild"] = "true",
                 });
                 project = loader.Load(projectCollection);
                 var prop = project.Properties.FirstOrDefault(p => p.Name == "RestoreUseStaticGraphEvaluation");
