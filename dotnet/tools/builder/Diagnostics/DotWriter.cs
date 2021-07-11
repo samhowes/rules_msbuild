@@ -46,11 +46,16 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                 Attributes(("label", $"<{cluster.Name}<br/>{cluster.PropertiesString}>"));
                 _sb.AppendLine();
                 
-                WriteCluster(g, cluster);
+                var externalEdges = WriteCluster(g, cluster);
 
                 _indentLevel--;
                 Indent();
                 _sb.AppendLine("}");
+
+                foreach (var edge in externalEdges)
+                {
+                    WriteEdge(edge);
+                }
             }
 
             _indentLevel--;
@@ -59,8 +64,9 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
             return _sb.ToString();
         }
 
-        private void WriteCluster(TargetGraph g, Cluster cluster)
+        private List<TargetGraph.Edge> WriteCluster(TargetGraph g, Cluster cluster)
         {
+            var externalEdges = new List<TargetGraph.Edge>();
             g.CachePossible.TryGetValue(cluster.Name, out var canCache);
 
             if (g != cluster && cluster.Nodes.Count == 0)
@@ -94,7 +100,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                     penwidth = "2.0";
                     nodeAttrs.Add(("color", "darkgoldenrod1"));
                 }
-                else if (!node.Finished)
+                else if (node.Started && !node.Finished)
                 {
                     penwidth = "2.0";
                     nodeAttrs.Add(("color", "red"));
@@ -113,34 +119,51 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                 nodeAttrs.Add(("style", $"\"{style}\""));
                 InlineAttributes(nodeAttrs.ToArray());
 
-                foreach (var dep in node.Dependencies)
+                
+                foreach (var dep in node.Dependencies.Values.Cast<TargetGraph.Edge>())
                 {
-                    Indent().Append(node.Id).Append(" -> ").Append(dep.To.Id);
-                    string? color = null;
-                    if (dep.WasSkipped)
-                        color = "darkgray";
-                    var attrs = new List<(string, string)>();
-
-                    if (dep.Forced)
+                    if (dep.To.Cluster != dep.From.Cluster)
                     {
-                        color ??= "darkorchid";
-                        attrs.Add(("style", "bold"));
-                    }
-                    else if (dep.Reason == TargetBuiltReason.BeforeTargets ||
-                             dep.Reason == TargetBuiltReason.AfterTargets)
-                    {
-                        color ??= "darkorange2";
-                        attrs.Add(("dir", "back"));
-                    }
-                    else
-                    {
-                        color ??= "blue";
+                        // graphviz sometimes doesn't like it when we declare inter-cluster edges inside a cluster.
+                        // sometimes it will draw the external node in the current cluster instead of making a new
+                        // cluster
+                        externalEdges.Add(dep);
+                        continue;
                     }
 
-                    attrs.Add(("color", color));
-                    InlineAttributes(attrs.ToArray());
+                    WriteEdge(dep);
                 }
             }
+
+            return externalEdges;
+        }
+
+        private void WriteEdge(TargetGraph.Edge edge)
+        {
+            Indent().Append(edge.From.Id).Append(" -> ").Append(edge.To.Id);
+            string? color = null;
+            if (edge.WasSkipped)
+                color = "darkgray";
+            var attrs = new List<(string, string)>();
+
+            if (edge.Forced)
+            {
+                color ??= "darkorchid";
+                attrs.Add(("style", "bold"));
+            }
+            else if (edge.Reason == TargetBuiltReason.BeforeTargets ||
+                     edge.Reason == TargetBuiltReason.AfterTargets)
+            {
+                color ??= "darkorange2";
+                attrs.Add(("dir", "back"));
+            }
+            else
+            {
+                color ??= "blue";
+            }
+
+            attrs.Add(("color", color));
+            InlineAttributes(attrs.ToArray());
         }
     }
 }

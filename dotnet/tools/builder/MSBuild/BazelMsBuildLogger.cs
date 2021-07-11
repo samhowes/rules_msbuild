@@ -86,13 +86,14 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                         );
                     break;
                 case TargetStartedEventArgs started:
-                    AddNode(
+                    var node = AddNode(
                         started.TargetName,
                         false,
                         started.ParentTarget,
                         started.BuildReason,
                         started.ProjectFile
                         );
+                    node.Started = true;
                     break;
                 case TargetFinishedEventArgs finished:
                     if (_targetStack.Peek() != finished.TargetName) throw new Exception(":(");
@@ -104,14 +105,14 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             }
         }
 
-        private void AddNode(string name, bool wasSkipped, string? parentName, TargetBuiltReason reason, string projectFile)
+        private TargetGraph.Node AddNode(string name, bool wasSkipped, string? parentName, TargetBuiltReason reason, string projectFile)
         {
             _targetStack.TryPeek(out var stackParent);
             if (!wasSkipped)
                 _targetStack.Push(name);
-            
+
             if (_cluster == null)
-                Debugger.WaitForAttach();
+                throw new Exception($"Cluster is null!");
             
             var node = _cluster!.GetOrAdd(name);
             
@@ -131,14 +132,15 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 if (forced)
                     _projectStack.TryPeek(out parentCluster);
                 var parent = (parentCluster ?? _cluster).GetOrAdd(parentName);
-                var edge = new TargetGraph.Edge(parent, node, wasSkipped) {Forced = forced};
-                parent.Dependencies.Add(edge);
-                edge.Reason = reason;
+                var edge = parent.AddDependency(node, reason);
+                edge.Forced = forced;
             }
             else
             {
                 node.EntryPoint = true;
             }
+
+            return node;
         }
 
         /// <summary>

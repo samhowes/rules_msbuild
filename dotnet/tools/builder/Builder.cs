@@ -48,7 +48,7 @@ namespace RulesMSBuild.Tools.Builder
             
             var pathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
             _cache = new BuildCache(new CacheManifest(), pathMapper, new Files());
-            _loader = new ProjectLoader(_context.ProjectFile, _cache);
+            _loader = new ProjectLoader(_context.ProjectFile, _cache, _targetGraph);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
                 (m) => pathMapper.ToBazel(m)

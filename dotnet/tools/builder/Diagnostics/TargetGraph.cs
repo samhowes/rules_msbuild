@@ -1,7 +1,9 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 
 namespace RulesMSBuild.Tools.Builder.Diagnostics
@@ -35,9 +37,11 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
 
         public TargetGraph.Node GetOrAdd(string name)
         {
+            name = TargetGraph.Node.CleanName(name);
             if (!Nodes.TryGetValue(name, out var node))
             {
-                node = new TargetGraph.Node(name, name + Id)
+                var id = TargetGraph.Node.CleanId(name + Id);
+                node = new TargetGraph.Node(name, id)
                 {
                     Cluster = this,
                     FromCache = Cache.Contains(name)
@@ -60,7 +64,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
         public class Node
         {
             public string Name { get; }
-            public List<Edge> Dependencies { get; } = new();
+            public OrderedDictionary Dependencies { get; } = new();
             public bool WasBuilt { get; set; }
             public bool EntryPoint { get; set; }
             public bool FromCache { get; set; }
@@ -68,12 +72,47 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
             public string Id { get; }
             public bool Finished { get; set; }
             public bool IsDuplicate { get; set; }
+            public bool Started { get; set; }
 
             public Node(string name, string id)
             {
+                if (string.IsNullOrEmpty(name))
+                {
+                    
+                }
                 Name = name;
                 Id = id;
             }
+
+            public Edge AddDependency(Node node, TargetBuiltReason? targetBuiltReason)
+            {
+                Edge edge;
+                if (!Dependencies.Contains(node.Id))
+                {
+                    edge = new Edge(this, node){Reason = targetBuiltReason};
+                    if (!targetBuiltReason.HasValue)
+                        edge.Forced = true;
+                    Dependencies[edge.To.Id] = edge;
+                }
+                else
+                {
+                    edge = (Edge)Dependencies[node.Id]!;
+                }
+                    
+                return edge;
+            }
+
+            public static string CleanName(string name)
+            {
+                return name.Trim();
+            }
+            public static string CleanId(string id)
+            {
+                return BadCharsRegex.Replace(id, "_");
+            }
+
+            private static Regex BadCharsRegex =
+                new Regex(@"[.\$\@\(\)%]", RegexOptions.Compiled | RegexOptions.Multiline);
         }
         
         public class Edge
@@ -81,7 +120,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
             public Node From { get; }
             public Node To { get; }
             public bool WasSkipped { get; }
-            public TargetBuiltReason Reason { get; set; }
+            public TargetBuiltReason? Reason { get; set; }
             public bool Forced { get; set; }
 
             public Edge(Node from, Node to, bool wasSkipped = false)

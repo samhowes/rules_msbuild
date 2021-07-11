@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Locator;
+using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.Launcher;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
@@ -71,21 +72,28 @@ namespace RulesMSBuild.Tools.Builder
 
             BuildCache MakeCache()
             {
-                return new BuildCache(new CacheManifest(){ Projects = new Dictionary<string, string>(){[file] = file}}, new PathMapper(execRoot, outputBase), new Files());
+                return new BuildCache(new CacheManifest()
+                {
+                    Projects = new Dictionary<string, string>(){[file] = file},
+                    Results = new Dictionary<string, string>()
+                }, new PathMapper(execRoot, outputBase), new Files());
             }
 
             var cache = MakeCache();
             ProjectInstance? project;
             if (file.EndsWith(".csproj"))
             {
-                var loader = new ProjectLoader(file, cache);
+                var targetGraph = new TargetGraph(outputBase, file, null);
+                var loader = new ProjectLoader(file, cache, targetGraph);
                 project = loader.Load(ProjectCollection.GlobalProjectCollection);
                 var path = Path.GetTempFileName();
                 cache.Project = project;
                 cache.SaveProject(path);
                 cache = MakeCache();
                 project = cache.LoadProjectImpl(path);
-                
+
+                var dot = targetGraph.ToDot();
+                File.WriteAllText(Path.GetFileName(file) + ".dot", dot);
                 
             }
             else
