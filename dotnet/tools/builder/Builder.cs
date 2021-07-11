@@ -94,7 +94,7 @@ namespace RulesMSBuild.Tools.Builder
                 loggers.Add(binlog);
             }
 
-            InstantiateCache();
+            _loader.Initialize(_context.LabelPath(".cache_manifest"));
 
             var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
                 ToolsetDefinitionLocations.Default);
@@ -124,21 +124,6 @@ namespace RulesMSBuild.Tools.Builder
             }
 
             return pc;
-        }
-
-        private void InstantiateCache()
-        {
-            var cacheManifestPath = _context.LabelPath(".cache_manifest");
-            // Debugger.WaitForAttach();
-            if (!File.Exists(cacheManifestPath))
-            {
-                Debug("No input caches found");
-                return;
-            }
-            var cacheManifestJson = File.ReadAllText(cacheManifestPath);
-            var cacheManifest = JsonSerializer.Deserialize<CacheManifest>(cacheManifestJson,
-                new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
-            _cache.Manifest = cacheManifest;
         }
 
         private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
@@ -360,7 +345,7 @@ namespace RulesMSBuild.Tools.Builder
             
             _cache.Save(_context.LabelPath(".cache"));
             if (saveEvaluation)
-                _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) + ".cache"));
+                _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
         }
 
         /// <summary>

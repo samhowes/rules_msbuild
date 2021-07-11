@@ -54,5 +54,10 @@ namespace RulesMSBuild.Tools.Builder
             return project;
         }
 
+        public void Initialize(string cacheManifestPath)
+        {
+            _cache.Initialize(cacheManifestPath);
+                
+        }
     }
 }

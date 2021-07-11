@@ -1,6 +1,6 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
-load(":common.bzl", "declare_cache", "get_nuget_files", "write_cache_manifest")
+load(":common.bzl", "declare_caches", "get_nuget_files", "write_cache_manifest")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def build_assembly(ctx, dotnet):
@@ -15,18 +15,18 @@ def build_assembly(ctx, dotnet):
     # didn't listen to our paths
     intermediate_assembly = ctx.actions.declare_file(paths.join("obj", dotnet.config.tfm, assembly.basename))
 
-    build_cache = declare_cache(ctx)
-
-    dep_files, input_caches, runfiles, projects = _process_deps(ctx, dotnet, restore)
-    cache_manifest = write_cache_manifest(ctx, projects)
+    cache = declare_caches(ctx, "build")
+    files, caches, runfiles = _process_deps(ctx, dotnet)
+    caches = depset(transitive = caches)
+    cache_manifest = write_cache_manifest(ctx, cache, caches)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
     inputs = depset(
-        [cache_manifest],
-        transitive = [dep_files, dotnet.sdk.runfiles],
+        [cache_manifest, ctx.file.project_file] + ctx.files.srcs + ctx.files.content,
+        transitive = files + [restore.files],
     )
 
-    outputs = [output_dir, assembly, intermediate_dir, intermediate_assembly, build_cache] + cmd_outputs
+    outputs = [output_dir, assembly, intermediate_dir, intermediate_assembly, cache.project, cache.result] + cmd_outputs
 
     ctx.actions.run(
         mnemonic = "MSBuild",
@@ -41,61 +41,28 @@ def build_assembly(ctx, dotnet):
     info = DotnetLibraryInfo(
         assembly = assembly,
         output_dir = output_dir,
+        files = files,
+        caches = depset([cache], transitive = [caches]),
         # set runfiles here so we can use it in the publish action without including the dotnet sdk
-        runfiles = runfiles,
-        intermediate_dir = intermediate_dir,
-        build_cache = build_cache,
-        build_caches = depset(
-            [build_cache],
-            transitive = [input_caches],
-        ),
-        dep_files = dep_files,
+        runfiles = depset(transitive = runfiles),
         restore = restore,
     )
 
     return info, outputs
 
-def _process_deps(ctx, dotnet, restore_info):
-    files = [
-        restore_info.project_file,
-        restore_info.restore_dir,
-    ] + (ctx.files.msbuild_directory +
-         # include and content because msbuild could copy them to the output directory of any dependent assembly
-         ctx.files.srcs +
-         ctx.files.content)
+def _process_deps(ctx, dotnet):
+    files = []
     caches = []
     runfiles = []
 
-    # don't use the restore project file evaluation: it's evaluation won't have the source files as project items because
-    # we don't list the source files as inputs to that action
-    project_files = {}
-
-    # we need the full transitive closure of dependency files here because MSBuild
-    # could decide to copy some of these files to the output directory
-    # this will definitely happen for an exe build, and may happen for other assemblies
-    # depending on the user's project settings
-    transitive = [restore_info.dep_files]
-
     for d in dotnet.config.implicit_deps:
-        get_nuget_files(d, dotnet.config.tfm, transitive)
+        get_nuget_files(d, dotnet.config.tfm, files)
 
     for d in ctx.attr.deps:
         if DotnetLibraryInfo in d:
             info = d[DotnetLibraryInfo]
-            files.extend([
-                info.output_dir,
-                info.build_cache,
-            ])
-            transitive.append(info.dep_files)
-            caches.append(info.build_caches)
+            files.append(info.files)
             runfiles.append(info.runfiles)
+            caches.append(info.caches)
 
-            # we can't use the restore cache because it won't have source items in it
-            project_files[info.restore.project_file] = info.project_cache
-
-    return (
-        depset(files, transitive = transitive),
-        depset([], transitive = caches),
-        depset(ctx.files.data, transitive = runfiles),
-        project_files,
-    )
+    return files, caches, runfiles

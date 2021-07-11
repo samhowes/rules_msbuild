@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using Microsoft.Build;
 using Microsoft.Build.BackEnd;
 using Microsoft.Build.Execution;
@@ -28,13 +29,20 @@ namespace RulesMSBuild.Tools.Builder
 
     public class CacheManifest
     {
+        public class BuildResultCache
+        {
+            public string Project { get; set; }
+            public string Result { get; set; }
+        }
+
+        public BuildResultCache Output { get; set; } = null!;
         public Dictionary<string, string> Projects { get; set; } = null!;
         public Dictionary<string, string> ProjectResults { get; set; } = null!;
     }
     
     public class BuildCache : ITranslatable
     {
-        public  CacheManifest Manifest;
+        public CacheManifest? Manifest;
         public ProjectInstance? Project;
         private readonly PathMapper _pathMapper;
         private readonly Files _files;
@@ -127,6 +135,20 @@ namespace RulesMSBuild.Tools.Builder
         private void TranslateProject(ref ProjectInstance project, ITranslator translator)
         {
             translator.Translate(ref project, ProjectInstance.FactoryForDeserialization);
+        }
+
+        public void Initialize(string manifestPath)
+        {
+            // Debugger.WaitForAttach();
+            if (!_files.Exists(manifestPath))
+            {
+                Debug("No input caches found");
+                return;
+            }
+            var cacheManifestJson = File.ReadAllText(manifestPath);
+            var cacheManifest = JsonSerializer.Deserialize<CacheManifest>(cacheManifestJson,
+                new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
+            Manifest = cacheManifest!;
         }
     }
 }

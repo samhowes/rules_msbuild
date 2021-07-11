@@ -11,5 +11,7 @@ namespace RulesMSBuild.Tools.Builder
         public virtual IEnumerable<string> GetDirectories(string path) => Directory.EnumerateDirectories(path);
         public virtual Stream Create(string path) => File.Create(path);
         public virtual Stream OpenRead(string path) => File.OpenRead(path);
+
+        public bool Exists(string path) => File.Exists(path);
     }
 }
