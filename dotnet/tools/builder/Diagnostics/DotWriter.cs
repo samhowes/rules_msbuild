@@ -32,25 +32,30 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
         }
         public string Write(TargetGraph g)
         {
-            _sb.Append("digraph g\n{\n\tnode [shape=box style=filled]\n");
-            _indentLevel++;
+            _sb.Append("digraph g");
+            Open();
+            Indent();
+            _sb.AppendLine("ranksep=1.8");
+            _sb.AppendLine("fillcolor=grey21 style=filled");
+            _sb.AppendLine("fontcolor=gray92");
             
+            Indent();
+            _sb.AppendLine("node [shape=box style=filled]");
+                
             WriteCluster(g, g);
             
             var clusters = g.Clusters.Values.ToList();
             foreach (var cluster in clusters)
             {
-                Indent().AppendLine($"subgraph cluster_{cluster.Id} {{");
-                _indentLevel++;
+                Indent().Append($"subgraph cluster_{cluster.Id}");
+                Open();
                 Indent();
                 Attributes(("label", $"<{cluster.Name}<br/>{cluster.PropertiesString}>"));
                 _sb.AppendLine();
                 
                 var externalEdges = WriteCluster(g, cluster);
 
-                _indentLevel--;
-                Indent();
-                _sb.AppendLine("}");
+                Close();
 
                 foreach (var edge in externalEdges)
                 {
@@ -58,8 +63,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                 }
             }
 
-            _indentLevel--;
-            _sb.Append("}");
+            Close();
 
             return _sb.ToString();
         }
@@ -82,10 +86,16 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                 nodeAttrs.Add(("label", $"<{node.Name}>"));
 
                 string style = "filled";
-                string fill = "white";
+                string? fill = node.Color;
                 string? penwidth = null;
+                string? penColor = null;
                 if (node.IsDuplicate) fill = "tomato";
-                else if (node.EntryPoint) fill = "lightgreen";
+                else if (node.EntryPoint)
+                {
+                    penwidth = "2.0";
+                    penColor = "darkgoldenrod1";
+                    fill = "lightgreen";
+                }
                 else if (node.WasBuilt && node.FromCache) fill = "tomato";
                 else if (node.WasBuilt) fill = "aliceblue";
                 else if (node.Finished)
@@ -93,17 +103,26 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                     fill = "gray94";
                     penwidth = "0";
                 }
-                nodeAttrs.Add(("fillcolor", fill));
 
-                if (node.FromCache)
+                if (fill != null)
+                {
+                    nodeAttrs.Add(("fillcolor", fill));
+                }
+
+                if (node.CachePoint)
+                {
+                    penwidth = "8.0";
+                    penColor ??= "purple";
+                }
+                else if (node.FromCache)
                 {
                     penwidth = "2.0";
-                    nodeAttrs.Add(("color", "darkgoldenrod1"));
+                    penColor ??= "darkgoldenrod1";
                 }
                 else if (node.Started && !node.Finished)
                 {
                     penwidth = "2.0";
-                    nodeAttrs.Add(("color", "red"));
+                    penColor ??= "red";
                 }
 
                 if (canCache?.Contains(node.Name) == true)
@@ -115,6 +134,8 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                 
                 if (penwidth != null)
                     nodeAttrs.Add(("penwidth", penwidth));
+                if (penColor != null)
+                    nodeAttrs.Add(("color",penColor));
                 
                 nodeAttrs.Add(("style", $"\"{style}\""));
                 InlineAttributes(nodeAttrs.ToArray());
@@ -162,8 +183,27 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
                 color ??= "blue";
             }
 
-            attrs.Add(("color", color));
+            
+            if (edge.ShouldCache)
+            {
+                attrs.Add(("penwidth", "2.0"));
+                color = "darkgoldenrod1";
+            }
+            attrs.Add(("color", edge.From.Color ?? "gray51"));
+            
             InlineAttributes(attrs.ToArray());
+        }
+        private void Open()
+        {
+            _indentLevel++;
+            _sb.AppendLine(" {");
+        }
+
+        private void Close()
+        {
+            _indentLevel--;
+            Indent();
+            _sb.AppendLine("}");
         }
     }
 }

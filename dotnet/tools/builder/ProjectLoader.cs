@@ -52,6 +52,10 @@ namespace RulesMSBuild.Tools.Builder
             var project = _cache.LoadProject(projectPath);
             if (project == null)
             {
+                foreach (var (name, value) in projectCollection.GlobalProperties)
+                {
+                    globalProperties[name] = value;
+                }
                 project = new ProjectInstance(
                     projectPath,
                     globalProperties,

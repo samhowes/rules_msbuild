@@ -85,13 +85,71 @@ namespace RulesMSBuild.Tools.Builder
             {
                 var targetGraph = new TargetGraph(outputBase, file, null);
                 var loader = new ProjectLoader(file, cache, targetGraph);
-                project = loader.Load(ProjectCollection.GlobalProjectCollection);
+                var projectCollection = new ProjectCollection(new Dictionary<string, string>()
+                {
+                    ["RestoreUseStaticGraphEvaluation"] = "true",
+                    // ["NoBuild"] = "true",
+                });
+                project = loader.Load(projectCollection);
+                var prop = project.Properties.FirstOrDefault(p => p.Name == "RestoreUseStaticGraphEvaluation");
                 var path = Path.GetTempFileName();
                 cache.Project = project;
                 cache.SaveProject(path);
                 cache = MakeCache();
                 project = cache.LoadProjectImpl(path);
+                
+                var cachePoints = new HashSet<TargetGraph.Node>();
+                var cluster = targetGraph.GetOrAddCluster(file);
+                foreach (var (targetName, color) in new []
+                {
+                    ("Restore", "skyblue1"),
+                    ("Build", "lightgreen"),
+                    ("PublishOnly", "lightpink"),
+                    ("Pack", "sandybrown")
+                })
+                {
+                    void Color(TargetGraph.Node node)
+                    {
+                        node.Color = color;
+                        foreach (var edge in node.Dependencies.Values.Cast<TargetGraph.Edge>())
+                        {
+                            var to = edge.To;
+                            if (to.Color != null)
+                            {
+                                if (to.Color != color)
+                                {
+                                    edge.ShouldCache = true;
+                                    to.CachePoint = true;
+                                    cachePoints.Add(to);    
+                                }
+                                
+                                continue;
+                            }
+                            Color(edge.To);
+                        }
+                    }
 
+                    var entry = cluster.Nodes[targetName];
+                    entry.EntryPoint = true;
+                    Color(entry);
+                }
+
+                void Lighten(TargetGraph.Node node)
+                {
+                    foreach (var edge in node.Dependencies.Values.Cast<TargetGraph.Edge>())
+                    {
+                        if (edge.To.Color == node.Color)
+                            Lighten(edge.To);
+                    }
+                    
+                    if (!node.CachePoint && !node.EntryPoint)
+                        node.Color = "gray92";
+                }
+                // foreach (var node in cachePoints)
+                // {
+                //     Lighten(node);
+                // }
+                
                 var dot = targetGraph.ToDot();
                 File.WriteAllText(Path.GetFileName(file) + ".dot", dot);
                 

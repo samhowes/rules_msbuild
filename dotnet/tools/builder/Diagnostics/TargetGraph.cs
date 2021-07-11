@@ -73,13 +73,11 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
             public bool Finished { get; set; }
             public bool IsDuplicate { get; set; }
             public bool Started { get; set; }
+            public string? Color { get; set; }
+            public bool CachePoint { get; set; }
 
             public Node(string name, string id)
             {
-                if (string.IsNullOrEmpty(name))
-                {
-                    
-                }
                 Name = name;
                 Id = id;
             }
@@ -122,6 +120,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
             public bool WasSkipped { get; }
             public TargetBuiltReason? Reason { get; set; }
             public bool Forced { get; set; }
+            public bool ShouldCache { get; set; }
 
             public Edge(Node from, Node to, bool wasSkipped = false)
             {
@@ -147,7 +146,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
         public string TrimPath(string p) => p.Replace(_trimPath, "");
         public string ToDot() => new DotWriter().Write(this);
 
-        public Cluster GetOrAddCluster(string name, IDictionary<string, string>? properties) 
+        public Cluster GetOrAddCluster(string name, IDictionary<string, string>? properties = null) 
         {
             var cluster = new Cluster(name, properties);
             if (!Clusters.TryGetValue(cluster.UniqueName, out var existing))
