@@ -111,7 +111,7 @@ namespace RulesMSBuild.Tools.Builder
                 Debug($"Project cache miss: {manifestPath}");
                 return null;
             }
-            
+            Debug($"Project cache hit: {manifestPath}");
             cachePath = _pathMapper.ToAbsolute(cachePath!);
             return LoadProjectImpl(cachePath);
         }

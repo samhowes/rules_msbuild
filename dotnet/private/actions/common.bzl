@@ -11,12 +11,12 @@ def write_cache_manifest(ctx, output, caches):
     projects = {}
     results = {}
     for c in caches.to_list():
-        projects[c.project_path] = c.project
+        projects[c.project_path] = c.project.path
 
     manifest = dict(
         output = dict(
-            project = output.project.short_path,
-            result = output.result.short_path,
+            project = output.project.path,
+            result = output.result.path,
         ),
         projects = projects,
     )

@@ -57,6 +57,8 @@ namespace RulesMSBuild.Tools.Builder
 
         public int Build()
         {
+            Debug("$exec_root: " + _context.Bazel.ExecRoot);
+            Debug("$output_base: " + _context.Bazel.OutputBase);
             ProjectCollection? projectCollection = null;
             BuildResultCode? result = null;
             try

@@ -39,16 +39,16 @@ namespace RulesMSBuild.Tools.Builder
                     globalProperties,
                     "Current",
                     projectCollection);
-
-                if (_cache.Project == null && project.FullPath == _entryProjectPath)
-                {
-                    _cache.Project = project;
-                    EntryProject = project;
-                }
             }
             else
             {
                 project.LateInitialize(projectCollection.ProjectRootElementCache, null);
+            }
+            
+            if (_cache.Project == null && project.FullPath == _entryProjectPath)
+            {
+                _cache.Project = project;
+                EntryProject = project;
             }
             
             return project;

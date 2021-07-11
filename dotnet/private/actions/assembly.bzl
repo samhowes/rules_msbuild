@@ -41,7 +41,7 @@ def build_assembly(ctx, dotnet):
     info = DotnetLibraryInfo(
         assembly = assembly,
         output_dir = output_dir,
-        files = files,
+        files = depset(direct = outputs, transitive = [inputs]),
         caches = depset([cache], transitive = [caches]),
         # set runfiles here so we can use it in the publish action without including the dotnet sdk
         runfiles = depset(transitive = runfiles),
