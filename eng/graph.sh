@@ -7,7 +7,7 @@ target="${1/\/\//}"
 # shellcheck disable=SC2199
 if [[ -n "${target:-}" && ! "$arg_string" =~ "--no_build" ]]; then
   set +e
-  bazel build --define=BUILD_DIAG=1 "//$target"
+  bazel build --config=diag "//$target"
   set -e
 fi
 

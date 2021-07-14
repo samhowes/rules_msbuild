@@ -98,7 +98,8 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 case TargetFinishedEventArgs finished:
                     if (_targetStack.Peek() != finished.TargetName) throw new Exception(":(");
                     _targetStack.Pop();
-                    _cluster!.GetOrAdd(finished.TargetName).Finished = true;
+                    var n = _cluster!.GetOrAdd(finished.TargetName); 
+                    n.Finished = true;
                     return;
                 default:
                     return;
@@ -116,7 +117,6 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             
             var node = _cluster!.GetOrAdd(name);
             
-            node.WasBuilt = node.WasBuilt || !wasSkipped;
             node.Finished = wasSkipped;
             // was the MSBuild task called on this target directly?
             
@@ -133,11 +133,8 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                     _projectStack.TryPeek(out parentCluster);
                 var parent = (parentCluster ?? _cluster).GetOrAdd(parentName);
                 var edge = parent.AddDependency(node, reason);
+                edge.Runtime = true;
                 edge.Forced = forced;
-            }
-            else
-            {
-                node.EntryPoint = true;
             }
 
             return node;

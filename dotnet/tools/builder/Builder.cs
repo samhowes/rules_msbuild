@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -34,6 +34,7 @@ namespace RulesMSBuild.Tools.Builder
         private readonly TargetGraph? _targetGraph;
         private readonly BuildCache _cache;
         private readonly ProjectLoader _loader;
+        private readonly PathMapper _pathMapper;
 
         public Builder(BuildContext context)
         {
@@ -46,12 +47,12 @@ namespace RulesMSBuild.Tools.Builder
                 _targetGraph = new TargetGraph(trimPath, _context.ProjectFile, null);
             }
             
-            var pathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
-            _cache = new BuildCache(new CacheManifest(), pathMapper, new Files());
-            _loader = new ProjectLoader(_context.ProjectFile, _cache, _targetGraph);
+            _pathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
+            _cache = new BuildCache(new CacheManifest(), _pathMapper, new Files());
+            _loader = new ProjectLoader(_context.ProjectFile, _cache, _pathMapper, _targetGraph);
             _msbuildLog = new BazelMsBuildLogger(
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                (m) => pathMapper.ToBazel(m)
+                (m) => _pathMapper.ToBazel(m)
                 , _targetGraph!);
         }
 
@@ -98,6 +99,9 @@ namespace RulesMSBuild.Tools.Builder
 
             _loader.Initialize(_context.LabelPath(".cache_manifest"));
 
+            var cacheFiles = _cache.Manifest!.Results.Values.Select(p => _pathMapper.ToAbsolute(p));
+            // CacheSerialization.DeserializeCaches()
+
             var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
                 ToolsetDefinitionLocations.Default);
             
@@ -114,9 +118,13 @@ namespace RulesMSBuild.Tools.Builder
                 ToolsetDefinitionLocations =
                     ToolsetDefinitionLocations.ConfigurationFile |
                     ToolsetDefinitionLocations.Registry,
-                ProjectRootElementCache = pc.ProjectRootElementCache
-                // ProjectCacheDescriptor = ProjectCacheDescriptor.FromInstance(new MyCache(_targetGraph),
-                //     new[] {new ProjectGraphEntryPoint(_context.ProjectFile)}, null, null)
+                ProjectRootElementCache = pc.ProjectRootElementCache,
+                // ProjectCacheDescriptor = ProjectCacheDescriptor.FromInstance(
+                //     new CachePlugin(_targetGraph, _cache),
+                //     new[] {new ProjectGraphEntryPoint(_context.ProjectFile)}, 
+                //     null, null),
+                
+                InputResultsCacheFiles = cacheFiles.ToArray(),
             };
 
             _buildManager.BeginBuild(parameters);
@@ -125,7 +133,42 @@ namespace RulesMSBuild.Tools.Builder
                 Console.WriteLine("Failed to initialize build manager, please file an issue.");
             }
 
+            if (_targetGraph != null)
+            {
+                ReadCache();
+            }
+
             return pc;
+        }
+
+        private void ReadCache()
+        {
+            var configCache =
+                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
+            var resultsCache =
+                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ResultsCache) as ResultsCacheWithOverride;
+
+            if (resultsCache == null) return;
+            
+            
+            var @overrideProperty =
+                typeof(ResultsCacheWithOverride).GetField("_override", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            var @override = @overrideProperty!.GetValue(resultsCache) as IResultsCache;
+
+            if (@override == null) return;
+            
+            foreach (var result in @override!)
+            {
+                var config = configCache![result.ConfigurationId];
+                var path = _pathMapper.ToBazel(config.ProjectFullPath);
+                var cluster = _targetGraph.GetOrAddCluster(path);
+                foreach (var targetResult in result.ResultsByTarget)
+                {
+                    var node = cluster.GetOrAdd(targetResult.Key);
+                    node.FromCache = true;
+                }
+            }
         }
 
         private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
@@ -141,7 +184,7 @@ namespace RulesMSBuild.Tools.Builder
 
             // don't load the project ahead of time, otherwise the evaluation won't be included in the binlog output
             var source = new TaskCompletionSource<BuildResultCode>();
-            var flags = BuildRequestDataFlags.None;
+            var flags = BuildRequestDataFlags.ReplaceExistingProjectInstance;
 
             // our restore outputs are relative to the project directory
             Environment.CurrentDirectory = _context.ProjectDirectory;
@@ -283,6 +326,11 @@ namespace RulesMSBuild.Tools.Builder
 
         private void EndBuild(BuildResultCode result)
         {
+            var configCache = ((IBuildComponentHost)_buildManager).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
+            var resultsCache = ((IBuildComponentHost)_buildManager).GetComponent(BuildComponentType.ResultsCache) as IResultsCache;
+
+            CacheSerialization.SerializeCaches(configCache, resultsCache, _context.LabelPath(".cache"));
+            
             _buildManager.EndBuild();
 
             if (_targetGraph != null)
@@ -343,7 +391,7 @@ namespace RulesMSBuild.Tools.Builder
                 }
             }
             
-            _cache.Save(_context.LabelPath(".cache"));
+            // _cache.Save(_context.LabelPath(".cache"));
             if (saveEvaluation)
                 _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
         }
@@ -451,37 +499,6 @@ namespace RulesMSBuild.Tools.Builder
                     src.CopyTo(dest.FullName, true);
                 }
             }
-        }
-    }
-    
-    public class CachePlugin : ProjectCachePluginBase
-    {
-        private readonly TargetGraph? _targetGraph;
-
-        public CachePlugin(TargetGraph? targetGraph)
-        {
-            _targetGraph = targetGraph;
-        }
-
-        public override Task BeginBuildAsync(CacheContext context, PluginLoggerBase logger,
-            CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        public override Task<CacheResult> GetCacheResultAsync(BuildRequestData buildRequest, PluginLoggerBase logger,
-            CancellationToken cancellationToken)
-        {
-            if (_targetGraph == null)
-                return Task.FromResult(CacheResult.IndicateNonCacheHit(CacheResultType.CacheMiss));
-
-            _targetGraph.CanCache(buildRequest.ProjectFullPath, buildRequest.TargetNames);
-            return Task.FromResult(CacheResult.IndicateNonCacheHit(CacheResultType.CacheMiss));
-        }
-
-        public override Task EndBuildAsync(PluginLoggerBase logger, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
         }
     }
 }

@@ -93,8 +93,9 @@ namespace RulesMSBuild.Tools.Builder
 
             if (Manifest!.Results.TryGetValue(manifestPath, out var resultCache))
             {
-                // don't await here, just queue it for later
-                _results[manifestPath] = LoadResultsAsync(resultCache);
+                // var absolutePath = _pathMapper.ToAbsolute(resultCache);
+                // // don't await here, just queue it for later
+                // _results[manifestPath] = Task.Run(() => LoadResults(absolutePath) );
             }
             
             string? cachePath = null;
@@ -108,21 +109,16 @@ namespace RulesMSBuild.Tools.Builder
             return LoadProjectImpl(cachePath);
         }
 
-        private Task<BuildResult> LoadResultsAsync(string resultCachePath)
+        public BuildResult LoadResults(string resultCachePath)
         {
-            return Task.Run(() =>
-            {
-                BuildResult buildResult = null!;
-                DoTranslate(resultCachePath, CreateReadTranslator,
-                    (translator) => { TranslateResult(ref buildResult, translator); });
-                return buildResult;
-            });
+            BuildResult buildResult = null!;
+            DoTranslate(resultCachePath, CreateReadTranslator, (t) => TranslateResult(ref buildResult, t));
+            return buildResult;
         }
 
         public ProjectInstance? LoadProjectImpl(string cachePath)
         {
             ProjectInstance project = null!;
-            // Debugger.WaitForAttach();
             DoTranslate(cachePath, CreateReadTranslator,
                 (translator) => { TranslateProject(ref project, translator); });
 
@@ -145,22 +141,35 @@ namespace RulesMSBuild.Tools.Builder
             translate(translator);
         }
         
-        private BinaryTranslator.BinaryReadTranslator CreateReadTranslator(Stream stream)
+        private ITranslator CreateReadTranslator(Stream stream)
         {
-            SharedReadBuffer buffer = new InterningBinaryReader.Buffer();
-            var reader = InterningBinaryReader.Create(stream, buffer);
-            reader.OpportunisticIntern = new PathMappingInterner(_pathMapper);
-            var translator = new BinaryTranslator.BinaryReadTranslator(stream, buffer, reader);
-            return translator;
+            return BinaryTranslator.GetReadTranslator(stream, null);
+            // SharedReadBuffer buffer = new InterningBinaryReader.Buffer();
+            // var reader = InterningBinaryReader.Create(stream, buffer);
+            // reader.OpportunisticIntern = new PathMappingInterner(_pathMapper);
+            // var translator = new BinaryTranslator.BinaryReadTranslator(stream, buffer, reader);
+            // return translator;
         }
         
-        private BinaryTranslator.BinaryWriteTranslator CreateWriteTranslator(Stream stream)
+        private ITranslator CreateWriteTranslator(Stream stream)
         {
-            var writer = new PathMappingBinaryWriter(stream, _pathMapper);
-            var translator = new BinaryTranslator.BinaryWriteTranslator(stream, writer);
-            return translator;
+            return BinaryTranslator.GetWriteTranslator(stream);
+            // var writer = new PathMappingBinaryWriter(stream, _pathMapper);
+            // var translator = new BinaryTranslator.BinaryWriteTranslator(stream, writer);
+            // return translator;
         }
         #endregion
-        
+
+        public Task<BuildResult>? TryGetResults(string projectFullPath)
+        {
+            var manifestPath = _pathMapper.ToManifestPath(projectFullPath);
+            if (_results.TryGetValue(manifestPath, out var resultTask))
+            {
+                Debug($"[{manifestPath}]: Build result cache hit");
+                return resultTask;
+            }
+            Debug($"[{manifestPath}]: Build result cache miss");
+            return null;
+        }
     }
 }

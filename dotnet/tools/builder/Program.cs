@@ -70,13 +70,14 @@ namespace RulesMSBuild.Tools.Builder
             var execRoot = file[0..(execRootIndex-1)];
             var outputBase = execRoot;
 
+            var pathMapper = new PathMapper(execRoot, outputBase);
             BuildCache MakeCache()
             {
                 return new BuildCache(new CacheManifest()
                 {
                     Projects = new Dictionary<string, string>(){[file] = file},
                     Results = new Dictionary<string, string>()
-                }, new PathMapper(execRoot, outputBase), new Files());
+                }, pathMapper, new Files());
             }
 
             var cache = MakeCache();
@@ -84,7 +85,7 @@ namespace RulesMSBuild.Tools.Builder
             if (file.EndsWith(".csproj"))
             {
                 var targetGraph = new TargetGraph(outputBase, file, null);
-                var loader = new ProjectLoader(file, cache, targetGraph);
+                var loader = new ProjectLoader(file, cache, pathMapper, targetGraph);
                 var projectCollection = new ProjectCollection(new Dictionary<string, string>()
                 {
                     ["RestoreUseStaticGraphEvaluation"] = "true",
@@ -130,35 +131,24 @@ namespace RulesMSBuild.Tools.Builder
                     }
 
                     var entry = cluster.Nodes[targetName];
-                    entry.EntryPoint = true;
+                    
                     Color(entry);
                 }
 
-                void Lighten(TargetGraph.Node node)
-                {
-                    foreach (var edge in node.Dependencies.Values.Cast<TargetGraph.Edge>())
-                    {
-                        if (edge.To.Color == node.Color)
-                            Lighten(edge.To);
-                    }
-                    
-                    if (!node.CachePoint && !node.EntryPoint)
-                        node.Color = "gray92";
-                }
-                // foreach (var node in cachePoints)
-                // {
-                //     Lighten(node);
-                // }
-                
                 var dot = targetGraph.ToDot();
                 File.WriteAllText(Path.GetFileName(file) + ".dot", dot);
                 
             }
-            else
+            else if (file.Contains("csproj"))
             {
                 project = cache.LoadProjectImpl(file);    
             }
-            var itemGroups = project.Items.GroupBy(i => i.ItemType).OrderBy(g => g.Key).ToList();
+            else
+            {
+                var results = cache.LoadResults(file);
+            }
+            
+            // var itemGroups = project.Items.GroupBy(i => i.ItemType).OrderBy(g => g.Key).ToList();
         }
 
         private static Command ParseArgs(string[] args)

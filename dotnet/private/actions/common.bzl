@@ -1,10 +1,13 @@
 load("//dotnet/private:providers.bzl", "DotnetCacheInfo", "NuGetPackageInfo")
 
 def declare_caches(ctx, action_name):
+    project = None
+    if action_name == "build" or action_name == "restore":
+        project = ctx.actions.declare_file(ctx.file.project_file.basename + ".%s.cache" % action_name)
     return DotnetCacheInfo(
         project_path = ctx.file.project_file.short_path,
         result = ctx.actions.declare_file(ctx.attr.name + ".cache"),
-        project = ctx.actions.declare_file(ctx.file.project_file.basename + ".%s.cache" % action_name),
+        project = project,
     )
 
 def write_cache_manifest(ctx, output, caches):
@@ -12,13 +15,15 @@ def write_cache_manifest(ctx, output, caches):
     results = {}
     for c in caches.to_list():
         projects[c.project_path] = c.project.path
+        results[c.project_path] = c.result.path
 
     manifest = dict(
         output = dict(
-            project = output.project.path,
-            result = output.result.path,
+            project = output.project.path if output.project != None else None,
+            results = output.result.path,
         ),
         projects = projects,
+        results = results,
     )
     print(json.encode_indent(manifest))
     file = ctx.actions.declare_file(ctx.attr.name + ".cache_manifest")

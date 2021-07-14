@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using FluentAssertions;
+using Microsoft.Build.BackEnd;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Moq;
@@ -44,6 +45,7 @@ namespace RulesMSBuild.Tests.Tools
         private Dictionary<object, object?> _originalEnv;
         private readonly Mock<PathMapper> _pathMapper;
         private readonly List<IDisposable> _disposables;
+        private readonly UnclosableMemoryStream _written;
 
         public BuildCacheTests()
         {
@@ -52,6 +54,10 @@ namespace RulesMSBuild.Tests.Tools
                 .Returns<string>(str => str.Length > 0 && str.StartsWith('/') ? "YAY" : str);
             _pathMapper.Setup(p => p.FromBazel(It.IsAny<string>()))
                 .Returns<string>(str => str.Length > 0 && str == "YAY" ? "/foo/bar" : str);
+            _pathMapper.Setup(p => p.ToManifestPath(It.IsAny<string>()))
+                .Returns("foo");
+            _pathMapper.Setup(p => p.ToAbsolute(It.IsAny<string>()))
+                .Returns("foo");
             
             _files = new Mock<Files>();
             ResetCache();
@@ -64,22 +70,24 @@ namespace RulesMSBuild.Tests.Tools
                 }
             
             ProjectCollection.GlobalProjectCollection.EnvironmentProperties.Clear();
-            _disposables = new List<IDisposable>();
+            _written = new UnclosableMemoryStream();
+            _files.Setup(f => f.Create(It.IsAny<string>())).Returns(_written);
+            _files.Setup(f => f.OpenRead(It.IsAny<string>())).Returns(_written);
+            _disposables = new List<IDisposable>(){_written};
+            
         }
 
         private void ResetCache()
         {
-            _cache = new BuildCache(new CacheManifest(), _pathMapper.Object, _files.Object);
+            _cache = new BuildCache(new CacheManifest()
+            {
+                Results = new Dictionary<string, string>(){["foo"] = "foo"}
+            }, _pathMapper.Object, _files.Object);
         }
 
-
         [Fact]
-        public UnclosableMemoryStream SaveFile_ReplacesPaths()
+        public void SaveFile_ReplacesPaths()
         {
-            var written = new UnclosableMemoryStream();
-            _disposables.Add(written);
-            _files.Setup(f => f.Create(It.IsAny<string>())).Returns(written);
-            
             var project = new Project(XmlReader.Create(new StringReader(@"
 <Project>
     <PropertyGroup>
@@ -89,36 +97,67 @@ namespace RulesMSBuild.Tests.Tools
 ")));
 
             _cache.Project = project.CreateProjectInstance();
-            // _cache.RecordResult(new BuildResult()
-            // {
-            //     ProjectStateAfterBuild = project.CreateProjectInstance()
-            // });
-            
-            _cache.Save("foo");
 
-            written.Length.Should().BeGreaterThan(0);
-            written.Seek(0, SeekOrigin.Begin);
-            var str = new StreamReader(written).ReadToEnd();
+            _cache.SaveProject("foo");
+
+            VerifyWrittenStrings();
+        }
+
+        private void VerifyWrittenStrings()
+        {
+            _written.Length.Should().BeGreaterThan(0);
+            _written.Seek(0, SeekOrigin.Begin);
+            var str = new StreamReader(_written).ReadToEnd();
             str.Should().Contain("YAY");
             str.Should().NotContain("foo/bar");
             str.Should().NotContain("/");
-            return written;
+            _written.Seek(0, SeekOrigin.Begin);
         }
-
+        
         [Fact]
         public void ReadFile_RestoresPaths()
         {
-            var stream = SaveFile_ReplacesPaths();
-            _files.Setup(f => f.OpenRead(It.IsAny<string>())).Returns(stream);
-            stream.Seek(0, SeekOrigin.Begin);
+            SaveFile_ReplacesPaths();
+            
             ResetCache();
             
-            // _cache.Load("foo");
+            _cache.LoadProject("foo");
 
-            var path = _cache.Project.Properties.FirstOrDefault(p => p.Name == "FilePath");
+            var path = _cache.Project!.Properties.FirstOrDefault(p => p.Name == "FilePath");
             path.Should().NotBeNull();
             path!.EvaluatedValue.Should().Be("/foo/bar");
 
+        }
+
+        [Fact]
+        public void SaveResult_ReplacesPaths()
+        {
+            var result = new BuildResult();
+            result.AddResultsForTarget("foo",
+                new TargetResult(new[]
+                {
+                    new ProjectItemInstance.TaskItem("/foo/bar", "/foo/bar")
+                }, new WorkUnitResult()));
+            _cache.RecordResult(result);   
+            _cache.Save("foo");
+            VerifyWrittenStrings();
+        }
+        
+        [Fact]
+        public async Task LoadResult_RestoresPaths()
+        {
+            SaveResult_ReplacesPaths();
+            ResetCache();
+            _cache.LoadProject("foo");
+            var resultTask =_cache.TryGetResults("foo");
+            resultTask.Should().NotBeNull();
+            var result = await resultTask!;
+
+            result.ResultsByTarget.Count.Should().Be(1);
+            var targetResult = result.ResultsByTarget.Values.Single();
+            targetResult.Items.Length.Should().Be(1);
+            var item = targetResult.Items[0];
+            item.ItemSpec.Should().Be("/foo/bar");
         }
 
         public void Dispose()

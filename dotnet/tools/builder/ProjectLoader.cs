@@ -14,13 +14,15 @@ namespace RulesMSBuild.Tools.Builder
         private readonly string _entryProjectPath;
         private readonly BuildCache _cache;
         private readonly TargetGraph? _targetGraph;
+        private PathMapper _pathMapper;
 
         public ProjectInstance EntryProject { get; set; }
 
-        public ProjectLoader(string entryProjectPath, BuildCache cache, TargetGraph? targetGraph = null)
+        public ProjectLoader(string entryProjectPath, BuildCache cache, PathMapper pathMapper, TargetGraph? targetGraph = null)
         {
             _entryProjectPath = entryProjectPath;
             _cache = cache;
+            _pathMapper = pathMapper;
             _targetGraph = targetGraph;
         }
 
@@ -75,7 +77,8 @@ namespace RulesMSBuild.Tools.Builder
 
             if (_targetGraph != null)
             {
-                var cluster = _targetGraph.GetOrAddCluster(projectPath, null);
+                var path = _pathMapper.ToBazel(projectPath);
+                var cluster = _targetGraph.GetOrAddCluster(path, null);
                 void AddTargets(TargetGraph.Node thisTarget, string targetString, TargetBuiltReason reason)
                 {
                     foreach (var beforeName in targetString.Split(";")

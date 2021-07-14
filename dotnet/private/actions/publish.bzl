@@ -16,10 +16,8 @@ def publish(ctx):
 
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish")
 
-    #    print("\n".join([f.short_path for f in info.files.to_list()]))
-
     inputs = depset([cache_manifest], transitive = [info.files])
-    outputs = [output_dir, cache.project, cache.result] + cmd_outputs
+    outputs = [output_dir, cache.result] + cmd_outputs
 
     ctx.actions.run(
         mnemonic = "DotnetPublish",
