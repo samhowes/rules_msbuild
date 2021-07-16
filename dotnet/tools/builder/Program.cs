@@ -195,8 +195,18 @@ namespace RulesMSBuild.Tools.Builder
             return builder.Build();
         }
 
-        private static void RegisterSdk(string sdkRoot)
+        private static string? RegisteredSdkRoot;
+        public static void RegisterSdk(string sdkRoot)
         {
+            if (RegisteredSdkRoot != null)
+            {
+                if (RegisteredSdkRoot != sdkRoot)
+                    throw new Exception($"SdkRoot {RegisteredSdkRoot} is already registered and is different than {sdkRoot}.");
+                return;
+            }
+
+            RegisteredSdkRoot = sdkRoot;
+            
             CustomAssemblyLoader.Register();
             var dotNetSdkPath = sdkRoot.EndsWith('/') ? sdkRoot : sdkRoot + Path.DirectorySeparatorChar;
             foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()

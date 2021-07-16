@@ -63,7 +63,7 @@ def _process_deps(dotnet, ctx):
         if DotnetRestoreInfo in dep:
             info = dep[DotnetRestoreInfo]
 
-            files.extend(info.files)
+            files.append(info.files)
             caches.append(info.caches)
         elif NuGetPackageInfo in dep:
             get_nuget_files(dep, tfm, files)

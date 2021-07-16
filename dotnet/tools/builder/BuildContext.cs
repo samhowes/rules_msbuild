@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.BackEnd;
+using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.MSBuild;
 
 namespace RulesMSBuild.Tools.Builder
@@ -13,6 +14,15 @@ namespace RulesMSBuild.Tools.Builder
 
     public class BuildContext
     {
+        public void MakeTargetGraph(bool force = false)
+        {
+            var trimPath = Bazel.ExecRoot + Path.DirectorySeparatorChar;
+            if (DiagnosticsEnabled || force)
+            {
+                TargetGraph = new TargetGraph(trimPath, ProjectFile, null);
+            }
+        }
+        public static BuildContext Current;
         public Command Command { get; }
 
         public void SetEnvironment()
@@ -42,6 +52,7 @@ namespace RulesMSBuild.Tools.Builder
         
         public BuildContext(Command command)
         {
+            Current = this;
             Command = command;
             Bazel = new BazelContext(command);
             NuGetConfig = ToolPath(command.NamedArgs["nuget_config"]);
@@ -81,6 +92,8 @@ namespace RulesMSBuild.Tools.Builder
             {
                 MSBuild.BuildEnvironment["NUGET_SHOW_STACK"] = "true";
             }
+
+            MakeTargetGraph();
         }
 
         public Dictionary<string,string> ProjectBazelProps { get; }
@@ -94,8 +107,9 @@ namespace RulesMSBuild.Tools.Builder
         public string NuGetConfig { get; }
         public string Tfm { get; set; }
         public string SdkRoot { get; }
-        public bool DiagnosticsEnabled { get; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
+        public bool DiagnosticsEnabled { get; set; } = Environment.GetEnvironmentVariable("BUILD_DIAG") == "1";
         public bool IsTest { get; }
+        public TargetGraph? TargetGraph { get; set; }
         public string? Version { get; }
         public string? PackageVersion { get; }
         public string WorkspacePath(string path) => "/" + path[Bazel.ExecRoot.Length..];

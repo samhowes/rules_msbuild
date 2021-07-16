@@ -17,8 +17,10 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
         private Stack<string> _targetStack = new Stack<string>();
         public bool HasError { get; set; }
 
-        public BazelMsBuildLogger(LoggerVerbosity verbosity, Func<string,string> trimPath, TargetGraph? targetGraph) 
-            : base(verbosity, (m) => Console.Out.Write(trimPath(m)),
+        public BazelMsBuildLogger(
+            WriteHandler? write,
+            LoggerVerbosity verbosity, Func<string,string> trimPath, TargetGraph? targetGraph) 
+            : base(verbosity, (write ?? ((m) => Console.Out.Write(trimPath(m)))),
             SetColor,
             ResetColor)
         {
@@ -74,16 +76,18 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                     var clusterNameE = _trimPath(pEnd.ProjectFile);
                     if (_cluster!.Name != clusterNameE) throw new Exception(":(");
                     _projectStack.TryPop(out _cluster);
-                    
                     return;
                 case TargetSkippedEventArgs skipped:
-                    AddNode(
+                    var s = AddNode(
                         skipped.TargetName,
                         true,
                         skipped.ParentTarget,
                         skipped.BuildReason,
                         skipped.ProjectFile
                         );
+
+                    if (HasError)
+                        s.Error = true;
                     break;
                 case TargetStartedEventArgs started:
                     var node = AddNode(
@@ -98,8 +102,11 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 case TargetFinishedEventArgs finished:
                     if (_targetStack.Peek() != finished.TargetName) throw new Exception(":(");
                     _targetStack.Pop();
-                    var n = _cluster!.GetOrAdd(finished.TargetName); 
+                    var n = _cluster!.GetOrAdd(finished.TargetName);
+                    
                     n.Finished = true;
+                    if (HasError)
+                        n.Error = true;
                     return;
                 default:
                     return;

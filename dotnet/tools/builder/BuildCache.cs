@@ -38,7 +38,7 @@ namespace RulesMSBuild.Tools.Builder
 
         public BuildResultCache Output { get; set; } = null!;
         public Dictionary<string, string> Projects { get; set; } = null!;
-        public Dictionary<string, string> Results { get; set; } = null!;
+        public Dictionary<string, string> Results { get; set; } = new Dictionary<string, string>()!;
     }
     
     public class BuildCache
@@ -63,6 +63,7 @@ namespace RulesMSBuild.Tools.Builder
             if (!_files.Exists(manifestPath))
             {
                 Debug("No input caches found");
+                Manifest = new CacheManifest() {Results = new Dictionary<string, string>()};
                 return;
             }
             var cacheManifestJson = File.ReadAllText(manifestPath);

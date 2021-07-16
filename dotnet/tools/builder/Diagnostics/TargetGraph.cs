@@ -69,6 +69,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
             public string? Color { get; set; }
             public bool ColorEdges { get; set; } = true;
             public bool CachePoint { get; set; }
+            public bool Error { get; set; }
 
             public Node(string name, string id)
             {

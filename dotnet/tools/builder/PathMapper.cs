@@ -9,7 +9,7 @@ namespace RulesMSBuild.Tools.Builder
 {
     public class PathMapper
     {
-        private static PathMapper _instance;
+        private static PathMapper? _instance;
         
         private readonly string _outputBase;
         private readonly string _execRoot;
@@ -68,6 +68,11 @@ namespace RulesMSBuild.Tools.Builder
         public virtual string ToAbsolute(string manifestPath)
         {
             return Path.Combine(_execRoot, manifestPath);
+        }
+
+        public static void ResetInstance()
+        {
+            _instance = null;
         }
     }
 }

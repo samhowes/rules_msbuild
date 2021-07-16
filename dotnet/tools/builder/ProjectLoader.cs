@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
@@ -29,9 +30,10 @@ namespace RulesMSBuild.Tools.Builder
         public ProjectInstance Load(ProjectCollection projectCollection)
         {
             var _ = new ProjectGraph(
-                _entryProjectPath,
+                new []{new ProjectGraphEntryPoint(_entryProjectPath)},
                 projectCollection,
-                CreateProjectInstance);
+                CreateProjectInstance,
+                1, new CancellationTokenSource(1000).Token);
             
             return EntryProject;
         }
@@ -152,11 +154,13 @@ namespace RulesMSBuild.Tools.Builder
                             var first = projectValue[0];
                             switch (first)
                             {
+                                case '/':
                                 case '%':
                                 case '@':
                                     // these items likely won't have anything in them yet, since we haven't dont a build yet.
                                     // we'll make them a "meta" cluster
-                                    targetCluster = _targetGraph.GetOrAddCluster(projectValue, null);
+                                    var bazelPath = _pathMapper.ToBazel(projectValue);
+                                    targetCluster = _targetGraph.GetOrAddCluster(bazelPath, null);
                                     break;
                                 case '$':
                                     switch (projectValue)

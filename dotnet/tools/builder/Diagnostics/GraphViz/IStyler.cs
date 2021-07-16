@@ -52,8 +52,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
         public NodeStyle GetAttrs(TargetGraph.Node node)
         {
             var style = new NodeStyle() {Style = "filled"};
-
-            // was this node was actively evaluated for this build?
+            
             if (node.Finished)
             {
                 // was it skipped?
@@ -92,7 +91,14 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
                 style.Fill = "lightgoldenrod1";
                 node.ColorEdges = false;
             }
-
+            
+            if (node.Started && !node.Finished || node.Error)
+            {
+                // build failure
+                style.Fill = "tomato";
+                node.Color = style.Fill;
+            }
+            
             return style;
         }
 

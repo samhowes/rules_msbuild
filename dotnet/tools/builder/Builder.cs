@@ -34,25 +34,22 @@ namespace RulesMSBuild.Tools.Builder
         private readonly TargetGraph? _targetGraph;
         private readonly BuildCache _cache;
         private readonly ProjectLoader _loader;
-        private readonly PathMapper _pathMapper;
+        public readonly PathMapper PathMapper;
 
-        public Builder(BuildContext context)
+        public Builder(BuildContext context, WriteHandler? writeText = null)
         {
             _context = context;
             _action = _context.Command.Action.ToLower();
             _buildManager = BuildManager.DefaultBuildManager;
-            var trimPath = _context.Bazel.ExecRoot + Path.DirectorySeparatorChar;
-            if (_context.DiagnosticsEnabled)
-            {
-                _targetGraph = new TargetGraph(trimPath, _context.ProjectFile, null);
-            }
-            
-            _pathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
-            _cache = new BuildCache(new CacheManifest(), _pathMapper, new Files());
-            _loader = new ProjectLoader(_context.ProjectFile, _cache, _pathMapper, _targetGraph);
+
+            _targetGraph = context.TargetGraph;
+            PathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
+            _cache = new BuildCache(new CacheManifest(), PathMapper, new Files());
+            _loader = new ProjectLoader(_context.ProjectFile, _cache, PathMapper, _targetGraph);
             _msbuildLog = new BazelMsBuildLogger(
+                writeText,
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                (m) => _pathMapper.ToBazel(m)
+                (m) => PathMapper.ToBazel(m)
                 , _targetGraph!);
         }
 
@@ -69,6 +66,11 @@ namespace RulesMSBuild.Tools.Builder
                 result = ExecuteBuild(projectCollection);
 
                 EndBuild(result!.Value);
+            }
+            catch
+            {
+                _buildManager.EndBuild();
+                throw;
             }
             finally
             {
@@ -99,8 +101,8 @@ namespace RulesMSBuild.Tools.Builder
 
             _loader.Initialize(_context.LabelPath(".cache_manifest"));
 
-            var cacheFiles = _cache.Manifest!.Results.Values.Select(p => _pathMapper.ToAbsolute(p));
-            // CacheSerialization.DeserializeCaches()
+            var cacheFiles = _cache.Manifest!.Results.Values.Select(p => PathMapper.ToAbsolute(p));
+            
 
             var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
                 ToolsetDefinitionLocations.Default);
@@ -124,9 +126,12 @@ namespace RulesMSBuild.Tools.Builder
                 //     new[] {new ProjectGraphEntryPoint(_context.ProjectFile)}, 
                 //     null, null),
                 
-                InputResultsCacheFiles = cacheFiles.ToArray(),
+                // InputResultsCacheFiles = cacheFiles.ToArray(),
             };
 
+            _buildManager.ReuseOldCaches(cacheFiles.ToArray());
+            if (_context.ProjectFile.Contains("Dependent") && _action == "build")
+                Debugger.WaitForAttach();
             _buildManager.BeginBuild(parameters);
             if (_msbuildLog.HasError)
             {
@@ -161,7 +166,7 @@ namespace RulesMSBuild.Tools.Builder
             foreach (var result in @override!)
             {
                 var config = configCache![result.ConfigurationId];
-                var path = _pathMapper.ToBazel(config.ProjectFullPath);
+                var path = PathMapper.ToBazel(config.ProjectFullPath);
                 var cluster = _targetGraph.GetOrAddCluster(path);
                 foreach (var targetResult in result.ResultsByTarget)
                 {
