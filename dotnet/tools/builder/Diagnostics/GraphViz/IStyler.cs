@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Build.Construction;
 using Microsoft.Build.Framework;
 
 namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
@@ -30,12 +31,26 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
                 style.outline ??= "purple";
             }
 
+            if (node.Color != null)
+            {
+                style.Fill = node.Color;
+                style.Style = "filled";    
+            }
+
+            
             return style;
         }
 
         public EdgeStyle GetStyle(TargetGraph.Edge edge)
         {
-            throw new System.NotImplementedException();
+            var style = new EdgeStyle();
+
+            if (edge.From.Color != null)
+            {
+                style.color = "\"" + edge.From.Color! + "\"";
+            }
+
+            return style;
         }
     }
 

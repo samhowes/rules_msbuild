@@ -8,7 +8,12 @@ using RulesMSBuild.Tools.Builder.Diagnostics;
 
 namespace RulesMSBuild.Tools.Builder.MSBuild
 {
-    public class BazelMsBuildLogger : ConsoleLogger
+    public interface IBazelMsBuildLogger: INodeLogger
+    {
+        bool HasError { get; }
+    }
+    
+    public class BazelMsBuildLogger : ConsoleLogger, IBazelMsBuildLogger
     {
         private readonly Func<string, string> _trimPath;
         private readonly TargetGraph? _targetGraph;

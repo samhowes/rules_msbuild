@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -33,7 +34,7 @@ namespace RulesMSBuild.Tools.Builder
                 new []{new ProjectGraphEntryPoint(_entryProjectPath)},
                 projectCollection,
                 CreateProjectInstance,
-                1, new CancellationTokenSource(1000).Token);
+                1, new CancellationTokenSource(1000000).Token);
             
             return EntryProject;
         }
@@ -88,8 +89,7 @@ namespace RulesMSBuild.Tools.Builder
                     {
                         if (beforeName.StartsWith("$"))
                         {
-                            var propertyName = beforeName[2..^1];
-                            var property = project.Properties.SingleOrDefault(p => p.Name == propertyName);
+                            var property = GetProperty(beforeName, project);
                             if (property == null)
                                 continue;
                             AddTargets(thisTarget, property.EvaluatedValue, reason);
@@ -149,6 +149,7 @@ namespace RulesMSBuild.Tools.Builder
 
                         foreach (var projectValue in projects)
                         {
+                            if (projectValue.Contains("RestoreGraph")) continue;
                             List<string>? defaultTargets = null;
                             Cluster targetCluster = cluster;
                             var first = projectValue[0];
@@ -199,8 +200,15 @@ namespace RulesMSBuild.Tools.Builder
 
                             foreach (var buildTargetName in targets.Split(";"))
                             {
-                                var other = targetCluster.GetOrAdd(buildTargetName);
+                                var actual = ResolveTarget(buildTargetName, project);
+                                var other = targetCluster.GetOrAdd(actual);
                                 thisTarget.AddDependency(other, null);
+
+                                if (targetCluster != cluster)
+                                {
+                                    Darken(other);
+                                    Darken(cluster.GetOrAdd(actual));
+                                }
                             }
                         }
                     }
@@ -208,6 +216,30 @@ namespace RulesMSBuild.Tools.Builder
             }
 
             return project;
+        }
+
+        private void Darken(TargetGraph.Node node, int depth = 0)
+        {
+            node.ReferencedExternally = true;
+            if (depth > 0) return;
+            
+            foreach (var edge in node.Dependencies.Values.Cast<TargetGraph.Edge>())
+            {
+                // Darken(edge.To, depth++);
+            }
+        }
+
+        private static ProjectPropertyInstance? GetProperty(string beforeName, ProjectInstance? project)
+        {
+            var propertyName = beforeName[2..^1];
+            var property = project.Properties.SingleOrDefault(p => p.Name == propertyName);
+            return property;
+        }
+
+        private static string ResolveTarget(string originalName, ProjectInstance? project)
+        {
+            var property = GetProperty(originalName, project);
+            return property?.EvaluatedValue ?? originalName;
         }
 
         public void Initialize(string cacheManifestPath)

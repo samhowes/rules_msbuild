@@ -30,13 +30,13 @@ namespace RulesMSBuild.Tools.Builder
         private readonly BuildContext _context;
         private readonly string _action;
         private readonly BuildManager _buildManager;
-        private readonly BazelMsBuildLogger _msbuildLog;
+        private readonly IBazelMsBuildLogger _msbuildLog;
         private readonly TargetGraph? _targetGraph;
         private readonly BuildCache _cache;
         private readonly ProjectLoader _loader;
         public readonly PathMapper PathMapper;
 
-        public Builder(BuildContext context, WriteHandler? writeText = null)
+        public Builder(BuildContext context, IBazelMsBuildLogger? msbuildLog = null)
         {
             _context = context;
             _action = _context.Command.Action.ToLower();
@@ -46,8 +46,8 @@ namespace RulesMSBuild.Tools.Builder
             PathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
             _cache = new BuildCache(new CacheManifest(), PathMapper, new Files());
             _loader = new ProjectLoader(_context.ProjectFile, _cache, PathMapper, _targetGraph);
-            _msbuildLog = new BazelMsBuildLogger(
-                writeText,
+            _msbuildLog = msbuildLog ?? new BazelMsBuildLogger(
+                m => Console.Out.Write(m),
                 _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
                 (m) => PathMapper.ToBazel(m)
                 , _targetGraph!);
@@ -128,10 +128,14 @@ namespace RulesMSBuild.Tools.Builder
                 
                 // InputResultsCacheFiles = cacheFiles.ToArray(),
             };
-
+            
+            // If we set InputResultsCacheFiles on the parameters, then the BuildManager will turn on isolation
+            // constraints, and trivial targets like "GetTargetFrameworks" will have to be called ahead of time.
+            // Instead, we call this manually
+            // 1) this gets all the other caches into the build manager's caches
+            // 2) ReuseOldCaches sets up a ResultsCacheWithOverride and ConfigCacheWithOverride such that when we 
+            //     serialize the caches, only the results from this build will be included in the serialization.
             _buildManager.ReuseOldCaches(cacheFiles.ToArray());
-            if (_context.ProjectFile.Contains("Dependent") && _action == "build")
-                Debugger.WaitForAttach();
             _buildManager.BeginBuild(parameters);
             if (_msbuildLog.HasError)
             {

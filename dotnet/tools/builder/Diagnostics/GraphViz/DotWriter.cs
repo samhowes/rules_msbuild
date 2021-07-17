@@ -104,7 +104,7 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
                 if (style.Fill != null)
                 {
                     node.Color = style.Fill; // highlight edges with this color
-                    attrs["fillcolor"] = style.Fill;
+                    attrs["fillcolor"] = "\"" + style.Fill + "\"";
                 }
                 if (style.Penwidth != null)
                     attrs["penwidth"] = style.Penwidth;

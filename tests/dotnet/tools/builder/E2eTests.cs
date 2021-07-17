@@ -5,10 +5,13 @@ using System.Linq;
 using System.Text;
 using FluentAssertions;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Framework;
+using Moq;
 using Newtonsoft.Json;
 using RulesMSBuild.Tools.Bazel;
 using RulesMSBuild.Tools.Builder;
 using RulesMSBuild.Tools.Builder.Diagnostics;
+using RulesMSBuild.Tools.Builder.MSBuild;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -23,6 +26,8 @@ namespace RulesMSBuild.Tests.Tools
         private BuildContext _context;
         private string _execRoot;
         private readonly List<string> _log;
+        private List<string> _targetLog;
+        private bool _logInited;
 
         public E2eTests(ITestOutputHelper helper)
         {
@@ -62,7 +67,38 @@ namespace RulesMSBuild.Tests.Tools
             }) {DiagnosticsEnabled = true};
             
             _context.MakeTargetGraph(true);
-            _builder = new Builder(_context, (message => _log.Add(message)));
+            _targetLog = new List<string>();
+            _logInited = false;
+            var testLogger = new Mock<IBazelMsBuildLogger>();
+            testLogger.Setup(l => l.Initialize(It.IsAny<IEventSource>())).Callback<IEventSource>(InitTestLog);
+            testLogger.Setup(l => l.Initialize(It.IsAny<IEventSource>(), It.IsAny<int>())).Callback<IEventSource,int>((eventSource, _) => InitTestLog(eventSource));
+            _builder = new Builder(_context, testLogger.Object);
+        }
+
+        private void InitTestLog(IEventSource eventSource)
+        {
+            if (_logInited) return;
+            
+            _logInited = true;
+
+            var projectStack = new Stack<string>();
+            eventSource.ProjectStarted += (_, projectStarted) =>
+            {
+                var name = Path.GetFileNameWithoutExtension(projectStarted.ProjectFile);
+                // _targetLog.Add(
+                //     $"{name}:{projectStarted.TargetNames}"
+                // );
+                projectStack.Push(name);
+            };
+            eventSource.TargetStarted += (_, targetStarted) =>
+            {
+                _targetLog.Add($"{projectStack.Peek()}:{targetStarted.TargetName}");
+            };
+            
+            eventSource.ProjectFinished += (_, _) =>
+            {
+                projectStack.Pop();
+            };
         }
 
         [Fact]
@@ -82,13 +118,18 @@ namespace RulesMSBuild.Tests.Tools
             
             result.Should().Be(0);
 
-            var built = _context.TargetGraph;
-            built!.Clusters.Count.Should().Be(1);
-            var cluster = built.Clusters.Values.Single();
+            _targetLog.Should().Equal(new[]
+            {
+                "foo:Build"
+            });
 
-            cluster.Nodes.Count.Should().Be(1);
-            var node = cluster.Nodes.Values.Single();
-            node.Name.Should().Be("Build");
+            // var built = _context.TargetGraph;
+            // built!.Clusters.Count.Should().Be(1);
+            // var cluster = built.Clusters.Values.Single();
+            //
+            // cluster.Nodes.Count.Should().Be(1);
+            // var node = cluster.Nodes.Values.Single();
+            // node.Name.Should().Be("Build");
         }
         
         [Fact]
@@ -101,29 +142,31 @@ namespace RulesMSBuild.Tests.Tools
             
             result.Should().Be(0);
             VerifyBuiltTargets(
-                ("Build", true),
-                ("CacheMe", true));
+                "foo:CacheMe",
+                "foo:Build"
+                );
             WriteCacheManifest();
             Init("foo.csproj");
 
             result = _builder.Build();
 
             result.Should().Be(0);
-            VerifyBuiltTargets(
-                ("Build", false),
-                ("CacheMe", false)
-                );
+            VerifyBuiltTargets(/*none*/);
         }
 
-        private string BuildAndCache(string projectName,params string[] targets)
+        private string BuildAndCache(string projectName, string targetToBuild, string extraTarget = null)
         {
             Init(projectName);
-            MakeProjectFile(targets);
+            
+            MakeProjectFile(targetToBuild, extraTarget);
             
             var result = _builder.Build();
             
             result.Should().Be(0);
-            VerifyBuiltTargets(targets.Append("Build").Select(t => (t, true)).ToArray());
+
+            var shortName = Path.GetFileNameWithoutExtension(projectName);
+            VerifyBuiltTargets($"{shortName}:{targetToBuild}", $"{shortName}:Build");
+            
             return WriteCacheManifest();
         }
         
@@ -132,8 +175,8 @@ namespace RulesMSBuild.Tests.Tools
         {
             var fooManifest = BuildAndCache("foo.csproj", "CacheMe");
             var fooPath = _context.ProjectFile;
-            var projectName = "bar.csproj";
-            Init(projectName);
+            
+            Init("bar.csproj");
             
             var builder = StartProject();
             builder.AppendLine($@"<Target Name='BuildReference'>
@@ -150,27 +193,67 @@ namespace RulesMSBuild.Tests.Tools
             var result = _builder.Build();
             
             result.Should().Be(0);
-            VerifyProjectTargets(_context.ProjectFile,
-                ("BuildReference", true),
-                ("Build", true));
-            VerifyProjectTargets(fooPath, 
-                ("Build", false),
-                ("CacheMe", false));
-            WriteCacheManifest();
+            
+            VerifyBuiltTargets(
+                /*foo:CacheMe is not built */
+                "bar:BuildReference",
+                "bar:Build"
+                );
+        }
+        
+        [Fact]
+        public void CachedReference_NewTarget_Works()
+        {
+            // this is what happens with the GetTargetFrameworks reference in a normal Build.
+            // GetTargetFrameworks is not built by the primary build process, but is instead built by references.
+            
+            var fooManifest = BuildAndCache("foo.csproj", "CacheMe", "ReferenceMe");
+            var fooPath = _context.ProjectFile;
+            var projectName = "bar.csproj";
+            Init(projectName);
+            
+            var builder = StartProject();
+            builder.AppendLine($@"<Target Name='BuildReference'>
+    <MSBuild Projects='{fooPath}' Targets='ReferenceMe'></MSBuild>
+</Target>");
+            builder.AppendLine($@"<ItemGroup>
+    <ProjectReference Include='{fooPath}' />
+</ItemGroup>
+");
+            EndProject(builder, "BuildReference");
+            
+            File.Move(fooManifest, _context.LabelPath(".cache_manifest"));
+            
+            // The stock version of MSBuild throws a "caches should not overlap" internal exception when we build this 
+            // way (when its compiled in debug mode)
+            
+            var result = _builder.Build();
+            
+            result.Should().Be(0);
+            VerifyBuiltTargets(
+                "bar:BuildReference",
+                "foo:ReferenceMe",
+                "bar:Build"
+                );
+            
         }
 
-        private void MakeProjectFile(params string[] targetNames)
+        private void MakeProjectFile(string targetName, string extraTarget = null)
         {
             var builder = StartProject();
 
             // AddTarget(builder, "ReferenceOnly");
+
+            var targets = new List<string>() {targetName};
+            if (extraTarget != null)
+                targets.Add(extraTarget);
             
-            foreach (var targetName in targetNames)
+            foreach (var target in targets)
             {
-                AddTarget(builder, targetName);
+                AddTarget(builder, target);
             }
 
-            EndProject(builder, targetNames);
+            EndProject(builder, targetName);
         }
 
         private void EndProject(StringBuilder builder, params string[] targetNames)
@@ -217,20 +300,18 @@ namespace RulesMSBuild.Tests.Tools
             return path;
         }
 
-        private void VerifyBuiltTargets(params (string targetName, bool shouldBeBuilt)[] expectations)
+        public void VerifyBuiltTargets(params string[] targets)
         {
-            var built = _context.TargetGraph;
-            built!.Clusters.Count.Should().Be(1);
-            var cluster = built.Clusters.Values.Single();
-
-            VerifyProjectTargets(cluster.Name, expectations);
+            _targetLog.Should().Equal(targets);
         }
 
         private  void VerifyProjectTargets(string projectName, params (string targetName, bool shouldBeBuilt)[] expectations)
         {
+            expectations = expectations.Where(e => e.targetName != null).ToArray();
             var name = _builder.PathMapper.ToBazel(projectName);
             var cluster = _context.TargetGraph!.Clusters[name];
-            cluster.Nodes.Count.Should().Be(expectations.Length, String.Join(";", cluster.Nodes.Keys));
+            cluster.Nodes.Count.Should().Be(expectations.Length, 
+                $"{String.Join(";", cluster.Nodes.Keys)} should be {string.Join(";", expectations.Select(e => e.targetName))}");
 
             foreach (var expectation in expectations)
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,7 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Locator;
 using RulesMSBuild.Tools.Builder.Diagnostics;
+using RulesMSBuild.Tools.Builder.Diagnostics.GraphViz;
 using RulesMSBuild.Tools.Builder.Launcher;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
@@ -100,18 +102,18 @@ namespace RulesMSBuild.Tools.Builder
                 project = cache.LoadProjectImpl(path);
                 
                 var cachePoints = new HashSet<TargetGraph.Node>();
-                var cluster = targetGraph.GetOrAddCluster(file);
-                foreach (var (targetName, color) in new []
+                var cluster = targetGraph.GetOrAddCluster(pathMapper.ToBazel(file));
+                foreach (var (targetName, color, darker) in new []
                 {
-                    ("Restore", "skyblue1"),
-                    ("Build", "lightgreen"),
-                    ("PublishOnly", "lightpink"),
-                    ("Pack", "sandybrown")
+                    ("Restore", "skyblue1", "#1f78b4"),
+                    ("Build", "lightgreen", "#33a02c"),
+                    ("PublishOnly", "lightpink", "#e31a1c"),
+                    ("Pack", "sandybrown", "#ff7f00")
                 })
                 {
                     void Color(TargetGraph.Node node)
                     {
-                        node.Color = color;
+                        node.Color = node.ReferencedExternally ? darker : color;
                         foreach (var edge in node.Dependencies.Values.Cast<TargetGraph.Edge>())
                         {
                             var to = edge.To;
@@ -135,9 +137,15 @@ namespace RulesMSBuild.Tools.Builder
                     Color(entry);
                 }
 
-                var dot = targetGraph.ToDot();
-                File.WriteAllText(Path.GetFileName(file) + ".dot", dot);
-                
+                var dot = targetGraph.ToDot(DotWriter.StyleMode.Inspect);
+                var dotPath = file.Replace("bazel-rules_msbuild/", "") + ".dot";
+                File.WriteAllText(dotPath, dot);
+                var svgPath = dotPath + ".svg";
+                var args = $"-Tsvg -o {svgPath} {dotPath}";
+                Console.WriteLine($"dot {args}");
+                Process.Start("dot", args).WaitForExit();
+                Process.Start($"open", $"-a \"Google Chrome\" {svgPath}");
+
             }
             else if (file.Contains("csproj"))
             {
