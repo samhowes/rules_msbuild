@@ -81,7 +81,7 @@ namespace RulesMSBuild.Tools.Builder
             return (int) result;
         }
 
-        private ProjectCollection BeginBuild()
+        public ProjectCollection BeginBuild()
         {
             // GlobalProjectCollection loads EnvironmentVariables on Init. We use ExecRoot in the project files, we 
             // can't use MSBuildStartupDirectory because NuGet Restore uses a static graph restore which starts up a 
@@ -335,11 +335,8 @@ namespace RulesMSBuild.Tools.Builder
 
         private void EndBuild(BuildResultCode result)
         {
-            var configCache = ((IBuildComponentHost)_buildManager).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
-            var resultsCache = ((IBuildComponentHost)_buildManager).GetComponent(BuildComponentType.ResultsCache) as IResultsCache;
+            SaveCaches();
 
-            CacheSerialization.SerializeCaches(configCache, resultsCache, _context.LabelPath(".cache"));
-            
             _buildManager.EndBuild();
 
             if (_targetGraph != null)
@@ -403,6 +400,32 @@ namespace RulesMSBuild.Tools.Builder
             // _cache.Save(_context.LabelPath(".cache"));
             if (saveEvaluation)
                 _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
+        }
+
+        private void SaveCaches()
+        {
+            var configCache =
+                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
+            var resultsCache =
+                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ResultsCache) as IResultsCache;
+
+            if (resultsCache is ResultsCacheWithOverride resultsCacheWithOverride)
+            {
+                // if we built an external project that had some results in cache, its configs won't be in the
+                // CurrentCache. Manually add them to the current cache so the next build that loads this cache can
+                // use the build results.
+                var configCacheWithOverride = (ConfigCacheWithOverride) configCache!;
+                var current = configCacheWithOverride.CurrentCache;
+                foreach (var buildResult in resultsCacheWithOverride.CurrentCache)
+                {
+                    if (!current.HasConfiguration(buildResult.ConfigurationId))
+                    {
+                        current.AddConfiguration(configCacheWithOverride[buildResult.ConfigurationId]);
+                    }
+                }
+            }
+
+            CacheSerialization.SerializeCaches(configCache, resultsCache, _context.LabelPath(".cache"));
         }
 
         /// <summary>

@@ -209,8 +209,7 @@ namespace RulesMSBuild.Tests.Tools
             
             var fooManifest = BuildAndCache("foo.csproj", "CacheMe", "ReferenceMe");
             var fooPath = _context.ProjectFile;
-            var projectName = "bar.csproj";
-            Init(projectName);
+            Init("bar.csproj");
             
             var builder = StartProject();
             builder.AppendLine($@"<Target Name='BuildReference'>
@@ -236,6 +235,28 @@ namespace RulesMSBuild.Tests.Tools
                 "bar:Build"
                 );
             
+            // make sure we serialized *only* the results from the last build we did, not cached results from previous
+            // builds
+
+            var barManifest = WriteCacheManifest();
+            Init("wow.csproj");
+            File.Move(barManifest, _context.LabelPath(".cache_manifest"));
+            MakeProjectFile("_");
+            var _ = _builder.BeginBuild();
+
+            var targetsInCache = _context.TargetGraph!.Nodes.Values
+                .Concat(_context.TargetGraph.Clusters.SelectMany(c => c.Value.Nodes.Values))
+                .Select(n => $"{Path.GetFileNameWithoutExtension(n.Cluster!.Name)}:{n.Name}")
+                .ToHashSet();
+
+            targetsInCache.OrderBy(t => t).Should().Equal(new[]
+                {
+                    "bar:BuildReference",
+                    "foo:ReferenceMe",
+                    "bar:Build"
+                }.OrderBy(t => t)
+            );
+
         }
 
         private void MakeProjectFile(string targetName, string extraTarget = null)
