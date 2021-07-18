@@ -83,6 +83,8 @@ namespace RulesMSBuild.Tools.Builder
         public LabelResult Result;
         private readonly BuildManager _buildManager;
         Func<int> _newConfigurationId;
+        public ConfigCache? ConfigCache;
+        public ResultsCache? ResultsCache;
 
         public BuildCache(BazelContext.BazelLabel label, PathMapper pathMapper, Files files, BuildManager? buildManager)
         {
@@ -165,11 +167,6 @@ namespace RulesMSBuild.Tools.Builder
 
                 foreach (var result in results)
                 {
-                    // if (!seenConfigIds.Contains(originalId))
-                    //     throw new Exception(":(");
-                    // ErrorUtilities.VerifyThrow(seenConfigIds.Contains(result.ConfigurationId),
-                    //     "Each result should have a corresponding configuration. Otherwise the caches are not consistent");
-
                     int newConfigId;
                     if (labelResult.ConfigMap.TryGetValue(result.ConfigurationId, out var configSource))
                     {
@@ -194,6 +191,8 @@ namespace RulesMSBuild.Tools.Builder
                 }
             }
 
+            ConfigCache = aggregatedConfig;
+            ResultsCache = aggregatedResults;
             return (aggregatedConfig, aggregatedResults);
         }
 

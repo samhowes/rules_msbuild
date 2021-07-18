@@ -204,10 +204,10 @@ namespace RulesMSBuild.Tools.Builder
                             {
                                 var actual = ResolveTarget(buildTargetName, project);
                                 var other = targetCluster.GetOrAdd(actual);
-                                other.Error = wtf;
+                                // other.Error = wtf;
                                 if (wtf)
                                 {
-                                    Console.WriteLine($"wtf: {thisTarget.Name} -> {other.Name}: {properties}");
+                                    // Console.WriteLine($"wtf: {thisTarget.Name} -> {other.Name}: {properties}");
                                 }
                                 thisTarget.AddDependency(other, null);
 

@@ -3,22 +3,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Build.BackEnd;
-using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
-using Microsoft.Build.Experimental.ProjectCache;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Graph;
 using Microsoft.Build.Logging;
-using Microsoft.Build.Shared;
 using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.MSBuild;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
@@ -35,6 +29,7 @@ namespace RulesMSBuild.Tools.Builder
         private readonly BuildCache _cache;
         private readonly ProjectLoader _loader;
         public readonly PathMapper PathMapper;
+        private BuildParameters _buildParameters;
 
         public Builder(BuildContext context, IBazelMsBuildLogger? msbuildLog = null)
         {
@@ -53,7 +48,7 @@ namespace RulesMSBuild.Tools.Builder
                 , _targetGraph!);
         }
 
-        public int Build(bool shouldEndBuild = true)
+        public int Build()
         {
             Debug("$exec_root: " + _context.Bazel.ExecRoot);
             Debug("$output_base: " + _context.Bazel.OutputBase);
@@ -65,11 +60,8 @@ namespace RulesMSBuild.Tools.Builder
 
                 result = ExecuteBuild(projectCollection);
 
-                if (shouldEndBuild)
-                {
-                    EndBuild(result!.Value);    
-                }
-                
+                EndBuild(result!.Value);
+            
             }
             catch
             {
@@ -86,12 +78,9 @@ namespace RulesMSBuild.Tools.Builder
             }
             finally
             {
-                if (shouldEndBuild)
-                {
-                    _buildManager!.Dispose();
-                    _buildManager = null;
-                    projectCollection?.Dispose();
-                }
+                _buildManager!.Dispose();
+                _buildManager = null;
+                projectCollection?.Dispose();
             }
 
             return (int) result;
@@ -120,7 +109,7 @@ namespace RulesMSBuild.Tools.Builder
             var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
                 ToolsetDefinitionLocations.Default);
             
-            var parameters = new BuildParameters(pc)
+            _buildParameters = new BuildParameters(pc)
             {
                 EnableNodeReuse = false,
                 DetailedSummary = true,
@@ -141,7 +130,7 @@ namespace RulesMSBuild.Tools.Builder
                 
                 // InputResultsCacheFiles = cacheFiles.ToArray(),
             };
-            _buildManager.BeginBuild(parameters);
+            _buildManager.BeginBuild(_buildParameters);
             if (_msbuildLog.HasError)
             {
                 Console.WriteLine("Failed to initialize build manager, please file an issue.");
@@ -176,10 +165,14 @@ namespace RulesMSBuild.Tools.Builder
             {
                 var config = configCache![result.ConfigurationId];
                 var path = PathMapper.ToBazel(config.ProjectFullPath);
-                var cluster = _targetGraph.GetOrAddCluster(path);
+                var cluster = _targetGraph!.GetOrAddCluster(path);
                 foreach (var targetResult in result.ResultsByTarget)
                 {
                     var node = cluster.GetOrAdd(targetResult.Key);
+                    if (node.Name == "_PublishBuildAlternative")
+                    {
+                        
+                    }
                     node.FromCache = true;
                 }
             }
@@ -204,7 +197,7 @@ namespace RulesMSBuild.Tools.Builder
             Environment.CurrentDirectory = _context.ProjectDirectory;
 
             var project = _loader.Load(projectCollection);
-            
+
             if (!ValidateTfm(project))
                 return BuildResultCode.Failure;
             
@@ -245,6 +238,11 @@ namespace RulesMSBuild.Tools.Builder
                     project,
                     _context.MSBuild.Targets, null, flags
                 );
+
+                if (_action == "pack")
+                {
+                    CloneConfiguration(data, project);
+                }
                 
                 _buildManager.PendBuildRequest(data)
                     .ExecuteAsync(submission =>
@@ -255,7 +253,7 @@ namespace RulesMSBuild.Tools.Builder
                         {
                             Error(submission.BuildResult.Exception.ToString());
                         }
-                        
+
                         source.SetResult(result);
                     }, new object());
 
@@ -265,7 +263,31 @@ namespace RulesMSBuild.Tools.Builder
 
             return result;
         }
-        
+
+        private void CloneConfiguration(BuildRequestData data, ProjectInstance project)
+        {
+            var buildRequestConfiguration = new BuildRequestConfiguration(data, _buildParameters.DefaultToolsVersion);
+            var actualConfiguration = _cache.ConfigCache!.GetMatchingConfiguration(buildRequestConfiguration);
+            
+            project.GlobalPropertiesDictionary.Set(ProjectPropertyInstance.Create("TargetFramework", _context.Tfm));
+
+            var clonedId = _buildManager.GetNewConfigurationId();
+            var clonedConfiguration = buildRequestConfiguration.ShallowCloneWithNewId(clonedId);
+            _cache.ConfigCache.AddConfiguration(clonedConfiguration);
+
+            var actualResults = _cache.ResultsCache!.GetResultsForConfiguration(actualConfiguration.ConfigurationId);
+
+            _cache.ResultsCache.AddResult(
+                new BuildResult(
+                    actualResults,
+                    BuildEventContext.InvalidSubmissionId,
+                    clonedId,
+                    BuildRequest.InvalidGlobalRequestId,
+                    BuildRequest.InvalidGlobalRequestId,
+                    BuildRequest.InvalidNodeRequestId
+                ));
+        }
+
         private void WriteRunfilesProps(string[] runfilesEntries)
         {
             var items = new List<XElement>(runfilesEntries.Length);

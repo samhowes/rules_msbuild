@@ -95,6 +95,11 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
             
             foreach (var node in cluster.Nodes.Values)
             {
+                if (node.Name == "_PublishBuildAlternative")
+                {
+                        
+                }
+                
                 Indent()
                     .Append(node.Id);
 

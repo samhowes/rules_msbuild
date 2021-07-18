@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 using RulesMSBuild.Tools.Builder.Diagnostics;
+using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder.MSBuild
 {
@@ -22,10 +24,16 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
         private Stack<string> _targetStack = new Stack<string>();
         public bool HasError { get; set; }
 
+        private static WriteHandler Write(WriteHandler? other, Func<string, string> trimPath)
+        {
+            other ??= Console.Out.Write;
+            return (m) => other(trimPath(m));
+        }
+        
         public BazelMsBuildLogger(
             WriteHandler? write,
             LoggerVerbosity verbosity, Func<string,string> trimPath, TargetGraph? targetGraph) 
-            : base(verbosity, (write ?? ((m) => Console.Out.Write(trimPath(m)))),
+            : base(verbosity, Write(write, trimPath),
             SetColor,
             ResetColor)
         {
@@ -71,6 +79,8 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             switch (args)
             {
                 case ProjectStartedEventArgs pStart:
+                    Debug(
+                        $"Building project {pStart.ProjectFile}\n\t{string.Join("\n\t", pStart.GlobalProperties.Select(p => $"{p.Key}: {p.Value}"))}");
                     var clusterNameS = _trimPath(pStart.ProjectFile);
                     var cluster = _targetGraph!.GetOrAddCluster(clusterNameS, pStart.GlobalProperties);
                     if (_cluster != null)

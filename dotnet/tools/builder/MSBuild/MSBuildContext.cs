@@ -78,11 +78,11 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                     break;
                 case "publish":
                     Targets = new[] {"Publish"};
-                    GlobalProperties["NoBuild"] = "true";
+                    BuildEnvironment["NoBuild"] = "true";
                     break;
                 case "pack":
                     Targets = new[] {"Pack"};
-                    GlobalProperties["NoBuild"] = "true";
+                    BuildEnvironment["NoBuild"] = "true";
                     break;
                 default:
                     throw new ArgumentException($"Unknown action {action}");

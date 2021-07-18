@@ -46,7 +46,7 @@ namespace RulesMSBuild.Tests.Tools
             _tmp = Path.GetDirectoryName(_execRoot);
         }
 
-        private void Init(string projectName)
+        private void Init(string projectName, string action = "build")
         {
             // keep as a separate method so we cn make sure to register the msbuild assemblies first.
             PathMapper.ResetInstance();
@@ -54,7 +54,7 @@ namespace RulesMSBuild.Tests.Tools
             configId!.SetValue(null, 0);
             _context = new BuildContext(new Command()
             {
-                Action = "build",
+                Action = action,
                 NamedArgs =
                 {
                     ["bazel_output_base"] = _tmp,
@@ -154,7 +154,7 @@ namespace RulesMSBuild.Tests.Tools
             WriteCacheManifest();
             Init("foo.csproj");
 
-            result = _builder.Build(false);
+            result = _builder.Build();
 
             result.Should().Be(0);
             VerifyBuiltTargets(/*none*/);
@@ -204,6 +204,44 @@ namespace RulesMSBuild.Tests.Tools
                 /*foo:CacheMe is not built */
                 "bar:BuildReference",
                 "bar:Build"
+                );
+        }
+        
+        [Fact]
+        public void TargetFrameworkAsGlobalProperty_IsCached()
+        {
+            Init("foo.csproj", "build");
+            var builder = StartProject();
+            builder.AppendLine($@"<Target Name='Pack'>
+    <MSBuild Projects='$(MSBuildProjectFullPath)' 
+            Targets='CacheMe'
+            Properties='TargetFramework=netcoreapp3.1'
+    ></MSBuild>
+</Target>
+
+<Target Name='CacheMe'>
+    <Message Text='CacheMe.Built' Importance='High' />
+</Target>
+
+");
+            EndProject(builder, "CacheMe");
+            
+            var result = _builder.Build();
+            
+            result.Should().Be(0);
+            VerifyBuiltTargets(
+                "foo:CacheMe",
+                "foo:Build"
+            );
+            WriteCacheManifest();
+            Init("foo.csproj", "pack");
+            
+            result = _builder.Build();
+
+            result.Should().Be(0);
+            VerifyBuiltTargets(
+                "foo:Pack"
+                 /* CacheMe should not be built */
                 );
         }
         
@@ -270,8 +308,6 @@ namespace RulesMSBuild.Tests.Tools
         private void MakeProjectFile(string targetName, string extraTarget = null)
         {
             var builder = StartProject();
-
-            // AddTarget(builder, "ReferenceOnly");
 
             var targets = new List<string>() {targetName};
             if (extraTarget != null)
