@@ -75,11 +75,14 @@ namespace RulesMSBuild.Tools.Builder
             var pathMapper = new PathMapper(execRoot, outputBase);
             BuildCache MakeCache()
             {
-                return new BuildCache(new CacheManifest()
+                var c = new BuildCache(new BazelContext.BazelLabel() {Workspace = "foo", Package = "idk", Name = "bar"},
+                    pathMapper,
+                    new Files(), BuildManager.DefaultBuildManager)
                 {
-                    Projects = new Dictionary<string, string>(){[file] = file},
-                    Results = new Dictionary<string, string>()
-                }, pathMapper, new Files());
+                    Manifest = new CacheManifest() {Projects = new Dictionary<string, string>() {[file] = file},}
+                };
+
+                return c;
             }
 
             var cache = MakeCache();
@@ -153,7 +156,7 @@ namespace RulesMSBuild.Tools.Builder
             }
             else
             {
-                var results = cache.LoadResults(file);
+                // var results = cache.LoadResults(file);
             }
             
             // var itemGroups = project.Items.GroupBy(i => i.ItemType).OrderBy(g => g.Key).ToList();

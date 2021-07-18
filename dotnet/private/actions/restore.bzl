@@ -1,6 +1,6 @@
 load(":common.bzl", "get_nuget_files")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
-load("//dotnet/private/actions:common.bzl", "declare_caches", "write_cache_manifest")
+load("//dotnet/private/actions:common.bzl", "cache_set", "declare_caches", "write_cache_manifest")
 load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
 
 def restore(ctx, dotnet):
@@ -12,7 +12,7 @@ def restore(ctx, dotnet):
     cache = declare_caches(ctx, "restore")
 
     files, caches = _process_deps(dotnet, ctx)
-    cache_manifest = write_cache_manifest(ctx, cache, depset(transitive = caches))
+    cache_manifest = write_cache_manifest(ctx, cache, cache_set(transitive = caches))
 
     inputs = depset(
         direct = [ctx.file.project_file, cache_manifest] + ctx.files.msbuild_directory,
@@ -44,7 +44,7 @@ def restore(ctx, dotnet):
         target_framework = ctx.attr.target_framework,
         output_dir = restore_dir,
         files = depset(outputs, transitive = [inputs]),
-        caches = depset([cache], transitive = caches),
+        caches = cache_set([cache], transitive = caches),
     ), outputs
 
 def _process_deps(dotnet, ctx):

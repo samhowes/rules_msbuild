@@ -241,11 +241,5 @@ namespace RulesMSBuild.Tools.Builder
             var property = GetProperty(originalName, project);
             return property?.EvaluatedValue ?? originalName;
         }
-
-        public void Initialize(string cacheManifestPath)
-        {
-            _cache.Initialize(cacheManifestPath);
-                
-        }
     }
 }

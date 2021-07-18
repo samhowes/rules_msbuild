@@ -1,10 +1,14 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using FluentAssertions;
+using Microsoft.Build.BackEnd;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Moq;
 using Newtonsoft.Json;
@@ -46,6 +50,8 @@ namespace RulesMSBuild.Tests.Tools
         {
             // keep as a separate method so we cn make sure to register the msbuild assemblies first.
             PathMapper.ResetInstance();
+            var configId = typeof(BuildManager).GetField("s_nextBuildRequestConfigurationId", BindingFlags.Static | BindingFlags.NonPublic);
+            configId!.SetValue(null, 0);
             _context = new BuildContext(new Command()
             {
                 Action = "build",
@@ -148,13 +154,13 @@ namespace RulesMSBuild.Tests.Tools
             WriteCacheManifest();
             Init("foo.csproj");
 
-            result = _builder.Build();
+            result = _builder.Build(false);
 
             result.Should().Be(0);
             VerifyBuiltTargets(/*none*/);
         }
 
-        private string BuildAndCache(string projectName, string targetToBuild, string extraTarget = null)
+        private (string path, CacheManifest cacheManifest) BuildAndCache(string projectName, string targetToBuild, string extraTarget = null)
         {
             Init(projectName);
             
@@ -173,7 +179,7 @@ namespace RulesMSBuild.Tests.Tools
         [Fact]
         public void BuildProjectReference_IsCached()
         {
-            var fooManifest = BuildAndCache("foo.csproj", "CacheMe");
+            var (fooManifestPath, _) = BuildAndCache("foo.csproj", "CacheMe");
             var fooPath = _context.ProjectFile;
             
             Init("bar.csproj");
@@ -188,7 +194,7 @@ namespace RulesMSBuild.Tests.Tools
 ");
             EndProject(builder, "BuildReference");
             
-            File.Move(fooManifest, _context.LabelPath(".cache_manifest"));
+            File.Move(fooManifestPath, _context.LabelPath(".cache_manifest"));
             
             var result = _builder.Build();
             
@@ -207,7 +213,7 @@ namespace RulesMSBuild.Tests.Tools
             // this is what happens with the GetTargetFrameworks reference in a normal Build.
             // GetTargetFrameworks is not built by the primary build process, but is instead built by references.
             
-            var fooManifest = BuildAndCache("foo.csproj", "CacheMe", "ReferenceMe");
+            var (fooManifestPath, fooManifest) = BuildAndCache("foo.csproj", "CacheMe", "ReferenceMe");
             var fooPath = _context.ProjectFile;
             Init("bar.csproj");
             
@@ -221,7 +227,7 @@ namespace RulesMSBuild.Tests.Tools
 ");
             EndProject(builder, "BuildReference");
             
-            File.Move(fooManifest, _context.LabelPath(".cache_manifest"));
+            File.Move(fooManifestPath, _context.LabelPath(".cache_manifest"));
             
             // The stock version of MSBuild throws a "caches should not overlap" internal exception when we build this 
             // way (when its compiled in debug mode)
@@ -238,9 +244,9 @@ namespace RulesMSBuild.Tests.Tools
             // make sure we serialized *only* the results from the last build we did, not cached results from previous
             // builds
 
-            var barManifest = WriteCacheManifest();
+            var (barManifestPath, barManifest) = WriteCacheManifest(fooManifest);
             Init("wow.csproj");
-            File.Move(barManifest, _context.LabelPath(".cache_manifest"));
+            File.Move(barManifestPath, _context.LabelPath(".cache_manifest"));
             MakeProjectFile("_");
             var _ = _builder.BeginBuild();
 
@@ -249,14 +255,16 @@ namespace RulesMSBuild.Tests.Tools
                 .Select(n => $"{Path.GetFileNameWithoutExtension(n.Cluster!.Name)}:{n.Name}")
                 .ToHashSet();
 
+
             targetsInCache.OrderBy(t => t).Should().Equal(new[]
                 {
-                    "bar:BuildReference",
+                    "foo:Build",
+                    "foo:CacheMe",
                     "foo:ReferenceMe",
+                    "bar:BuildReference",
                     "bar:Build"
                 }.OrderBy(t => t)
             );
-
         }
 
         private void MakeProjectFile(string targetName, string extraTarget = null)
@@ -307,18 +315,24 @@ namespace RulesMSBuild.Tests.Tools
 ");
         }
 
-        private string WriteCacheManifest()
+        private (string path, CacheManifest cacheManifest) WriteCacheManifest(CacheManifest? other = null)
         {
             var cacheManifest = new CacheManifest()
             {
-                Results = new Dictionary<string, string>()
+                Projects = new Dictionary<string, string>()
                 {
-                    [_builder.PathMapper.ToManifestPath(_context.ProjectFile)] = _context.LabelPath(".cache")
+                    [_builder.PathMapper.ToManifestPath(_context.ProjectFile)] = _context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_context.Command.Action}.cache")
                 }
             };
+            if (other != null)
+            {
+                cacheManifest.Results.AddRange(other!.Results);
+            }
+            cacheManifest.Results.Add(_context.LabelPath(".cache"));
+            
             var path = _context.LabelPath(".cache_manifest");
             File.WriteAllText(path, JsonConvert.SerializeObject(cacheManifest));
-            return path;
+            return (path, cacheManifest);
         }
 
         public void VerifyBuiltTargets(params string[] targets)

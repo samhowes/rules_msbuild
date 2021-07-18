@@ -1,6 +1,6 @@
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
-load(":common.bzl", "declare_caches", "get_nuget_files", "write_cache_manifest")
+load(":common.bzl", "cache_set", "declare_caches", "get_nuget_files", "write_cache_manifest")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def build_assembly(ctx, dotnet):
@@ -17,7 +17,7 @@ def build_assembly(ctx, dotnet):
 
     cache = declare_caches(ctx, "build")
     files, caches, runfiles = _process_deps(ctx, dotnet)
-    caches = depset(transitive = caches)
+    caches = cache_set(transitive = caches)
     cache_manifest = write_cache_manifest(ctx, cache, caches)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
@@ -42,7 +42,7 @@ def build_assembly(ctx, dotnet):
         assembly = assembly,
         output_dir = output_dir,
         files = depset(direct = outputs, transitive = [inputs]),
-        caches = depset([cache], transitive = [caches]),
+        caches = cache_set([cache], transitive = [caches]),
         # set runfiles here so we can use it in the publish action without including the dotnet sdk
         runfiles = depset(transitive = runfiles),
         restore = restore,

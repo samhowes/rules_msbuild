@@ -30,13 +30,13 @@ namespace RulesMSBuild.Tools.Builder
         public override async Task<CacheResult> GetCacheResultAsync(BuildRequestData buildRequest, PluginLoggerBase logger,
             CancellationToken cancellationToken)
         {
-            var resultTask = _buildCache.TryGetResults(buildRequest.ProjectFullPath);
-            if (resultTask == null)
-            {
-                return CacheResult.IndicateNonCacheHit(CacheResultType.CacheMiss);
-            };
-            Debugger.WaitForAttach();
-            var result = await resultTask;
+            // var resultTask = _buildCache.TryGetResults(buildRequest.ProjectFullPath);
+            // if (resultTask == null)
+            // {
+            //     return CacheResult.IndicateNonCacheHit(CacheResultType.CacheMiss);
+            // };
+            // Debugger.WaitForAttach();
+            // var result = await resultTask;
 
             // var targetResults = new List<TargetResult>();
             // foreach (var targetName in buildRequest.TargetNames)
@@ -52,7 +52,7 @@ namespace RulesMSBuild.Tools.Builder
             //     } 
             // }
             
-            return CacheResult.IndicateCacheHit(result);
+            return CacheResult.IndicateNonCacheHit(CacheResultType.CacheMiss);
             
             // return Task.FromResult(CacheResult.IndicateNonCacheHit(CacheResultType.CacheMiss));
         }

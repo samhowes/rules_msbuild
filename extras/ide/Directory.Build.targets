@@ -1,3 +1,3 @@
 <Project>
-    <Import Condition="$(BazelBuild) == ''" Project="Bazel.targets"/>
+    <Import Condition=" '$(UseBazel)' == 'true' And '$(BazelBuild)' == ''" Project="Bazel.targets"/>
 </Project>

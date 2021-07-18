@@ -117,7 +117,7 @@ namespace RulesMSBuild.Tools.Builder
     
     public class BazelContext
     {
-        public class BazelLabel //: ITranslatable
+        public class BazelLabel
         {
             public BazelLabel(string workspace, string package, string name)
             {
@@ -129,15 +129,16 @@ namespace RulesMSBuild.Tools.Builder
             public string Workspace = null!;
             public string Package = null!;
             public string Name = null!;
+            private string? _str;
+
+            public override string ToString()
+            {
+                if (_str != null) return _str;
+                _str = $"@{Workspace}//{Package}:{Name}";
+                return _str;
+            }
 
             public BazelLabel(){}
-
-            // public void Translate(ITranslator translator)
-            // {
-            //     translator.Translate(ref Workspace);
-            //     translator.Translate(ref Package);
-            //     translator.Translate(ref Name);
-            // }
         }
         public BazelContext(Command command)
         {

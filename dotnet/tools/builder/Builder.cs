@@ -29,7 +29,7 @@ namespace RulesMSBuild.Tools.Builder
     {
         private readonly BuildContext _context;
         private readonly string _action;
-        private readonly BuildManager _buildManager;
+        private BuildManager _buildManager;
         private readonly IBazelMsBuildLogger _msbuildLog;
         private readonly TargetGraph? _targetGraph;
         private readonly BuildCache _cache;
@@ -44,7 +44,7 @@ namespace RulesMSBuild.Tools.Builder
 
             _targetGraph = context.TargetGraph;
             PathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
-            _cache = new BuildCache(new CacheManifest(), PathMapper, new Files());
+            _cache = new BuildCache(context.Bazel.Label, PathMapper, new Files(), _buildManager);
             _loader = new ProjectLoader(_context.ProjectFile, _cache, PathMapper, _targetGraph);
             _msbuildLog = msbuildLog ?? new BazelMsBuildLogger(
                 m => Console.Out.Write(m),
@@ -53,7 +53,7 @@ namespace RulesMSBuild.Tools.Builder
                 , _targetGraph!);
         }
 
-        public int Build()
+        public int Build(bool shouldEndBuild = true)
         {
             Debug("$exec_root: " + _context.Bazel.ExecRoot);
             Debug("$output_base: " + _context.Bazel.OutputBase);
@@ -65,17 +65,33 @@ namespace RulesMSBuild.Tools.Builder
 
                 result = ExecuteBuild(projectCollection);
 
-                EndBuild(result!.Value);
+                if (shouldEndBuild)
+                {
+                    EndBuild(result!.Value);    
+                }
+                
             }
             catch
             {
-                _buildManager.EndBuild();
+                try
+                {
+                    _buildManager!.EndBuild();
+                }
+                catch
+                {
+                    //ignored
+                }
+                
                 throw;
             }
             finally
             {
-                _buildManager.Dispose();
-                projectCollection?.Dispose();
+                if (shouldEndBuild)
+                {
+                    _buildManager!.Dispose();
+                    _buildManager = null;
+                    projectCollection?.Dispose();
+                }
             }
 
             return (int) result;
@@ -99,10 +115,7 @@ namespace RulesMSBuild.Tools.Builder
                 loggers.Add(binlog);
             }
 
-            _loader.Initialize(_context.LabelPath(".cache_manifest"));
-
-            var cacheFiles = _cache.Manifest!.Results.Values.Select(p => PathMapper.ToAbsolute(p));
-            
+            _cache.Initialize(_context.LabelPath(".cache_manifest"));
 
             var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
                 ToolsetDefinitionLocations.Default);
@@ -128,14 +141,6 @@ namespace RulesMSBuild.Tools.Builder
                 
                 // InputResultsCacheFiles = cacheFiles.ToArray(),
             };
-            
-            // If we set InputResultsCacheFiles on the parameters, then the BuildManager will turn on isolation
-            // constraints, and trivial targets like "GetTargetFrameworks" will have to be called ahead of time.
-            // Instead, we call this manually
-            // 1) this gets all the other caches into the build manager's caches
-            // 2) ReuseOldCaches sets up a ResultsCacheWithOverride and ConfigCacheWithOverride such that when we 
-            //     serialize the caches, only the results from this build will be included in the serialization.
-            _buildManager.ReuseOldCaches(cacheFiles.ToArray());
             _buildManager.BeginBuild(parameters);
             if (_msbuildLog.HasError)
             {
@@ -251,9 +256,6 @@ namespace RulesMSBuild.Tools.Builder
                             Error(submission.BuildResult.Exception.ToString());
                         }
                         
-                        if (result == BuildResultCode.Success)
-                            _cache!.RecordResult(submission.BuildResult);
-                        
                         source.SetResult(result);
                     }, new object());
 
@@ -263,9 +265,7 @@ namespace RulesMSBuild.Tools.Builder
 
             return result;
         }
-
         
-
         private void WriteRunfilesProps(string[] runfilesEntries)
         {
             var items = new List<XElement>(runfilesEntries.Length);
@@ -335,7 +335,7 @@ namespace RulesMSBuild.Tools.Builder
 
         private void EndBuild(BuildResultCode result)
         {
-            SaveCaches();
+            _cache.Save(_context.LabelPath(".cache"));
 
             _buildManager.EndBuild();
 
@@ -356,7 +356,7 @@ namespace RulesMSBuild.Tools.Builder
                     break;
                 case "build":
                 {
-                    // the restore sandbox doesn't have access to the source files, only project files so we re-save 
+                    // the restore sandbox doesn't have access to the source files, only project files, so we re-save 
                     // the evaluation with the updated items for this phase of the build.
                     saveEvaluation = true;
                     if (_context.IsTest)
@@ -397,35 +397,8 @@ namespace RulesMSBuild.Tools.Builder
                 }
             }
             
-            // _cache.Save(_context.LabelPath(".cache"));
             if (saveEvaluation)
                 _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
-        }
-
-        private void SaveCaches()
-        {
-            var configCache =
-                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
-            var resultsCache =
-                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ResultsCache) as IResultsCache;
-
-            if (resultsCache is ResultsCacheWithOverride resultsCacheWithOverride)
-            {
-                // if we built an external project that had some results in cache, its configs won't be in the
-                // CurrentCache. Manually add them to the current cache so the next build that loads this cache can
-                // use the build results.
-                var configCacheWithOverride = (ConfigCacheWithOverride) configCache!;
-                var current = configCacheWithOverride.CurrentCache;
-                foreach (var buildResult in resultsCacheWithOverride.CurrentCache)
-                {
-                    if (!current.HasConfiguration(buildResult.ConfigurationId))
-                    {
-                        current.AddConfiguration(configCacheWithOverride[buildResult.ConfigurationId]);
-                    }
-                }
-            }
-
-            CacheSerialization.SerializeCaches(configCache, resultsCache, _context.LabelPath(".cache"));
         }
 
         /// <summary>

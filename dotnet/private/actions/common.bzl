@@ -10,12 +10,15 @@ def declare_caches(ctx, action_name):
         project = project,
     )
 
+def cache_set(direct = [], transitive = []):
+    return depset(direct, order = "postorder", transitive = transitive)
+
 def write_cache_manifest(ctx, output, caches):
     projects = {}
-    results = {}
+    results = []
     for c in caches.to_list():
         projects[c.project_path] = c.project.path
-        results[c.project_path] = c.result.path
+        results.append(c.result.path)
 
     manifest = dict(
         output = dict(

@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.Build;
 using Microsoft.Build.BackEnd;
 using Microsoft.Build.Execution;
-using Microsoft.Build.Graph;
-using RulesMSBuild.Tools.Builder.Diagnostics;
-using RulesMSBuild.Tools.Builder.MSBuild;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Internal;
+using Microsoft.Build.Shared;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 #pragma warning disable 8618
@@ -18,13 +17,35 @@ namespace RulesMSBuild.Tools.Builder
     public class LabelResult : ITranslatable
     {
         public BazelContext.BazelLabel Label;
-        public ProjectInstance Project;
-        public BuildResult BuildResult;
-        
+        public ConfigCache ConfigCache;
+        public ResultsCache ResultsCache;
+        public IDictionary<int, string> ConfigMap = new Dictionary<int, string>();
+        public Dictionary<int, int> NewIds; // do not translate
+        public IDictionary<int, int> OriginalIds;
+
         public void Translate(ITranslator translator)
         {
-            // translator.Translate(ref Label);
-            translator.Translate(ref BuildResult);
+            // we can't load the assembly until we have our bazel context
+            // the bazel context creates the label
+            // therefore bazelLabel can't implement ITranslator because we won't have SdkRoot yet
+            // and won't have msbuild loaded yet.
+            Label = new BazelContext.BazelLabel();
+            translator.Translate(ref Label.Workspace);
+            translator.Translate(ref Label.Package);
+            translator.Translate(ref Label.Name);
+            translator.Translate(ref ConfigCache);
+            translator.Translate(ref ResultsCache);
+
+            translator.TranslateDictionary(ref ConfigMap,
+                (ITranslator t, ref int i) => t.Translate(ref i),
+                (ITranslator t, ref string s) => t.Translate(ref s),
+                c => new Dictionary<int, string>()
+            );
+            translator.TranslateDictionary(ref OriginalIds,
+                (ITranslator t, ref int i) => t.Translate(ref i),
+                (ITranslator t, ref int i) => t.Translate(ref i),
+                c => new Dictionary<int, int>()
+            );
         }
     }
 
@@ -38,50 +59,175 @@ namespace RulesMSBuild.Tools.Builder
 
         public BuildResultCache Output { get; set; } = null!;
         public Dictionary<string, string> Projects { get; set; } = null!;
-        public Dictionary<string, string> Results { get; set; } = new Dictionary<string, string>()!;
+        public List<string> Results { get; set; } = new List<string>();
     }
-    
+
     public class BuildCache
     {
         public CacheManifest? Manifest;
         public ProjectInstance? Project;
         private readonly PathMapper _pathMapper;
         private readonly Files _files;
-        private BuildResult _result;
-        private Dictionary<string, Task<BuildResult>> _results = new Dictionary<string, Task<BuildResult>>();
+        public LabelResult Result;
+        private readonly BuildManager _buildManager;
+        Func<int> _newConfigurationId;
 
-        public BuildCache(CacheManifest manifest, PathMapper pathMapper, Files files)
+        public BuildCache(BazelContext.BazelLabel label, PathMapper pathMapper, Files files, BuildManager? buildManager)
         {
-            Manifest = manifest;
+            Result = new LabelResult()
+            {
+                Label = label,
+                NewIds =new Dictionary<int, int>(),
+                OriginalIds = new Dictionary<int, int>()
+            };
             _pathMapper = pathMapper;
             _files = files;
+            _buildManager = buildManager;
+            int id = 0;
+            _newConfigurationId = buildManager != null ? buildManager.GetNewConfigurationId : () => ++id;
         }
-        
+
         public void Initialize(string manifestPath)
         {
-            // Debugger.WaitForAttach();
             if (!_files.Exists(manifestPath))
             {
                 Debug("No input caches found");
-                Manifest = new CacheManifest() {Results = new Dictionary<string, string>()};
+                Manifest = new CacheManifest();
                 return;
             }
+
             var cacheManifestJson = File.ReadAllText(manifestPath);
             var cacheManifest = JsonSerializer.Deserialize<CacheManifest>(cacheManifestJson,
                 new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
             Manifest = cacheManifest!;
+
+            var (config, result) = DeserializeCaches();
+            _buildManager.ReuseOldCaches(config, result);
         }
 
-        public void RecordResult(BuildResult buildResult)
+        private (ConfigCache aggregatedConfig, ResultsCache aggregatedResults) DeserializeCaches()
         {
-            _result = buildResult;
+            var caches = new Dictionary<string, LabelResult>();
+            var cachesInOrder = new List<LabelResult>();
+            foreach (var cacheFile in Manifest!.Results)
+            {
+                using var fileStream = File.OpenRead(cacheFile);
+                var translator = BinaryTranslator.GetReadTranslator(fileStream, null);
+                LabelResult result = null!;
+                translator.Translate(ref result);
+                caches[result.Label.ToString()] = result;
+                cachesInOrder.Add(result);
+            }
+
+            return AggregateCaches(cachesInOrder, caches);
+        }
+
+        public (ConfigCache aggregatedConfig, ResultsCache aggregatedResults) AggregateCaches(List<LabelResult> cachesInOrder,
+            Dictionary<string, LabelResult> caches)
+        {
+            var aggregatedResults = new ResultsCache();
+            var aggregatedConfig = new ConfigCache();
+
+            foreach (var labelResult in cachesInOrder)
+            {
+                var configs = labelResult.ConfigCache.GetEnumerator().ToArray();
+                var results = labelResult.ResultsCache.GetEnumerator().ToArray();
+
+                foreach (var config in configs)
+                {
+                    ErrorUtilities.VerifyThrow(aggregatedConfig.GetMatchingConfiguration(config) == null,
+                        "Input caches should not contain entries for the same configuration");
+                    
+                    labelResult.NewIds = new Dictionary<int, int>();
+                    var newId = _newConfigurationId();
+                    labelResult.NewIds[config.ConfigurationId] = newId;
+                    Result.OriginalIds[newId] = config.ConfigurationId;
+                    // record which label this configuration belongs to in case our results reference the config
+                    Result.ConfigMap[newId] = labelResult.Label.ToString();
+
+                    var newConfig = config.ShallowCloneWithNewId(newId);
+                    newConfig.ResultsNodeId = Scheduler.InvalidNodeId;
+
+                    aggregatedConfig.AddConfiguration(newConfig);
+                }
+
+                foreach (var result in results)
+                {
+                    // if (!seenConfigIds.Contains(originalId))
+                    //     throw new Exception(":(");
+                    // ErrorUtilities.VerifyThrow(seenConfigIds.Contains(result.ConfigurationId),
+                    //     "Each result should have a corresponding configuration. Otherwise the caches are not consistent");
+
+                    int newConfigId;
+                    if (labelResult.ConfigMap.TryGetValue(result.ConfigurationId, out var configSource))
+                    {
+                        var originalId = labelResult.OriginalIds[result.ConfigurationId];
+                        // assume that bazel properly ordered the cache list in postorder in the depset
+                        newConfigId = caches[configSource].NewIds[originalId];
+                    }
+                    else
+                    {
+                        newConfigId = labelResult.NewIds[result.ConfigurationId];
+                    }
+
+                    aggregatedResults.AddResult(
+                        new BuildResult(
+                            result,
+                            BuildEventContext.InvalidSubmissionId,
+                            newConfigId,
+                            BuildRequest.InvalidGlobalRequestId,
+                            BuildRequest.InvalidGlobalRequestId,
+                            BuildRequest.InvalidNodeRequestId
+                        ));
+                }
+            }
+
+            return (aggregatedConfig, aggregatedResults);
         }
 
         public void Save(string path)
         {
-            DoTranslate(path, CreateWriteTranslator, (t) => TranslateResult(ref _result, t));
+            var configCache =
+                ((IBuildComponentHost) _buildManager!).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
+            var resultsCache =
+                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ResultsCache) as IResultsCache;
+            UpdateConfigs(configCache!, resultsCache!);
+            DoTranslate(path, CreateWriteTranslator, (t) => TranslateResult(ref Result, t));
         }
-        
+
+        public void UpdateConfigs(IConfigCache configCache, IResultsCache resultsCache)
+        {
+            if (configCache is ConfigCacheWithOverride withOverride)
+                Result.ConfigCache = withOverride.CurrentCache;
+            else
+                Result.ConfigCache = (ConfigCache) configCache!;
+
+            if (resultsCache is ResultsCacheWithOverride resultsCacheWithOverride)
+            {
+                Result.ResultsCache = resultsCacheWithOverride.CurrentCache;
+                // if we built an external project that had its config in cache, the build result will reference the 
+                // new config id rather than the config id that we loaded from cache. Map this back to the configId
+                // from cache so future builds can use it
+                // also, record the label cache with the corresponding configuration
+
+                // reverse the mapping of the dictionary
+                // var toOriginalConfigId = Result.NewMapping.ToDictionary(p => p.Value, p => p.Key);
+                // foreach (var result in resultsCacheWithOverride.CurrentCache.GetEnumerator().ToArray())
+                // {
+                //     if (!Result.ConfigMap.ContainsKey(result.ConfigurationId))
+                //     {
+                //         Result.ConfigMap[result.ConfigurationId] = Result.Label.ToString();
+                //         Result.OriginalIds[result.ConfigurationId] = result.ConfigurationId;
+                //     }
+                //
+                //     // if (toOriginalConfigId.TryGetValue(result.ConfigurationId, out var originalConfigId))
+                //     //     result._configurationId = originalConfigId;
+                // }
+            }
+            else
+                Result.ResultsCache = (ResultsCache) resultsCache!;
+        }
+
         public void SaveProject(string path)
         {
             Project!.TranslateEntireState = true;
@@ -92,29 +238,23 @@ namespace RulesMSBuild.Tools.Builder
         {
             var manifestPath = _pathMapper.ToManifestPath(projectPath);
 
-            if (Manifest!.Results.TryGetValue(manifestPath, out var resultCache))
-            {
-                // var absolutePath = _pathMapper.ToAbsolute(resultCache);
-                // // don't await here, just queue it for later
-                // _results[manifestPath] = Task.Run(() => LoadResults(absolutePath) );
-            }
-            
+            // if (Manifest!.Results.TryGetValue(manifestPath, out var resultCache))
+            // {
+            //     // var absolutePath = _pathMapper.ToAbsolute(resultCache);
+            //     // // don't await here, just queue it for later
+            //     // _results[manifestPath] = Task.Run(() => LoadResults(absolutePath) );
+            // }
+
             string? cachePath = null;
             if (Manifest!.Projects?.TryGetValue(manifestPath, out cachePath) != true)
             {
                 Debug($"Project cache miss: {manifestPath}");
                 return null;
             }
+
             Debug($"Project cache hit: {manifestPath}");
             cachePath = _pathMapper.ToAbsolute(cachePath!);
             return LoadProjectImpl(cachePath);
-        }
-
-        public BuildResult LoadResults(string resultCachePath)
-        {
-            BuildResult buildResult = null!;
-            DoTranslate(resultCachePath, CreateReadTranslator, (t) => TranslateResult(ref buildResult, t));
-            return buildResult;
         }
 
         public ProjectInstance? LoadProjectImpl(string cachePath)
@@ -127,21 +267,24 @@ namespace RulesMSBuild.Tools.Builder
         }
 
         #region Translation
+
         private void TranslateProject(ref ProjectInstance project, ITranslator translator)
         {
             translator.Translate(ref project, ProjectInstance.FactoryForDeserialization);
         }
-        private void TranslateResult(ref BuildResult buildResult, ITranslator translator)
+
+        private void TranslateResult(ref LabelResult result, ITranslator translator)
         {
-            translator.Translate(ref buildResult, BuildResult.FactoryForDeserialization);
+            translator.Translate(ref result);
         }
+
         private void DoTranslate(string path, Func<Stream, ITranslator> createTranslator, Action<ITranslator> translate)
         {
             using var stream = createTranslator == CreateReadTranslator ? _files.OpenRead(path) : _files.Create(path);
             var translator = createTranslator(stream);
             translate(translator);
         }
-        
+
         private ITranslator CreateReadTranslator(Stream stream)
         {
             return BinaryTranslator.GetReadTranslator(stream, null);
@@ -151,7 +294,7 @@ namespace RulesMSBuild.Tools.Builder
             // var translator = new BinaryTranslator.BinaryReadTranslator(stream, buffer, reader);
             // return translator;
         }
-        
+
         private ITranslator CreateWriteTranslator(Stream stream)
         {
             return BinaryTranslator.GetWriteTranslator(stream);
@@ -159,18 +302,7 @@ namespace RulesMSBuild.Tools.Builder
             // var translator = new BinaryTranslator.BinaryWriteTranslator(stream, writer);
             // return translator;
         }
-        #endregion
 
-        public Task<BuildResult>? TryGetResults(string projectFullPath)
-        {
-            var manifestPath = _pathMapper.ToManifestPath(projectFullPath);
-            if (_results.TryGetValue(manifestPath, out var resultTask))
-            {
-                Debug($"[{manifestPath}]: Build result cache hit");
-                return resultTask;
-            }
-            Debug($"[{manifestPath}]: Build result cache miss");
-            return null;
-        }
+        #endregion
     }
 }
