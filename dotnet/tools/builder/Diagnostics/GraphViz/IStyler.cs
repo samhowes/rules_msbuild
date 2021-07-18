@@ -37,6 +37,12 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
                 style.Style = "filled";    
             }
 
+            if (node.Error)
+            {
+                style.outline = "tomato";
+                style.Penwidth = "8.0";
+                node.Color = style.Fill;
+            }
             
             return style;
         }
@@ -110,7 +116,8 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
             if (node.Started && !node.Finished || node.Error)
             {
                 // build failure
-                style.Fill = "tomato";
+                style.outline = "tomato";
+                style.Penwidth = "8.0";
                 node.Color = style.Fill;
             }
             

@@ -198,10 +198,17 @@ namespace RulesMSBuild.Tools.Builder
                                 targets = string.Join(";", defaultTargets);
                             }
 
+                            bool wtf = buildTask.Parameters.TryGetValue("Properties", out var properties);
+
                             foreach (var buildTargetName in targets.Split(";"))
                             {
                                 var actual = ResolveTarget(buildTargetName, project);
                                 var other = targetCluster.GetOrAdd(actual);
+                                other.Error = wtf;
+                                if (wtf)
+                                {
+                                    Console.WriteLine($"wtf: {thisTarget.Name} -> {other.Name}: {properties}");
+                                }
                                 thisTarget.AddDependency(other, null);
 
                                 if (targetCluster != cluster)

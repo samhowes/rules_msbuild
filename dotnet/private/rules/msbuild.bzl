@@ -24,10 +24,11 @@ def _msbuild_tool_binary_impl(ctx):
     ]
 
 def _publish_impl(ctx):
-    output_dir = publish(ctx)
-    all = depset([output_dir])
+    info = publish(ctx)
+    all = depset([info.output_dir])
     return [
         DefaultInfo(files = all),
+        info,
         OutputGroupInfo(all = all),
     ]
 

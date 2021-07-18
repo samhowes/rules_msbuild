@@ -14,9 +14,28 @@ using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder
 {
+    public class Label : BazelContext.BazelLabel, ITranslatable
+    {
+        public Label(string workspace, string package, string name)
+        :base(workspace, package, name)
+        {}
+
+        public Label(){} // constructor for deserialization
+
+        public void Translate(ITranslator translator)
+        {
+            // we can't load the assembly until we have our bazel context
+            // the bazel context creates the label
+            // therefore bazelLabel can't implement ITranslator because we won't have SdkRoot yet
+            // and won't have msbuild loaded yet.
+            translator.Translate(ref Workspace);
+            translator.Translate(ref Package);
+            translator.Translate(ref Name);
+        }
+    }
     public class LabelResult : ITranslatable
     {
-        public BazelContext.BazelLabel Label;
+        public Label Label;
         public ConfigCache ConfigCache;
         public ResultsCache ResultsCache;
         public IDictionary<int, string> ConfigMap = new Dictionary<int, string>();
@@ -25,14 +44,7 @@ namespace RulesMSBuild.Tools.Builder
 
         public void Translate(ITranslator translator)
         {
-            // we can't load the assembly until we have our bazel context
-            // the bazel context creates the label
-            // therefore bazelLabel can't implement ITranslator because we won't have SdkRoot yet
-            // and won't have msbuild loaded yet.
-            Label = new BazelContext.BazelLabel();
-            translator.Translate(ref Label.Workspace);
-            translator.Translate(ref Label.Package);
-            translator.Translate(ref Label.Name);
+            translator.Translate(ref Label);
             translator.Translate(ref ConfigCache);
             translator.Translate(ref ResultsCache);
 
@@ -76,7 +88,7 @@ namespace RulesMSBuild.Tools.Builder
         {
             Result = new LabelResult()
             {
-                Label = label,
+                Label = new Label(label.Workspace, label.Package, label.Name),
                 NewIds =new Dictionary<int, int>(),
                 OriginalIds = new Dictionary<int, int>()
             };

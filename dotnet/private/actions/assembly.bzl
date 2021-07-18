@@ -15,7 +15,7 @@ def build_assembly(ctx, dotnet):
     # didn't listen to our paths
     intermediate_assembly = ctx.actions.declare_file(paths.join("obj", dotnet.config.tfm, assembly.basename))
 
-    cache = declare_caches(ctx, "build")
+    cache = declare_caches(ctx, "build", None)
     files, caches, runfiles = _process_deps(ctx, dotnet)
     caches = cache_set(transitive = caches)
     cache_manifest = write_cache_manifest(ctx, cache, caches)
@@ -45,6 +45,7 @@ def build_assembly(ctx, dotnet):
         caches = cache_set([cache], transitive = [caches]),
         # set runfiles here so we can use it in the publish action without including the dotnet sdk
         runfiles = depset(transitive = runfiles),
+        project_cache = cache.project,
         restore = restore,
     )
 

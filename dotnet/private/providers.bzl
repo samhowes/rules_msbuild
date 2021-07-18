@@ -26,6 +26,18 @@ DotnetLibraryInfo = provider(
         "runfiles": "",
         "files": "depset of files",
         "caches": "depset of DotnetCacheInfo",
+        "project_cache": "cache file for this evaluation of the project file",
+        "restore": "DotnetRestoreInfo",
+    },
+)
+
+DotnetPublishInfo = provider(
+    doc = "Contains information about a Dotnet library",
+    fields = {
+        "output_dir": "The msbuild output directory as a declared file",
+        "files": "depset of files",
+        "caches": "depset of DotnetCacheInfo",
+        "library": "DotnetLibraryInfo",
         "restore": "DotnetRestoreInfo",
     },
 )

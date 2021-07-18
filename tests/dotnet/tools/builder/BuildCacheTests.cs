@@ -259,7 +259,7 @@ namespace RulesMSBuild.Tests.Tools
                 OriginalIds = new Dictionary<int, int>(),
                 ConfigCache = new ConfigCache(),
                 ResultsCache = new ResultsCache(),
-                Label = new BazelContext.BazelLabel("wkspc", "pkg", name)
+                Label = new Label("wkspc", "pkg", name)
             };
             _caches[r.Label.ToString()] = r;
             _cachesInOrder.Add(r);

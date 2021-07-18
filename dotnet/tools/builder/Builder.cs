@@ -335,7 +335,8 @@ namespace RulesMSBuild.Tools.Builder
 
         private void EndBuild(BuildResultCode result)
         {
-            _cache.Save(_context.LabelPath(".cache"));
+            if (result == BuildResultCode.Success)
+                _cache.Save(_context.LabelPath(".cache"));
 
             _buildManager.EndBuild();
 

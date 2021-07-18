@@ -129,8 +129,9 @@ def _msbuild_assembly(
     if is_packable:
         nuget_package(
             name = name + "_nuget",
+            project_file = project_file,
             version = package_version,
-            target = ":" + name,
+            target = ":" + name + "_publish",
         )
 
 def _get_srcs(srcs):

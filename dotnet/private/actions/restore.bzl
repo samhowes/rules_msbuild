@@ -9,7 +9,7 @@ def restore(ctx, dotnet):
     assets_json = ctx.actions.declare_file("restore/project.assets.json")
     restore_dir = ctx.actions.declare_directory("restore")
 
-    cache = declare_caches(ctx, "restore")
+    cache = declare_caches(ctx, "restore", None)
 
     files, caches = _process_deps(dotnet, ctx)
     cache_manifest = write_cache_manifest(ctx, cache, cache_set(transitive = caches))

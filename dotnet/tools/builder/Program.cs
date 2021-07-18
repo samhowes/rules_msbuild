@@ -110,7 +110,7 @@ namespace RulesMSBuild.Tools.Builder
                 {
                     ("Restore", "skyblue1", "#1f78b4"),
                     ("Build", "lightgreen", "#33a02c"),
-                    ("PublishOnly", "lightpink", "#e31a1c"),
+                    ("Publish", "lightpink", "lightcoral"),
                     ("Pack", "sandybrown", "#ff7f00")
                 })
                 {

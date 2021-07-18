@@ -1202,7 +1202,7 @@
 <!-- PrepareResources1 -->
 <g id="node75" class="node">
 <title>PrepareResources1</title>
-<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="4977.5,-3040 4864.5,-3040 4864.5,-3004 4977.5,-3004 4977.5,-3040"/>
+<polygon fill="lightgreen" stroke="black" points="4977.5,-3040 4864.5,-3040 4864.5,-3004 4977.5,-3004 4977.5,-3040"/>
 <text text-anchor="start" x="4872.5" y="-3018.3" font-family="Times,serif" font-size="14.00">PrepareResources</text>
 </g>
 <!-- CoreBuild1&#45;&gt;PrepareResources1 -->
@@ -1214,7 +1214,7 @@
 <!-- ResolveKeySource1 -->
 <g id="node76" class="node">
 <title>ResolveKeySource1</title>
-<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="4127,-2044 4007,-2044 4007,-2008 4127,-2008 4127,-2044"/>
+<polygon fill="lightgreen" stroke="black" points="4127,-2044 4007,-2044 4007,-2008 4127,-2008 4127,-2044"/>
 <text text-anchor="start" x="4015" y="-2022.3" font-family="Times,serif" font-size="14.00">ResolveKeySource</text>
 </g>
 <!-- CoreBuild1&#45;&gt;ResolveKeySource1 -->
@@ -1262,7 +1262,7 @@
 <!-- GenerateSerializationAssemblies1 -->
 <g id="node80" class="node">
 <title>GenerateSerializationAssemblies1</title>
-<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="4604.5,-2874 4407.5,-2874 4407.5,-2838 4604.5,-2838 4604.5,-2874"/>
+<polygon fill="lightgreen" stroke="black" points="4604.5,-2874 4407.5,-2874 4407.5,-2838 4604.5,-2838 4604.5,-2874"/>
 <text text-anchor="start" x="4415.5" y="-2852.3" font-family="Times,serif" font-size="14.00">GenerateSerializationAssemblies</text>
 </g>
 <!-- CoreBuild1&#45;&gt;GenerateSerializationAssemblies1 -->
@@ -1274,7 +1274,7 @@
 <!-- CreateSatelliteAssemblies1 -->
 <g id="node81" class="node">
 <title>CreateSatelliteAssemblies1</title>
-<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="4278.5,-3040 4119.5,-3040 4119.5,-3004 4278.5,-3004 4278.5,-3040"/>
+<polygon fill="lightgreen" stroke="black" points="4278.5,-3040 4119.5,-3040 4119.5,-3004 4278.5,-3004 4278.5,-3040"/>
 <text text-anchor="start" x="4127.5" y="-3018.3" font-family="Times,serif" font-size="14.00">CreateSatelliteAssemblies</text>
 </g>
 <!-- CoreBuild1&#45;&gt;CreateSatelliteAssemblies1 -->
@@ -1286,7 +1286,7 @@
 <!-- GenerateManifests1 -->
 <g id="node82" class="node">
 <title>GenerateManifests1</title>
-<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="3537.5,-3040 3418.5,-3040 3418.5,-3004 3537.5,-3004 3537.5,-3040"/>
+<polygon fill="lightgreen" stroke="black" points="3537.5,-3040 3418.5,-3040 3418.5,-3004 3537.5,-3004 3537.5,-3040"/>
 <text text-anchor="start" x="3426.5" y="-3018.3" font-family="Times,serif" font-size="14.00">GenerateManifests</text>
 </g>
 <!-- CoreBuild1&#45;&gt;GenerateManifests1 -->
@@ -1802,7 +1802,7 @@
 <!-- CopyFilesToOutputDirectory1 -->
 <g id="node123" class="node">
 <title>CopyFilesToOutputDirectory1</title>
-<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="6464,-2542 6288,-2542 6288,-2506 6464,-2506 6464,-2542"/>
+<polygon fill="lightgreen" stroke="black" points="6464,-2542 6288,-2542 6288,-2506 6464,-2506 6464,-2542"/>
 <text text-anchor="start" x="6296" y="-2520.3" font-family="Times,serif" font-size="14.00">CopyFilesToOutputDirectory</text>
 </g>
 <!-- PrepareForRun1&#45;&gt;CopyFilesToOutputDirectory1 -->
@@ -1916,7 +1916,7 @@
 <!-- Build1 -->
 <g id="node91" class="node">
 <title>Build1</title>
-<polygon fill="lightgreen" stroke="black" points="6965,-3372 6911,-3372 6911,-3336 6965,-3336 6965,-3372"/>
+<polygon fill="lightgreen" stroke="purple" stroke-width="8" points="6965,-3372 6911,-3372 6911,-3336 6965,-3336 6965,-3372"/>
 <text text-anchor="start" x="6922.5" y="-3350.3" font-family="Times,serif" font-size="14.00">Build</text>
 </g>
 <!-- Build1&#45;&gt;BeforeBuild1 -->
@@ -3590,290 +3590,290 @@
 <!-- GetCopyToPublishDirectoryItems1 -->
 <g id="node214" class="node">
 <title>GetCopyToPublishDirectoryItems1</title>
-<polygon fill="#ff7f00" stroke="black" points="2372.5,-2044 2169.5,-2044 2169.5,-2008 2372.5,-2008 2372.5,-2044"/>
+<polygon fill="lightcoral" stroke="black" points="2372.5,-2044 2169.5,-2044 2169.5,-2008 2372.5,-2008 2372.5,-2044"/>
 <text text-anchor="start" x="2177.5" y="-2022.3" font-family="Times,serif" font-size="14.00">GetCopyToPublishDirectoryItems</text>
 </g>
 <!-- GetCopyToPublishDirectoryItems1&#45;&gt;AssignTargetPaths1 -->
 <g id="edge313" class="edge">
 <title>GetCopyToPublishDirectoryItems1&#45;&gt;AssignTargetPaths1</title>
-<path fill="none" stroke="#ff7f00" d="M2272.2,-2007.82C2275.25,-1973.81 2285.62,-1896.47 2319,-1842 2351.75,-1788.55 2409.92,-1743.44 2447.71,-1717.81"/>
-<polygon fill="#ff7f00" stroke="#ff7f00" points="2450,-1720.48 2456.38,-1712.02 2446.12,-1714.66 2450,-1720.48"/>
+<path fill="none" stroke="lightcoral" d="M2272.2,-2007.82C2275.25,-1973.81 2285.62,-1896.47 2319,-1842 2351.75,-1788.55 2409.92,-1743.44 2447.71,-1717.81"/>
+<polygon fill="lightcoral" stroke="lightcoral" points="2450,-1720.48 2456.38,-1712.02 2446.12,-1714.66 2450,-1720.48"/>
 </g>
 <!-- GetCopyToPublishDirectoryItems1&#45;&gt;_SplitProjectReferencesByFileExistence1 -->
 <g id="edge315" class="edge">
 <title>GetCopyToPublishDirectoryItems1&#45;&gt;_SplitProjectReferencesByFileExistence1</title>
-<path fill="none" stroke="#ff7f00" d="M2184.45,-2007.98C2114.49,-1989.17 2020.42,-1951.27 1975,-1878 1860.19,-1692.79 2100.52,-1599.96 2299,-1510 2590,-1378.11 2701.42,-1489.97 3011,-1411 3037.8,-1404.16 3066.71,-1393.51 3090.17,-1383.98"/>
-<polygon fill="#ff7f00" stroke="#ff7f00" points="3091.63,-1387.16 3099.54,-1380.11 3088.96,-1380.69 3091.63,-1387.16"/>
+<path fill="none" stroke="lightcoral" d="M2184.45,-2007.98C2114.49,-1989.17 2020.42,-1951.27 1975,-1878 1860.19,-1692.79 2100.52,-1599.96 2299,-1510 2590,-1378.11 2701.42,-1489.97 3011,-1411 3037.8,-1404.16 3066.71,-1393.51 3090.17,-1383.98"/>
+<polygon fill="lightcoral" stroke="lightcoral" points="3091.63,-1387.16 3099.54,-1380.11 3088.96,-1380.69 3091.63,-1387.16"/>
 </g>
 <!-- GetCopyToPublishDirectoryItems1&#45;&gt;_GetProjectReferenceTargetFrameworkProperties1 -->
 <g id="edge316" class="edge">
 <title>GetCopyToPublishDirectoryItems1&#45;&gt;_GetProjectReferenceTargetFrameworkProperties1</title>
-<path fill="none" stroke="#ff7f00" d="M2186,-2007.93C2088.21,-1983.75 1946.36,-1932.13 1990,-1842 2093.7,-1627.84 2190.11,-1600.92 2410,-1510 2763.51,-1363.82 2889.51,-1484.08 3265,-1411 3302.07,-1403.78 3342.81,-1392.72 3375.54,-1383.04"/>
-<polygon fill="#ff7f00" stroke="#ff7f00" points="3376.85,-1386.3 3385.43,-1380.08 3374.84,-1379.59 3376.85,-1386.3"/>
+<path fill="none" stroke="lightcoral" d="M2186,-2007.93C2088.21,-1983.75 1946.36,-1932.13 1990,-1842 2093.7,-1627.84 2190.11,-1600.92 2410,-1510 2763.51,-1363.82 2889.51,-1484.08 3265,-1411 3302.07,-1403.78 3342.81,-1392.72 3375.54,-1383.04"/>
+<polygon fill="lightcoral" stroke="lightcoral" points="3376.85,-1386.3 3385.43,-1380.08 3374.84,-1379.59 3376.85,-1386.3"/>
 </g>
 <!-- DefaultCopyToPublishDirectoryMetadata1 -->
 <g id="node215" class="node">
 <title>DefaultCopyToPublishDirectoryMetadata1</title>
-<polygon fill="sandybrown" stroke="black" points="2244.5,-1878 1999.5,-1878 1999.5,-1842 2244.5,-1842 2244.5,-1878"/>
+<polygon fill="lightpink" stroke="black" points="2244.5,-1878 1999.5,-1878 1999.5,-1842 2244.5,-1842 2244.5,-1878"/>
 <text text-anchor="start" x="2007.5" y="-1856.3" font-family="Times,serif" font-size="14.00">DefaultCopyToPublishDirectoryMetadata</text>
 </g>
 <!-- GetCopyToPublishDirectoryItems1&#45;&gt;DefaultCopyToPublishDirectoryMetadata1 -->
 <g id="edge314" class="edge">
 <title>GetCopyToPublishDirectoryItems1&#45;&gt;DefaultCopyToPublishDirectoryMetadata1</title>
-<path fill="none" stroke="#ff7f00" d="M2255.34,-2007.76C2228.77,-1978.52 2174.82,-1919.13 2144.31,-1885.56"/>
-<polygon fill="#ff7f00" stroke="#ff7f00" points="2146.77,-1883.06 2137.45,-1878.01 2141.59,-1887.76 2146.77,-1883.06"/>
+<path fill="none" stroke="lightcoral" d="M2255.34,-2007.76C2228.77,-1978.52 2174.82,-1919.13 2144.31,-1885.56"/>
+<polygon fill="lightcoral" stroke="lightcoral" points="2146.77,-1883.06 2137.45,-1878.01 2141.59,-1887.76 2146.77,-1883.06"/>
 </g>
 <!-- AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects1 -->
 <g id="node216" class="node">
 <title>AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects1</title>
-<polygon fill="sandybrown" stroke="black" points="1776.5,-1380 1363.5,-1380 1363.5,-1344 1776.5,-1344 1776.5,-1380"/>
+<polygon fill="lightpink" stroke="black" points="1776.5,-1380 1363.5,-1380 1363.5,-1344 1776.5,-1344 1776.5,-1380"/>
 <text text-anchor="start" x="1371.5" y="-1358.3" font-family="Times,serif" font-size="14.00">AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects</text>
 </g>
 <!-- GetCopyToPublishDirectoryItems1&#45;&gt;AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects1 -->
 <g id="edge317" class="edge">
 <title>GetCopyToPublishDirectoryItems1&#45;&gt;AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects1</title>
-<path fill="none" stroke="#ff7f00" d="M2213.82,-2007.94C2146.66,-1985.88 2034.37,-1942.47 1955,-1878 1770.56,-1728.2 1626.68,-1471.49 1583.41,-1389.2"/>
-<polygon fill="#ff7f00" stroke="#ff7f00" points="1586.36,-1387.29 1578.63,-1380.05 1580.16,-1390.53 1586.36,-1387.29"/>
+<path fill="none" stroke="lightcoral" d="M2213.82,-2007.94C2146.66,-1985.88 2034.37,-1942.47 1955,-1878 1770.56,-1728.2 1626.68,-1471.49 1583.41,-1389.2"/>
+<polygon fill="lightcoral" stroke="lightcoral" points="1586.36,-1387.29 1578.63,-1380.05 1580.16,-1390.53 1586.36,-1387.29"/>
 </g>
 <!-- GetCopyToPublishDirectoryItems2 -->
 <g id="node418" class="node">
 <title>GetCopyToPublishDirectoryItems2</title>
-<polygon fill="#ff7f00" stroke="black" points="10351.5,-1214 10148.5,-1214 10148.5,-1178 10351.5,-1178 10351.5,-1214"/>
+<polygon fill="lightcoral" stroke="black" points="10351.5,-1214 10148.5,-1214 10148.5,-1178 10351.5,-1178 10351.5,-1214"/>
 <text text-anchor="start" x="10156.5" y="-1192.3" font-family="Times,serif" font-size="14.00">GetCopyToPublishDirectoryItems</text>
 </g>
 <!-- GetCopyToPublishDirectoryItems1&#45;&gt;GetCopyToPublishDirectoryItems2 -->
 <g id="edge658" class="edge">
 <title>GetCopyToPublishDirectoryItems1&#45;&gt;GetCopyToPublishDirectoryItems2</title>
-<path fill="none" stroke="#ff7f00" d="M2372.69,-2023.03C3187.69,-2007.2 8630.82,-1900.75 8797,-1878 9123.27,-1833.34 9515,-2024.31 9515,-1695 9515,-1695 9515,-1695 9515,-1527 9515,-1222.66 9848.8,-1336.69 10139,-1245 10161.64,-1237.85 10185.94,-1227.65 10206.01,-1218.49"/>
-<polygon fill="#ff7f00" stroke="#ff7f00" points="10207.6,-1221.61 10215.21,-1214.23 10204.66,-1215.25 10207.6,-1221.61"/>
+<path fill="none" stroke="lightcoral" d="M2372.69,-2023.03C3187.69,-2007.2 8630.82,-1900.75 8797,-1878 9123.27,-1833.34 9515,-2024.31 9515,-1695 9515,-1695 9515,-1695 9515,-1527 9515,-1222.66 9848.8,-1336.69 10139,-1245 10161.64,-1237.85 10185.94,-1227.65 10206.01,-1218.49"/>
+<polygon fill="lightcoral" stroke="lightcoral" points="10207.6,-1221.61 10215.21,-1214.23 10204.66,-1215.25 10207.6,-1221.61"/>
 </g>
 <!-- DefaultCopyToPublishDirectoryMetadata1&#45;&gt;AssignTargetPaths1 -->
 <g id="edge318" class="edge">
 <title>DefaultCopyToPublishDirectoryMetadata1&#45;&gt;AssignTargetPaths1</title>
-<path fill="none" stroke="sandybrown" d="M2159.72,-1841.91C2226.27,-1811.76 2364.35,-1749.21 2436.99,-1716.3"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2438.7,-1719.36 2446.37,-1712.05 2435.82,-1712.99 2438.7,-1719.36"/>
+<path fill="none" stroke="lightpink" d="M2159.72,-1841.91C2226.27,-1811.76 2364.35,-1749.21 2436.99,-1716.3"/>
+<polygon fill="lightpink" stroke="lightpink" points="2438.7,-1719.36 2446.37,-1712.05 2435.82,-1712.99 2438.7,-1719.36"/>
 </g>
 <!-- _ComputeUseBuildDependencyFile1 -->
 <g id="node318" class="node">
 <title>_ComputeUseBuildDependencyFile1</title>
-<polygon fill="sandybrown" stroke="black" points="1588.5,-1048 1375.5,-1048 1375.5,-1012 1588.5,-1012 1588.5,-1048"/>
+<polygon fill="lightpink" stroke="black" points="1588.5,-1048 1375.5,-1048 1375.5,-1012 1588.5,-1012 1588.5,-1048"/>
 <text text-anchor="start" x="1383.5" y="-1026.3" font-family="Times,serif" font-size="14.00">_ComputeUseBuildDependencyFile</text>
 </g>
 <!-- AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects1&#45;&gt;_ComputeUseBuildDependencyFile1 -->
 <g id="edge486" class="edge">
 <title>AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects1&#45;&gt;_ComputeUseBuildDependencyFile1</title>
-<path fill="none" stroke="sandybrown" d="M1565.39,-1343.72C1550.99,-1289.7 1506.72,-1123.71 1489.23,-1058.1"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1492.52,-1056.87 1486.56,-1048.11 1485.76,-1058.67 1492.52,-1056.87"/>
+<path fill="none" stroke="lightpink" d="M1565.39,-1343.72C1550.99,-1289.7 1506.72,-1123.71 1489.23,-1058.1"/>
+<polygon fill="lightpink" stroke="lightpink" points="1492.52,-1056.87 1486.56,-1048.11 1485.76,-1058.67 1492.52,-1056.87"/>
 </g>
 <!-- Publish1 -->
 <g id="node218" class="node">
 <title>Publish1</title>
-<polygon fill="none" stroke="black" points="835.5,-3704 778.5,-3704 778.5,-3668 835.5,-3668 835.5,-3704"/>
+<polygon fill="lightpink" stroke="black" points="835.5,-3704 778.5,-3704 778.5,-3668 835.5,-3668 835.5,-3704"/>
 <text text-anchor="start" x="786.5" y="-3682.3" font-family="Times,serif" font-size="14.00">Publish</text>
 </g>
 <!-- _PublishBuildAlternative1 -->
 <g id="node219" class="node">
 <title>_PublishBuildAlternative1</title>
-<polygon fill="none" stroke="black" points="884.5,-3538 729.5,-3538 729.5,-3502 884.5,-3502 884.5,-3538"/>
+<polygon fill="lightpink" stroke="black" points="884.5,-3538 729.5,-3538 729.5,-3502 884.5,-3502 884.5,-3538"/>
 <text text-anchor="start" x="737.5" y="-3516.3" font-family="Times,serif" font-size="14.00">_PublishBuildAlternative</text>
 </g>
 <!-- Publish1&#45;&gt;_PublishBuildAlternative1 -->
 <g id="edge323" class="edge">
 <title>Publish1&#45;&gt;_PublishBuildAlternative1</title>
-<path fill="none" stroke="black" d="M807,-3667.76C807,-3639.26 807,-3582.12 807,-3548.16"/>
-<polygon fill="black" stroke="black" points="810.5,-3548.01 807,-3538.01 803.5,-3548.01 810.5,-3548.01"/>
+<path fill="none" stroke="lightpink" d="M807,-3667.76C807,-3639.26 807,-3582.12 807,-3548.16"/>
+<polygon fill="lightpink" stroke="lightpink" points="810.5,-3548.01 807,-3538.01 803.5,-3548.01 810.5,-3548.01"/>
 </g>
 <!-- _PublishNoBuildAlternative1 -->
 <g id="node220" class="node">
 <title>_PublishNoBuildAlternative1</title>
-<polygon fill="none" stroke="black" points="815.5,-2874 644.5,-2874 644.5,-2838 815.5,-2838 815.5,-2874"/>
+<polygon fill="lightpink" stroke="black" points="815.5,-2874 644.5,-2874 644.5,-2838 815.5,-2838 815.5,-2874"/>
 <text text-anchor="start" x="652.5" y="-2852.3" font-family="Times,serif" font-size="14.00">_PublishNoBuildAlternative</text>
 </g>
 <!-- Publish1&#45;&gt;_PublishNoBuildAlternative1 -->
 <g id="edge324" class="edge">
 <title>Publish1&#45;&gt;_PublishNoBuildAlternative1</title>
-<path fill="none" stroke="black" d="M825.09,-3667.73C845.79,-3646.66 878.68,-3608.88 893,-3569 925.18,-3479.36 904,-3450.24 904,-3355 904,-3355 904,-3355 904,-3187 904,-3059.78 801.57,-2933.52 753.89,-2881.63"/>
-<polygon fill="black" stroke="black" points="756.38,-2879.17 747,-2874.24 751.26,-2883.94 756.38,-2879.17"/>
+<path fill="none" stroke="lightpink" d="M825.09,-3667.73C845.79,-3646.66 878.68,-3608.88 893,-3569 925.18,-3479.36 904,-3450.24 904,-3355 904,-3355 904,-3355 904,-3187 904,-3059.78 801.57,-2933.52 753.89,-2881.63"/>
+<polygon fill="lightpink" stroke="lightpink" points="756.38,-2879.17 747,-2874.24 751.26,-2883.94 756.38,-2879.17"/>
 </g>
 <!-- _CheckForLanguageAndPublishFeatureCombinationSupport1 -->
 <g id="node221" class="node">
 <title>_CheckForLanguageAndPublishFeatureCombinationSupport1</title>
-<polygon fill="sandybrown" stroke="black" points="2149,-2210 1801,-2210 1801,-2174 2149,-2174 2149,-2210"/>
+<polygon fill="lightpink" stroke="black" points="2149,-2210 1801,-2210 1801,-2174 2149,-2174 2149,-2210"/>
 <text text-anchor="start" x="1809" y="-2188.3" font-family="Times,serif" font-size="14.00">_CheckForLanguageAndPublishFeatureCombinationSupport</text>
 </g>
 <!-- Publish1&#45;&gt;_CheckForLanguageAndPublishFeatureCombinationSupport1 -->
 <g id="edge325" class="edge">
 <title>Publish1&#45;&gt;_CheckForLanguageAndPublishFeatureCombinationSupport1</title>
-<path fill="none" stroke="black" d="M790.89,-3667.9C771.46,-3646.39 739.04,-3607.61 720,-3569 704.69,-3537.96 720.85,-3520.84 699,-3494 643.4,-3425.71 586.72,-3463.78 523,-3403 278.01,-3169.29 253.8,-3043.87 211,-2708 202.53,-2641.51 205.81,-2525.77 225,-2506 402.46,-2323.22 1152.13,-2517.45 1364,-2376 1379.22,-2365.84 1369.47,-2351.13 1384,-2340 1456.66,-2284.33 1701.39,-2236.72 1852.19,-2211.73"/>
-<polygon fill="black" stroke="black" points="1853.13,-2215.13 1862.43,-2210.05 1851.99,-2208.22 1853.13,-2215.13"/>
+<path fill="none" stroke="lightpink" d="M790.89,-3667.9C771.46,-3646.39 739.04,-3607.61 720,-3569 704.69,-3537.96 720.85,-3520.84 699,-3494 643.4,-3425.71 586.72,-3463.78 523,-3403 278.01,-3169.29 253.8,-3043.87 211,-2708 202.53,-2641.51 205.81,-2525.77 225,-2506 402.46,-2323.22 1152.13,-2517.45 1364,-2376 1379.22,-2365.84 1369.47,-2351.13 1384,-2340 1456.66,-2284.33 1701.39,-2236.72 1852.19,-2211.73"/>
+<polygon fill="lightpink" stroke="lightpink" points="1853.13,-2215.13 1862.43,-2210.05 1851.99,-2208.22 1853.13,-2215.13"/>
 </g>
 <!-- _PublishBuildAlternative1&#45;&gt;Build1 -->
 <g id="edge326" class="edge">
 <title>_PublishBuildAlternative1&#45;&gt;Build1</title>
-<path fill="none" stroke="black" d="M884.69,-3517.49C1564.49,-3504.24 6477.91,-3408.34 6552,-3403 6680.77,-3393.72 6832.49,-3371.53 6901.06,-3360.89"/>
-<polygon fill="black" stroke="black" points="6901.61,-3364.34 6910.95,-3359.34 6900.53,-3357.43 6901.61,-3364.34"/>
+<path fill="none" stroke="lightpink" d="M884.69,-3517.49C1564.49,-3504.24 6477.91,-3408.34 6552,-3403 6680.77,-3393.72 6832.49,-3371.53 6901.06,-3360.89"/>
+<polygon fill="lightpink" stroke="lightpink" points="6901.61,-3364.34 6910.95,-3359.34 6900.53,-3357.43 6901.61,-3364.34"/>
 </g>
 <!-- PrepareForPublish1 -->
 <g id="node222" class="node">
 <title>PrepareForPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="1946.5,-2376 1829.5,-2376 1829.5,-2340 1946.5,-2340 1946.5,-2376"/>
+<polygon fill="lightpink" stroke="purple" stroke-width="8" points="1946.5,-2376 1829.5,-2376 1829.5,-2340 1946.5,-2340 1946.5,-2376"/>
 <text text-anchor="start" x="1837.5" y="-2354.3" font-family="Times,serif" font-size="14.00">PrepareForPublish</text>
 </g>
 <!-- _PublishBuildAlternative1&#45;&gt;PrepareForPublish1 -->
 <g id="edge327" class="edge">
 <title>_PublishBuildAlternative1&#45;&gt;PrepareForPublish1</title>
-<path fill="none" stroke="black" d="M751.82,-3501.91C701.58,-3484.02 627.98,-3451.68 579,-3403 514.82,-3339.21 166.38,-2744.89 220,-2672 335.04,-2515.63 493.52,-2672.77 637,-2542 649.81,-2530.32 638.14,-2516.4 652,-2506 860.02,-2349.93 1558.7,-2420.01 1815,-2376 1816.3,-2375.78 1817.61,-2375.55 1818.93,-2375.31"/>
-<polygon fill="black" stroke="black" points="1820,-2378.66 1829.15,-2373.33 1818.67,-2371.79 1820,-2378.66"/>
+<path fill="none" stroke="lightpink" d="M751.82,-3501.91C701.58,-3484.02 627.98,-3451.68 579,-3403 514.82,-3339.21 166.38,-2744.89 220,-2672 335.04,-2515.63 493.52,-2672.77 637,-2542 649.81,-2530.32 638.14,-2516.4 652,-2506 860.02,-2349.93 1558.7,-2420.01 1815,-2376 1816.3,-2375.78 1817.61,-2375.55 1818.93,-2375.31"/>
+<polygon fill="lightpink" stroke="lightpink" points="1820,-2378.66 1829.15,-2373.33 1818.67,-2371.79 1820,-2378.66"/>
 </g>
 <!-- ComputeAndCopyFilesToPublishDirectory1 -->
 <g id="node223" class="node">
 <title>ComputeAndCopyFilesToPublishDirectory1</title>
-<polygon fill="sandybrown" stroke="black" points="482.5,-2708 229.5,-2708 229.5,-2672 482.5,-2672 482.5,-2708"/>
+<polygon fill="lightpink" stroke="purple" stroke-width="8" points="482.5,-2708 229.5,-2708 229.5,-2672 482.5,-2672 482.5,-2708"/>
 <text text-anchor="start" x="237.5" y="-2686.3" font-family="Times,serif" font-size="14.00">ComputeAndCopyFilesToPublishDirectory</text>
 </g>
 <!-- _PublishBuildAlternative1&#45;&gt;ComputeAndCopyFilesToPublishDirectory1 -->
 <g id="edge328" class="edge">
 <title>_PublishBuildAlternative1&#45;&gt;ComputeAndCopyFilesToPublishDirectory1</title>
-<path fill="none" stroke="black" d="M776.3,-3501.95C704.18,-3459.38 530,-3340.84 530,-3189 530,-3189 530,-3189 530,-3021 530,-2893.78 427.57,-2767.52 379.89,-2715.63"/>
-<polygon fill="black" stroke="black" points="382.38,-2713.17 373,-2708.24 377.26,-2717.94 382.38,-2713.17"/>
+<path fill="none" stroke="lightpink" d="M776.3,-3501.95C704.18,-3459.38 530,-3340.84 530,-3189 530,-3189 530,-3189 530,-3021 530,-2893.78 427.57,-2767.52 379.89,-2715.63"/>
+<polygon fill="lightpink" stroke="lightpink" points="382.38,-2713.17 373,-2708.24 377.26,-2717.94 382.38,-2713.17"/>
 </g>
 <!-- PublishItemsOutputGroup1 -->
 <g id="node224" class="node">
 <title>PublishItemsOutputGroup1</title>
-<polygon fill="sandybrown" stroke="black" points="681,-2708 521,-2708 521,-2672 681,-2672 681,-2708"/>
+<polygon fill="lightpink" stroke="purple" stroke-width="8" points="681,-2708 521,-2708 521,-2672 681,-2672 681,-2708"/>
 <text text-anchor="start" x="529" y="-2686.3" font-family="Times,serif" font-size="14.00">PublishItemsOutputGroup</text>
 </g>
 <!-- _PublishBuildAlternative1&#45;&gt;PublishItemsOutputGroup1 -->
 <g id="edge329" class="edge">
 <title>_PublishBuildAlternative1&#45;&gt;PublishItemsOutputGroup1</title>
-<path fill="none" stroke="black" d="M788.19,-3501.72C740.38,-3455.81 618,-3325.01 618,-3189 618,-3189 618,-3189 618,-3021 618,-2908.6 608.04,-2774.94 603.37,-2718.41"/>
-<polygon fill="black" stroke="black" points="606.83,-2717.83 602.51,-2708.16 599.86,-2718.42 606.83,-2717.83"/>
+<path fill="none" stroke="lightpink" d="M788.19,-3501.72C740.38,-3455.81 618,-3325.01 618,-3189 618,-3189 618,-3189 618,-3021 618,-2908.6 608.04,-2774.94 603.37,-2718.41"/>
+<polygon fill="lightpink" stroke="lightpink" points="606.83,-2717.83 602.51,-2708.16 599.86,-2718.42 606.83,-2717.83"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;BuildOnlySettings1 -->
 <g id="edge330" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;BuildOnlySettings1</title>
-<path fill="none" stroke="black" d="M727.16,-2838C722.29,-2802.94 716.32,-2721.74 755,-2672 849.48,-2550.49 934.6,-2602.82 1076,-2542 1111.45,-2526.75 1117.45,-2514.9 1155,-2506 1899.59,-2329.56 3835.78,-2463.27 4596,-2376 4602.29,-2375.28 4608.8,-2374.36 4615.31,-2373.32"/>
-<polygon fill="black" stroke="black" points="4616.22,-2376.71 4625.5,-2371.6 4615.05,-2369.81 4616.22,-2376.71"/>
+<path fill="none" stroke="lightpink" d="M727.16,-2838C722.29,-2802.94 716.32,-2721.74 755,-2672 849.48,-2550.49 934.6,-2602.82 1076,-2542 1111.45,-2526.75 1117.45,-2514.9 1155,-2506 1899.59,-2329.56 3835.78,-2463.27 4596,-2376 4602.29,-2375.28 4608.8,-2374.36 4615.31,-2373.32"/>
+<polygon fill="lightpink" stroke="lightpink" points="4616.22,-2376.71 4625.5,-2371.6 4615.05,-2369.81 4616.22,-2376.71"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;ResolveReferences1 -->
 <g id="edge332" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;ResolveReferences1</title>
-<path fill="none" stroke="black" d="M731.64,-2837.92C735.87,-2797.37 748.31,-2696.88 770,-2672 880.14,-2545.66 970.32,-2608.9 1124,-2542 1156.44,-2527.88 1160.75,-2514.85 1195,-2506 1960.6,-2308.14 3962.08,-2429.81 4751,-2376 4783.83,-2373.76 4820.14,-2370.27 4850.74,-2367.03"/>
-<polygon fill="black" stroke="black" points="4851.32,-2370.49 4860.89,-2365.94 4850.57,-2363.53 4851.32,-2370.49"/>
+<path fill="none" stroke="lightpink" d="M731.64,-2837.92C735.87,-2797.37 748.31,-2696.88 770,-2672 880.14,-2545.66 970.32,-2608.9 1124,-2542 1156.44,-2527.88 1160.75,-2514.85 1195,-2506 1960.6,-2308.14 3962.08,-2429.81 4751,-2376 4783.83,-2373.76 4820.14,-2370.27 4850.74,-2367.03"/>
+<polygon fill="lightpink" stroke="lightpink" points="4851.32,-2370.49 4860.89,-2365.94 4850.57,-2363.53 4851.32,-2370.49"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;PrepareResourceNames1 -->
 <g id="edge333" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;PrepareResourceNames1</title>
-<path fill="none" stroke="black" d="M727.68,-2837.84C724.1,-2810.46 717.4,-2755.14 715,-2708 710.4,-2617.54 675.46,-2567.46 742,-2506 869.49,-2388.24 2108.16,-2400.52 2324.68,-2375.78"/>
-<polygon fill="black" stroke="black" points="2325.29,-2379.23 2334.76,-2374.5 2324.4,-2372.29 2325.29,-2379.23"/>
+<path fill="none" stroke="lightpink" d="M727.68,-2837.84C724.1,-2810.46 717.4,-2755.14 715,-2708 710.4,-2617.54 675.46,-2567.46 742,-2506 869.49,-2388.24 2108.16,-2400.52 2324.68,-2375.78"/>
+<polygon fill="lightpink" stroke="lightpink" points="2325.29,-2379.23 2334.76,-2374.5 2324.4,-2372.29 2325.29,-2379.23"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;ComputeIntermediateSatelliteAssemblies1 -->
 <g id="edge334" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;ComputeIntermediateSatelliteAssemblies1</title>
-<path fill="none" stroke="black" d="M728.94,-2837.95C727.26,-2805.43 725.09,-2732.37 735,-2672 747.5,-2595.84 725.72,-2554.2 786,-2506 931.99,-2389.28 2258.7,-2395.23 2489.21,-2375.95"/>
-<polygon fill="black" stroke="black" points="2489.71,-2379.42 2499.35,-2375.01 2489.07,-2372.45 2489.71,-2379.42"/>
+<path fill="none" stroke="lightpink" d="M728.94,-2837.95C727.26,-2805.43 725.09,-2732.37 735,-2672 747.5,-2595.84 725.72,-2554.2 786,-2506 931.99,-2389.28 2258.7,-2395.23 2489.21,-2375.95"/>
+<polygon fill="lightpink" stroke="lightpink" points="2489.71,-2379.42 2499.35,-2375.01 2489.07,-2372.45 2489.71,-2379.42"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;PrepareForPublish1 -->
 <g id="edge336" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;PrepareForPublish1</title>
-<path fill="none" stroke="black" d="M680.83,-2837.88C628.19,-2816.6 547.47,-2774.7 512,-2708 504.49,-2693.87 505.6,-2686.67 512,-2672 545.94,-2594.17 593.59,-2603.63 652,-2542 666.33,-2526.88 663.67,-2515.9 682,-2506 1127.98,-2265.16 1315.58,-2462.51 1815,-2376 1816.3,-2375.78 1817.61,-2375.54 1818.93,-2375.3"/>
-<polygon fill="black" stroke="black" points="1820,-2378.66 1829.15,-2373.31 1818.67,-2371.78 1820,-2378.66"/>
+<path fill="none" stroke="lightpink" d="M680.83,-2837.88C628.19,-2816.6 547.47,-2774.7 512,-2708 504.49,-2693.87 505.6,-2686.67 512,-2672 545.94,-2594.17 593.59,-2603.63 652,-2542 666.33,-2526.88 663.67,-2515.9 682,-2506 1127.98,-2265.16 1315.58,-2462.51 1815,-2376 1816.3,-2375.78 1817.61,-2375.54 1818.93,-2375.3"/>
+<polygon fill="lightpink" stroke="lightpink" points="1820,-2378.66 1829.15,-2373.31 1818.67,-2371.78 1820,-2378.66"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;ComputeAndCopyFilesToPublishDirectory1 -->
 <g id="edge337" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;ComputeAndCopyFilesToPublishDirectory1</title>
-<path fill="none" stroke="black" d="M691.03,-2837.91C622.14,-2807.7 479.03,-2744.95 404.11,-2712.09"/>
-<polygon fill="black" stroke="black" points="405.44,-2708.86 394.88,-2708.05 402.63,-2715.27 405.44,-2708.86"/>
+<path fill="none" stroke="lightpink" d="M691.03,-2837.91C622.14,-2807.7 479.03,-2744.95 404.11,-2712.09"/>
+<polygon fill="lightpink" stroke="lightpink" points="405.44,-2708.86 394.88,-2708.05 402.63,-2715.27 405.44,-2708.86"/>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;PublishItemsOutputGroup1 -->
 <g id="edge338" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;PublishItemsOutputGroup1</title>
-<path fill="none" stroke="black" d="M716.44,-2837.76C693.54,-2808.65 647.12,-2749.63 620.65,-2715.98"/>
-<polygon fill="black" stroke="black" points="623.31,-2713.71 614.38,-2708.01 617.81,-2718.03 623.31,-2713.71"/>
+<path fill="none" stroke="lightpink" d="M716.44,-2837.76C693.54,-2808.65 647.12,-2749.63 620.65,-2715.98"/>
+<polygon fill="lightpink" stroke="lightpink" points="623.31,-2713.71 614.38,-2708.01 617.81,-2718.03 623.31,-2713.71"/>
 </g>
 <!-- _PreventProjectReferencesFromBuilding1 -->
 <g id="node225" class="node">
 <title>_PreventProjectReferencesFromBuilding1</title>
-<polygon fill="sandybrown" stroke="black" points="1019,-2708 779,-2708 779,-2672 1019,-2672 1019,-2708"/>
+<polygon fill="lightpink" stroke="purple" stroke-width="8" points="1019,-2708 779,-2708 779,-2672 1019,-2672 1019,-2708"/>
 <text text-anchor="start" x="787" y="-2686.3" font-family="Times,serif" font-size="14.00">_PreventProjectReferencesFromBuilding</text>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;_PreventProjectReferencesFromBuilding1 -->
 <g id="edge331" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;_PreventProjectReferencesFromBuilding1</title>
-<path fill="none" stroke="black" d="M747.77,-2837.76C778.02,-2808.4 839.61,-2748.63 874.13,-2715.13"/>
-<polygon fill="black" stroke="black" points="876.73,-2717.49 881.47,-2708.01 871.86,-2712.46 876.73,-2717.49"/>
+<path fill="none" stroke="lightpink" d="M747.77,-2837.76C778.02,-2808.4 839.61,-2748.63 874.13,-2715.13"/>
+<polygon fill="lightpink" stroke="lightpink" points="876.73,-2717.49 881.47,-2708.01 871.86,-2712.46 876.73,-2717.49"/>
 </g>
 <!-- ComputeEmbeddedApphostPaths1 -->
 <g id="node226" class="node">
 <title>ComputeEmbeddedApphostPaths1</title>
-<polygon fill="sandybrown" stroke="black" points="1237,-2708 1037,-2708 1037,-2672 1237,-2672 1237,-2708"/>
+<polygon fill="lightpink" stroke="purple" stroke-width="8" points="1237,-2708 1037,-2708 1037,-2672 1237,-2672 1237,-2708"/>
 <text text-anchor="start" x="1045" y="-2686.3" font-family="Times,serif" font-size="14.00">ComputeEmbeddedApphostPaths</text>
 </g>
 <!-- _PublishNoBuildAlternative1&#45;&gt;ComputeEmbeddedApphostPaths1 -->
 <g id="edge335" class="edge">
 <title>_PublishNoBuildAlternative1&#45;&gt;ComputeEmbeddedApphostPaths1</title>
-<path fill="none" stroke="black" d="M772.4,-2837.91C847.53,-2807.64 1003.75,-2744.69 1085.15,-2711.89"/>
-<polygon fill="black" stroke="black" points="1086.72,-2715.03 1094.69,-2708.05 1084.11,-2708.54 1086.72,-2715.03"/>
+<path fill="none" stroke="lightpink" d="M772.4,-2837.91C847.53,-2807.64 1003.75,-2744.69 1085.15,-2711.89"/>
+<polygon fill="lightpink" stroke="lightpink" points="1086.72,-2715.03 1094.69,-2708.05 1084.11,-2708.54 1086.72,-2715.03"/>
 </g>
 <!-- PrepareForPublish1&#45;&gt;_CheckForLanguageAndPublishFeatureCombinationSupport1 -->
 <g id="edge549" class="edge">
 <title>PrepareForPublish1&#45;&gt;_CheckForLanguageAndPublishFeatureCombinationSupport1</title>
-<path fill="none" stroke="sandybrown" d="M1897.15,-2339.76C1912.46,-2310.89 1943.37,-2252.63 1961.29,-2218.85"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1964.38,-2220.48 1965.98,-2210.01 1958.2,-2217.2 1964.38,-2220.48"/>
+<path fill="none" stroke="lightpink" d="M1897.15,-2339.76C1912.46,-2310.89 1943.37,-2252.63 1961.29,-2218.85"/>
+<polygon fill="lightpink" stroke="lightpink" points="1964.38,-2220.48 1965.98,-2210.01 1958.2,-2217.2 1964.38,-2220.48"/>
 </g>
 <!-- ComputeFilesToPublish1 -->
 <g id="node354" class="node">
 <title>ComputeFilesToPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="383.5,-2542 234.5,-2542 234.5,-2506 383.5,-2506 383.5,-2542"/>
+<polygon fill="lightpink" stroke="black" points="383.5,-2542 234.5,-2542 234.5,-2506 383.5,-2506 383.5,-2542"/>
 <text text-anchor="start" x="242.5" y="-2520.3" font-family="Times,serif" font-size="14.00">ComputeFilesToPublish</text>
 </g>
 <!-- ComputeAndCopyFilesToPublishDirectory1&#45;&gt;ComputeFilesToPublish1 -->
 <g id="edge550" class="edge">
 <title>ComputeAndCopyFilesToPublishDirectory1&#45;&gt;ComputeFilesToPublish1</title>
-<path fill="none" stroke="sandybrown" d="M351.06,-2671.76C342.86,-2643.14 326.37,-2585.63 316.66,-2551.72"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="319.99,-2550.66 313.87,-2542.01 313.27,-2552.59 319.99,-2550.66"/>
+<path fill="none" stroke="lightpink" d="M351.06,-2671.76C342.86,-2643.14 326.37,-2585.63 316.66,-2551.72"/>
+<polygon fill="lightpink" stroke="lightpink" points="319.99,-2550.66 313.87,-2542.01 313.27,-2552.59 319.99,-2550.66"/>
 </g>
 <!-- CopyFilesToPublishDirectory1 -->
 <g id="node355" class="node">
 <title>CopyFilesToPublishDirectory1</title>
-<polygon fill="sandybrown" stroke="black" points="195.5,-2542 16.5,-2542 16.5,-2506 195.5,-2506 195.5,-2542"/>
+<polygon fill="lightpink" stroke="black" points="195.5,-2542 16.5,-2542 16.5,-2506 195.5,-2506 195.5,-2542"/>
 <text text-anchor="start" x="24.5" y="-2520.3" font-family="Times,serif" font-size="14.00">CopyFilesToPublishDirectory</text>
 </g>
 <!-- ComputeAndCopyFilesToPublishDirectory1&#45;&gt;CopyFilesToPublishDirectory1 -->
 <g id="edge551" class="edge">
 <title>ComputeAndCopyFilesToPublishDirectory1&#45;&gt;CopyFilesToPublishDirectory1</title>
-<path fill="none" stroke="sandybrown" d="M329.72,-2671.76C284.3,-2641.97 191.16,-2580.87 140.56,-2547.67"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="142.21,-2544.57 131.93,-2542.01 138.37,-2550.42 142.21,-2544.57"/>
+<path fill="none" stroke="lightpink" d="M329.72,-2671.76C284.3,-2641.97 191.16,-2580.87 140.56,-2547.67"/>
+<polygon fill="lightpink" stroke="lightpink" points="142.21,-2544.57 131.93,-2542.01 138.37,-2550.42 142.21,-2544.57"/>
 </g>
 <!-- PublishItemsOutputGroup1&#45;&gt;ResolveReferences1 -->
 <g id="edge552" class="edge">
 <title>PublishItemsOutputGroup1&#45;&gt;ResolveReferences1</title>
-<path fill="none" stroke="sandybrown" d="M662.74,-2671.95C753.96,-2646.3 929.74,-2595.1 1076,-2542 1114.95,-2527.86 1121.53,-2514.89 1162,-2506 1941.48,-2334.7 3954.76,-2430.18 4751,-2376 4783.84,-2373.77 4820.14,-2370.27 4850.74,-2367.04"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="4851.32,-2370.49 4860.89,-2365.95 4850.57,-2363.53 4851.32,-2370.49"/>
+<path fill="none" stroke="lightpink" d="M662.74,-2671.95C753.96,-2646.3 929.74,-2595.1 1076,-2542 1114.95,-2527.86 1121.53,-2514.89 1162,-2506 1941.48,-2334.7 3954.76,-2430.18 4751,-2376 4783.84,-2373.77 4820.14,-2370.27 4850.74,-2367.04"/>
+<polygon fill="lightpink" stroke="lightpink" points="4851.32,-2370.49 4860.89,-2365.95 4850.57,-2363.53 4851.32,-2370.49"/>
 </g>
 <!-- ComputeResolvedFilesToPublishList1 -->
 <g id="node356" class="node">
 <title>ComputeResolvedFilesToPublishList1</title>
-<polygon fill="sandybrown" stroke="black" points="1791,-2376 1571,-2376 1571,-2340 1791,-2340 1791,-2376"/>
+<polygon fill="lightpink" stroke="black" points="1791,-2376 1571,-2376 1571,-2340 1791,-2340 1791,-2376"/>
 <text text-anchor="start" x="1579" y="-2354.3" font-family="Times,serif" font-size="14.00">ComputeResolvedFilesToPublishList</text>
 </g>
 <!-- PublishItemsOutputGroup1&#45;&gt;ComputeResolvedFilesToPublishList1 -->
 <g id="edge553" class="edge">
 <title>PublishItemsOutputGroup1&#45;&gt;ComputeResolvedFilesToPublishList1</title>
-<path fill="none" stroke="sandybrown" d="M559.02,-2671.9C487.52,-2640.45 355.2,-2570.71 413,-2506 582.01,-2316.79 1288.85,-2406.27 1560.54,-2376.08"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1561.28,-2379.52 1570.8,-2374.86 1560.45,-2372.57 1561.28,-2379.52"/>
+<path fill="none" stroke="lightpink" d="M559.02,-2671.9C487.52,-2640.45 355.2,-2570.71 413,-2506 582.01,-2316.79 1288.85,-2406.27 1560.54,-2376.08"/>
+<polygon fill="lightpink" stroke="lightpink" points="1561.28,-2379.52 1570.8,-2374.86 1560.45,-2372.57 1561.28,-2379.52"/>
 </g>
 <!-- _ComputeFilesToBundle1 -->
 <g id="node357" class="node">
 <title>_ComputeFilesToBundle1</title>
-<polygon fill="sandybrown" stroke="black" points="2341,-2210 2187,-2210 2187,-2174 2341,-2174 2341,-2210"/>
+<polygon fill="lightpink" stroke="black" points="2341,-2210 2187,-2210 2187,-2174 2341,-2174 2341,-2210"/>
 <text text-anchor="start" x="2195" y="-2188.3" font-family="Times,serif" font-size="14.00">_ComputeFilesToBundle</text>
 </g>
 <!-- PublishItemsOutputGroup1&#45;&gt;_ComputeFilesToBundle1 -->
 <g id="edge554" class="edge">
 <title>PublishItemsOutputGroup1&#45;&gt;_ComputeFilesToBundle1</title>
-<path fill="none" stroke="sandybrown" d="M606.59,-2671.96C619.85,-2634.55 657.06,-2545.45 722,-2506 1192.97,-2219.95 1431.91,-2549.27 1955,-2376 2066.85,-2338.95 2181.95,-2256.88 2234.55,-2216.44"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2236.98,-2218.98 2242.74,-2210.09 2232.7,-2213.45 2236.98,-2218.98"/>
+<path fill="none" stroke="lightpink" d="M606.59,-2671.96C619.85,-2634.55 657.06,-2545.45 722,-2506 1192.97,-2219.95 1431.91,-2549.27 1955,-2376 2066.85,-2338.95 2181.95,-2256.88 2234.55,-2216.44"/>
+<polygon fill="lightpink" stroke="lightpink" points="2236.98,-2218.98 2242.74,-2210.09 2232.7,-2213.45 2236.98,-2218.98"/>
 </g>
 <!-- _DeploymentUnpublishable1 -->
 <g id="node227" class="node">
@@ -3884,152 +3884,152 @@
 <!-- SetGenerateManifests1 -->
 <g id="node228" class="node">
 <title>SetGenerateManifests1</title>
-<polygon fill="lightpink" stroke="black" points="2983.5,-3206 2846.5,-3206 2846.5,-3170 2983.5,-3170 2983.5,-3206"/>
+<polygon fill="none" stroke="black" points="2983.5,-3206 2846.5,-3206 2846.5,-3170 2983.5,-3170 2983.5,-3206"/>
 <text text-anchor="start" x="2854.5" y="-3184.3" font-family="Times,serif" font-size="14.00">SetGenerateManifests</text>
 </g>
 <!-- PublishOnly1 -->
 <g id="node229" class="node">
 <title>PublishOnly1</title>
-<polygon fill="lightpink" stroke="black" points="3001,-3372 2917,-3372 2917,-3336 3001,-3336 3001,-3372"/>
+<polygon fill="none" stroke="black" points="3001,-3372 2917,-3372 2917,-3336 3001,-3336 3001,-3372"/>
 <text text-anchor="start" x="2925" y="-3350.3" font-family="Times,serif" font-size="14.00">PublishOnly</text>
 </g>
 <!-- PublishOnly1&#45;&gt;ResolveKeySource1 -->
 <g id="edge346" class="edge">
 <title>PublishOnly1&#45;&gt;ResolveKeySource1</title>
-<path fill="none" stroke="lightpink" d="M2995.26,-3335.89C3059.16,-3303.55 3180.07,-3231.23 3125,-3170 2985.72,-3015.14 2365.82,-3187.24 2193,-3071 2095.49,-3005.41 2144.84,-2926.91 2068,-2838 2027.49,-2791.12 1900.46,-2697.51 1844,-2672 1589.12,-2556.84 1047.57,-2711.76 1237,-2506 1474.11,-2248.44 2502.15,-2548.11 2807,-2376 2824.19,-2366.3 2816.21,-2350.38 2833,-2340 3137.14,-2151.94 3283.16,-2308.21 3627,-2210 3777.86,-2166.91 3946.66,-2087.24 4024.04,-2048.83"/>
-<polygon fill="lightpink" stroke="lightpink" points="4026.07,-2051.73 4033.46,-2044.13 4022.95,-2045.46 4026.07,-2051.73"/>
+<path fill="none" stroke="black" d="M2995.26,-3335.89C3059.16,-3303.55 3180.07,-3231.23 3125,-3170 2985.72,-3015.14 2365.82,-3187.24 2193,-3071 2095.49,-3005.41 2144.84,-2926.91 2068,-2838 2027.49,-2791.12 1900.46,-2697.51 1844,-2672 1589.12,-2556.84 1047.57,-2711.76 1237,-2506 1474.11,-2248.44 2502.15,-2548.11 2807,-2376 2824.19,-2366.3 2816.21,-2350.38 2833,-2340 3137.14,-2151.94 3283.16,-2308.21 3627,-2210 3777.86,-2166.91 3946.66,-2087.24 4024.04,-2048.83"/>
+<polygon fill="black" stroke="black" points="4026.07,-2051.73 4033.46,-2044.13 4022.95,-2045.46 4026.07,-2051.73"/>
 </g>
 <!-- PublishOnly1&#45;&gt;GenerateManifests1 -->
 <g id="edge342" class="edge">
 <title>PublishOnly1&#45;&gt;GenerateManifests1</title>
-<path fill="none" stroke="lightpink" d="M2961.96,-3335.8C2969.3,-3295.01 2989.46,-3194 3013,-3170 3119.9,-3061.02 3306.89,-3032.63 3408.12,-3025.37"/>
-<polygon fill="lightpink" stroke="lightpink" points="3408.5,-3028.85 3418.24,-3024.7 3408.03,-3021.87 3408.5,-3028.85"/>
+<path fill="none" stroke="black" d="M2961.96,-3335.8C2969.3,-3295.01 2989.46,-3194 3013,-3170 3119.9,-3061.02 3306.89,-3032.63 3408.12,-3025.37"/>
+<polygon fill="black" stroke="black" points="3408.5,-3028.85 3418.24,-3024.7 3408.03,-3021.87 3408.5,-3028.85"/>
 </g>
 <!-- PublishOnly1&#45;&gt;CopyFilesToOutputDirectory1 -->
 <g id="edge343" class="edge">
 <title>PublishOnly1&#45;&gt;CopyFilesToOutputDirectory1</title>
-<path fill="none" stroke="lightpink" d="M3001.08,-3343.89C3106.98,-3318.89 3387.35,-3239.58 3546,-3071 3622.64,-2989.56 3562.06,-2917.22 3641,-2838 3777.73,-2700.78 3855.15,-2715.11 4044,-2672 5010.31,-2451.42 5288.1,-2654.67 6277.71,-2541.94"/>
-<polygon fill="lightpink" stroke="lightpink" points="6278.38,-2545.38 6287.92,-2540.77 6277.59,-2538.43 6278.38,-2545.38"/>
+<path fill="none" stroke="black" d="M3001.08,-3343.89C3106.98,-3318.89 3387.35,-3239.58 3546,-3071 3622.64,-2989.56 3562.06,-2917.22 3641,-2838 3777.73,-2700.78 3855.15,-2715.11 4044,-2672 5010.31,-2451.42 5288.1,-2654.67 6277.71,-2541.94"/>
+<polygon fill="black" stroke="black" points="6278.38,-2545.38 6287.92,-2540.77 6277.59,-2538.43 6278.38,-2545.38"/>
 </g>
 <!-- PublishOnly1&#45;&gt;SetGenerateManifests1 -->
 <g id="edge339" class="edge">
 <title>PublishOnly1&#45;&gt;SetGenerateManifests1</title>
-<path fill="none" stroke="lightpink" d="M2954.37,-3335.76C2946.7,-3307.14 2931.27,-3249.63 2922.17,-3215.72"/>
-<polygon fill="lightpink" stroke="lightpink" points="2925.54,-3214.76 2919.56,-3206.01 2918.77,-3216.58 2925.54,-3214.76"/>
+<path fill="none" stroke="black" d="M2954.37,-3335.76C2946.7,-3307.14 2931.27,-3249.63 2922.17,-3215.72"/>
+<polygon fill="black" stroke="black" points="2925.54,-3214.76 2919.56,-3206.01 2918.77,-3216.58 2925.54,-3214.76"/>
 </g>
 <!-- PublishBuild1 -->
 <g id="node230" class="node">
 <title>PublishBuild1</title>
-<polygon fill="lightpink" stroke="black" points="3241.5,-3206 3154.5,-3206 3154.5,-3170 3241.5,-3170 3241.5,-3206"/>
+<polygon fill="none" stroke="black" points="3241.5,-3206 3154.5,-3206 3154.5,-3170 3241.5,-3170 3241.5,-3206"/>
 <text text-anchor="start" x="3162.5" y="-3184.3" font-family="Times,serif" font-size="14.00">PublishBuild</text>
 </g>
 <!-- PublishOnly1&#45;&gt;PublishBuild1 -->
 <g id="edge340" class="edge">
 <title>PublishOnly1&#45;&gt;PublishBuild1</title>
-<path fill="none" stroke="lightpink" d="M2984.13,-3335.76C3027.54,-3305.97 3116.58,-3244.87 3164.96,-3211.67"/>
-<polygon fill="lightpink" stroke="lightpink" points="3166.95,-3214.55 3173.21,-3206.01 3162.99,-3208.78 3166.95,-3214.55"/>
+<path fill="none" stroke="black" d="M2984.13,-3335.76C3027.54,-3305.97 3116.58,-3244.87 3164.96,-3211.67"/>
+<polygon fill="black" stroke="black" points="3166.95,-3214.55 3173.21,-3206.01 3162.99,-3208.78 3166.95,-3214.55"/>
 </g>
 <!-- BeforePublish1 -->
 <g id="node231" class="node">
 <title>BeforePublish1</title>
-<polygon fill="lightpink" stroke="black" points="3116,-3206 3022,-3206 3022,-3170 3116,-3170 3116,-3206"/>
+<polygon fill="none" stroke="black" points="3116,-3206 3022,-3206 3022,-3170 3116,-3170 3116,-3206"/>
 <text text-anchor="start" x="3030" y="-3184.3" font-family="Times,serif" font-size="14.00">BeforePublish</text>
 </g>
 <!-- PublishOnly1&#45;&gt;BeforePublish1 -->
 <g id="edge341" class="edge">
 <title>PublishOnly1&#45;&gt;BeforePublish1</title>
-<path fill="none" stroke="lightpink" d="M2970.56,-3335.76C2990.01,-3306.77 3029.34,-3248.13 3051.95,-3214.41"/>
-<polygon fill="lightpink" stroke="lightpink" points="3054.93,-3216.26 3057.59,-3206.01 3049.11,-3212.37 3054.93,-3216.26"/>
+<path fill="none" stroke="black" d="M2970.56,-3335.76C2990.01,-3306.77 3029.34,-3248.13 3051.95,-3214.41"/>
+<polygon fill="black" stroke="black" points="3054.93,-3216.26 3057.59,-3206.01 3049.11,-3212.37 3054.93,-3216.26"/>
 </g>
 <!-- _CopyFilesToPublishFolder1 -->
 <g id="node232" class="node">
 <title>_CopyFilesToPublishFolder1</title>
-<polygon fill="lightpink" stroke="black" points="2237,-3206 2067,-3206 2067,-3170 2237,-3170 2237,-3206"/>
+<polygon fill="none" stroke="black" points="2237,-3206 2067,-3206 2067,-3170 2237,-3170 2237,-3206"/>
 <text text-anchor="start" x="2075" y="-3184.3" font-family="Times,serif" font-size="14.00">_CopyFilesToPublishFolder</text>
 </g>
 <!-- PublishOnly1&#45;&gt;_CopyFilesToPublishFolder1 -->
 <g id="edge344" class="edge">
 <title>PublishOnly1&#45;&gt;_CopyFilesToPublishFolder1</title>
-<path fill="none" stroke="lightpink" d="M2916.75,-3344.41C2791.64,-3318.99 2420.93,-3243.65 2245.73,-3208.05"/>
-<polygon fill="lightpink" stroke="lightpink" points="2246.25,-3204.58 2235.75,-3206.02 2244.85,-3211.44 2246.25,-3204.58"/>
+<path fill="none" stroke="black" d="M2916.75,-3344.41C2791.64,-3318.99 2420.93,-3243.65 2245.73,-3208.05"/>
+<polygon fill="black" stroke="black" points="2246.25,-3204.58 2235.75,-3206.02 2244.85,-3211.44 2246.25,-3204.58"/>
 </g>
 <!-- _DeploymentGenerateBootstrapper1 -->
 <g id="node233" class="node">
 <title>_DeploymentGenerateBootstrapper1</title>
-<polygon fill="lightpink" stroke="black" points="2464.5,-3206 2255.5,-3206 2255.5,-3170 2464.5,-3170 2464.5,-3206"/>
+<polygon fill="none" stroke="black" points="2464.5,-3206 2255.5,-3206 2255.5,-3170 2464.5,-3170 2464.5,-3206"/>
 <text text-anchor="start" x="2263.5" y="-3184.3" font-family="Times,serif" font-size="14.00">_DeploymentGenerateBootstrapper</text>
 </g>
 <!-- PublishOnly1&#45;&gt;_DeploymentGenerateBootstrapper1 -->
 <g id="edge345" class="edge">
 <title>PublishOnly1&#45;&gt;_DeploymentGenerateBootstrapper1</title>
-<path fill="none" stroke="lightpink" d="M2916.88,-3341.47C2815.76,-3313.78 2558.33,-3243.3 2432.06,-3208.73"/>
-<polygon fill="lightpink" stroke="lightpink" points="2432.67,-3205.27 2422.1,-3206 2430.82,-3212.02 2432.67,-3205.27"/>
+<path fill="none" stroke="black" d="M2916.88,-3341.47C2815.76,-3313.78 2558.33,-3243.3 2432.06,-3208.73"/>
+<polygon fill="black" stroke="black" points="2432.67,-3205.27 2422.1,-3206 2430.82,-3212.02 2432.67,-3205.27"/>
 </g>
 <!-- _DeploymentSignClickOnceDeployment1 -->
 <g id="node234" class="node">
 <title>_DeploymentSignClickOnceDeployment1</title>
-<polygon fill="lightpink" stroke="black" points="2723.5,-3206 2482.5,-3206 2482.5,-3170 2723.5,-3170 2723.5,-3206"/>
+<polygon fill="none" stroke="black" points="2723.5,-3206 2482.5,-3206 2482.5,-3170 2723.5,-3170 2723.5,-3206"/>
 <text text-anchor="start" x="2490.5" y="-3184.3" font-family="Times,serif" font-size="14.00">_DeploymentSignClickOnceDeployment</text>
 </g>
 <!-- PublishOnly1&#45;&gt;_DeploymentSignClickOnceDeployment1 -->
 <g id="edge347" class="edge">
 <title>PublishOnly1&#45;&gt;_DeploymentSignClickOnceDeployment1</title>
-<path fill="none" stroke="lightpink" d="M2921.91,-3335.91C2856.46,-3305.76 2720.67,-3243.21 2649.23,-3210.3"/>
-<polygon fill="lightpink" stroke="lightpink" points="2650.55,-3207.05 2640.01,-3206.05 2647.63,-3213.41 2650.55,-3207.05"/>
+<path fill="none" stroke="black" d="M2921.91,-3335.91C2856.46,-3305.76 2720.67,-3243.21 2649.23,-3210.3"/>
+<polygon fill="black" stroke="black" points="2650.55,-3207.05 2640.01,-3206.05 2647.63,-3213.41 2650.55,-3207.05"/>
 </g>
 <!-- AfterPublish1 -->
 <g id="node235" class="node">
 <title>AfterPublish1</title>
-<polygon fill="lightpink" stroke="black" points="2828,-3206 2742,-3206 2742,-3170 2828,-3170 2828,-3206"/>
+<polygon fill="none" stroke="black" points="2828,-3206 2742,-3206 2742,-3170 2828,-3170 2828,-3206"/>
 <text text-anchor="start" x="2750" y="-3184.3" font-family="Times,serif" font-size="14.00">AfterPublish</text>
 </g>
 <!-- PublishOnly1&#45;&gt;AfterPublish1 -->
 <g id="edge348" class="edge">
 <title>PublishOnly1&#45;&gt;AfterPublish1</title>
-<path fill="none" stroke="lightpink" d="M2940.71,-3335.76C2909.56,-3306.4 2846.15,-3246.63 2810.61,-3213.13"/>
-<polygon fill="lightpink" stroke="lightpink" points="2812.72,-3210.32 2803.05,-3206.01 2807.92,-3215.42 2812.72,-3210.32"/>
+<path fill="none" stroke="black" d="M2940.71,-3335.76C2909.56,-3306.4 2846.15,-3246.63 2810.61,-3213.13"/>
+<polygon fill="black" stroke="black" points="2812.72,-3210.32 2803.05,-3206.01 2807.92,-3215.42 2812.72,-3210.32"/>
 </g>
 <!-- PublishBuild1&#45;&gt;PrepareForBuild1 -->
 <g id="edge350" class="edge">
 <title>PublishBuild1&#45;&gt;PrepareForBuild1</title>
-<path fill="none" stroke="lightpink" d="M3154.36,-3174.64C3067.73,-3149.98 2876.89,-3094.96 2813,-3071 2596.95,-2989.98 2340,-3087.74 2340,-2857 2340,-2857 2340,-2857 2340,-2689 2340,-2648.27 2322.5,-2536.04 2350,-2506 2623.76,-2206.9 2894.46,-2565.36 3253,-2376 3272.19,-2365.86 3267.73,-2351.72 3286,-2340 3444.4,-2238.37 3529.03,-2309.14 3689,-2210 3776.62,-2155.69 3797.6,-2132.18 3851,-2044 3899.92,-1963.21 3853.11,-1911.56 3917,-1842 3956.78,-1798.69 4111.79,-1743.72 4200.59,-1714.82"/>
-<polygon fill="lightpink" stroke="lightpink" points="4201.85,-1718.09 4210.29,-1711.69 4199.69,-1711.43 4201.85,-1718.09"/>
+<path fill="none" stroke="black" d="M3154.36,-3174.64C3067.73,-3149.98 2876.89,-3094.96 2813,-3071 2596.95,-2989.98 2340,-3087.74 2340,-2857 2340,-2857 2340,-2857 2340,-2689 2340,-2648.27 2322.5,-2536.04 2350,-2506 2623.76,-2206.9 2894.46,-2565.36 3253,-2376 3272.19,-2365.86 3267.73,-2351.72 3286,-2340 3444.4,-2238.37 3529.03,-2309.14 3689,-2210 3776.62,-2155.69 3797.6,-2132.18 3851,-2044 3899.92,-1963.21 3853.11,-1911.56 3917,-1842 3956.78,-1798.69 4111.79,-1743.72 4200.59,-1714.82"/>
+<polygon fill="black" stroke="black" points="4201.85,-1718.09 4210.29,-1711.69 4199.69,-1711.43 4201.85,-1718.09"/>
 </g>
 <!-- PublishBuild1&#45;&gt;BuildOnlySettings1 -->
 <g id="edge349" class="edge">
 <title>PublishBuild1&#45;&gt;BuildOnlySettings1</title>
-<path fill="none" stroke="lightpink" d="M3154.31,-3173.98C3062.42,-3146.39 2856.77,-3083.57 2847,-3071 2788.48,-2995.73 2832,-2952.34 2832,-2857 2832,-2857 2832,-2857 2832,-2689 2832,-2607.39 2789.08,-2563.48 2847,-2506 2985.32,-2368.73 4402.84,-2401.75 4596,-2376 4602.28,-2375.16 4608.78,-2374.16 4615.28,-2373.07"/>
-<polygon fill="lightpink" stroke="lightpink" points="4616.21,-2376.46 4625.46,-2371.3 4615.01,-2369.57 4616.21,-2376.46"/>
+<path fill="none" stroke="black" d="M3154.31,-3173.98C3062.42,-3146.39 2856.77,-3083.57 2847,-3071 2788.48,-2995.73 2832,-2952.34 2832,-2857 2832,-2857 2832,-2857 2832,-2689 2832,-2607.39 2789.08,-2563.48 2847,-2506 2985.32,-2368.73 4402.84,-2401.75 4596,-2376 4602.28,-2375.16 4608.78,-2374.16 4615.28,-2373.07"/>
+<polygon fill="black" stroke="black" points="4616.21,-2376.46 4625.46,-2371.3 4615.01,-2369.57 4616.21,-2376.46"/>
 </g>
 <!-- PublishBuild1&#45;&gt;ResolveReferences1 -->
 <g id="edge351" class="edge">
 <title>PublishBuild1&#45;&gt;ResolveReferences1</title>
-<path fill="none" stroke="lightpink" d="M3154.53,-3169.92C3061.6,-3130.24 2852,-3022.4 2852,-2857 2852,-2857 2852,-2857 2852,-2689 2852,-2648.27 2833.41,-2535 2862,-2506 3009.71,-2356.19 4541.36,-2393.69 4751,-2376 4783.79,-2373.23 4820.1,-2369.67 4850.71,-2366.52"/>
-<polygon fill="lightpink" stroke="lightpink" points="4851.27,-2369.98 4860.85,-2365.47 4850.55,-2363.02 4851.27,-2369.98"/>
+<path fill="none" stroke="black" d="M3154.53,-3169.92C3061.6,-3130.24 2852,-3022.4 2852,-2857 2852,-2857 2852,-2857 2852,-2689 2852,-2648.27 2833.41,-2535 2862,-2506 3009.71,-2356.19 4541.36,-2393.69 4751,-2376 4783.79,-2373.23 4820.1,-2369.67 4850.71,-2366.52"/>
+<polygon fill="black" stroke="black" points="4851.27,-2369.98 4860.85,-2365.47 4850.55,-2363.02 4851.27,-2369.98"/>
 </g>
 <!-- PublishBuild1&#45;&gt;PrepareResources1 -->
 <g id="edge352" class="edge">
 <title>PublishBuild1&#45;&gt;PrepareResources1</title>
-<path fill="none" stroke="lightpink" d="M3241.89,-3182.82C3475.34,-3160.6 4571.4,-3056.28 4854.26,-3029.35"/>
-<polygon fill="lightpink" stroke="lightpink" points="4854.75,-3032.82 4864.37,-3028.39 4854.08,-3025.85 4854.75,-3032.82"/>
+<path fill="none" stroke="black" d="M3241.89,-3182.82C3475.34,-3160.6 4571.4,-3056.28 4854.26,-3029.35"/>
+<polygon fill="black" stroke="black" points="4854.75,-3032.82 4864.37,-3028.39 4854.08,-3025.85 4854.75,-3032.82"/>
 </g>
 <!-- PublishBuild1&#45;&gt;ResolveKeySource1 -->
 <g id="edge353" class="edge">
 <title>PublishBuild1&#45;&gt;ResolveKeySource1</title>
-<path fill="none" stroke="lightpink" d="M3154.49,-3173.42C3149.63,-3172.15 3144.73,-3170.98 3140,-3170 2786.98,-3097.06 2657.65,-3231.74 2335,-3071 2216.56,-3011.99 2128,-2989.33 2128,-2857 2128,-2857 2128,-2857 2128,-2689 2128,-2648.27 2111.12,-2536.6 2138,-2506 2346.54,-2268.59 2558.44,-2525.18 2837,-2376 2856.67,-2365.46 2852.09,-2350.07 2872,-2340 3248.72,-2149.4 3421.05,-2366.92 3813,-2210 3907.53,-2172.16 3999.73,-2091.7 4042.39,-2051.26"/>
-<polygon fill="lightpink" stroke="lightpink" points="4044.96,-2053.64 4049.76,-2044.2 4040.12,-2048.59 4044.96,-2053.64"/>
+<path fill="none" stroke="black" d="M3154.49,-3173.42C3149.63,-3172.15 3144.73,-3170.98 3140,-3170 2786.98,-3097.06 2657.65,-3231.74 2335,-3071 2216.56,-3011.99 2128,-2989.33 2128,-2857 2128,-2857 2128,-2857 2128,-2689 2128,-2648.27 2111.12,-2536.6 2138,-2506 2346.54,-2268.59 2558.44,-2525.18 2837,-2376 2856.67,-2365.46 2852.09,-2350.07 2872,-2340 3248.72,-2149.4 3421.05,-2366.92 3813,-2210 3907.53,-2172.16 3999.73,-2091.7 4042.39,-2051.26"/>
+<polygon fill="black" stroke="black" points="4044.96,-2053.64 4049.76,-2044.2 4040.12,-2048.59 4044.96,-2053.64"/>
 </g>
 <!-- PublishBuild1&#45;&gt;GenerateSerializationAssemblies1 -->
 <g id="edge354" class="edge">
 <title>PublishBuild1&#45;&gt;GenerateSerializationAssemblies1</title>
-<path fill="none" stroke="lightpink" d="M3241.65,-3179.58C3310.63,-3166.34 3447.17,-3133.96 3546,-3071 3584.71,-3046.34 3576.37,-3017.35 3617,-2996 3925.03,-2834.12 4048.56,-2926.62 4397.29,-2874.08"/>
-<polygon fill="lightpink" stroke="lightpink" points="4398.06,-2877.5 4407.41,-2872.52 4397,-2870.58 4398.06,-2877.5"/>
+<path fill="none" stroke="black" d="M3241.65,-3179.58C3310.63,-3166.34 3447.17,-3133.96 3546,-3071 3584.71,-3046.34 3576.37,-3017.35 3617,-2996 3925.03,-2834.12 4048.56,-2926.62 4397.29,-2874.08"/>
+<polygon fill="black" stroke="black" points="4398.06,-2877.5 4407.41,-2872.52 4397,-2870.58 4398.06,-2877.5"/>
 </g>
 <!-- PublishBuild1&#45;&gt;CreateSatelliteAssemblies1 -->
 <g id="edge355" class="edge">
 <title>PublishBuild1&#45;&gt;CreateSatelliteAssemblies1</title>
-<path fill="none" stroke="lightpink" d="M3241.65,-3180.34C3355,-3162.99 3667.93,-3114.69 3928,-3071 3988.54,-3060.83 4056.56,-3048.78 4109.32,-3039.3"/>
-<polygon fill="lightpink" stroke="lightpink" points="4110.1,-3042.71 4119.32,-3037.5 4108.86,-3035.82 4110.1,-3042.71"/>
+<path fill="none" stroke="black" d="M3241.65,-3180.34C3355,-3162.99 3667.93,-3114.69 3928,-3071 3988.54,-3060.83 4056.56,-3048.78 4109.32,-3039.3"/>
+<polygon fill="black" stroke="black" points="4110.1,-3042.71 4119.32,-3037.5 4108.86,-3035.82 4110.1,-3042.71"/>
 </g>
 <!-- AllProjectOutputGroups1 -->
 <g id="node236" class="node">
@@ -5306,20 +5306,20 @@
 <!-- _ComputeUseBuildDependencyFile1&#45;&gt;_ComputePackageReferencePublish1 -->
 <g id="edge487" class="edge">
 <title>_ComputeUseBuildDependencyFile1&#45;&gt;_ComputePackageReferencePublish1</title>
-<path fill="none" stroke="sandybrown" d="M1482.23,-1011.66C1483.98,-953.76 1497.86,-765.5 1603,-672 1681,-602.64 1972.45,-562.07 2138.41,-544.12"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2139.1,-547.56 2148.67,-543.02 2138.35,-540.6 2139.1,-547.56"/>
+<path fill="none" stroke="lightpink" d="M1482.23,-1011.66C1483.98,-953.76 1497.86,-765.5 1603,-672 1681,-602.64 1972.45,-562.07 2138.41,-544.12"/>
+<polygon fill="lightpink" stroke="lightpink" points="2139.1,-547.56 2148.67,-543.02 2138.35,-540.6 2139.1,-547.56"/>
 </g>
 <!-- _ParseTargetManifestFiles1 -->
 <g id="node319" class="node">
 <title>_ParseTargetManifestFiles1</title>
-<polygon fill="sandybrown" stroke="black" points="1790.5,-882 1627.5,-882 1627.5,-846 1790.5,-846 1790.5,-882"/>
+<polygon fill="lightpink" stroke="black" points="1790.5,-882 1627.5,-882 1627.5,-846 1790.5,-846 1790.5,-882"/>
 <text text-anchor="start" x="1635.5" y="-860.3" font-family="Times,serif" font-size="14.00">_ParseTargetManifestFiles</text>
 </g>
 <!-- _ComputeUseBuildDependencyFile1&#45;&gt;_ParseTargetManifestFiles1 -->
 <g id="edge488" class="edge">
 <title>_ComputeUseBuildDependencyFile1&#45;&gt;_ParseTargetManifestFiles1</title>
-<path fill="none" stroke="sandybrown" d="M1505.86,-1011.76C1547.01,-982.03 1631.32,-921.12 1677.33,-887.88"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1679.4,-890.7 1685.46,-882.01 1675.3,-885.03 1679.4,-890.7"/>
+<path fill="none" stroke="lightpink" d="M1505.86,-1011.76C1547.01,-982.03 1631.32,-921.12 1677.33,-887.88"/>
+<polygon fill="lightpink" stroke="lightpink" points="1679.4,-890.7 1685.46,-882.01 1675.3,-885.03 1679.4,-890.7"/>
 </g>
 <!-- _GetAppHostPaths1&#45;&gt;ResolvePackageAssets1 -->
 <g id="edge490" class="edge">
@@ -5744,7 +5744,7 @@
 <!-- _ComputeResolvedCopyLocalPublishAssets1 -->
 <g id="node344" class="node">
 <title>_ComputeResolvedCopyLocalPublishAssets1</title>
-<polygon fill="sandybrown" stroke="black" points="2619,-2210 2359,-2210 2359,-2174 2619,-2174 2619,-2210"/>
+<polygon fill="lightpink" stroke="black" points="2619,-2210 2359,-2210 2359,-2174 2619,-2174 2619,-2210"/>
 <text text-anchor="start" x="2367" y="-2188.3" font-family="Times,serif" font-size="14.00">_ComputeResolvedCopyLocalPublishAssets</text>
 </g>
 <!-- ComputeFilesToStore1&#45;&gt;_ComputeResolvedCopyLocalPublishAssets1 -->
@@ -5756,7 +5756,7 @@
 <!-- _ComputeCopyToPublishDirectoryItems1 -->
 <g id="node345" class="node">
 <title>_ComputeCopyToPublishDirectoryItems1</title>
-<polygon fill="sandybrown" stroke="black" points="2878.5,-2210 2637.5,-2210 2637.5,-2174 2878.5,-2174 2878.5,-2210"/>
+<polygon fill="lightpink" stroke="black" points="2878.5,-2210 2637.5,-2210 2637.5,-2174 2878.5,-2174 2878.5,-2210"/>
 <text text-anchor="start" x="2645.5" y="-2188.3" font-family="Times,serif" font-size="14.00">_ComputeCopyToPublishDirectoryItems</text>
 </g>
 <!-- ComputeFilesToStore1&#45;&gt;_ComputeCopyToPublishDirectoryItems1 -->
@@ -5774,32 +5774,32 @@
 <!-- _ResolveCopyLocalAssetsForPublish1 -->
 <g id="node350" class="node">
 <title>_ResolveCopyLocalAssetsForPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="1860.5,-1214 1639.5,-1214 1639.5,-1178 1860.5,-1178 1860.5,-1214"/>
+<polygon fill="lightpink" stroke="black" points="1860.5,-1214 1639.5,-1214 1639.5,-1178 1860.5,-1178 1860.5,-1214"/>
 <text text-anchor="start" x="1647.5" y="-1192.3" font-family="Times,serif" font-size="14.00">_ResolveCopyLocalAssetsForPublish</text>
 </g>
 <!-- _ComputeResolvedCopyLocalPublishAssets1&#45;&gt;_ResolveCopyLocalAssetsForPublish1 -->
 <g id="edge538" class="edge">
 <title>_ComputeResolvedCopyLocalPublishAssets1&#45;&gt;_ResolveCopyLocalAssetsForPublish1</title>
-<path fill="none" stroke="sandybrown" d="M2412.71,-2173.96C2334.12,-2153.46 2211.28,-2112.89 2125,-2044 2109.78,-2031.85 2114.06,-2021.48 2100,-2008 2022.13,-1933.33 1956.18,-1966.86 1895,-1878 1755.62,-1675.54 1839.47,-1575.69 1785,-1336 1776.1,-1296.84 1764.51,-1251.81 1757.16,-1223.88"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1760.51,-1222.83 1754.57,-1214.06 1753.74,-1224.62 1760.51,-1222.83"/>
+<path fill="none" stroke="lightpink" d="M2412.71,-2173.96C2334.12,-2153.46 2211.28,-2112.89 2125,-2044 2109.78,-2031.85 2114.06,-2021.48 2100,-2008 2022.13,-1933.33 1956.18,-1966.86 1895,-1878 1755.62,-1675.54 1839.47,-1575.69 1785,-1336 1776.1,-1296.84 1764.51,-1251.81 1757.16,-1223.88"/>
+<polygon fill="lightpink" stroke="lightpink" points="1760.51,-1222.83 1754.57,-1214.06 1753.74,-1224.62 1760.51,-1222.83"/>
 </g>
 <!-- _FilterSatelliteResourcesForPublish1 -->
 <g id="node351" class="node">
 <title>_FilterSatelliteResourcesForPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="2091,-2044 1879,-2044 1879,-2008 2091,-2008 2091,-2044"/>
+<polygon fill="lightpink" stroke="black" points="2091,-2044 1879,-2044 1879,-2008 2091,-2008 2091,-2044"/>
 <text text-anchor="start" x="1887" y="-2022.3" font-family="Times,serif" font-size="14.00">_FilterSatelliteResourcesForPublish</text>
 </g>
 <!-- _ComputeResolvedCopyLocalPublishAssets1&#45;&gt;_FilterSatelliteResourcesForPublish1 -->
 <g id="edge539" class="edge">
 <title>_ComputeResolvedCopyLocalPublishAssets1&#45;&gt;_FilterSatelliteResourcesForPublish1</title>
-<path fill="none" stroke="sandybrown" d="M2436.49,-2173.91C2342.79,-2143.43 2147.25,-2079.8 2047.08,-2047.2"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2047.98,-2043.81 2037.39,-2044.05 2045.82,-2050.47 2047.98,-2043.81"/>
+<path fill="none" stroke="lightpink" d="M2436.49,-2173.91C2342.79,-2143.43 2147.25,-2079.8 2047.08,-2047.2"/>
+<polygon fill="lightpink" stroke="lightpink" points="2047.98,-2043.81 2037.39,-2044.05 2045.82,-2050.47 2047.98,-2043.81"/>
 </g>
 <!-- _ComputeCopyToPublishDirectoryItems1&#45;&gt;GetCopyToPublishDirectoryItems1 -->
 <g id="edge540" class="edge">
 <title>_ComputeCopyToPublishDirectoryItems1&#45;&gt;GetCopyToPublishDirectoryItems1</title>
-<path fill="none" stroke="sandybrown" d="M2707.26,-2173.91C2616.82,-2143.46 2428.16,-2079.93 2331.28,-2047.3"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2332.22,-2043.92 2321.63,-2044.05 2329.99,-2050.56 2332.22,-2043.92"/>
+<path fill="none" stroke="lightpink" d="M2707.26,-2173.91C2616.82,-2143.46 2428.16,-2079.93 2331.28,-2047.3"/>
+<polygon fill="lightpink" stroke="lightpink" points="2332.22,-2043.92 2321.63,-2044.05 2329.99,-2050.56 2332.22,-2043.92"/>
 </g>
 <!-- _SplitResolvedFiles1&#45;&gt;_GetResolvedFilesToStore1 -->
 <g id="edge537" class="edge">
@@ -5822,32 +5822,32 @@
 <!-- _ResolveCopyLocalAssetsForPublish1&#45;&gt;_DefaultMicrosoftNETPlatformLibrary1 -->
 <g id="edge592" class="edge">
 <title>_ResolveCopyLocalAssetsForPublish1&#45;&gt;_DefaultMicrosoftNETPlatformLibrary1</title>
-<path fill="none" stroke="sandybrown" d="M1748.49,-1177.89C1744.54,-1121.57 1740.06,-940.23 1835,-846 2005.38,-676.88 2738.51,-579.35 3036.42,-546.06"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="3036.85,-549.54 3046.4,-544.95 3036.07,-542.58 3036.85,-549.54"/>
+<path fill="none" stroke="lightpink" d="M1748.49,-1177.89C1744.54,-1121.57 1740.06,-940.23 1835,-846 2005.38,-676.88 2738.51,-579.35 3036.42,-546.06"/>
+<polygon fill="lightpink" stroke="lightpink" points="3036.85,-549.54 3046.4,-544.95 3036.07,-542.58 3036.85,-549.54"/>
 </g>
 <!-- _ResolveCopyLocalAssetsForPublish1&#45;&gt;_ComputePackageReferencePublish1 -->
 <g id="edge594" class="edge">
 <title>_ResolveCopyLocalAssetsForPublish1&#45;&gt;_ComputePackageReferencePublish1</title>
-<path fill="none" stroke="sandybrown" d="M1733.81,-1177.69C1687.9,-1126.41 1563.56,-971.02 1618,-846 1705.6,-644.83 1979.4,-572.11 2138.41,-546.46"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2139.38,-549.85 2148.72,-544.83 2138.29,-542.93 2139.38,-549.85"/>
+<path fill="none" stroke="lightpink" d="M1733.81,-1177.69C1687.9,-1126.41 1563.56,-971.02 1618,-846 1705.6,-644.83 1979.4,-572.11 2138.41,-546.46"/>
+<polygon fill="lightpink" stroke="lightpink" points="2139.38,-549.85 2148.72,-544.83 2138.29,-542.93 2139.38,-549.85"/>
 </g>
 <!-- _ResolveCopyLocalAssetsForPublish1&#45;&gt;ResolveRuntimePackAssets1 -->
 <g id="edge593" class="edge">
 <title>_ResolveCopyLocalAssetsForPublish1&#45;&gt;ResolveRuntimePackAssets1</title>
-<path fill="none" stroke="sandybrown" d="M1860.75,-1179.9C2095.2,-1147.94 2638.12,-1073.93 2857.99,-1043.95"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2858.77,-1047.38 2868.21,-1042.56 2857.83,-1040.44 2858.77,-1047.38"/>
+<path fill="none" stroke="lightpink" d="M1860.75,-1179.9C2095.2,-1147.94 2638.12,-1073.93 2857.99,-1043.95"/>
+<polygon fill="lightpink" stroke="lightpink" points="2858.77,-1047.38 2868.21,-1042.56 2857.83,-1040.44 2858.77,-1047.38"/>
 </g>
 <!-- _ResolveCopyLocalAssetsForPublish1&#45;&gt;ResolveLockFileCopyLocalFiles1 -->
 <g id="edge590" class="edge">
 <title>_ResolveCopyLocalAssetsForPublish1&#45;&gt;ResolveLockFileCopyLocalFiles1</title>
-<path fill="none" stroke="sandybrown" d="M1799.49,-1177.91C1887.61,-1147.49 2071.34,-1084.05 2165.92,-1051.4"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2167.31,-1054.62 2175.62,-1048.05 2165.03,-1048 2167.31,-1054.62"/>
+<path fill="none" stroke="lightpink" d="M1799.49,-1177.91C1887.61,-1147.49 2071.34,-1084.05 2165.92,-1051.4"/>
+<polygon fill="lightpink" stroke="lightpink" points="2167.31,-1054.62 2175.62,-1048.05 2165.03,-1048 2167.31,-1054.62"/>
 </g>
 <!-- _ResolveCopyLocalAssetsForPublish1&#45;&gt;_ComputeUseBuildDependencyFile1 -->
 <g id="edge591" class="edge">
 <title>_ResolveCopyLocalAssetsForPublish1&#45;&gt;_ComputeUseBuildDependencyFile1</title>
-<path fill="none" stroke="sandybrown" d="M1722.08,-1177.91C1673.31,-1148.07 1572.66,-1086.48 1518.46,-1053.31"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1520.22,-1050.28 1509.86,-1048.05 1516.56,-1056.25 1520.22,-1050.28"/>
+<path fill="none" stroke="lightpink" d="M1722.08,-1177.91C1673.31,-1148.07 1572.66,-1086.48 1518.46,-1053.31"/>
+<polygon fill="lightpink" stroke="lightpink" points="1520.22,-1050.28 1509.86,-1048.05 1516.56,-1056.25 1520.22,-1050.28"/>
 </g>
 <!-- RunCrossGen1 -->
 <g id="node353" class="node">
@@ -5864,356 +5864,356 @@
 <!-- ComputeFilesToPublish1&#45;&gt;PrepareForPublish1 -->
 <g id="edge555" class="edge">
 <title>ComputeFilesToPublish1&#45;&gt;PrepareForPublish1</title>
-<path fill="none" stroke="sandybrown" d="M383.61,-2510.17C393.48,-2508.66 403.47,-2507.22 413,-2506 1027.1,-2427.12 1187.1,-2463.71 1800,-2376 1806.27,-2375.1 1812.77,-2374.06 1819.26,-2372.94"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1820.2,-2376.33 1829.44,-2371.14 1818.98,-2369.44 1820.2,-2376.33"/>
+<path fill="none" stroke="lightpink" d="M383.61,-2510.17C393.48,-2508.66 403.47,-2507.22 413,-2506 1027.1,-2427.12 1187.1,-2463.71 1800,-2376 1806.27,-2375.1 1812.77,-2374.06 1819.26,-2372.94"/>
+<polygon fill="lightpink" stroke="lightpink" points="1820.2,-2376.33 1829.44,-2371.14 1818.98,-2369.44 1820.2,-2376.33"/>
 </g>
 <!-- ComputeFilesToPublish1&#45;&gt;ComputeResolvedFilesToPublishList1 -->
 <g id="edge556" class="edge">
 <title>ComputeFilesToPublish1&#45;&gt;ComputeResolvedFilesToPublishList1</title>
-<path fill="none" stroke="sandybrown" d="M383.71,-2508.29C388.54,-2507.48 393.33,-2506.71 398,-2506 909.44,-2428.71 1043.91,-2441.54 1560.84,-2376.13"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1561.32,-2379.6 1570.8,-2374.86 1560.44,-2372.65 1561.32,-2379.6"/>
+<path fill="none" stroke="lightpink" d="M383.71,-2508.29C388.54,-2507.48 393.33,-2506.71 398,-2506 909.44,-2428.71 1043.91,-2441.54 1560.84,-2376.13"/>
+<polygon fill="lightpink" stroke="lightpink" points="1561.32,-2379.6 1570.8,-2374.86 1560.44,-2372.65 1561.32,-2379.6"/>
 </g>
 <!-- ILLink1 -->
 <g id="node358" class="node">
 <title>ILLink1</title>
-<polygon fill="sandybrown" stroke="black" points="378.5,-2376 323.5,-2376 323.5,-2340 378.5,-2340 378.5,-2376"/>
+<polygon fill="lightpink" stroke="black" points="378.5,-2376 323.5,-2376 323.5,-2340 378.5,-2340 378.5,-2376"/>
 <text text-anchor="start" x="331.5" y="-2354.3" font-family="Times,serif" font-size="14.00">ILLink</text>
 </g>
 <!-- ComputeFilesToPublish1&#45;&gt;ILLink1 -->
 <g id="edge557" class="edge">
 <title>ComputeFilesToPublish1&#45;&gt;ILLink1</title>
-<path fill="none" stroke="sandybrown" d="M313.42,-2505.76C320.74,-2477.14 335.47,-2419.63 344.16,-2385.72"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="347.55,-2386.57 346.64,-2376.01 340.77,-2384.83 347.55,-2386.57"/>
+<path fill="none" stroke="lightpink" d="M313.42,-2505.76C320.74,-2477.14 335.47,-2419.63 344.16,-2385.72"/>
+<polygon fill="lightpink" stroke="lightpink" points="347.55,-2386.57 346.64,-2376.01 340.77,-2384.83 347.55,-2386.57"/>
 </g>
 <!-- CreateReadyToRunImages1 -->
 <g id="node359" class="node">
 <title>CreateReadyToRunImages1</title>
-<polygon fill="sandybrown" stroke="black" points="305,-2376 141,-2376 141,-2340 305,-2340 305,-2376"/>
+<polygon fill="lightpink" stroke="black" points="305,-2376 141,-2376 141,-2340 305,-2340 305,-2376"/>
 <text text-anchor="start" x="149" y="-2354.3" font-family="Times,serif" font-size="14.00">CreateReadyToRunImages</text>
 </g>
 <!-- ComputeFilesToPublish1&#45;&gt;CreateReadyToRunImages1 -->
 <g id="edge558" class="edge">
 <title>ComputeFilesToPublish1&#45;&gt;CreateReadyToRunImages1</title>
-<path fill="none" stroke="sandybrown" d="M299.96,-2505.76C284.89,-2477.02 254.53,-2419.13 236.78,-2385.28"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="239.66,-2383.24 231.92,-2376.01 233.46,-2386.49 239.66,-2383.24"/>
+<path fill="none" stroke="lightpink" d="M299.96,-2505.76C284.89,-2477.02 254.53,-2419.13 236.78,-2385.28"/>
+<polygon fill="lightpink" stroke="lightpink" points="239.66,-2383.24 231.92,-2376.01 233.46,-2386.49 239.66,-2383.24"/>
 </g>
 <!-- GeneratePublishDependencyFile1 -->
 <g id="node360" class="node">
 <title>GeneratePublishDependencyFile1</title>
-<polygon fill="sandybrown" stroke="black" points="591,-2376 397,-2376 397,-2340 591,-2340 591,-2376"/>
+<polygon fill="lightpink" stroke="black" points="591,-2376 397,-2376 397,-2340 591,-2340 591,-2376"/>
 <text text-anchor="start" x="405" y="-2354.3" font-family="Times,serif" font-size="14.00">GeneratePublishDependencyFile</text>
 </g>
 <!-- ComputeFilesToPublish1&#45;&gt;GeneratePublishDependencyFile1 -->
 <g id="edge559" class="edge">
 <title>ComputeFilesToPublish1&#45;&gt;GeneratePublishDependencyFile1</title>
-<path fill="none" stroke="sandybrown" d="M328.45,-2505.76C361.71,-2476.28 429.56,-2416.13 467.25,-2382.71"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="469.65,-2385.26 474.81,-2376.01 465.01,-2380.02 469.65,-2385.26"/>
+<path fill="none" stroke="lightpink" d="M328.45,-2505.76C361.71,-2476.28 429.56,-2416.13 467.25,-2382.71"/>
+<polygon fill="lightpink" stroke="lightpink" points="469.65,-2385.26 474.81,-2376.01 465.01,-2380.02 469.65,-2385.26"/>
 </g>
 <!-- GenerateSingleFileBundle1 -->
 <g id="node361" class="node">
 <title>GenerateSingleFileBundle1</title>
-<polygon fill="sandybrown" stroke="black" points="1553,-2376 1393,-2376 1393,-2340 1553,-2340 1553,-2376"/>
+<polygon fill="lightpink" stroke="black" points="1553,-2376 1393,-2376 1393,-2340 1553,-2340 1553,-2376"/>
 <text text-anchor="start" x="1401" y="-2354.3" font-family="Times,serif" font-size="14.00">GenerateSingleFileBundle</text>
 </g>
 <!-- ComputeFilesToPublish1&#45;&gt;GenerateSingleFileBundle1 -->
 <g id="edge560" class="edge">
 <title>ComputeFilesToPublish1&#45;&gt;GenerateSingleFileBundle1</title>
-<path fill="none" stroke="sandybrown" d="M383.73,-2508.41C388.55,-2507.56 393.34,-2506.75 398,-2506 832.18,-2435.82 944.48,-2444.04 1379,-2376 1380.27,-2375.8 1381.54,-2375.6 1382.83,-2375.39"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1383.49,-2378.83 1392.79,-2373.77 1382.36,-2371.93 1383.49,-2378.83"/>
+<path fill="none" stroke="lightpink" d="M383.73,-2508.41C388.55,-2507.56 393.34,-2506.75 398,-2506 832.18,-2435.82 944.48,-2444.04 1379,-2376 1380.27,-2375.8 1381.54,-2375.6 1382.83,-2375.39"/>
+<polygon fill="lightpink" stroke="lightpink" points="1383.49,-2378.83 1392.79,-2373.77 1382.36,-2371.93 1383.49,-2378.83"/>
 </g>
 <!-- _IncrementalCleanPublishDirectory1 -->
 <g id="node362" class="node">
 <title>_IncrementalCleanPublishDirectory1</title>
-<polygon fill="sandybrown" stroke="black" points="821,-2376 609,-2376 609,-2340 821,-2340 821,-2376"/>
+<polygon fill="lightpink" stroke="black" points="821,-2376 609,-2376 609,-2340 821,-2340 821,-2376"/>
 <text text-anchor="start" x="617" y="-2354.3" font-family="Times,serif" font-size="14.00">_IncrementalCleanPublishDirectory</text>
 </g>
 <!-- CopyFilesToPublishDirectory1&#45;&gt;_IncrementalCleanPublishDirectory1 -->
 <g id="edge561" class="edge">
 <title>CopyFilesToPublishDirectory1&#45;&gt;_IncrementalCleanPublishDirectory1</title>
-<path fill="none" stroke="sandybrown" d="M169.16,-2505.99C282.81,-2475.39 521.12,-2411.21 641.73,-2378.73"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="642.88,-2382.05 651.62,-2376.07 641.06,-2375.29 642.88,-2382.05"/>
+<path fill="none" stroke="lightpink" d="M169.16,-2505.99C282.81,-2475.39 521.12,-2411.21 641.73,-2378.73"/>
+<polygon fill="lightpink" stroke="lightpink" points="642.88,-2382.05 651.62,-2376.07 641.06,-2375.29 642.88,-2382.05"/>
 </g>
 <!-- _CopyResolvedFilesToPublishPreserveNewest1 -->
 <g id="node363" class="node">
 <title>_CopyResolvedFilesToPublishPreserveNewest1</title>
-<polygon fill="sandybrown" stroke="black" points="1111,-2376 839,-2376 839,-2340 1111,-2340 1111,-2376"/>
+<polygon fill="lightpink" stroke="black" points="1111,-2376 839,-2376 839,-2340 1111,-2340 1111,-2376"/>
 <text text-anchor="start" x="847" y="-2354.3" font-family="Times,serif" font-size="14.00">_CopyResolvedFilesToPublishPreserveNewest</text>
 </g>
 <!-- CopyFilesToPublishDirectory1&#45;&gt;_CopyResolvedFilesToPublishPreserveNewest1 -->
 <g id="edge562" class="edge">
 <title>CopyFilesToPublishDirectory1&#45;&gt;_CopyResolvedFilesToPublishPreserveNewest1</title>
-<path fill="none" stroke="sandybrown" d="M195.73,-2506.07C359.1,-2475.23 703.98,-2410.15 874.79,-2377.91"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="875.61,-2381.32 884.79,-2376.03 874.31,-2374.44 875.61,-2381.32"/>
+<path fill="none" stroke="lightpink" d="M195.73,-2506.07C359.1,-2475.23 703.98,-2410.15 874.79,-2377.91"/>
+<polygon fill="lightpink" stroke="lightpink" points="875.61,-2381.32 884.79,-2376.03 874.31,-2374.44 875.61,-2381.32"/>
 </g>
 <!-- _CopyResolvedFilesToPublishAlways1 -->
 <g id="node364" class="node">
 <title>_CopyResolvedFilesToPublishAlways1</title>
-<polygon fill="sandybrown" stroke="black" points="1355,-2376 1129,-2376 1129,-2340 1355,-2340 1355,-2376"/>
+<polygon fill="lightpink" stroke="black" points="1355,-2376 1129,-2376 1129,-2340 1355,-2340 1355,-2376"/>
 <text text-anchor="start" x="1137" y="-2354.3" font-family="Times,serif" font-size="14.00">_CopyResolvedFilesToPublishAlways</text>
 </g>
 <!-- CopyFilesToPublishDirectory1&#45;&gt;_CopyResolvedFilesToPublishAlways1 -->
 <g id="edge563" class="edge">
 <title>CopyFilesToPublishDirectory1&#45;&gt;_CopyResolvedFilesToPublishAlways1</title>
-<path fill="none" stroke="sandybrown" d="M195.61,-2508.23C200.48,-2507.47 205.3,-2506.72 210,-2506 383.17,-2479.52 884.61,-2409.02 1118.79,-2376.23"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1119.3,-2379.69 1128.71,-2374.84 1118.33,-2372.76 1119.3,-2379.69"/>
+<path fill="none" stroke="lightpink" d="M195.61,-2508.23C200.48,-2507.47 205.3,-2506.72 210,-2506 383.17,-2479.52 884.61,-2409.02 1118.79,-2376.23"/>
+<polygon fill="lightpink" stroke="lightpink" points="1119.3,-2379.69 1128.71,-2374.84 1118.33,-2372.76 1119.3,-2379.69"/>
 </g>
 <!-- ComputeResolvedFilesToPublishList1&#45;&gt;_ComputeResolvedCopyLocalPublishAssets1 -->
 <g id="edge574" class="edge">
 <title>ComputeResolvedFilesToPublishList1&#45;&gt;_ComputeResolvedCopyLocalPublishAssets1</title>
-<path fill="none" stroke="sandybrown" d="M1764.8,-2339.99C1916.6,-2309.18 2236,-2244.35 2394.98,-2212.08"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2396.11,-2215.43 2405.21,-2210.01 2394.72,-2208.57 2396.11,-2215.43"/>
+<path fill="none" stroke="lightpink" d="M1764.8,-2339.99C1916.6,-2309.18 2236,-2244.35 2394.98,-2212.08"/>
+<polygon fill="lightpink" stroke="lightpink" points="2396.11,-2215.43 2405.21,-2210.01 2394.72,-2208.57 2396.11,-2215.43"/>
 </g>
 <!-- ComputeResolvedFilesToPublishList1&#45;&gt;_ComputeCopyToPublishDirectoryItems1 -->
 <g id="edge575" class="edge">
 <title>ComputeResolvedFilesToPublishList1&#45;&gt;_ComputeCopyToPublishDirectoryItems1</title>
-<path fill="none" stroke="sandybrown" d="M1791.2,-2340.22C1994.01,-2309.34 2424.93,-2243.72 2636.15,-2211.55"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2636.99,-2214.97 2646.35,-2210 2635.93,-2208.05 2636.99,-2214.97"/>
+<path fill="none" stroke="lightpink" d="M1791.2,-2340.22C1994.01,-2309.34 2424.93,-2243.72 2636.15,-2211.55"/>
+<polygon fill="lightpink" stroke="lightpink" points="2636.99,-2214.97 2646.35,-2210 2635.93,-2208.05 2636.99,-2214.97"/>
 </g>
 <!-- ComputeRefAssembliesToPublish1 -->
 <g id="node373" class="node">
 <title>ComputeRefAssembliesToPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="2016.5,-1048 1811.5,-1048 1811.5,-1012 2016.5,-1012 2016.5,-1048"/>
+<polygon fill="lightpink" stroke="black" points="2016.5,-1048 1811.5,-1048 1811.5,-1012 2016.5,-1012 2016.5,-1048"/>
 <text text-anchor="start" x="1819.5" y="-1026.3" font-family="Times,serif" font-size="14.00">ComputeRefAssembliesToPublish</text>
 </g>
 <!-- ComputeResolvedFilesToPublishList1&#45;&gt;ComputeRefAssembliesToPublish1 -->
 <g id="edge576" class="edge">
 <title>ComputeResolvedFilesToPublishList1&#45;&gt;ComputeRefAssembliesToPublish1</title>
-<path fill="none" stroke="sandybrown" d="M1783.23,-2339.98C1909.54,-2316.63 2113.29,-2270.57 2158,-2210 2167.5,-2197.13 2166.68,-2187.44 2158,-2174 2081.82,-2056.02 1946.18,-2161.98 1870,-2044 1861.32,-2030.56 1869.83,-2024 1870,-2008 1872.22,-1795.08 1880,-1741.94 1880,-1529 1880,-1529 1880,-1529 1880,-1361 1880,-1247.91 1900,-1114.17 1909.32,-1057.98"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1912.77,-1058.56 1910.98,-1048.11 1905.87,-1057.39 1912.77,-1058.56"/>
+<path fill="none" stroke="lightpink" d="M1783.23,-2339.98C1909.54,-2316.63 2113.29,-2270.57 2158,-2210 2167.5,-2197.13 2166.68,-2187.44 2158,-2174 2081.82,-2056.02 1946.18,-2161.98 1870,-2044 1861.32,-2030.56 1869.83,-2024 1870,-2008 1872.22,-1795.08 1880,-1741.94 1880,-1529 1880,-1529 1880,-1529 1880,-1361 1880,-1247.91 1900,-1114.17 1909.32,-1057.98"/>
+<polygon fill="lightpink" stroke="lightpink" points="1912.77,-1058.56 1910.98,-1048.11 1905.87,-1057.39 1912.77,-1058.56"/>
 </g>
 <!-- _RunILLink1 -->
 <g id="node374" class="node">
 <title>_RunILLink1</title>
-<polygon fill="sandybrown" stroke="black" points="633,-2210 549,-2210 549,-2174 633,-2174 633,-2210"/>
+<polygon fill="lightpink" stroke="black" points="633,-2210 549,-2210 549,-2174 633,-2174 633,-2210"/>
 <text text-anchor="start" x="557" y="-2188.3" font-family="Times,serif" font-size="14.00">_RunILLink</text>
 </g>
 <!-- ILLink1&#45;&gt;_RunILLink1 -->
 <g id="edge577" class="edge">
 <title>ILLink1&#45;&gt;_RunILLink1</title>
-<path fill="none" stroke="sandybrown" d="M376.23,-2339.76C419.83,-2309.97 509.24,-2248.87 557.82,-2215.67"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="559.83,-2218.54 566.11,-2210.01 555.88,-2212.76 559.83,-2218.54"/>
+<path fill="none" stroke="lightpink" d="M376.23,-2339.76C419.83,-2309.97 509.24,-2248.87 557.82,-2215.67"/>
+<polygon fill="lightpink" stroke="lightpink" points="559.83,-2218.54 566.11,-2210.01 555.88,-2212.76 559.83,-2218.54"/>
 </g>
 <!-- _PrepareForReadyToRunCompilation1 -->
 <g id="node367" class="node">
 <title>_PrepareForReadyToRunCompilation1</title>
-<polygon fill="sandybrown" stroke="black" points="531,-2210 307,-2210 307,-2174 531,-2174 531,-2210"/>
+<polygon fill="lightpink" stroke="black" points="531,-2210 307,-2210 307,-2174 531,-2174 531,-2210"/>
 <text text-anchor="start" x="315" y="-2188.3" font-family="Times,serif" font-size="14.00">_PrepareForReadyToRunCompilation</text>
 </g>
 <!-- CreateReadyToRunImages1&#45;&gt;_PrepareForReadyToRunCompilation1 -->
 <g id="edge567" class="edge">
 <title>CreateReadyToRunImages1&#45;&gt;_PrepareForReadyToRunCompilation1</title>
-<path fill="none" stroke="sandybrown" d="M243.6,-2339.76C278.91,-2310.21 351.02,-2249.88 390.91,-2216.5"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="393.25,-2219.11 398.67,-2210.01 388.76,-2213.74 393.25,-2219.11"/>
+<path fill="none" stroke="lightpink" d="M243.6,-2339.76C278.91,-2310.21 351.02,-2249.88 390.91,-2216.5"/>
+<polygon fill="lightpink" stroke="lightpink" points="393.25,-2219.11 398.67,-2210.01 388.76,-2213.74 393.25,-2219.11"/>
 </g>
 <!-- _CreateR2RImages1 -->
 <g id="node368" class="node">
 <title>_CreateR2RImages1</title>
-<polygon fill="sandybrown" stroke="black" points="139.5,-2210 16.5,-2210 16.5,-2174 139.5,-2174 139.5,-2210"/>
+<polygon fill="lightpink" stroke="black" points="139.5,-2210 16.5,-2210 16.5,-2174 139.5,-2174 139.5,-2210"/>
 <text text-anchor="start" x="24.5" y="-2188.3" font-family="Times,serif" font-size="14.00">_CreateR2RImages</text>
 </g>
 <!-- CreateReadyToRunImages1&#45;&gt;_CreateR2RImages1 -->
 <g id="edge568" class="edge">
 <title>CreateReadyToRunImages1&#45;&gt;_CreateR2RImages1</title>
-<path fill="none" stroke="sandybrown" d="M207.76,-2339.76C181.91,-2310.52 129.4,-2251.13 99.71,-2217.56"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="102.29,-2215.18 93.04,-2210.01 97.04,-2219.82 102.29,-2215.18"/>
+<path fill="none" stroke="lightpink" d="M207.76,-2339.76C181.91,-2310.52 129.4,-2251.13 99.71,-2217.56"/>
+<polygon fill="lightpink" stroke="lightpink" points="102.29,-2215.18 93.04,-2210.01 97.04,-2219.82 102.29,-2215.18"/>
 </g>
 <!-- _CreateR2RSymbols1 -->
 <g id="node369" class="node">
 <title>_CreateR2RSymbols1</title>
-<polygon fill="sandybrown" stroke="black" points="288.5,-2210 157.5,-2210 157.5,-2174 288.5,-2174 288.5,-2210"/>
+<polygon fill="lightpink" stroke="black" points="288.5,-2210 157.5,-2210 157.5,-2174 288.5,-2174 288.5,-2210"/>
 <text text-anchor="start" x="165.5" y="-2188.3" font-family="Times,serif" font-size="14.00">_CreateR2RSymbols</text>
 </g>
 <!-- CreateReadyToRunImages1&#45;&gt;_CreateR2RSymbols1 -->
 <g id="edge569" class="edge">
 <title>CreateReadyToRunImages1&#45;&gt;_CreateR2RSymbols1</title>
-<path fill="none" stroke="sandybrown" d="M223,-2339.76C223,-2311.26 223,-2254.12 223,-2220.16"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="226.5,-2220.01 223,-2210.01 219.5,-2220.01 226.5,-2220.01"/>
+<path fill="none" stroke="lightpink" d="M223,-2339.76C223,-2311.26 223,-2254.12 223,-2220.16"/>
+<polygon fill="lightpink" stroke="lightpink" points="226.5,-2220.01 223,-2210.01 219.5,-2220.01 226.5,-2220.01"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_DefaultMicrosoftNETPlatformLibrary1 -->
 <g id="edge579" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_DefaultMicrosoftNETPlatformLibrary1</title>
-<path fill="none" stroke="sandybrown" d="M526.36,-2339.92C569.09,-2315.95 644.37,-2268.61 691,-2210 781.86,-2095.8 896.83,-1738.83 935,-1546 950.82,-1466.07 946,-1444.48 946,-1363 946,-1363 946,-1363 946,-1029 946,-525.99 1529.22,-782.25 2020,-672 2383.4,-590.37 2823.3,-553.93 3035.84,-540.14"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="3036.34,-543.62 3046.09,-539.48 3035.89,-536.63 3036.34,-543.62"/>
+<path fill="none" stroke="lightpink" d="M526.36,-2339.92C569.09,-2315.95 644.37,-2268.61 691,-2210 781.86,-2095.8 896.83,-1738.83 935,-1546 950.82,-1466.07 946,-1444.48 946,-1363 946,-1363 946,-1363 946,-1029 946,-525.99 1529.22,-782.25 2020,-672 2383.4,-590.37 2823.3,-553.93 3035.84,-540.14"/>
+<polygon fill="lightpink" stroke="lightpink" points="3036.34,-543.62 3046.09,-539.48 3035.89,-536.63 3036.34,-543.62"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_ComputePackageReferencePublish1 -->
 <g id="edge585" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_ComputePackageReferencePublish1</title>
-<path fill="none" stroke="sandybrown" d="M519.3,-2339.98C553.36,-2315.56 613.02,-2267.17 642,-2210 677.25,-2140.46 678,-1938.97 678,-1861 678,-1861 678,-1861 678,-863 678,-564.57 1773.01,-534.34 2138.7,-532.57"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2138.79,-536.07 2148.78,-532.53 2138.76,-529.07 2138.79,-536.07"/>
+<path fill="none" stroke="lightpink" d="M519.3,-2339.98C553.36,-2315.56 613.02,-2267.17 642,-2210 677.25,-2140.46 678,-1938.97 678,-1861 678,-1861 678,-1861 678,-863 678,-564.57 1773.01,-534.34 2138.7,-532.57"/>
+<polygon fill="lightpink" stroke="lightpink" points="2138.79,-536.07 2148.78,-532.53 2138.76,-529.07 2138.79,-536.07"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_HandlePackageFileConflicts1 -->
 <g id="edge580" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_HandlePackageFileConflicts1</title>
-<path fill="none" stroke="sandybrown" d="M580.44,-2339.97C706.2,-2313.84 931.62,-2261.45 996,-2210 1010.3,-2198.57 1000.44,-2183.64 1016,-2174 1282.8,-2008.63 3526.91,-2085.83 3838,-2044 3910.24,-2034.29 3926.56,-2022.46 3998,-2008 4255.99,-1955.76 4561.75,-1903.15 4715.41,-1877.35"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="4716.03,-1880.79 4725.31,-1875.69 4714.87,-1873.89 4716.03,-1880.79"/>
+<path fill="none" stroke="lightpink" d="M580.44,-2339.97C706.2,-2313.84 931.62,-2261.45 996,-2210 1010.3,-2198.57 1000.44,-2183.64 1016,-2174 1282.8,-2008.63 3526.91,-2085.83 3838,-2044 3910.24,-2034.29 3926.56,-2022.46 3998,-2008 4255.99,-1955.76 4561.75,-1903.15 4715.41,-1877.35"/>
+<polygon fill="lightpink" stroke="lightpink" points="4716.03,-1880.79 4725.31,-1875.69 4714.87,-1873.89 4716.03,-1880.79"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_ComputeReferenceAssemblies1 -->
 <g id="edge582" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_ComputeReferenceAssemblies1</title>
-<path fill="none" stroke="sandybrown" d="M591.27,-2340.89C594.21,-2340.56 597.12,-2340.27 600,-2340 2824.98,-2133.73 3398.71,-2389.72 5626,-2210 5632.23,-2209.5 5638.63,-2208.9 5645.07,-2208.22"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="5645.67,-2211.68 5655.23,-2207.11 5644.91,-2204.72 5645.67,-2211.68"/>
+<path fill="none" stroke="lightpink" d="M591.27,-2340.89C594.21,-2340.56 597.12,-2340.27 600,-2340 2824.98,-2133.73 3398.71,-2389.72 5626,-2210 5632.23,-2209.5 5638.63,-2208.9 5645.07,-2208.22"/>
+<polygon fill="lightpink" stroke="lightpink" points="5645.67,-2211.68 5655.23,-2207.11 5644.91,-2204.72 5645.67,-2211.68"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_ComputeUserRuntimeAssemblies1 -->
 <g id="edge583" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_ComputeUserRuntimeAssemblies1</title>
-<path fill="none" stroke="sandybrown" d="M527.22,-2339.8C569.05,-2316.33 639.93,-2270.21 677,-2210 814.47,-1986.75 823.08,-1652.97 822.51,-1556.19"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="826.01,-1556.05 822.41,-1546.08 819.01,-1556.12 826.01,-1556.05"/>
+<path fill="none" stroke="lightpink" d="M527.22,-2339.8C569.05,-2316.33 639.93,-2270.21 677,-2210 814.47,-1986.75 823.08,-1652.97 822.51,-1556.19"/>
+<polygon fill="lightpink" stroke="lightpink" points="826.01,-1556.05 822.41,-1546.08 819.01,-1556.12 826.01,-1556.05"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;ResolveRuntimePackAssets1 -->
 <g id="edge584" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;ResolveRuntimePackAssets1</title>
-<path fill="none" stroke="sandybrown" d="M528.22,-2339.81C574.62,-2315.38 658.43,-2267.17 717,-2210 730.94,-2196.39 728.05,-2187.59 742,-2174 1228.28,-1700.32 1421.9,-1658.96 2019,-1336 2181.47,-1248.13 2225.17,-1229.6 2400,-1170 2557.8,-1116.2 2747.32,-1073.03 2858.52,-1049.78"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2859.29,-1053.2 2868.37,-1047.74 2857.87,-1046.35 2859.29,-1053.2"/>
+<path fill="none" stroke="lightpink" d="M528.22,-2339.81C574.62,-2315.38 658.43,-2267.17 717,-2210 730.94,-2196.39 728.05,-2187.59 742,-2174 1228.28,-1700.32 1421.9,-1658.96 2019,-1336 2181.47,-1248.13 2225.17,-1229.6 2400,-1170 2557.8,-1116.2 2747.32,-1073.03 2858.52,-1049.78"/>
+<polygon fill="lightpink" stroke="lightpink" points="2859.29,-1053.2 2868.37,-1047.74 2857.87,-1046.35 2859.29,-1053.2"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;ComputeDependencyFileCompilerOptions1 -->
 <g id="edge586" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;ComputeDependencyFileCompilerOptions1</title>
-<path fill="none" stroke="sandybrown" d="M562.04,-2339.99C684.7,-2309.32 942.19,-2244.95 1071.86,-2212.53"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1072.88,-2215.89 1081.73,-2210.07 1071.18,-2209.1 1072.88,-2215.89"/>
+<path fill="none" stroke="lightpink" d="M562.04,-2339.99C684.7,-2309.32 942.19,-2244.95 1071.86,-2212.53"/>
+<polygon fill="lightpink" stroke="lightpink" points="1072.88,-2215.89 1081.73,-2210.07 1071.18,-2209.1 1072.88,-2215.89"/>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_ComputeUseBuildDependencyFile1 -->
 <g id="edge578" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_ComputeUseBuildDependencyFile1</title>
-<path fill="none" stroke="sandybrown" d="M522.77,-2339.98C560.37,-2316.07 625.16,-2268.81 657,-2210 731.35,-2072.65 698,-2017.18 698,-1861 698,-1861 698,-1861 698,-1361 698,-1213.25 1176.98,-1094.86 1386.17,-1050.2"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1387.18,-1053.56 1396.23,-1048.06 1385.72,-1046.72 1387.18,-1053.56"/>
+<path fill="none" stroke="lightpink" d="M522.77,-2339.98C560.37,-2316.07 625.16,-2268.81 657,-2210 731.35,-2072.65 698,-2017.18 698,-1861 698,-1861 698,-1861 698,-1361 698,-1213.25 1176.98,-1094.86 1386.17,-1050.2"/>
+<polygon fill="lightpink" stroke="lightpink" points="1387.18,-1053.56 1396.23,-1048.06 1385.72,-1046.72 1387.18,-1053.56"/>
 </g>
 <!-- _HandlePackageFileConflictsForPublish1 -->
 <g id="node375" class="node">
 <title>_HandlePackageFileConflictsForPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="987,-2210 751,-2210 751,-2174 987,-2174 987,-2210"/>
+<polygon fill="lightpink" stroke="black" points="987,-2210 751,-2210 751,-2174 987,-2174 987,-2210"/>
 <text text-anchor="start" x="759" y="-2188.3" font-family="Times,serif" font-size="14.00">_HandlePackageFileConflictsForPublish</text>
 </g>
 <!-- GeneratePublishDependencyFile1&#45;&gt;_HandlePackageFileConflictsForPublish1 -->
 <g id="edge581" class="edge">
 <title>GeneratePublishDependencyFile1&#45;&gt;_HandlePackageFileConflictsForPublish1</title>
-<path fill="none" stroke="sandybrown" d="M533.07,-2339.91C602.15,-2309.7 745.64,-2246.95 820.76,-2214.09"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="822.26,-2217.26 830.02,-2210.05 819.45,-2210.85 822.26,-2217.26"/>
+<path fill="none" stroke="lightpink" d="M533.07,-2339.91C602.15,-2309.7 745.64,-2246.95 820.76,-2214.09"/>
+<polygon fill="lightpink" stroke="lightpink" points="822.26,-2217.26 830.02,-2210.05 819.45,-2210.85 822.26,-2217.26"/>
 </g>
 <!-- GenerateSingleFileBundle1&#45;&gt;_ComputeFilesToBundle1 -->
 <g id="edge587" class="edge">
 <title>GenerateSingleFileBundle1&#45;&gt;_ComputeFilesToBundle1</title>
-<path fill="none" stroke="sandybrown" d="M1553.2,-2340.37C1702.6,-2309.4 2022.36,-2243.1 2176.87,-2211.06"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="2177.73,-2214.46 2186.81,-2209 2176.3,-2207.61 2177.73,-2214.46"/>
+<path fill="none" stroke="lightpink" d="M1553.2,-2340.37C1702.6,-2309.4 2022.36,-2243.1 2176.87,-2211.06"/>
+<polygon fill="lightpink" stroke="lightpink" points="2177.73,-2214.46 2186.81,-2209 2176.3,-2207.61 2177.73,-2214.46"/>
 </g>
 <!-- _GetCurrentAndPriorPublishFileWrites1 -->
 <g id="node365" class="node">
 <title>_GetCurrentAndPriorPublishFileWrites1</title>
-<polygon fill="sandybrown" stroke="black" points="1525,-2210 1293,-2210 1293,-2174 1525,-2174 1525,-2210"/>
+<polygon fill="lightpink" stroke="black" points="1525,-2210 1293,-2210 1293,-2174 1525,-2174 1525,-2210"/>
 <text text-anchor="start" x="1301" y="-2188.3" font-family="Times,serif" font-size="14.00">_GetCurrentAndPriorPublishFileWrites</text>
 </g>
 <!-- _IncrementalCleanPublishDirectory1&#45;&gt;_GetCurrentAndPriorPublishFileWrites1 -->
 <g id="edge564" class="edge">
 <title>_IncrementalCleanPublishDirectory1&#45;&gt;_GetCurrentAndPriorPublishFileWrites1</title>
-<path fill="none" stroke="sandybrown" d="M786.98,-2339.99C916.97,-2309.27 1190.05,-2244.74 1327.01,-2212.37"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1328.11,-2215.71 1337.04,-2210.01 1326.5,-2208.9 1328.11,-2215.71"/>
+<path fill="none" stroke="lightpink" d="M786.98,-2339.99C916.97,-2309.27 1190.05,-2244.74 1327.01,-2212.37"/>
+<polygon fill="lightpink" stroke="lightpink" points="1328.11,-2215.71 1337.04,-2210.01 1326.5,-2208.9 1328.11,-2215.71"/>
 </g>
 <!-- _ComputeResolvedFilesToPublishTypes1 -->
 <g id="node366" class="node">
 <title>_ComputeResolvedFilesToPublishTypes1</title>
-<polygon fill="sandybrown" stroke="black" points="1782.5,-2210 1543.5,-2210 1543.5,-2174 1782.5,-2174 1782.5,-2210"/>
+<polygon fill="lightpink" stroke="black" points="1782.5,-2210 1543.5,-2210 1543.5,-2174 1782.5,-2174 1782.5,-2210"/>
 <text text-anchor="start" x="1551.5" y="-2188.3" font-family="Times,serif" font-size="14.00">_ComputeResolvedFilesToPublishTypes</text>
 </g>
 <!-- _CopyResolvedFilesToPublishPreserveNewest1&#45;&gt;_ComputeResolvedFilesToPublishTypes1 -->
 <g id="edge565" class="edge">
 <title>_CopyResolvedFilesToPublishPreserveNewest1&#45;&gt;_ComputeResolvedFilesToPublishTypes1</title>
-<path fill="none" stroke="sandybrown" d="M1046.36,-2339.99C1175.22,-2309.27 1445.95,-2244.74 1581.72,-2212.37"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1582.74,-2215.73 1591.66,-2210.01 1581.12,-2208.92 1582.74,-2215.73"/>
+<path fill="none" stroke="lightpink" d="M1046.36,-2339.99C1175.22,-2309.27 1445.95,-2244.74 1581.72,-2212.37"/>
+<polygon fill="lightpink" stroke="lightpink" points="1582.74,-2215.73 1591.66,-2210.01 1581.12,-2208.92 1582.74,-2215.73"/>
 </g>
 <!-- _CopyResolvedFilesToPublishAlways1&#45;&gt;_ComputeResolvedFilesToPublishTypes1 -->
 <g id="edge566" class="edge">
 <title>_CopyResolvedFilesToPublishAlways1&#45;&gt;_ComputeResolvedFilesToPublishTypes1</title>
-<path fill="none" stroke="sandybrown" d="M1285.86,-2339.91C1363.73,-2309.58 1525.82,-2246.44 1609.87,-2213.69"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1611.19,-2216.94 1619.24,-2210.05 1608.65,-2210.42 1611.19,-2216.94"/>
+<path fill="none" stroke="lightpink" d="M1285.86,-2339.91C1363.73,-2309.58 1525.82,-2246.44 1609.87,-2213.69"/>
+<polygon fill="lightpink" stroke="lightpink" points="1611.19,-2216.94 1619.24,-2210.05 1608.65,-2210.42 1611.19,-2216.94"/>
 </g>
 <!-- ResolveReadyToRunCompilers1 -->
 <g id="node370" class="node">
 <title>ResolveReadyToRunCompilers1</title>
-<polygon fill="sandybrown" stroke="black" points="484.5,-2044 295.5,-2044 295.5,-2008 484.5,-2008 484.5,-2044"/>
+<polygon fill="lightpink" stroke="black" points="484.5,-2044 295.5,-2044 295.5,-2008 484.5,-2008 484.5,-2044"/>
 <text text-anchor="start" x="303.5" y="-2022.3" font-family="Times,serif" font-size="14.00">ResolveReadyToRunCompilers</text>
 </g>
 <!-- _PrepareForReadyToRunCompilation1&#45;&gt;ResolveReadyToRunCompilers1 -->
 <g id="edge570" class="edge">
 <title>_PrepareForReadyToRunCompilation1&#45;&gt;ResolveReadyToRunCompilers1</title>
-<path fill="none" stroke="sandybrown" d="M415.95,-2173.76C410.91,-2145.26 400.81,-2088.12 394.8,-2054.16"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="398.2,-2053.25 393.01,-2044.01 391.3,-2054.47 398.2,-2053.25"/>
+<path fill="none" stroke="lightpink" d="M415.95,-2173.76C410.91,-2145.26 400.81,-2088.12 394.8,-2054.16"/>
+<polygon fill="lightpink" stroke="lightpink" points="398.2,-2053.25 393.01,-2044.01 391.3,-2054.47 398.2,-2053.25"/>
 </g>
 <!-- _ComputeManagedRuntimePackAssemblies1 -->
 <g id="node371" class="node">
 <title>_ComputeManagedRuntimePackAssemblies1</title>
-<polygon fill="sandybrown" stroke="black" points="277.5,-2044 16.5,-2044 16.5,-2008 277.5,-2008 277.5,-2044"/>
+<polygon fill="lightpink" stroke="black" points="277.5,-2044 16.5,-2044 16.5,-2008 277.5,-2008 277.5,-2044"/>
 <text text-anchor="start" x="24.5" y="-2022.3" font-family="Times,serif" font-size="14.00">_ComputeManagedRuntimePackAssemblies</text>
 </g>
 <!-- _PrepareForReadyToRunCompilation1&#45;&gt;_ComputeManagedRuntimePackAssemblies1 -->
 <g id="edge571" class="edge">
 <title>_PrepareForReadyToRunCompilation1&#45;&gt;_ComputeManagedRuntimePackAssemblies1</title>
-<path fill="none" stroke="sandybrown" d="M390.66,-2173.91C341.17,-2144.07 239.01,-2082.48 184.01,-2049.31"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="185.65,-2046.21 175.28,-2044.05 182.03,-2052.21 185.65,-2046.21"/>
+<path fill="none" stroke="lightpink" d="M390.66,-2173.91C341.17,-2144.07 239.01,-2082.48 184.01,-2049.31"/>
+<polygon fill="lightpink" stroke="lightpink" points="185.65,-2046.21 175.28,-2044.05 182.03,-2052.21 185.65,-2046.21"/>
 </g>
 <!-- _ComputeAssembliesToPostprocessOnPublish1 -->
 <g id="node372" class="node">
 <title>_ComputeAssembliesToPostprocessOnPublish1</title>
-<polygon fill="sandybrown" stroke="black" points="659,-1712 387,-1712 387,-1676 659,-1676 659,-1712"/>
+<polygon fill="lightpink" stroke="black" points="659,-1712 387,-1712 387,-1676 659,-1676 659,-1712"/>
 <text text-anchor="start" x="395" y="-1690.3" font-family="Times,serif" font-size="14.00">_ComputeAssembliesToPostprocessOnPublish</text>
 </g>
 <!-- _PrepareForReadyToRunCompilation1&#45;&gt;_ComputeAssembliesToPostprocessOnPublish1 -->
 <g id="edge572" class="edge">
 <title>_PrepareForReadyToRunCompilation1&#45;&gt;_ComputeAssembliesToPostprocessOnPublish1</title>
-<path fill="none" stroke="sandybrown" d="M430.96,-2173.93C448.65,-2147.55 480.98,-2094.59 493,-2044 514.73,-1952.5 403.83,-1932.33 430,-1842 443.71,-1794.68 477.71,-1747.98 500.57,-1720.32"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="503.51,-1722.27 507.28,-1712.37 498.16,-1717.76 503.51,-1722.27"/>
+<path fill="none" stroke="lightpink" d="M430.96,-2173.93C448.65,-2147.55 480.98,-2094.59 493,-2044 514.73,-1952.5 403.83,-1932.33 430,-1842 443.71,-1794.68 477.71,-1747.98 500.57,-1720.32"/>
+<polygon fill="lightpink" stroke="lightpink" points="503.51,-1722.27 507.28,-1712.37 498.16,-1717.76 503.51,-1722.27"/>
 </g>
 <!-- _ComputeAssembliesToPostprocessOnPublish1&#45;&gt;_ComputeUserRuntimeAssemblies1 -->
 <g id="edge573" class="edge">
 <title>_ComputeAssembliesToPostprocessOnPublish1&#45;&gt;_ComputeUserRuntimeAssemblies1</title>
-<path fill="none" stroke="sandybrown" d="M554.15,-1675.91C608.78,-1645.95 721.78,-1583.97 782.07,-1550.9"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="783.83,-1553.93 790.92,-1546.05 780.47,-1547.79 783.83,-1553.93"/>
+<path fill="none" stroke="lightpink" d="M554.15,-1675.91C608.78,-1645.95 721.78,-1583.97 782.07,-1550.9"/>
+<polygon fill="lightpink" stroke="lightpink" points="783.83,-1553.93 790.92,-1546.05 780.47,-1547.79 783.83,-1553.93"/>
 </g>
 <!-- ComputeRefAssembliesToPublish1&#45;&gt;ResolvePackageAssets1 -->
 <g id="edge588" class="edge">
 <title>ComputeRefAssembliesToPublish1&#45;&gt;ResolvePackageAssets1</title>
-<path fill="none" stroke="sandybrown" d="M1898.7,-1011.89C1869.04,-976.63 1810.31,-895.07 1854,-846 1932.9,-757.38 2770.14,-713.93 3036.27,-702.28"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="3036.79,-705.77 3046.63,-701.83 3036.49,-698.77 3036.79,-705.77"/>
+<path fill="none" stroke="lightpink" d="M1898.7,-1011.89C1869.04,-976.63 1810.31,-895.07 1854,-846 1932.9,-757.38 2770.14,-713.93 3036.27,-702.28"/>
+<polygon fill="lightpink" stroke="lightpink" points="3036.79,-705.77 3046.63,-701.83 3036.49,-698.77 3036.79,-705.77"/>
 </g>
 <!-- ComputeRefAssembliesToPublish1&#45;&gt;_ParseTargetManifestFiles1 -->
 <g id="edge589" class="edge">
 <title>ComputeRefAssembliesToPublish1&#45;&gt;_ParseTargetManifestFiles1</title>
-<path fill="none" stroke="sandybrown" d="M1892.45,-1011.76C1855.44,-982.15 1779.78,-921.63 1738.12,-888.3"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1740.26,-885.52 1730.26,-882.01 1735.88,-890.99 1740.26,-885.52"/>
+<path fill="none" stroke="lightpink" d="M1892.45,-1011.76C1855.44,-982.15 1779.78,-921.63 1738.12,-888.3"/>
+<polygon fill="lightpink" stroke="lightpink" points="1740.26,-885.52 1730.26,-882.01 1735.88,-890.99 1740.26,-885.52"/>
 </g>
 <!-- _ComputeManagedAssemblyToLink1 -->
 <g id="node385" class="node">
 <title>_ComputeManagedAssemblyToLink1</title>
-<polygon fill="sandybrown" stroke="black" points="659,-1878 439,-1878 439,-1842 659,-1842 659,-1878"/>
+<polygon fill="lightpink" stroke="black" points="659,-1878 439,-1878 439,-1842 659,-1842 659,-1878"/>
 <text text-anchor="start" x="447" y="-1856.3" font-family="Times,serif" font-size="14.00">_ComputeManagedAssemblyToLink</text>
 </g>
 <!-- _RunILLink1&#45;&gt;_ComputeManagedAssemblyToLink1 -->
 <g id="edge616" class="edge">
 <title>_RunILLink1&#45;&gt;_ComputeManagedAssemblyToLink1</title>
-<path fill="none" stroke="sandybrown" d="M581.99,-2173.97C568.38,-2147.2 543.21,-2093.24 534,-2044 523.77,-1989.34 534.45,-1924.19 542.29,-1888.24"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="545.8,-1888.59 544.61,-1878.06 538.97,-1887.03 545.8,-1888.59"/>
+<path fill="none" stroke="lightpink" d="M581.99,-2173.97C568.38,-2147.2 543.21,-2093.24 534,-2044 523.77,-1989.34 534.45,-1924.19 542.29,-1888.24"/>
+<polygon fill="lightpink" stroke="lightpink" points="545.8,-1888.59 544.61,-1878.06 538.97,-1887.03 545.8,-1888.59"/>
 </g>
 <!-- PrepareForILLink1 -->
 <g id="node386" class="node">
 <title>PrepareForILLink1</title>
-<polygon fill="sandybrown" stroke="black" points="658.5,-2044 543.5,-2044 543.5,-2008 658.5,-2008 658.5,-2044"/>
+<polygon fill="lightpink" stroke="black" points="658.5,-2044 543.5,-2044 543.5,-2008 658.5,-2008 658.5,-2044"/>
 <text text-anchor="start" x="551.5" y="-2022.3" font-family="Times,serif" font-size="14.00">PrepareForILLink</text>
 </g>
 <!-- _RunILLink1&#45;&gt;PrepareForILLink1 -->
 <g id="edge617" class="edge">
 <title>_RunILLink1&#45;&gt;PrepareForILLink1</title>
-<path fill="none" stroke="sandybrown" d="M592.05,-2173.76C593.79,-2145.26 597.27,-2088.12 599.34,-2054.16"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="602.85,-2054.2 599.96,-2044.01 595.86,-2053.78 602.85,-2054.2"/>
+<path fill="none" stroke="lightpink" d="M592.05,-2173.76C593.79,-2145.26 597.27,-2088.12 599.34,-2054.16"/>
+<polygon fill="lightpink" stroke="lightpink" points="602.85,-2054.2 599.96,-2044.01 595.86,-2053.78 602.85,-2054.2"/>
 </g>
 <!-- _HandlePackageFileConflictsForPublish1&#45;&gt;_ResolveCopyLocalAssetsForPublish1 -->
 <g id="edge595" class="edge">
 <title>_HandlePackageFileConflictsForPublish1&#45;&gt;_ResolveCopyLocalAssetsForPublish1</title>
-<path fill="none" stroke="sandybrown" d="M897.86,-2173.92C966.55,-2130.86 1134,-2010.53 1134,-1861 1134,-1861 1134,-1861 1134,-1527 1134,-1304.63 1449.76,-1231.52 1629.14,-1207.93"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1629.69,-1211.38 1639.16,-1206.64 1628.8,-1204.44 1629.69,-1211.38"/>
+<path fill="none" stroke="lightpink" d="M897.86,-2173.92C966.55,-2130.86 1134,-2010.53 1134,-1861 1134,-1861 1134,-1861 1134,-1527 1134,-1304.63 1449.76,-1231.52 1629.14,-1207.93"/>
+<polygon fill="lightpink" stroke="lightpink" points="1629.69,-1211.38 1639.16,-1206.64 1628.8,-1204.44 1629.69,-1211.38"/>
 </g>
 <!-- _HandlePackageFileConflictsForPublish1&#45;&gt;_FilterSatelliteResourcesForPublish1 -->
 <g id="edge596" class="edge">
 <title>_HandlePackageFileConflictsForPublish1&#45;&gt;_FilterSatelliteResourcesForPublish1</title>
-<path fill="none" stroke="sandybrown" d="M984.75,-2173.99C1198.81,-2142.53 1654.23,-2075.61 1868.7,-2044.09"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="1869.34,-2047.53 1878.73,-2042.62 1868.33,-2040.61 1869.34,-2047.53"/>
+<path fill="none" stroke="lightpink" d="M984.75,-2173.99C1198.81,-2142.53 1654.23,-2075.61 1868.7,-2044.09"/>
+<polygon fill="lightpink" stroke="lightpink" points="1869.34,-2047.53 1878.73,-2042.62 1868.33,-2040.61 1869.34,-2047.53"/>
 </g>
 <!-- ComputeFilesCopiedToPublishDir1 -->
 <g id="node376" class="node">
@@ -6344,14 +6344,14 @@
 <!-- _ComputeManagedAssemblyToLink1&#45;&gt;_ComputeAssembliesToPostprocessOnPublish1 -->
 <g id="edge618" class="edge">
 <title>_ComputeManagedAssemblyToLink1&#45;&gt;_ComputeAssembliesToPostprocessOnPublish1</title>
-<path fill="none" stroke="sandybrown" d="M546.27,-1841.76C541.75,-1813.26 532.69,-1756.12 527.31,-1722.16"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="530.72,-1721.34 525.7,-1712.01 523.81,-1722.43 530.72,-1721.34"/>
+<path fill="none" stroke="lightpink" d="M546.27,-1841.76C541.75,-1813.26 532.69,-1756.12 527.31,-1722.16"/>
+<polygon fill="lightpink" stroke="lightpink" points="530.72,-1721.34 525.7,-1712.01 523.81,-1722.43 530.72,-1721.34"/>
 </g>
 <!-- PrepareForILLink1&#45;&gt;_ComputeManagedAssemblyToLink1 -->
 <g id="edge619" class="edge">
 <title>PrepareForILLink1&#45;&gt;_ComputeManagedAssemblyToLink1</title>
-<path fill="none" stroke="sandybrown" d="M595.53,-2007.76C586.46,-1979.14 568.22,-1921.63 557.47,-1887.72"/>
-<polygon fill="sandybrown" stroke="sandybrown" points="560.75,-1886.48 554.39,-1878.01 554.08,-1888.6 560.75,-1886.48"/>
+<path fill="none" stroke="lightpink" d="M595.53,-2007.76C586.46,-1979.14 568.22,-1921.63 557.47,-1887.72"/>
+<polygon fill="lightpink" stroke="lightpink" points="560.75,-1886.48 554.39,-1878.01 554.08,-1888.6 560.75,-1886.48"/>
 </g>
 <!-- _ErrorOnUnresolvedWindowsSDKAssemblyConflict1 -->
 <g id="node387" class="node">
