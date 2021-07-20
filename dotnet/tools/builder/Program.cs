@@ -10,6 +10,7 @@ using System.Threading;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Locator;
+using RulesMSBuild.Tools.Builder.Caching;
 using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.Diagnostics.GraphViz;
 using RulesMSBuild.Tools.Builder.Launcher;
@@ -75,9 +76,10 @@ namespace RulesMSBuild.Tools.Builder
             var pathMapper = new PathMapper(execRoot, outputBase);
             BuildCache MakeCache()
             {
-                var c = new BuildCache(new BazelContext.BazelLabel() {Workspace = "foo", Package = "idk", Name = "bar"},
+                var c = new BuildCache(
+                    new BazelContext.BazelLabel() {Workspace = "foo", Package = "idk", Name = "bar"},
                     pathMapper,
-                    new Files(), BuildManager.DefaultBuildManager)
+                    new Files(), null)
                 {
                     Manifest = new CacheManifest() {Projects = new Dictionary<string, string>() {[file] = file},}
                 };
@@ -202,7 +204,7 @@ namespace RulesMSBuild.Tools.Builder
         {
             var context = new BuildContext(command);
             RegisterSdk(context.SdkRoot);
-            var builder = new Builder(context);
+            var builder = new Builder(context, new BuilderDependencies(context));
             return builder.Build();
         }
 

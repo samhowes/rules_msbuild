@@ -6,47 +6,47 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using FluentAssertions;
-using Microsoft.Build.BackEnd;
-using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Moq;
 using Newtonsoft.Json;
 using RulesMSBuild.Tools.Bazel;
 using RulesMSBuild.Tools.Builder;
-using RulesMSBuild.Tools.Builder.Diagnostics;
+using RulesMSBuild.Tools.Builder.Caching;
 using RulesMSBuild.Tools.Builder.MSBuild;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
+using Label = RulesMSBuild.Tools.Builder.Caching.Label;
 
 namespace RulesMSBuild.Tests.Tools
 {
+    [Collection(BuildFrameworkTestCollection.TestCollectionName)]
     public class E2eTests : IDisposable
     {
         private readonly ITestOutputHelper _helper;
-        private Builder _builder;
-        private string _tmp;
-        private BuildContext _context;
-        private string _execRoot;
-        private readonly List<string> _log;
-        private List<string> _targetLog;
+        private Builder _builder = null!;
+        private readonly string _tmp;
+        private BuildContext _context = null!;
+        private List<string> _targetLog = null!;
         private bool _logInited;
+        private StringBuilder? _projectFile;
+        private BuilderDependencies _deps = null!;
+        private string? _nextManifestPath;
+        private CacheManifest? _nextManifest;
 
         public E2eTests(ITestOutputHelper helper)
         {
             _helper = helper;
-            _log = new List<string>();
-            Program.RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
+            
             _tmp = BazelEnvironment.GetTmpDir(nameof(E2eTests));
-            _execRoot = Path.Combine(_tmp, "execroot");
-            Directory.CreateDirectory(_execRoot);
-            Directory.SetCurrentDirectory(_execRoot);
-            _execRoot = Directory.GetCurrentDirectory(); // in case _execRoot is a symlink
-            _tmp = Path.GetDirectoryName(_execRoot);
+            string execRoot = Path.Combine(_tmp, "execroot");
+            Directory.CreateDirectory(execRoot);
+            Directory.SetCurrentDirectory(execRoot);
+            execRoot = Directory.GetCurrentDirectory(); // in case _execRoot is a symlink (/var => /private/var)
+            _tmp = Path.GetDirectoryName(execRoot)!;
         }
 
-        private void Init(string projectName, string action = "build")
+        private void PrepareNewBuild(string projectName, string action = "build", bool reuseCache = false)
         {
             // keep as a separate method so we cn make sure to register the msbuild assemblies first.
             PathMapper.ResetInstance();
@@ -61,7 +61,7 @@ namespace RulesMSBuild.Tests.Tools
                     ["bazel_bin_dir"] = "foo-dbg",
                     ["workspace"] = "e2e",
                     ["package"] = "foo",
-                    ["label_name"] = Path.GetFileNameWithoutExtension(projectName),
+                    ["label_name"] = Path.GetFileNameWithoutExtension(projectName) + "_" + action,
                     ["nuget_config"] = "NuGet.config",
                     ["tfm"] = "netcoreapp3.1",
                     ["directory_bazel_props"] = "Bazel.props",
@@ -73,12 +73,20 @@ namespace RulesMSBuild.Tests.Tools
             }) {DiagnosticsEnabled = true};
             
             _context.MakeTargetGraph(true);
+            _deps = new BuilderDependencies(_context, buildLog: new Mock<IBazelMsBuildLogger>().Object);
+            
             _targetLog = new List<string>();
             _logInited = false;
-            var testLogger = new Mock<IBazelMsBuildLogger>();
+            
+            var testLogger = new Mock<ILogger>();
             testLogger.Setup(l => l.Initialize(It.IsAny<IEventSource>())).Callback<IEventSource>(InitTestLog);
-            testLogger.Setup(l => l.Initialize(It.IsAny<IEventSource>(), It.IsAny<int>())).Callback<IEventSource,int>((eventSource, _) => InitTestLog(eventSource));
-            _builder = new Builder(_context, testLogger.Object);
+            _deps.Loggers.Add(testLogger.Object);
+            _builder = new Builder(_context, _deps);
+
+            if (reuseCache && _nextManifestPath != null)
+            {
+                File.Move(_nextManifestPath, _context.LabelPath(".cache_manifest"));
+            }
         }
 
         private void InitTestLog(IEventSource eventSource)
@@ -91,16 +99,16 @@ namespace RulesMSBuild.Tests.Tools
             eventSource.ProjectStarted += (_, projectStarted) =>
             {
                 var name = Path.GetFileNameWithoutExtension(projectStarted.ProjectFile);
-                // _targetLog.Add(
-                //     $"{name}:{projectStarted.TargetNames}"
-                // );
                 projectStack.Push(name);
             };
             eventSource.TargetStarted += (_, targetStarted) =>
             {
                 _targetLog.Add($"{projectStack.Peek()}:{targetStarted.TargetName}");
             };
-            
+            eventSource.ErrorRaised += (_, err) =>
+            {
+                _helper.WriteLine("[error]" + err.Message);
+            };
             eventSource.ProjectFinished += (_, _) =>
             {
                 projectStack.Pop();
@@ -110,97 +118,115 @@ namespace RulesMSBuild.Tests.Tools
         [Fact]
         public void ASimpleBuildWorks()
         {
-            Init("foo.csproj");
-            File.WriteAllText(_context.ProjectFile, @"<Project>
-    <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
-    </PropertyGroup>
-    <Target Name='Build'>
-        <Message Text='Foo' Importance='High' />
-    </Target>
-</Project>");
+            PrepareNewBuild("foo.csproj");
+            StartProject();
+            AddTarget("Build");
+            SaveProject();                
             
-            var result = _builder.Build();
-            
-            result.Should().Be(0);
-
-            _targetLog.Should().Equal(new[]
-            {
-                "foo:Build"
-            });
-
-            // var built = _context.TargetGraph;
-            // built!.Clusters.Count.Should().Be(1);
-            // var cluster = built.Clusters.Values.Single();
-            //
-            // cluster.Nodes.Count.Should().Be(1);
-            // var node = cluster.Nodes.Values.Single();
-            // node.Name.Should().Be("Build");
+            BuildAndVerifyTargets("foo:Build");
         }
         
         [Fact]
         public void BuildFromCache_SkipsSecondTime()
         {
-            Init("foo.csproj");
-            MakeProjectFile("CacheMe");
+            PrepareNewBuild("foo.csproj");
+            StartProject();
+            AddTarget("CacheMe");
+            AddTarget("Build", "CacheMe");
+            SaveProject();
             
-            var result = _builder.Build();
-            
-            result.Should().Be(0);
-            VerifyBuiltTargets(
+            BuildAndVerifyTargets(
                 "foo:CacheMe",
                 "foo:Build"
                 );
+            
             WriteCacheManifest();
-            Init("foo.csproj");
+            PrepareNewBuild("foo.csproj", reuseCache:true);
 
-            result = _builder.Build();
-
-            result.Should().Be(0);
             VerifyBuiltTargets(/*none*/);
         }
-
-        private (string path, CacheManifest cacheManifest) BuildAndCache(string projectName, string targetToBuild, string extraTarget = null)
+   
+        [Fact]
+        public void Build_ReusesIntermediateResults()
         {
-            Init(projectName);
             
-            MakeProjectFile(targetToBuild, extraTarget);
+            PrepareNewBuild("foo.csproj", "build");
+            StartProject();
             
-            var result = _builder.Build();
+            // first build
+            AddTarget("CacheMe");
+            AddTarget("Build", "CacheMe");
             
-            result.Should().Be(0);
+            // second build: original ResultsCacheWithOverride won't record "_PublishImpl"
+            // as we're not building it directly 
+            AddTarget("_PublishImpl", "Build", "CacheMe");
+            AddTarget("Publish", "_PublishImpl");
+            
+            // third build
+            AddTarget("Pack", "_PublishImpl");
+            
+            SaveProject();
+            // normal, no caching
+            BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
 
-            var shortName = Path.GetFileNameWithoutExtension(projectName);
-            VerifyBuiltTargets($"{shortName}:{targetToBuild}", $"{shortName}:Build");
+            PrepareNewBuild("foo.csproj", "publish", reuseCache:true);
+            // nothing special, normal caching produces this
+            BuildAndVerifyTargets("foo:_PublishImpl", "foo:Publish"); 
             
-            return WriteCacheManifest();
+            PrepareNewBuild("foo.csproj", "pack", reuseCache:true);
+            
+            // our custom code kicks in here:
+            // since this target depends on _PublishImpl, but we only explicitly built Publish, the default cache 
+            // won't include _PublishImpl in the results cache. Our custom code does.
+            BuildAndVerifyTargets("foo:Pack");
         }
-        
+
+        [Fact]
+        public void Build_OnlySavesNewResults_ToCache()
+        {
+            PrepareNewBuild("foo.csproj", "build");
+            StartProject();
+            
+            // first build
+            AddTarget("CacheMe");
+            AddTarget("Build", "CacheMe");
+            
+            // second build
+            AddTarget("Publish", "Build");
+            
+            SaveProject();
+            
+            // normal, no caching
+            BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
+
+            PrepareNewBuild("foo.csproj", "publish", reuseCache: true);
+            
+            BuildAndVerifyTargets("foo:Publish");
+            
+            VerifyCachedTargets("foo:Publish");
+        }
+
         [Fact]
         public void BuildProjectReference_IsCached()
         {
-            var (fooManifestPath, _) = BuildAndCache("foo.csproj", "CacheMe");
+            PrepareNewBuild("foo.csproj");
+            StartProject();
+            AddTarget("CacheMe");
+            AddTarget("Build", "CacheMe");
+            SaveProject();
+
+            BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
+            
             var fooPath = _context.ProjectFile;
             
-            Init("bar.csproj");
+            PrepareNewBuild("bar.csproj", reuseCache:true);
             
-            var builder = StartProject();
-            builder.AppendLine($@"<Target Name='BuildReference'>
-    <MSBuild Projects='{fooPath}' Targets='CacheMe'></MSBuild>
-</Target>");
-            builder.AppendLine($@"<ItemGroup>
-    <ProjectReference Include='{fooPath}' />
-</ItemGroup>
-");
-            EndProject(builder, "BuildReference");
+            StartProject();
+            AddBuildReferenceTarget("BuildReference", fooPath, "CacheMe");
+            AddTarget("Build", "BuildReference");
+            SaveProject();
             
-            File.Move(fooManifestPath, _context.LabelPath(".cache_manifest"));
-            
-            var result = _builder.Build();
-            
-            result.Should().Be(0);
-            
-            VerifyBuiltTargets(
+            BuildAndVerifyTargets(
                 /*foo:CacheMe is not built */
                 "bar:BuildReference",
                 "bar:Build"
@@ -210,36 +236,35 @@ namespace RulesMSBuild.Tests.Tools
         [Fact]
         public void TargetFrameworkAsGlobalProperty_IsCached()
         {
-            Init("foo.csproj", "build");
-            var builder = StartProject();
-            builder.AppendLine($@"<Target Name='Pack'>
+            // The default 'Pack' implementation by nuget sets a global property for the target framework
+            // this invalidates cache entries since they are keyed by ProjectFullPath + GlobalProperties
+            // We enforce a single target framework though, so this specification is not necessary
+            //
+            // additionally, it rebuilds targets that produce outputs, like writing to an Assembly References 
+            // cache file, and Bazel will have those files marked as ReadOnly, so MSBuild will fail the build because
+            // it can't write to that file.
+
+            PrepareNewBuild("foo.csproj", "build");
+            StartProject();
+            _projectFile!.AppendLine($@"<Target Name='Pack'>
     <MSBuild Projects='$(MSBuildProjectFullPath)' 
             Targets='CacheMe'
             Properties='TargetFramework=netcoreapp3.1'
     ></MSBuild>
 </Target>
-
-<Target Name='CacheMe'>
-    <Message Text='CacheMe.Built' Importance='High' />
-</Target>
-
 ");
-            EndProject(builder, "CacheMe");
+            AddTarget("CacheMe");
+            AddTarget("Build", "CacheMe");
+            SaveProject();
             
-            var result = _builder.Build();
-            
-            result.Should().Be(0);
-            VerifyBuiltTargets(
+            BuildAndVerifyTargets(
                 "foo:CacheMe",
                 "foo:Build"
             );
-            WriteCacheManifest();
-            Init("foo.csproj", "pack");
             
-            result = _builder.Build();
-
-            result.Should().Be(0);
-            VerifyBuiltTargets(
+            PrepareNewBuild("foo.csproj", "pack", reuseCache:true);
+            
+            BuildAndVerifyTargets(
                 "foo:Pack"
                  /* CacheMe should not be built */
                 );
@@ -250,125 +275,138 @@ namespace RulesMSBuild.Tests.Tools
         {
             // this is what happens with the GetTargetFrameworks reference in a normal Build.
             // GetTargetFrameworks is not built by the primary build process, but is instead built by references.
+            PrepareNewBuild("foo.csproj");
+            StartProject();
+            AddTarget("CacheMe"); 
+            AddTarget("Build", "CacheMe");
+            // This target is not built by Build, but only built by referencing projects
+            AddTarget("ReferenceMe");
+            SaveProject();
             
-            var (fooManifestPath, fooManifest) = BuildAndCache("foo.csproj", "CacheMe", "ReferenceMe");
+            BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
+            
             var fooPath = _context.ProjectFile;
-            Init("bar.csproj");
+            PrepareNewBuild("bar.csproj", reuseCache:true);
             
-            var builder = StartProject();
-            builder.AppendLine($@"<Target Name='BuildReference'>
-    <MSBuild Projects='{fooPath}' Targets='ReferenceMe'></MSBuild>
-</Target>");
-            builder.AppendLine($@"<ItemGroup>
-    <ProjectReference Include='{fooPath}' />
-</ItemGroup>
-");
-            EndProject(builder, "BuildReference");
-            
-            File.Move(fooManifestPath, _context.LabelPath(".cache_manifest"));
-            
+            StartProject();
+            // this will add a result for the foo.csproj configuration to the current results cache
             // The stock version of MSBuild throws a "caches should not overlap" internal exception when we build this 
-            // way (when its compiled in debug mode)
+            // way (when its compiled in debug mode) 
+            AddBuildReferenceTarget("BuildReference", fooPath, "ReferenceMe");
+            AddTarget("Build", "BuildReference");
+            SaveProject();
             
-            var result = _builder.Build();
-            
-            result.Should().Be(0);
-            VerifyBuiltTargets(
+            BuildAndVerifyTargets(
                 "bar:BuildReference",
                 "foo:ReferenceMe",
                 "bar:Build"
                 );
             
-            // make sure we serialized *only* the results from the last build we did, not cached results from previous
-            // builds
+            // make sure we stored the results from foo in our current cache
+            VerifyCachedTargets(
+                "bar:Build",
+                "bar:BuildReference",
+                // this final target is not supported by stock MSBuild because it mixes results for configurations
+                "foo:ReferenceMe"); 
 
-            var (barManifestPath, barManifest) = WriteCacheManifest(fooManifest);
-            Init("wow.csproj");
-            File.Move(barManifestPath, _context.LabelPath(".cache_manifest"));
-            MakeProjectFile("_");
-            var _ = _builder.BeginBuild();
-
-            var targetsInCache = _context.TargetGraph!.Nodes.Values
-                .Concat(_context.TargetGraph.Clusters.SelectMany(c => c.Value.Nodes.Values))
-                .Select(n => $"{Path.GetFileNameWithoutExtension(n.Cluster!.Name)}:{n.Name}")
-                .ToHashSet();
-
-
-            targetsInCache.OrderBy(t => t).Should().Equal(new[]
-                {
-                    "foo:Build",
-                    "foo:CacheMe",
-                    "foo:ReferenceMe",
-                    "bar:BuildReference",
-                    "bar:Build"
-                }.OrderBy(t => t)
-            );
         }
 
-        private void MakeProjectFile(string targetName, string extraTarget = null)
+        
+        private void VerifyCachedTargets(params string[] expectations)
         {
-            var builder = StartProject();
-
-            var targets = new List<string>() {targetName};
-            if (extraTarget != null)
-                targets.Add(extraTarget);
+            var cache = new BuildCache(new Label("_", "_", "_"), null!, new Files(), null) {Manifest = _nextManifest};
+            var (caches, _) = cache.DeserializeCaches();
             
-            foreach (var target in targets)
-            {
-                AddTarget(builder, target);
-            }
+            // we want the most recent results
+            var last = caches[_context.Bazel.Label.ToString()];
+            
+            // but we need all the configs to get the ProjectFullPath
+            cache.Initialize(_nextManifestPath!, null);
+            var cached = (
+                from result in last.Results 
+                let config = cache.ConfigCache[result.ConfigurationId] 
+                from targetName in result.ResultsByTarget.Keys 
+                let shortName = Path.GetFileNameWithoutExtension(config.ProjectFullPath) 
+                select $"{shortName}:{targetName}").ToList();
 
-            EndProject(builder, targetName);
+            cached = cached.OrderBy(c => c).ToList();
+            cached.Should().Equal(expectations);
         }
 
-        private void EndProject(StringBuilder builder, params string[] targetNames)
+        private void BuildAndVerifyTargets(params string[] expectedTargets)
         {
-            builder.AppendLine($@" 
-    <Target Name='Build' DependsOnTargets='{string.Join(";", targetNames)}'>
-        <Message Text='Foo' Importance='High' />
-    </Target>
-</Project>");
-            var contents = builder.ToString();
-            File.WriteAllText(_context.ProjectFile,contents);
+            var result = _builder.Build();
+            WriteCacheManifest();
+            result.Should().Be(0);
+            VerifyBuiltTargets(expectedTargets);
         }
 
-        private static StringBuilder StartProject()
+        
+        private void AddBuildReferenceTarget(string targetName, string projectPath, string referencedTargets)
         {
-            var builder = new StringBuilder(@"<Project>
+            _projectFile!.AppendLine($@"<Target Name='{targetName}'>
+    <MSBuild Projects='{projectPath}' Targets='{referencedTargets}'></MSBuild>
+</Target>");
+            
+            _projectFile.AppendLine($@"<ItemGroup>
+    <ProjectReference Include='{projectPath}' />
+</ItemGroup>
+");
+        }
+
+        private void SaveProject()
+        {
+            _projectFile!.AppendLine("</Project>");
+            var contents = _projectFile.ToString();
+            File.WriteAllText(_context.ProjectFile, contents);
+        }
+
+        private void StartProject()
+        {
+            _projectFile = new StringBuilder(@"<Project>
     <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
 
 ");
-            return builder;
         }
 
-        private static void AddTarget(StringBuilder builder, string targetName)
+        private void AddTarget(string targetName, params string[] dependsOnTargets)
         {
-            builder.AppendLine($@"    <Target Name='{targetName}'>
+            var dependsOn = dependsOnTargets.Any() ? $" DependsOnTargets='{string.Join(";", dependsOnTargets)}'" : "";
+            
+            _projectFile!.AppendLine($@"    <Target Name='{targetName}'{dependsOn}>
         <Message Text='{targetName}.Built' Importance='High' />
     </Target>
 ");
         }
 
-        private (string path, CacheManifest cacheManifest) WriteCacheManifest(CacheManifest? other = null)
+        private void WriteCacheManifest()
         {
-            var cacheManifest = new CacheManifest()
+            var projectCachePath =
+                _context.OutputPath(Path.GetFileName(_context.ProjectFile) + $".{_context.Command.Action}.cache");
+            var lastManifest = _nextManifest;
+            _nextManifest = new CacheManifest()
             {
                 Projects = new Dictionary<string, string>()
                 {
-                    [_builder.PathMapper.ToManifestPath(_context.ProjectFile)] = _context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_context.Command.Action}.cache")
+                    [_deps.PathMapper.ToManifestPath(_context.ProjectFile)] = projectCachePath
                 }
             };
-            if (other != null)
+            if (lastManifest != null)
             {
-                cacheManifest.Results.AddRange(other!.Results);
+                _nextManifest.Results.AddRange(lastManifest!.Results);
+                foreach (var project in lastManifest.Projects)
+                {
+                    _nextManifest.Projects[project.Key] = project.Value;
+                }
             }
-            cacheManifest.Results.Add(_context.LabelPath(".cache"));
+            _nextManifest.Results.Add(_context.LabelPath(".cache"));
             
-            var path = _context.LabelPath(".cache_manifest");
-            File.WriteAllText(path, JsonConvert.SerializeObject(cacheManifest));
-            return (path, cacheManifest);
+            _nextManifestPath = _context.LabelPath(".cache_manifest");
+            File.WriteAllText(_nextManifestPath, JsonConvert.SerializeObject(_nextManifest));
+            
+            
         }
 
         public void VerifyBuiltTargets(params string[] targets)
@@ -376,29 +414,8 @@ namespace RulesMSBuild.Tests.Tools
             _targetLog.Should().Equal(targets);
         }
 
-        private  void VerifyProjectTargets(string projectName, params (string targetName, bool shouldBeBuilt)[] expectations)
-        {
-            expectations = expectations.Where(e => e.targetName != null).ToArray();
-            var name = _builder.PathMapper.ToBazel(projectName);
-            var cluster = _context.TargetGraph!.Clusters[name];
-            cluster.Nodes.Count.Should().Be(expectations.Length, 
-                $"{String.Join(";", cluster.Nodes.Keys)} should be {string.Join(";", expectations.Select(e => e.targetName))}");
-
-            foreach (var expectation in expectations)
-            {
-                cluster.Nodes.Should().ContainKey(expectation.targetName);
-                var node = cluster.Nodes[expectation.targetName];
-                node.WasBuilt.Should().Be(expectation.shouldBeBuilt, $"Target: '{name}.{expectation.targetName}' WasBuilt should be '{expectation.shouldBeBuilt}'");
-            }
-        }
-
         public void Dispose()
         {
-            foreach (var line in _log)
-            {
-                _helper.WriteLine(line.TrimEnd());    
-            }
-            
             try
             {
                 Directory.Delete(_tmp, true);

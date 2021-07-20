@@ -2,50 +2,67 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Linq;
-using Microsoft.Build.BackEnd;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Graph;
 using Microsoft.Build.Logging;
+using RulesMSBuild.Tools.Builder.Caching;
 using RulesMSBuild.Tools.Builder.Diagnostics;
 using RulesMSBuild.Tools.Builder.MSBuild;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder
 {
+    public class BuilderDependencies
+    {
+        public List<ILogger> Loggers;
+        public IBazelMsBuildLogger BuildLog;
+        public PathMapper PathMapper;
+        public BuildCache Cache;
+        public ProjectLoader ProjectLoader;
+        public BuilderDependencies(BuildContext context, IBazelMsBuildLogger? buildLog = null)
+        {
+            PathMapper = new PathMapper(context.Bazel.OutputBase, context.Bazel.ExecRoot);
+            Cache = new BuildCache(context.Bazel.Label, PathMapper, new Files(), context.TargetGraph);
+            ProjectLoader = new ProjectLoader(context.ProjectFile, Cache, PathMapper, context.TargetGraph);
+            BuildLog = buildLog ?? new BazelMsBuildLogger(
+                m => Console.Out.Write(m),
+                context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
+                (m) => PathMapper.ToBazel(m));
+
+            Loggers = new List<ILogger>(){BuildLog};
+            if (context.DiagnosticsEnabled)
+            {
+                var path = context.OutputPath(context.Bazel.Label.Name + ".binlog");
+                Debug($"added binlog {path}");
+                var binlog = new BinaryLogger() {Parameters = path};
+                Loggers.Add(binlog);
+            }
+
+            if (context.TargetGraph != null)
+            {
+                Loggers.Add(new TargetGraphLogger(context.TargetGraph!, PathMapper));
+            }
+        }
+    }
+    
     public class Builder
     {
         private readonly BuildContext _context;
+        private readonly BuilderDependencies _deps;
         private readonly string _action;
-        private BuildManager _buildManager;
-        private readonly IBazelMsBuildLogger _msbuildLog;
         private readonly TargetGraph? _targetGraph;
-        private readonly BuildCache _cache;
-        private readonly ProjectLoader _loader;
-        public readonly PathMapper PathMapper;
         private BuildParameters _buildParameters;
+        private readonly BuildManager _buildManager;
 
-        public Builder(BuildContext context, IBazelMsBuildLogger? msbuildLog = null)
+        public Builder(BuildContext context, BuilderDependencies deps)
         {
             _context = context;
+            _deps = deps;
             _action = _context.Command.Action.ToLower();
             _buildManager = BuildManager.DefaultBuildManager;
-
             _targetGraph = context.TargetGraph;
-            PathMapper = new PathMapper(context.Bazel.OutputBase, _context.Bazel.ExecRoot);
-            _cache = new BuildCache(context.Bazel.Label, PathMapper, new Files(), _buildManager);
-            _loader = new ProjectLoader(_context.ProjectFile, _cache, PathMapper, _targetGraph);
-            _msbuildLog = msbuildLog ?? new BazelMsBuildLogger(
-                m => Console.Out.Write(m),
-                _context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                (m) => PathMapper.ToBazel(m)
-                , _targetGraph!);
         }
 
         public int Build()
@@ -53,21 +70,20 @@ namespace RulesMSBuild.Tools.Builder
             Debug("$exec_root: " + _context.Bazel.ExecRoot);
             Debug("$output_base: " + _context.Bazel.OutputBase);
             ProjectCollection? projectCollection = null;
-            BuildResultCode? result = null;
             try
             {
                 projectCollection = BeginBuild();
 
-                result = ExecuteBuild(projectCollection);
+                var result = ExecuteBuild(projectCollection);
 
-                EndBuild(result!.Value);
-            
+                EndBuild(result);
+                return (int) result;
             }
             catch
             {
                 try
                 {
-                    _buildManager!.EndBuild();
+                    _buildManager.EndBuild();
                 }
                 catch
                 {
@@ -78,12 +94,9 @@ namespace RulesMSBuild.Tools.Builder
             }
             finally
             {
-                _buildManager!.Dispose();
-                _buildManager = null;
+                _buildManager.Dispose();
                 projectCollection?.Dispose();
             }
-
-            return (int) result;
         }
 
         public ProjectCollection BeginBuild()
@@ -95,18 +108,11 @@ namespace RulesMSBuild.Tools.Builder
             // Setting it here allows the project file to read it for paths and we don't have to clear it later.
             _context.SetEnvironment();
 
-            var loggers = new List<ILogger>() {_msbuildLog};
-            if (_context.DiagnosticsEnabled)
-            {
-                var path = _context.OutputPath(_context.Bazel.Label.Name + ".binlog");
-                Debug($"added binlog {path}");
-                var binlog = new BinaryLogger() {Parameters = path};
-                loggers.Add(binlog);
-            }
+            _deps.Cache.Initialize(_context.LabelPath(".cache_manifest"), _buildManager);
 
-            _cache.Initialize(_context.LabelPath(".cache_manifest"));
-
-            var pc = new ProjectCollection(_context.MSBuild.GlobalProperties, loggers,
+            var pc = new ProjectCollection(
+                _context.MSBuild.GlobalProperties, 
+                _deps.Loggers,
                 ToolsetDefinitionLocations.Default);
             
             _buildParameters = new BuildParameters(pc)
@@ -115,250 +121,104 @@ namespace RulesMSBuild.Tools.Builder
                 DetailedSummary = true,
                 Loggers = pc.Loggers,
                 ResetCaches = false,
-                LogTaskInputs = _msbuildLog.Verbosity == LoggerVerbosity.Diagnostic,
-                ProjectLoadSettings = _context.DiagnosticsEnabled ? ProjectLoadSettings.RecordEvaluatedItemElements 
+                LogTaskInputs = _context.DiagnosticsEnabled,
+                ProjectLoadSettings = _context.DiagnosticsEnabled ? 
+                    ProjectLoadSettings.RecordEvaluatedItemElements 
                     : ProjectLoadSettings.Default,
                 // cult-copy
                 ToolsetDefinitionLocations =
                     ToolsetDefinitionLocations.ConfigurationFile |
                     ToolsetDefinitionLocations.Registry,
                 ProjectRootElementCache = pc.ProjectRootElementCache,
-                // ProjectCacheDescriptor = ProjectCacheDescriptor.FromInstance(
-                //     new CachePlugin(_targetGraph, _cache),
-                //     new[] {new ProjectGraphEntryPoint(_context.ProjectFile)}, 
-                //     null, null),
-                
-                // InputResultsCacheFiles = cacheFiles.ToArray(),
             };
             _buildManager.BeginBuild(_buildParameters);
-            if (_msbuildLog.HasError)
+            
+            if (_deps.BuildLog.HasError)
             {
                 Console.WriteLine("Failed to initialize build manager, please file an issue.");
-            }
-
-            if (_targetGraph != null)
-            {
-                ReadCache();
             }
 
             return pc;
         }
 
-        private void ReadCache()
-        {
-            var configCache =
-                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
-            var resultsCache =
-                ((IBuildComponentHost) _buildManager).GetComponent(BuildComponentType.ResultsCache) as ResultsCacheWithOverride;
-
-            if (resultsCache == null) return;
-            
-            
-            var @overrideProperty =
-                typeof(ResultsCacheWithOverride).GetField("_override", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            var @override = @overrideProperty!.GetValue(resultsCache) as IResultsCache;
-
-            if (@override == null) return;
-            
-            foreach (var result in @override!)
-            {
-                var config = configCache![result.ConfigurationId];
-                var path = PathMapper.ToBazel(config.ProjectFullPath);
-                var cluster = _targetGraph!.GetOrAddCluster(path);
-                foreach (var targetResult in result.ResultsByTarget)
-                {
-                    var node = cluster.GetOrAdd(targetResult.Key);
-                    if (node.Name == "_PublishBuildAlternative")
-                    {
-                        
-                    }
-                    node.FromCache = true;
-                }
-            }
-        }
-
         private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
         {
-            if (_action == "pack")
-            {
-                var runfilesManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
-                if (runfilesManifest.Exists)
-                {
-                    WriteRunfilesProps(File.ReadAllLines(runfilesManifest.FullName));
-                }
-            }
-
-            // don't load the project ahead of time, otherwise the evaluation won't be included in the binlog output
             var source = new TaskCompletionSource<BuildResultCode>();
             var flags = BuildRequestDataFlags.ReplaceExistingProjectInstance;
 
             // our restore outputs are relative to the project directory
             Environment.CurrentDirectory = _context.ProjectDirectory;
 
-            var project = _loader.Load(projectCollection);
+            var project = _deps.ProjectLoader.Load(projectCollection);
 
             if (!ValidateTfm(project))
                 return BuildResultCode.Failure;
-            
-            if (_action == "restore")
+
+            var data = new BuildRequestData(
+                project,
+                _context.MSBuild.Targets, null, flags
+            );
+
+            switch (_action)
             {
-                if (!Directory.Exists(_context.MSBuild.RestoreDir))
-                {
-                    Directory.CreateDirectory(_context.MSBuild.RestoreDir);
-                }
-                
-                WriteBazelProps();
+                case "restore":
+                    if (!Directory.Exists(_context.MSBuild.RestoreDir))
+                    {
+                        Directory.CreateDirectory(_context.MSBuild.RestoreDir);
+                    }
+                    new BazelPropsWriter().WriteProperties(
+                        _context.ProjectExtensionPath(".bazel.props"),
+                        _context.ProjectBazelProps);
+                    break;
+                case "pack":
+                    var runfilesManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
+                    if (runfilesManifest.Exists)
+                    {
+                        new BazelPropsWriter().WriteRunfilesProps(
+                            _context.ProjectExtensionPath(".runfiles.props"), 
+                            File.ReadAllLines(runfilesManifest.FullName));
+                    }
+                    _deps.Cache.CloneConfiguration(data, _buildParameters.DefaultToolsVersion, project);
+                    break;
             }
             
-            if (false)
-            {
-                var graphData = new GraphBuildRequestData(
-                    new ProjectGraphEntryPoint(_context.ProjectFile, projectCollection.GlobalProperties),
-                    _context.MSBuild.Targets,
-                    null,
-                    flags);
-                var submission = _buildManager.PendBuildRequest(graphData);
-
-                submission.ExecuteAsync(submission =>
+            _buildManager.PendBuildRequest(data)
+                .ExecuteAsync(submission =>
                 {
                     var result = submission.BuildResult.OverallResult;
-                    if (!ValidateTfm(_cache.Project))
-                        result = BuildResultCode.Failure;
 
-                    // if (result == BuildResultCode.Success)
-                        // _cache!.RecordResult(submission.BuildResult);
-                        
+                    if (submission.BuildResult.Exception != null)
+                    {
+                        Error(submission.BuildResult.Exception.ToString());
+                    }
+
                     source.SetResult(result);
                 }, new object());
-            }
-            else
-            {
-                var data = new BuildRequestData(
-                    project,
-                    _context.MSBuild.Targets, null, flags
-                );
-
-                if (_action == "pack")
-                {
-                    CloneConfiguration(data, project);
-                }
-                
-                _buildManager.PendBuildRequest(data)
-                    .ExecuteAsync(submission =>
-                    {
-                        var result = submission.BuildResult.OverallResult;
-
-                        if (submission.BuildResult.Exception != null)
-                        {
-                            Error(submission.BuildResult.Exception.ToString());
-                        }
-
-                        source.SetResult(result);
-                    }, new object());
-
-            }
-
-            var result = source.Task.GetAwaiter().GetResult();
-
-            return result;
-        }
-
-        private void CloneConfiguration(BuildRequestData data, ProjectInstance project)
-        {
-            var buildRequestConfiguration = new BuildRequestConfiguration(data, _buildParameters.DefaultToolsVersion);
-            var actualConfiguration = _cache.ConfigCache!.GetMatchingConfiguration(buildRequestConfiguration);
             
-            project.GlobalPropertiesDictionary.Set(ProjectPropertyInstance.Create("TargetFramework", _context.Tfm));
+            var resultCode = source.Task.GetAwaiter().GetResult();
 
-            var clonedId = _buildManager.GetNewConfigurationId();
-            var clonedConfiguration = buildRequestConfiguration.ShallowCloneWithNewId(clonedId);
-            _cache.ConfigCache.AddConfiguration(clonedConfiguration);
-
-            var actualResults = _cache.ResultsCache!.GetResultsForConfiguration(actualConfiguration.ConfigurationId);
-
-            _cache.ResultsCache.AddResult(
-                new BuildResult(
-                    actualResults,
-                    BuildEventContext.InvalidSubmissionId,
-                    clonedId,
-                    BuildRequest.InvalidGlobalRequestId,
-                    BuildRequest.InvalidGlobalRequestId,
-                    BuildRequest.InvalidNodeRequestId
-                ));
+            return resultCode;
         }
-
-        private void WriteRunfilesProps(string[] runfilesEntries)
-        {
-            var items = new List<XElement>(runfilesEntries.Length);
-            var cwd = Directory.GetCurrentDirectory();
-            foreach (var entry in runfilesEntries)
-            {
-                var parts = entry.Split(' ');
-                var manifestPath = parts[0];
-                var filePath = Path.Combine(cwd, parts[1]);
-
-                items.Add(new XElement("None",
-                    new XAttribute("Include", filePath),
-                    new XElement("Pack", "true"),
-                    new XElement("PackagePath", $"content/runfiles/{manifestPath}")));
-            }
-
-            var xml =
-                new XElement("Project",
-                    new XElement("ItemGroup", items));
-
-            var path = _context.ProjectExtensionPath(".runfiles.props");
-            
-            WriteXml(xml, path);
-        }
-
+        
         private bool ValidateTfm(ProjectInstance? project)
         {
             var actualTfm = project?.GetProperty("TargetFramework")?.EvaluatedValue ?? "";
             if (actualTfm != _context.Tfm)
             {
                 Error(
-                    $"Bazel expected TargetFramework {_context.Tfm}, but {_context.WorkspacePath(_context.ProjectFile)} is " +
-                    $"configured to use TargetFramework '{actualTfm}'. Refusing to build as this will " +
+                    $"Bazel expected TargetFramework {_context.Tfm}, but {_context.WorkspacePath(_context.ProjectFile)} " +
+                    $"is configured to use TargetFramework '{actualTfm}'. Refusing to build as this will " +
                     $"produce unreachable output. Please reconfigure the project and/or BUILD file.");
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
         }
 
-        private void WriteBazelProps()
-        {
-            var props =
-                _context.ProjectBazelProps.Select((pair) => new XElement(pair.Key, pair.Value));
-
-            var bazelPropsPath = _context.ProjectExtensionPath(".bazel.props");
-            
-            var xml =
-                new XElement("Project",
-                    new XElement("PropertyGroup", props));
-            WriteXml(xml, bazelPropsPath);
-        }
-
-        private void WriteXml(XElement xml, string path)
-        {
-            using var writer = XmlWriter.Create(path, 
-                new XmlWriterSettings()
-                {
-                    OmitXmlDeclaration = true,
-                    Indent = true
-                });
-            xml.Save(writer);
-            writer.Flush();
-        }
-
         private void EndBuild(BuildResultCode result)
         {
             if (result == BuildResultCode.Success)
-                _cache.Save(_context.LabelPath(".cache"));
+                _deps.Cache.Save(_context.LabelPath(".cache"));
 
             _buildManager.EndBuild();
 
@@ -421,7 +281,7 @@ namespace RulesMSBuild.Tools.Builder
             }
             
             if (saveEvaluation)
-                _cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
+                _deps.Cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
         }
 
         /// <summary>

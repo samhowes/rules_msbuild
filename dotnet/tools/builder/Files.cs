@@ -12,6 +12,6 @@ namespace RulesMSBuild.Tools.Builder
         public virtual Stream Create(string path) => File.Create(path);
         public virtual Stream OpenRead(string path) => File.OpenRead(path);
 
-        public bool Exists(string path) => File.Exists(path);
+        public virtual bool Exists(string path) => File.Exists(path);
     }
 }

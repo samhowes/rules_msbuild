@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Build.BackEnd;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Experimental.ProjectCache;
+using RulesMSBuild.Tools.Builder.Caching;
 using RulesMSBuild.Tools.Builder.Diagnostics;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 

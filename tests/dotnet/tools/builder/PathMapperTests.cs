@@ -7,10 +7,12 @@ using Xunit;
 
 namespace RulesMSBuild.Tests.Tools
 {
+    [Collection(BuildFrameworkTestCollection.TestCollectionName)]
     public class PathMapperTests
     {
         private static PathMapper Init(string input)
         {
+            PathMapper.ResetInstance();
             var pathMapper = input.Contains('\\')
                 ? new PathMapper(@"C:\o", @"C:\o\e")
                 : new PathMapper("/o", "/o/e");

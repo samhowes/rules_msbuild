@@ -6,7 +6,6 @@ using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 using RulesMSBuild.Tools.Builder.Diagnostics;
-using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder.MSBuild
 {
@@ -17,11 +16,6 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
     
     public class BazelMsBuildLogger : ConsoleLogger, IBazelMsBuildLogger
     {
-        private readonly Func<string, string> _trimPath;
-        private readonly TargetGraph? _targetGraph;
-        private readonly Stack<Cluster> _projectStack = new Stack<Cluster>();
-        private Cluster? _cluster;
-        private Stack<string> _targetStack = new Stack<string>();
         public bool HasError { get; set; }
 
         private static WriteHandler Write(WriteHandler? other, Func<string, string> trimPath)
@@ -32,14 +26,11 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
         
         public BazelMsBuildLogger(
             WriteHandler? write,
-            LoggerVerbosity verbosity, Func<string,string> trimPath, TargetGraph? targetGraph) 
+            LoggerVerbosity verbosity, Func<string,string> trimPath) 
             : base(verbosity, Write(write, trimPath),
             SetColor,
             ResetColor)
         {
-            _trimPath = trimPath;
-            _targetGraph = targetGraph;
-            _cluster = targetGraph;
         }
 
         public override void Initialize(IEventSource eventSource)
@@ -68,98 +59,6 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                     Console.WriteLine("\n\tdo you need to execute `bazel run //:gazelle` to update your build files?\n");
                 } 
             };
-            if (_targetGraph != null)
-            {
-                eventSource.AnyEventRaised += AnyEvent;
-            }
-        }
-
-        private void AnyEvent(object sender, BuildEventArgs args)
-        {
-            switch (args)
-            {
-                case ProjectStartedEventArgs pStart:
-                    Debug(
-                        $"Building project {pStart.ProjectFile}\n\t{string.Join("\n\t", pStart.GlobalProperties.Select(p => $"{p.Key}: {p.Value}"))}");
-                    var clusterNameS = _trimPath(pStart.ProjectFile);
-                    var cluster = _targetGraph!.GetOrAddCluster(clusterNameS, pStart.GlobalProperties);
-                    if (_cluster != null)
-                        _projectStack.Push(_cluster);
-                    _cluster = cluster;
-                    return;
-                case ProjectFinishedEventArgs pEnd:
-                    var clusterNameE = _trimPath(pEnd.ProjectFile);
-                    if (_cluster!.Name != clusterNameE) throw new Exception(":(");
-                    _projectStack.TryPop(out _cluster);
-                    return;
-                case TargetSkippedEventArgs skipped:
-                    var s = AddNode(
-                        skipped.TargetName,
-                        true,
-                        skipped.ParentTarget,
-                        skipped.BuildReason,
-                        skipped.ProjectFile
-                        );
-
-                    if (HasError)
-                        s.Error = true;
-                    break;
-                case TargetStartedEventArgs started:
-                    var node = AddNode(
-                        started.TargetName,
-                        false,
-                        started.ParentTarget,
-                        started.BuildReason,
-                        started.ProjectFile
-                        );
-                    node.Started = true;
-                    break;
-                case TargetFinishedEventArgs finished:
-                    if (_targetStack.Peek() != finished.TargetName) throw new Exception(":(");
-                    _targetStack.Pop();
-                    var n = _cluster!.GetOrAdd(finished.TargetName);
-                    
-                    n.Finished = true;
-                    if (HasError)
-                        n.Error = true;
-                    return;
-                default:
-                    return;
-            }
-        }
-
-        private TargetGraph.Node AddNode(string name, bool wasSkipped, string? parentName, TargetBuiltReason reason, string projectFile)
-        {
-            _targetStack.TryPeek(out var stackParent);
-            if (!wasSkipped)
-                _targetStack.Push(name);
-
-            if (_cluster == null)
-                throw new Exception($"Cluster is null!");
-            
-            var node = _cluster!.GetOrAdd(name);
-            
-            node.Finished = wasSkipped;
-            // was the MSBuild task called on this target directly?
-            
-            bool forced = false;
-            if (parentName == null)
-            {
-                forced = true;
-                parentName = stackParent;
-            }
-            if (parentName != null)
-            {
-                Cluster? parentCluster = null;
-                if (forced)
-                    _projectStack.TryPeek(out parentCluster);
-                var parent = (parentCluster ?? _cluster).GetOrAdd(parentName);
-                var edge = parent.AddDependency(node, reason);
-                edge.Runtime = true;
-                edge.Forced = forced;
-            }
-
-            return node;
         }
 
         /// <summary>

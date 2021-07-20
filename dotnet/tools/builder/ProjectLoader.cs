@@ -7,6 +7,7 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Graph;
+using RulesMSBuild.Tools.Builder.Caching;
 using RulesMSBuild.Tools.Builder.Diagnostics;
 
 namespace RulesMSBuild.Tools.Builder
