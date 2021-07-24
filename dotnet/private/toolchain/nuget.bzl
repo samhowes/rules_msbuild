@@ -56,6 +56,7 @@ def _nuget_fetch_impl(ctx):
         fetch_base = ctx.path("fetch"),
         parser_base = ctx.path("fetch/parser"),
         intermediate_base = ctx.path("fetch/_obj"),
+        bazel_packages = ctx.path("bazel_packages"),
         packages_folder = "packages",
         fetch_config = ctx.path("NuGet.Fetch.Config"),
         packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
@@ -67,6 +68,7 @@ def _nuget_fetch_impl(ctx):
         os,
     )
 
+    _fetch_custom_packages(ctx, config)
     _configure_host_packages(ctx, dotnet, config)
 
     _generate_nuget_configs(ctx, config)
@@ -156,13 +158,20 @@ def _pkg(name, version, pkg_id = None):
         filegroups = {},  # dict[tfm: list[string]]
     )
 
+def _fetch_custom_packages(ctx, config):
+    ctx.download(
+        "https://github.com/samhowes/SamHowes.Microsoft.Build/releases/download/0.0.1/SamHowes.Microsoft.Build.16.9.0.nupkg",
+        output = config.bazel_packages.get_child("SamHowes.Microsoft.Build.16.9.0.nupkg"),
+        sha256 = "e6618ec0f9fa91c2ffb7ad0dd7758417e0cf97e1da6a54954834f3cb84b56c2d",
+    )
+
 def _generate_nuget_configs(ctx, config):
     substitutions = prepare_nuget_config(
         config.packages_folder,
         True,
         # todo(#46) allow custom package sources
         [
-            {"key": "SamHowes", "value": "/Users/samh/dev/msbuild/artifacts/packages/Debug/Shipping"},
+            {"key": "bazel", "value": config.bazel_packages},
             {"key": "nuget.org", "value": "https://api.nuget.org/v3/index.json", "protocolVersion": "3"},
         ],
     )
