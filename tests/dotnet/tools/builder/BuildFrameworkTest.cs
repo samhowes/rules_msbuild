@@ -1,4 +1,9 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using RulesMSBuild.Tools.Builder;
 using Xunit;
 
@@ -12,11 +17,27 @@ namespace RulesMSBuild.Tests.Tools
 
     public class BuildFrameworkFixture
     {
+        static BuildFrameworkFixture()
+        {
+            SdkRoot = Environment.GetEnvironmentVariable("BAZEL_DOTNET_SDKROOT");
+            if (SdkRoot == null)
+            {
+                var dotnetRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+
+                SdkRoot = Directory.GetDirectories(Path.Combine(dotnetRoot!, "sdk"))
+                    .Last(d => Path.GetFileName(d).StartsWith("5"));
+            }
+            else
+            {
+                SdkRoot = Path.GetFullPath(SdkRoot);
+            }
+        }
+
+        public static string SdkRoot { get; set; }
+
         public BuildFrameworkFixture()
         {
-            var sdkRoot = Environment.GetEnvironmentVariable("BAZEL_DOTNET_SDKROOT") ??
-                          "/usr/local/share/dotnet/sdk/5.0.203";
-            RulesMSBuild.Tools.Builder.Program.RegisterSdk(sdkRoot);
+            RulesMSBuild.Tools.Builder.Program.RegisterSdk(SdkRoot);
         }
     }
 }

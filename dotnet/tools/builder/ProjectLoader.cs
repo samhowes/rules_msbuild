@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Microsoft.Build.Evaluation;
@@ -23,7 +24,7 @@ namespace RulesMSBuild.Tools.Builder
 
         public ProjectLoader(string entryProjectPath, BuildCache cache, PathMapper pathMapper, TargetGraph? targetGraph = null)
         {
-            _entryProjectPath = entryProjectPath;
+            _entryProjectPath = Path.GetFullPath(entryProjectPath);
             _cache = cache;
             _pathMapper = pathMapper;
             _targetGraph = targetGraph;
@@ -55,6 +56,7 @@ namespace RulesMSBuild.Tools.Builder
             }
             catch (Exception ex)
             {
+                if (ex is BazelException) throw;
                 throw new Exception($"An exception occurred while loading project {projectPath}.", ex);
             }
         }
@@ -67,7 +69,10 @@ namespace RulesMSBuild.Tools.Builder
             {
                 if (projectPath != _entryProjectPath)
                 {
-                    throw new Exception("Cache miss on non entry project.");
+                    var manifestPath = _pathMapper.ToManifestPath(projectPath);
+                    throw new BazelException(
+                        $"Expected to find {projectPath} in cache. Only {_entryProjectPath} is expected to miss the " +
+                        $"cache.\nManifestPath:{manifestPath}");
                 }
                 foreach (var (name, value) in projectCollection.GlobalProperties)
                 {
@@ -166,6 +171,10 @@ namespace RulesMSBuild.Tools.Builder
                             List<string>? defaultTargets = null;
                             Cluster targetCluster = cluster;
                             var first = projectValue[0];
+                            if (projectValue[1] == ':') // windows
+                            {
+                                first = '/';
+                            }
                             switch (first)
                             {
                                 case '/':
@@ -260,6 +269,13 @@ namespace RulesMSBuild.Tools.Builder
         {
             var property = GetProperty(originalName, project);
             return property?.EvaluatedValue ?? originalName;
+        }
+    }
+
+    public class BazelException : Exception
+    {
+        public BazelException(string message) : base(message)
+        {
         }
     }
 }

@@ -34,7 +34,7 @@ def make_launcher(ctx, dotnet, info):
             "dotnet_cmd": ctx.attr.dotnet_cmd,
         })
     extra_env = getattr(ctx.attr, "test_env", {})
-    print(extra_env)
+
     env = dicts.add(dotnet.env.items(), dict([
         [
             k,
@@ -43,7 +43,6 @@ def make_launcher(ctx, dotnet, info):
         for k, v in extra_env.items()
     ]))
 
-    print(env)
     launcher_template = ctx.file._launcher_template
     if is_bin_launcher:
         args = ctx.actions.args()
