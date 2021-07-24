@@ -13,6 +13,11 @@ namespace RulesMSBuild.Tools.Bazel
             return Path.GetTempPath();
         }
 
+        public static string GetTestXmlPath()
+        {
+            return Environment.GetEnvironmentVariable("XML_OUTPUT_FILE");
+        }
+
         public static string GetTmpDir(string prefix)
         {
             prefix += "_";

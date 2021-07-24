@@ -39,7 +39,7 @@ def msbuild_binary_macro(
         **kwargs):
     srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)
-    _msbuild_assembly(name, msbuild_binary, project_file, target_framework, srcs, deps, kwargs)
+    _msbuild_assembly(name, msbuild_binary, project_file, target_framework, srcs, deps, kwargs, {})
 
     msbuild_publish(
         name = name + "_publish",
@@ -54,7 +54,7 @@ def msbuild_library_macro(
         target_framework = None,
         deps = [],
         **kwargs):
-    _msbuild_assembly(name, msbuild_library, project_file, target_framework, srcs, deps, kwargs)
+    _msbuild_assembly(name, msbuild_library, project_file, target_framework, srcs, deps, kwargs, {})
 
 def msbuild_test_macro(
         name,
@@ -63,9 +63,7 @@ def msbuild_test_macro(
         target_framework = None,
         deps = [],
         **kwargs):
-    test_args = dict(
-        size = kwargs.pop("size", None),
-    )
+    test_args = _steal_args({}, kwargs, ["size", "dotnet_cmd"])
 
     _msbuild_assembly(name, msbuild_test, project_file, target_framework, srcs, deps, kwargs, test_args)
 
@@ -83,13 +81,9 @@ def _msbuild_assembly(
         srcs,
         deps,
         kwargs,
-        assembly_args = {}):
-    assembly_args = dicts.add(assembly_args, dict(
-        [
-            [k, kwargs.pop(k, None)]
-            for k in ["data", "content"]
-        ],
-    ))
+        assembly_args):
+    _steal_args(assembly_args, kwargs, ["data", "content"])
+
     kwargs.setdefault("msbuild_directory", "//:msbuild_directory")
 
     srcs = _get_srcs(srcs)
@@ -133,6 +127,13 @@ def _msbuild_assembly(
             version = package_version,
             target = ":" + name + "_publish",
         )
+
+def _steal_args(dest, src, args):
+    for a in args:
+        if a in src:
+            val = src.pop(a)
+            dest[a] = val
+    return dest
 
 def _get_srcs(srcs):
     if srcs != None:

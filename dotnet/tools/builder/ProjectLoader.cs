@@ -31,12 +31,19 @@ namespace RulesMSBuild.Tools.Builder
 
         public ProjectInstance Load(ProjectCollection projectCollection)
         {
+            // TaskItems do not save the absolute path, only the relative path from the ProjectDirectory
+            // because of this, when we load a project from cache, the Full Path of task items will be re-evaluated
+            // CreateProjectInstanceImpl Changes the directory to the just-loaded project so the ProjectGraph can get
+            // the correct absolute paths of transitively referenced project files.
+            // without this a dependency chain of `foo/bar/bam.csproj -> foo/bar.csproj -> foo.csproj` will break
+            var originalDirectory = Environment.CurrentDirectory;
             var _ = new ProjectGraph(
                 new []{new ProjectGraphEntryPoint(_entryProjectPath)},
                 projectCollection,
                 CreateProjectInstance,
                 1, new CancellationTokenSource(1000000).Token);
             
+            Environment.CurrentDirectory = originalDirectory;
             return EntryProject;
         }
         
@@ -58,6 +65,10 @@ namespace RulesMSBuild.Tools.Builder
             var project = _cache.LoadProject(projectPath);
             if (project == null)
             {
+                if (projectPath != _entryProjectPath)
+                {
+                    throw new Exception("Cache miss on non entry project.");
+                }
                 foreach (var (name, value) in projectCollection.GlobalProperties)
                 {
                     globalProperties[name] = value;
@@ -72,6 +83,7 @@ namespace RulesMSBuild.Tools.Builder
             {
                 project.LateInitialize(projectCollection.ProjectRootElementCache, null);
             }
+            Environment.CurrentDirectory = project.Directory;
 
             if (_cache.Project == null && project.FullPath == _entryProjectPath)
             {

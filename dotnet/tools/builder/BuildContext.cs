@@ -35,7 +35,7 @@ namespace RulesMSBuild.Tools.Builder
 
         public string LabelPath(string extension) => Path.Combine(Bazel.OutputDir, Bazel.Label.Name) + extension;
         public string OutputPath(params string[] subpath) => Path.Combine(subpath.Prepend(Bazel.OutputDir).ToArray());
-        private string ExecPath(string subpath) => Path.Combine(Bazel.ExecRoot, subpath);
+        public string ExecPath(string subpath) => Path.Combine(Bazel.ExecRoot, subpath);
         public string BinPath(string subpath) => Path.Combine(Bazel.BinDir, subpath);
         // msbuild auto-imports <project-file>.*.props from the restore dir from Microsoft.Common.Props
         public string ProjectExtensionPath(string extension) =>

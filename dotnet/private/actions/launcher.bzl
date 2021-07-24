@@ -30,7 +30,7 @@ def make_launcher(ctx, dotnet, info):
 
     if getattr(dotnet.config, "is_test", False):
         launch_data = dicts.add(launch_data, {
-            "dotnet_cmd": "test",
+            "dotnet_cmd": ctx.attr.dotnet_cmd,
         })
 
     launcher_template = ctx.file._launcher_template

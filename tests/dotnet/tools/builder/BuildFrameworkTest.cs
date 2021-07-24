@@ -13,7 +13,7 @@ namespace RulesMSBuild.Tests.Tools
     {
         public BuildFrameworkFixture()
         {
-            Program.RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
+            RulesMSBuild.Tools.Builder.Program.RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
         }
     }
 }

@@ -87,6 +87,11 @@ type PackageReference struct {
 	Unsupported
 }
 
+func (r *PackageReference) Evaluate(proj *Project) {
+	r.Include = proj.Evaluate(r.Include)
+	r.Version = proj.Evaluate(r.Version)
+}
+
 type Item struct {
 	XMLName xml.Name
 	Include string `xml:"Include,attr"`

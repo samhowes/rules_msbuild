@@ -209,28 +209,32 @@ namespace RulesMSBuild.Tools.Builder
         }
 
         private static string? RegisteredSdkRoot;
+        private static object _registerLock = new object();
         public static void RegisterSdk(string sdkRoot)
         {
-            if (RegisteredSdkRoot != null)
+            lock (_registerLock)
             {
-                if (RegisteredSdkRoot != sdkRoot)
-                    throw new Exception($"SdkRoot {RegisteredSdkRoot} is already registered and is different than {sdkRoot}.");
-                return;
-            }
+                if (RegisteredSdkRoot != null)
+                {
+                    if (RegisteredSdkRoot != sdkRoot)
+                        throw new Exception($"SdkRoot {RegisteredSdkRoot} is already registered and is different than {sdkRoot}.");
+                    return;
+                }
 
-            RegisteredSdkRoot = sdkRoot;
+                RegisteredSdkRoot = sdkRoot;
             
-            CustomAssemblyLoader.Register();
-            var dotNetSdkPath = sdkRoot.EndsWith('/') ? sdkRoot : sdkRoot + Path.DirectorySeparatorChar;
-            foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
-            {
-                ["MSBUILD_EXE_PATH"] = dotNetSdkPath + "MSBuild.dll",
-                ["MSBuildExtensionsPath"] = dotNetSdkPath,
-                ["MSBuildSDKsPath"] = dotNetSdkPath + "Sdks"
-            })
-                Environment.SetEnvironmentVariable(keyValuePair.Key, keyValuePair.Value);
+                CustomAssemblyLoader.Register();
+                var dotNetSdkPath = sdkRoot.EndsWith('/') ? sdkRoot : sdkRoot + Path.DirectorySeparatorChar;
+                foreach (KeyValuePair<string, string> keyValuePair in new Dictionary<string, string>()
+                {
+                    ["MSBUILD_EXE_PATH"] = dotNetSdkPath + "MSBuild.dll",
+                    ["MSBuildExtensionsPath"] = dotNetSdkPath,
+                    ["MSBuildSDKsPath"] = dotNetSdkPath + "Sdks"
+                })
+                    Environment.SetEnvironmentVariable(keyValuePair.Key, keyValuePair.Value);
 
-            MSBuildLocator.RegisterMSBuildPath(sdkRoot);
+                MSBuildLocator.RegisterMSBuildPath(sdkRoot);
+            }
         }
 
 

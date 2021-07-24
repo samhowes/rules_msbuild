@@ -105,6 +105,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 			dep := projectDep{IsPackage: true}
 			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
 
+			ref.Evaluate(proj)
 			switch strings.ToLower(ref.Include) {
 			case "microsoft.net.test.sdk":
 				proj.IsTest = true

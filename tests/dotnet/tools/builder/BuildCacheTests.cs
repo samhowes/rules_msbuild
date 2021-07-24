@@ -48,6 +48,9 @@ namespace RulesMSBuild.Tests.Tools
     {
         const string DoesNotExist = "DoesNotExist";
         const string Manifest = "manifest";
+        const string ReplaceMe = "REPLACE_ME";
+        const string Yay = "YAY";
+        const string Restored = "RESTORED";
         private BuildCache _cache = null!;
         private readonly Mock<Files> _files;
         private Dictionary<object, object?> _originalEnv;
@@ -61,9 +64,10 @@ namespace RulesMSBuild.Tests.Tools
         {
             _pathMapper = new Mock<PathMapper>();
             _pathMapper.Setup(p => p.ToBazel(It.IsAny<string>()))
-                .Returns<string>(str => str.Length > 0 && str.StartsWith('/') ? "YAY" : str.Replace('/', '_'));
+                .Returns<string>(str => str.Replace(ReplaceMe, Yay));
             _pathMapper.Setup(p => p.FromBazel(It.IsAny<string>()))
-                .Returns<string>(str => str.Length > 0 && str == "YAY" ? "/foo/bar" : str);
+                .Returns<string>(str => str.Replace(Yay, Restored));
+            
             _pathMapper.Setup(p => p.ToManifestPath(It.IsAny<string>()))
                 .Returns("foo");
             _pathMapper.Setup(p => p.ToAbsolute(It.IsAny<string>()))
@@ -110,10 +114,10 @@ namespace RulesMSBuild.Tests.Tools
         [Fact]
         public void SaveFile_ReplacesPaths()
         {
-            var project = new Project(XmlReader.Create(new StringReader(@"
+            var project = new Project(XmlReader.Create(new StringReader($@"
 <Project>
     <PropertyGroup>
-        <FilePath>/foo/bar</FilePath>
+        <FilePath>{ReplaceMe}</FilePath>
     </PropertyGroup>
 </Project>
 ")));
@@ -130,9 +134,8 @@ namespace RulesMSBuild.Tests.Tools
             _written.Length.Should().BeGreaterThan(0);
             _written.Seek(0, SeekOrigin.Begin);
             var str = new StreamReader(_written).ReadToEnd();
-            str.Should().Contain("YAY");
-            str.Should().NotContain("foo/bar");
-            str.Should().NotContain("/");
+            str.Should().Contain(Yay);
+            str.Should().NotContain(ReplaceMe);
             _written.Seek(0, SeekOrigin.Begin);
         }
         
@@ -147,7 +150,7 @@ namespace RulesMSBuild.Tests.Tools
 
             var path = project!.Properties.FirstOrDefault(p => p.Name == "FilePath");
             path.Should().NotBeNull();
-            path!.EvaluatedValue.Should().Be("/foo/bar");
+            path!.EvaluatedValue.Should().Be(Restored);
 
         }
 
@@ -156,7 +159,7 @@ namespace RulesMSBuild.Tests.Tools
         {
             InitNoBuildManager();
             _cache.ConfigCache.AddConfiguration(new BuildRequestConfiguration(1,
-                new BuildRequestData("/foo/bar.csproj", new Dictionary<string, string>(), "2.0", 
+                new BuildRequestData($"{ReplaceMe}.csproj", new Dictionary<string, string>(), "2.0", 
                     new []{"One"}, null, BuildRequestDataFlags.None), "what"));
 
             var result =
@@ -165,7 +168,7 @@ namespace RulesMSBuild.Tests.Tools
             result.AddResultsForTarget("foo",
                 new TargetResult(new[]
                 {
-                    new ProjectItemInstance.TaskItem("/foo/bar", "/foo/bar")
+                    new ProjectItemInstance.TaskItem(ReplaceMe, ReplaceMe)
                 }, new WorkUnitResult()));
             _cache.ResultsCache.AddResult(result);
             _cache.Save("foo");
@@ -184,7 +187,7 @@ namespace RulesMSBuild.Tests.Tools
             var targetResult = result.ResultsByTarget.Values.Single();
             targetResult.Items.Length.Should().Be(1);
             var item = targetResult.Items[0];
-            item.ItemSpec.Should().Be("/foo/bar");
+            item.ItemSpec.Should().Be(Restored);
         }
 
         [Fact]

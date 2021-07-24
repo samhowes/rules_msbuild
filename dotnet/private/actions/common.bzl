@@ -35,7 +35,6 @@ def write_cache_manifest(ctx, output, caches):
         projects = projects,
         results = results,
     )
-    print(json.encode_indent(manifest))
     file = ctx.actions.declare_file(ctx.attr.name + ".cache_manifest")
     ctx.actions.write(file, json.encode(manifest))
     return file

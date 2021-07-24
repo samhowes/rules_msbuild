@@ -33,6 +33,8 @@ namespace RulesMSBuild.Tests.Tools
         private BuilderDependencies _deps = null!;
         private string? _nextManifestPath;
         private CacheManifest? _nextManifest;
+        private string _projectPath;
+        private readonly string _execRoot;
 
         public E2eTests(ITestOutputHelper helper)
         {
@@ -42,25 +44,28 @@ namespace RulesMSBuild.Tests.Tools
             string execRoot = Path.Combine(_tmp, "execroot");
             Directory.CreateDirectory(execRoot);
             Directory.SetCurrentDirectory(execRoot);
-            execRoot = Directory.GetCurrentDirectory(); // in case _execRoot is a symlink (/var => /private/var)
-            _tmp = Path.GetDirectoryName(execRoot)!;
+            _execRoot = Directory.GetCurrentDirectory(); // in case _execRoot is a symlink (/var => /private/var)
+            _tmp = Path.GetDirectoryName(_execRoot)!;
         }
 
-        private void PrepareNewBuild(string projectName, string action = "build", bool reuseCache = false)
+        private void PrepareNewBuild(string projectName, string action = "build", bool reuseCache = true)
         {
             // keep as a separate method so we cn make sure to register the msbuild assemblies first.
             PathMapper.ResetInstance();
+            Directory.SetCurrentDirectory(_execRoot);
             var configId = typeof(BuildManager).GetField("s_nextBuildRequestConfigurationId", BindingFlags.Static | BindingFlags.NonPublic);
             configId!.SetValue(null, 0);
+            if (Path.IsPathRooted(projectName))
+                projectName = projectName[(_execRoot.Length + 1)..];
             _context = new BuildContext(new Command()
             {
                 Action = action,
                 NamedArgs =
                 {
                     ["bazel_output_base"] = _tmp,
-                    ["bazel_bin_dir"] = "foo-dbg",
+                    ["bazel_bin_dir"] = "cpu-dbg",
                     ["workspace"] = "e2e",
-                    ["package"] = "foo",
+                    ["package"] = (Path.GetDirectoryName(projectName) ?? "").Replace("\\","/"),
                     ["label_name"] = Path.GetFileNameWithoutExtension(projectName) + "_" + action,
                     ["nuget_config"] = "NuGet.config",
                     ["tfm"] = "netcoreapp3.1",
@@ -85,7 +90,9 @@ namespace RulesMSBuild.Tests.Tools
 
             if (reuseCache && _nextManifestPath != null)
             {
-                File.Move(_nextManifestPath, _context.LabelPath(".cache_manifest"));
+                var thisPath = _context.LabelPath(".cache_manifest");
+                Directory.CreateDirectory(Path.GetDirectoryName(thisPath)!);
+                File.Move(_nextManifestPath, thisPath);
             }
         }
 
@@ -311,6 +318,35 @@ namespace RulesMSBuild.Tests.Tools
 
         }
 
+        [Fact]
+        public void CachedProjectReferences_EvaluateToCorrectPath()
+        {
+            PrepareNewBuild("foo/foo.csproj");
+            StartProject("foo/foo.csproj");
+            AddTarget("Build");
+            SaveProject();
+            BuildAndVerifyTargets("foo:Build");
+            
+            PrepareNewBuild("foo/bar/bar.csproj");
+            StartProject();
+            AddTarget("Build");
+            // will be not be a valid relative path from bam.csproj, but will be a valid relative path from bar.csproj
+            AddReference("../foo.csproj");
+            SaveProject();
+            BuildAndVerifyTargets("bar:Build");
+            
+            PrepareNewBuild("foo/bar/bam/bam.csproj");
+            StartProject();
+            AddTarget("Build");
+            // will be a valid relative path from bam.csproj
+            AddReference("../bar.csproj");
+            SaveProject();
+            
+            // should not throw while loading foo/foo.csproj
+            // should *not* try to load foo/bar/foo.csproj
+            BuildAndVerifyTargets("bam:Build");
+        }
+
         
         private void VerifyCachedTargets(params string[] expectations)
         {
@@ -347,8 +383,13 @@ namespace RulesMSBuild.Tests.Tools
             _projectFile!.AppendLine($@"<Target Name='{targetName}'>
     <MSBuild Projects='{projectPath}' Targets='{referencedTargets}'></MSBuild>
 </Target>");
-            
-            _projectFile.AppendLine($@"<ItemGroup>
+
+            AddReference(projectPath);
+        }
+
+        private void AddReference(string projectPath)
+        {
+            _projectFile!.AppendLine($@"<ItemGroup>
     <ProjectReference Include='{projectPath}' />
 </ItemGroup>
 ");
@@ -358,11 +399,15 @@ namespace RulesMSBuild.Tests.Tools
         {
             _projectFile!.AppendLine("</Project>");
             var contents = _projectFile.ToString();
-            File.WriteAllText(_context.ProjectFile, contents);
+            var dir = Path.GetDirectoryName(_projectPath);
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir!);
+            File.WriteAllText(_projectPath, contents);
         }
 
-        private void StartProject()
+        private void StartProject(string? path = null)
         {
+            _projectPath = path != null ? Path.Combine(_context.ExecPath(path)) : _context.ProjectFile;
             _projectFile = new StringBuilder(@"<Project>
     <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -405,8 +450,6 @@ namespace RulesMSBuild.Tests.Tools
             
             _nextManifestPath = _context.LabelPath(".cache_manifest");
             File.WriteAllText(_nextManifestPath, JsonConvert.SerializeObject(_nextManifest));
-            
-            
         }
 
         public void VerifyBuiltTargets(params string[] targets)
