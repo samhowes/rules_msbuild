@@ -34,7 +34,7 @@ def pack(ctx):
     inputs = depset(
         [cache_manifest] +
         ([runfiles_manifest] if runfiles_manifest != None else []),
-        transitive = [info.files],
+        transitive = [info.files, info.library.runfiles],
     )
     outputs = [nupkg, cache.result] + cmd_outputs
 

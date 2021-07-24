@@ -31,10 +31,10 @@ namespace RulesMSBuild.Tests.Tools
         private bool _logInited;
         private StringBuilder? _projectFile;
         private BuilderDependencies _deps = null!;
-        private string? _nextManifestPath;
         private CacheManifest? _nextManifest;
         private string _projectPath;
         private readonly string _execRoot;
+        private string _nextManifestPath;
 
         public E2eTests(ITestOutputHelper helper)
         {
@@ -48,11 +48,12 @@ namespace RulesMSBuild.Tests.Tools
             _tmp = Path.GetDirectoryName(_execRoot)!;
         }
 
-        private void PrepareNewBuild(string projectName, string action = "build", bool reuseCache = true)
+        private void PrepareNewBuild(string projectName, string action = "build")
         {
             // keep as a separate method so we cn make sure to register the msbuild assemblies first.
             PathMapper.ResetInstance();
             Directory.SetCurrentDirectory(_execRoot);
+            var lastProject = _context?.ProjectFile;
             var configId = typeof(BuildManager).GetField("s_nextBuildRequestConfigurationId", BindingFlags.Static | BindingFlags.NonPublic);
             configId!.SetValue(null, 0);
             if (Path.IsPathRooted(projectName))
@@ -88,12 +89,7 @@ namespace RulesMSBuild.Tests.Tools
             _deps.Loggers.Add(testLogger.Object);
             _builder = new Builder(_context, _deps);
 
-            if (reuseCache && _nextManifestPath != null)
-            {
-                var thisPath = _context.LabelPath(".cache_manifest");
-                Directory.CreateDirectory(Path.GetDirectoryName(thisPath)!);
-                File.Move(_nextManifestPath, thisPath);
-            }
+            WriteCacheManifest(lastProject);
         }
 
         private void InitTestLog(IEventSource eventSource)
@@ -147,8 +143,7 @@ namespace RulesMSBuild.Tests.Tools
                 "foo:Build"
                 );
             
-            WriteCacheManifest();
-            PrepareNewBuild("foo.csproj", reuseCache:true);
+            PrepareNewBuild("foo.csproj");
 
             VerifyBuiltTargets(/*none*/);
         }
@@ -176,11 +171,11 @@ namespace RulesMSBuild.Tests.Tools
             // normal, no caching
             BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
 
-            PrepareNewBuild("foo.csproj", "publish", reuseCache:true);
+            PrepareNewBuild("foo.csproj", "publish");
             // nothing special, normal caching produces this
             BuildAndVerifyTargets("foo:_PublishImpl", "foo:Publish"); 
             
-            PrepareNewBuild("foo.csproj", "pack", reuseCache:true);
+            PrepareNewBuild("foo.csproj", "pack");
             
             // our custom code kicks in here:
             // since this target depends on _PublishImpl, but we only explicitly built Publish, the default cache 
@@ -206,7 +201,7 @@ namespace RulesMSBuild.Tests.Tools
             // normal, no caching
             BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
 
-            PrepareNewBuild("foo.csproj", "publish", reuseCache: true);
+            PrepareNewBuild("foo.csproj", "publish");
             
             BuildAndVerifyTargets("foo:Publish");
             
@@ -226,7 +221,7 @@ namespace RulesMSBuild.Tests.Tools
             
             var fooPath = _context.ProjectFile;
             
-            PrepareNewBuild("bar.csproj", reuseCache:true);
+            PrepareNewBuild("bar.csproj");
             
             StartProject();
             AddBuildReferenceTarget("BuildReference", fooPath, "CacheMe");
@@ -262,7 +257,7 @@ namespace RulesMSBuild.Tests.Tools
                 "foo:Build"
             );
             
-            PrepareNewBuild("foo.csproj", "pack", reuseCache:true);
+            PrepareNewBuild("foo.csproj", "pack");
             
             BuildAndVerifyTargets(
                 "foo:Pack"
@@ -286,7 +281,7 @@ namespace RulesMSBuild.Tests.Tools
             BuildAndVerifyTargets("foo:CacheMe", "foo:Build");
             
             var fooPath = _context.ProjectFile;
-            PrepareNewBuild("bar.csproj", reuseCache:true);
+            PrepareNewBuild("bar.csproj");
             
             StartProject();
             // this will add a result for the foo.csproj configuration to the current results cache
@@ -343,6 +338,7 @@ namespace RulesMSBuild.Tests.Tools
         
         private void VerifyCachedTargets(params string[] expectations)
         {
+            WriteCacheManifest(_context.ProjectFile);
             var cache = new BuildCache(new Label("_", "_", "_"), null!, new Files(), null) {Manifest = _nextManifest};
             var (caches, _) = cache.DeserializeCaches();
             
@@ -365,7 +361,6 @@ namespace RulesMSBuild.Tests.Tools
         private void BuildAndVerifyTargets(params string[] expectedTargets)
         {
             var result = _builder.Build();
-            WriteCacheManifest();
             result.Should().Be(0);
             VerifyBuiltTargets(expectedTargets);
         }
@@ -419,29 +414,37 @@ namespace RulesMSBuild.Tests.Tools
 ");
         }
 
-        private void WriteCacheManifest()
+        private void WriteCacheManifest(string? lastProject)
         {
             var projectCachePath =
                 _context.OutputPath(Path.GetFileName(_context.ProjectFile) + $".{_context.Command.Action}.cache");
             var lastManifest = _nextManifest;
             _nextManifest = new CacheManifest()
             {
+                Output = new CacheManifest.BuildResultCache()
+                {
+                    Project = projectCachePath,
+                    Result = _context.LabelPath(".cache")
+                },
                 Projects = new Dictionary<string, string>()
                 {
-                    [_deps.PathMapper.ToManifestPath(_context.ProjectFile)] = projectCachePath
                 }
             };
+            
             if (lastManifest != null)
             {
-                _nextManifest.Results.AddRange(lastManifest!.Results);
                 foreach (var project in lastManifest.Projects)
                 {
                     _nextManifest.Projects[project.Key] = project.Value;
                 }
+                _nextManifest.Projects[_deps.PathMapper.ToManifestPath(lastProject!)] =
+                    lastManifest.Output.Project;
+                _nextManifest.Results.AddRange(lastManifest.Results);
+                _nextManifest.Results.Add(lastManifest.Output.Result);
             }
-            _nextManifest.Results.Add(_context.LabelPath(".cache"));
-            
+
             _nextManifestPath = _context.LabelPath(".cache_manifest");
+            Directory.CreateDirectory(Path.GetDirectoryName(_nextManifestPath)!);
             File.WriteAllText(_nextManifestPath, JsonConvert.SerializeObject(_nextManifest));
         }
 

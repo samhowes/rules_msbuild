@@ -17,13 +17,9 @@ def nuget_deps():
             "Newtonsoft.Json:13.0.1": ["netcoreapp3.1"],  # keep
             "SamHowes.Microsoft.Build:16.9.0": ["net5.0"],
             "xunit:2.4.1": ["netcoreapp3.1"],
-            "xunit.assert:2.4.1": [
-                "net5.0",
-            ],
+            "xunit.assert:2.4.1": ["net5.0"],
             "xunit.console:2.4.1": ["net5.0"],
-            "xunit.core:2.4.1": [
-                "net5.0",
-            ],
+            "xunit.core:2.4.1": ["net5.0"],
             "xunit.extensibility.core:2.4.1": ["net5.0"],
             "xunit.runner.visualstudio:2.4.3": ["netcoreapp3.1"],
         },

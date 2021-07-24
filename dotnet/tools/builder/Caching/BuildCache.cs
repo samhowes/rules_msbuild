@@ -193,9 +193,9 @@ namespace RulesMSBuild.Tools.Builder.Caching
 
         public void Save()
         {
-            if (!string.IsNullOrEmpty(Manifest?.Output.Project))
+            if (!string.IsNullOrEmpty(Manifest?.Output?.Project))
                 SaveProject(_pathMapper.ToAbsolute(Manifest.Output.Project));
-            if (!string.IsNullOrEmpty(Manifest?.Output.Result))
+            if (!string.IsNullOrEmpty(Manifest?.Output?.Result))
                 Save(_pathMapper.ToAbsolute(Manifest.Output.Result));
         }
 
