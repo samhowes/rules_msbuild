@@ -11,7 +11,7 @@ def publish(ctx):
 
     output_dir = ctx.actions.declare_directory(paths.join("publish", dotnet.config.tfm))
 
-    cache = declare_caches(ctx, "publish", info.project_cache)
+    cache = declare_caches(ctx, "publish")
 
     caches = info.caches
     cache_manifest = write_cache_manifest(ctx, cache, caches)
@@ -19,7 +19,7 @@ def publish(ctx):
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish")
 
     inputs = depset([cache_manifest], transitive = [info.files])
-    outputs = [output_dir, cache.result] + cmd_outputs
+    outputs = [output_dir, cache.result, cache.project] + cmd_outputs
 
     ctx.actions.run(
         mnemonic = "DotnetPublish",

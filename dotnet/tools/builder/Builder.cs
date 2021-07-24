@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
@@ -73,7 +74,7 @@ namespace RulesMSBuild.Tools.Builder
             try
             {
                 projectCollection = BeginBuild();
-
+                
                 var result = ExecuteBuild(projectCollection);
 
                 EndBuild(result);
@@ -174,14 +175,32 @@ namespace RulesMSBuild.Tools.Builder
                     var runfilesManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
                     if (runfilesManifest.Exists)
                     {
-                        new BazelPropsWriter().WriteRunfilesProps(
-                            _context.ProjectExtensionPath(".runfiles.props"), 
-                            File.ReadAllLines(runfilesManifest.FullName));
+                        foreach (var entry in File.ReadAllLines(runfilesManifest.FullName))
+                        {
+                            var parts = entry.Split(' ');
+                            var manifestPath = parts[0];
+                            var filePath = _deps.PathMapper.ToAbsolute(parts[1]);
+                            project.AddItem("None", filePath, new[]
+                            {
+                                new KeyValuePair<string, string>("Pack", "true"),
+                                new KeyValuePair<string, string>("PackagePath", $"content/runfiles/{manifestPath}"),
+                            });
+                        }
                     }
+                    // The default 'Pack' implementation by nuget sets a global property for the target framework
+                    // this invalidates cache entries since they are keyed by ProjectFullPath + GlobalProperties
+                    // We enforce a single target framework though, so this specification is not necessary
+                    //
+                    // additionally, it rebuilds targets that produce outputs, like writing to an Assembly References 
+                    // cache file, and Bazel will have those files marked as ReadOnly, so MSBuild will fail the build because
+                    // it can't write to that file.
+                    
+                    // to prevent rebuilding, we clone the configuration so MSBuild will reuse the results from previous
+                    // builds.
                     _deps.Cache.CloneConfiguration(data, _buildParameters.DefaultToolsVersion, project);
                     break;
             }
-            
+
             _buildManager.PendBuildRequest(data)
                 .ExecuteAsync(submission =>
                 {
@@ -218,7 +237,7 @@ namespace RulesMSBuild.Tools.Builder
         private void EndBuild(BuildResultCode result)
         {
             if (result == BuildResultCode.Success)
-                _deps.Cache.Save(_context.LabelPath(".cache"));
+                _deps.Cache.Save();
 
             _buildManager.EndBuild();
 
@@ -229,19 +248,13 @@ namespace RulesMSBuild.Tools.Builder
 
             if (result != BuildResultCode.Success) return;
 
-
-            var saveEvaluation = false;
             switch (_action)
             {
                 case "restore":
-                    saveEvaluation = true;
                     FixRestoreOutputs();
                     break;
                 case "build":
                 {
-                    // the restore sandbox doesn't have access to the source files, only project files, so we re-save 
-                    // the evaluation with the updated items for this phase of the build.
-                    saveEvaluation = true;
                     if (_context.IsTest)
                     {
                         // todo make this less hacky
@@ -279,9 +292,6 @@ namespace RulesMSBuild.Tools.Builder
                     break;
                 }
             }
-            
-            if (saveEvaluation)
-                _deps.Cache.SaveProject(_context.OutputPath(Path.GetFileName(_context.ProjectFile) +$".{_action}.cache"));
         }
 
         /// <summary>

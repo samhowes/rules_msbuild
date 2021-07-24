@@ -243,14 +243,7 @@ namespace RulesMSBuild.Tests.Tools
         [Fact]
         public void TargetFrameworkAsGlobalProperty_IsCached()
         {
-            // The default 'Pack' implementation by nuget sets a global property for the target framework
-            // this invalidates cache entries since they are keyed by ProjectFullPath + GlobalProperties
-            // We enforce a single target framework though, so this specification is not necessary
-            //
-            // additionally, it rebuilds targets that produce outputs, like writing to an Assembly References 
-            // cache file, and Bazel will have those files marked as ReadOnly, so MSBuild will fail the build because
-            // it can't write to that file.
-
+            // see BuildManger.ExecuteBuild switch... case "pack": for justification
             PrepareNewBuild("foo.csproj", "build");
             StartProject();
             _projectFile!.AppendLine($@"<Target Name='Pack'>

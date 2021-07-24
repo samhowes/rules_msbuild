@@ -71,7 +71,15 @@ namespace RulesMSBuild.Tools.Builder
         {
             var execRootIndex = file.IndexOf("bazel-", StringComparison.OrdinalIgnoreCase);
             var execRoot = file[0..(execRootIndex-1)];
-            var outputBase = execRoot;
+            var outputBase = Path.Combine(execRoot, "bazel-" + Path.GetFileName(execRoot));
+            if (Directory.Exists(outputBase))
+            {
+                execRoot = outputBase;
+            }
+            else
+            {
+                outputBase = execRoot;
+            }
 
             var pathMapper = new PathMapper(execRoot, outputBase);
             BuildCache MakeCache()
@@ -156,9 +164,14 @@ namespace RulesMSBuild.Tools.Builder
             {
                 project = cache.LoadProjectImpl(file);    
             }
-            else
+            else if (file.EndsWith(".cache_manifest"))
             {
-                // var results = cache.LoadResults(file);
+                Directory.SetCurrentDirectory(execRoot);
+                cache.Initialize(file, null);
+                var config = cache.ConfigCache.Single(c => c.ProjectFullPath.EndsWith("Tool.csproj"));
+                var results = cache.ResultsCache.ResultsDictionary[config.ConfigurationId];
+                var computedResults = results.ResultsByTarget["ComputeResolvedFilesToPublishList"];
+                var cachedResult = results.ResultsByTarget["_PublishBuildAlternative"];
             }
             
             // var itemGroups = project.Items.GroupBy(i => i.ItemType).OrderBy(g => g.Key).ToList();
