@@ -62,7 +62,12 @@ namespace RulesMSBuild.Tools.Builder
 
         public virtual string ToManifestPath(string absolutePath)
         {
-            return _toBazelRegex.Replace(absolutePath, "");
+
+            var path = _toBazelRegex.Replace(absolutePath, "")
+                // even on non-windows, MSBuild still uses backslashes sometimes.
+                .Replace('\\','/');
+
+            return path;
         }
 
         public virtual string ToAbsolute(string manifestPath)

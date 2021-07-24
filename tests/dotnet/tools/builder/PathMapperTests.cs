@@ -34,7 +34,7 @@ namespace RulesMSBuild.Tests.Tools
         }
         
         [Theory]
-        [InlineData(@"C:\o\e\a\file.txt", @"a\file.txt")]
+        [InlineData(@"C:\o\e\a\file.txt", @"a/file.txt")]
         [InlineData(@"/o/e/a/file.txt", @"a/file.txt")]
         public void ToManifestPath_Works(string input, string expected)
         {

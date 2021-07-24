@@ -1,6 +1,7 @@
 package dotnet
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -164,10 +165,17 @@ func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry)
 func runCommand(t *testing.T, dir string, args ...string) {
 	args = append(args, "-build_file_name=BUILD")
 	cmd := exec.Command(gazellePath, args...)
+	var stdout bytes.Buffer
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
+
+	err := cmd.Run()
+
+	t.Log(stdout.String())
+	t.Log(stderr.String())
+	if err != nil {
 		t.Fatal(err)
 	}
 }
