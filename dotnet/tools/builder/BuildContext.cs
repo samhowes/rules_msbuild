@@ -142,18 +142,18 @@ namespace RulesMSBuild.Tools.Builder
         }
         public BazelContext(Command command)
         {
-            OutputBase = command.NamedArgs["bazel_output_base"];
+            OutputBase = Path.GetFullPath(command.NamedArgs["bazel_output_base"]);
             // bazel invokes us at the exec root
             ExecRoot = Directory.GetCurrentDirectory();
             // Suffix = ExecRoot[OutputBase.Length..];
-            BinDir = Path.Combine(ExecRoot, command.NamedArgs["bazel_bin_dir"]);
+            BinDir = Path.GetFullPath(Path.Combine(ExecRoot, command.NamedArgs["bazel_bin_dir"]));
                 
             Label = new BazelLabel(
                 command.NamedArgs["workspace"], 
                 command.NamedArgs["package"], 
                 command.NamedArgs["label_name"]);
 
-            OutputDir = Path.Combine(BinDir, Label.Package);
+            OutputDir = Path.GetFullPath(Path.Combine(BinDir, Label.Package));
         }
 
         public string OutputBase { get; }
