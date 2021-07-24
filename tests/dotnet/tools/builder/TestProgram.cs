@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using RulesMSBuild.Tools.Bazel;
 
 namespace BuilderTests
@@ -7,7 +9,15 @@ namespace BuilderTests
     {
         public static int Main(string[] args)
         {
-            RulesMSBuild.Tools.Builder.Program.RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
+            var sdkRoot = Environment.GetEnvironmentVariable("BAZEL_DOTNET_SDKROOT");
+
+            if (sdkRoot == null)
+            {
+                //"/usr/local/share/dotnet/sdk/5.0.203"
+                throw new Exception("BAZEL_DOTNET_SDKROOT is not set, cannot test.");
+            }
+            sdkRoot = Path.GetFullPath(sdkRoot);
+            RulesMSBuild.Tools.Builder.Program.RegisterSdk(sdkRoot);
 
             var newArgs = new List<string>(args)
             {

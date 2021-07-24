@@ -1,3 +1,4 @@
+using System;
 using RulesMSBuild.Tools.Builder;
 using Xunit;
 
@@ -13,7 +14,9 @@ namespace RulesMSBuild.Tests.Tools
     {
         public BuildFrameworkFixture()
         {
-            RulesMSBuild.Tools.Builder.Program.RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
+            var sdkRoot = Environment.GetEnvironmentVariable("BAZEL_DOTNET_SDKROOT") ??
+                          "/usr/local/share/dotnet/sdk/5.0.203";
+            RulesMSBuild.Tools.Builder.Program.RegisterSdk(sdkRoot);
         }
     }
 }

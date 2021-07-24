@@ -176,6 +176,7 @@ msbuild_test = rule(
     _test_impl,
     attrs = dicts.add(_EXECUTABLE_ATTRS, {
         "dotnet_cmd": attr.string(default = "test"),
+        "test_env": attr.string_dict(),
     }),
     executable = True,
     test = True,

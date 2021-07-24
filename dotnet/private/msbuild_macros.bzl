@@ -63,7 +63,7 @@ def msbuild_test_macro(
         target_framework = None,
         deps = [],
         **kwargs):
-    test_args = _steal_args({}, kwargs, ["size", "dotnet_cmd"])
+    test_args = _steal_args({}, kwargs, ["size", "dotnet_cmd", "test_env"])
 
     _msbuild_assembly(name, msbuild_test, project_file, target_framework, srcs, deps, kwargs, test_args)
 

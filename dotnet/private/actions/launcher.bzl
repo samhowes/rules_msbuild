@@ -28,11 +28,22 @@ def make_launcher(ctx, dotnet, info):
         "log_path_arg_name": "LogFilePath",
     }
 
-    if getattr(dotnet.config, "is_test", False):
+    is_test = getattr(dotnet.config, "is_test", False)
+    if is_test:
         launch_data = dicts.add(launch_data, {
             "dotnet_cmd": ctx.attr.dotnet_cmd,
         })
+    extra_env = getattr(ctx.attr, "test_env", {})
+    print(extra_env)
+    env = dicts.add(dotnet.env.items(), dict([
+        [
+            k,
+            ctx.expand_make_variables("test_env", v, {}),
+        ]
+        for k, v in extra_env.items()
+    ]))
 
+    print(env)
     launcher_template = ctx.file._launcher_template
     if is_bin_launcher:
         args = ctx.actions.args()
@@ -48,7 +59,7 @@ def make_launcher(ctx, dotnet, info):
 
         args.add(";".join([
             "{}={}".format(k, v)
-            for k, v in dotnet.env.items()
+            for k, v in env.items()
         ]))
 
         for k, v in launch_data.items():
@@ -72,7 +83,7 @@ def make_launcher(ctx, dotnet, info):
         ])
         substitutions["%dotnet_env%"] = "\n".join([
             "export {}=\"{}\"".format(k, v)
-            for k, v in dotnet.env.items()
+            for k, v in env.items()
         ])
 
         ctx.actions.expand_template(

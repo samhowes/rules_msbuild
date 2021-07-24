@@ -7,21 +7,25 @@ def _dotnet_toolchain_impl(ctx):
     sdk = ctx.attr.sdk[DotnetSdkInfo]
     cross_compile = ctx.attr.dotnetos != sdk.dotnetos or ctx.attr.dotnetarch != sdk.dotnetarch
     builder_info = ctx.attr.builder[DotnetLibraryInfo]
-    return [platform_common.ToolchainInfo(
-        # Public fields
-        name = ctx.label.name,
-        cross_compile = cross_compile,
-        default_dotnetos = ctx.attr.dotnetos,
-        default_dotnetarch = ctx.attr.dotnetarch,
-        sdk = sdk,
-        _builder = struct(
-            assembly = builder_info.assembly,
-            files = depset(
-                [builder_info.output_dir],
-                transitive = [sdk.runfiles],
+    return [
+        platform_common.ToolchainInfo(
+            name = ctx.label.name,
+            cross_compile = cross_compile,
+            default_dotnetos = ctx.attr.dotnetos,
+            default_dotnetarch = ctx.attr.dotnetarch,
+            sdk = sdk,
+            _builder = struct(
+                assembly = builder_info.assembly,
+                files = depset(
+                    [builder_info.output_dir],
+                    transitive = [sdk.runfiles],
+                ),
             ),
         ),
-    )]
+        platform_common.TemplateVariableInfo({
+            "BAZEL_DOTNET_SDKROOT": "/".join([sdk.config.trim_path, sdk.sdk_root.path]),
+        }),
+    ]
 
 dotnet_toolchain = rule(
     _dotnet_toolchain_impl,
@@ -46,7 +50,7 @@ dotnet_toolchain = rule(
         ),
     },
     doc = "Defines a Dotnet toolchain based on an SDK",
-    provides = [platform_common.ToolchainInfo],
+    #    provides = [platform_common.ToolchainInfo],
 )
 
 def declare_toolchains(host, sdk, builder):
