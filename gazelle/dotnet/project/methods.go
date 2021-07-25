@@ -77,10 +77,19 @@ func (p *Project) GetFileGroup(key string) *FileGroup {
 	return fg
 }
 
-func (p *Project) EvaluateItem(i *Item) {
-	i.Include = p.Evaluate(i.Include)
-	i.Exclude = p.Evaluate(i.Exclude)
-	i.Remove = p.Evaluate(i.Remove)
+func (i *ProjectReference) Evaluate(p *Project) {
+	i.Include = p.Evaluate(Forward(i.Include))
+}
+
+func (i *Item) Evaluate(p *Project) {
+	i.Include = p.Evaluate(Forward(i.Include))
+	i.Exclude = p.Evaluate(Forward(i.Exclude))
+	i.Remove = p.Evaluate(Forward(i.Remove))
+}
+
+func (r *PackageReference) Evaluate(proj *Project) {
+	r.Include = proj.Evaluate(r.Include)
+	r.Version = proj.Evaluate(r.Version)
 }
 
 func (p *Project) Evaluate(s string) string {
@@ -100,24 +109,45 @@ func (p *Project) Evaluate(s string) string {
 	return replaced
 }
 
+const externalPrefix = "$(BazelExternal)"
+
 // GetLabel takes an unclean absolute path to a project file and constructs a bazel label for it
 // The path may contain any combination of `.`, `..`, `/` and `\`
 // Constructing a label is not strictly necessary, but this is bazel, and a label is a convenient notation
-func GetLabel(referencePath, repoRoot string) (label.Label, error) {
+func GetLabel(dir, referencePath, repoRoot string) (label.Label, error) {
+	if strings.HasPrefix(referencePath, externalPrefix) {
+		parts := strings.Split(referencePath, "/")
+		if len(parts) < 3 {
+			err := fmt.Errorf("invalid external reference: %s", referencePath)
+			return label.NoLabel, err
+		}
+		workspaceName := parts[1]
+		pkg := strings.Join(parts[2:len(parts)-1], "/")
+		// $(External)/rules_msbuild/dotnet/tools/Runfiles/Runfiles.csproj => @rules_msbuild//dotnet/tools/Runfiles
+		// for other external repositories, we'll need to add repository rules, but we'll do that when there is actually
+		// demand for it
+		return label.Label{
+			Repo: workspaceName,
+			Pkg:  pkg,
+			Name: path.Base(pkg),
+		}, nil
+	}
+
+	referencePath = path.Join(dir, referencePath)
 	if !strings.HasPrefix(referencePath, repoRoot) {
 		err := fmt.Errorf("project path is not rooted in the repository: %s", referencePath)
 		return label.NoLabel, err
 	}
-	rPath := referencePath[len(repoRoot)+1:]
-	lastSlash := strings.LastIndex(rPath, "/")
+	pkgAndName := referencePath[len(repoRoot)+1:]
 
+	lastSlash := strings.LastIndex(pkgAndName, "/")
 	l := label.Label{
 		// this works even for root because lastSlash will be -1, and we'll want the whole string
-		Name: rPath[lastSlash+1:],
+		Name: pkgAndName[lastSlash+1:],
 	}
 
 	if lastSlash > -1 {
-		l.Pkg = rPath[:lastSlash]
+		l.Pkg = pkgAndName[:lastSlash]
 	}
 	return l, nil
 }

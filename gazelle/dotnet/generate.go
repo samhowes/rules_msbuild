@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/label"
@@ -68,11 +69,9 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 }
 
 func loadProject(args language.GenerateArgs, projectFile string) *project.Project {
-	dirtyPath := project.Forward(path.Join(args.Dir, projectFile))
-
 	// squash the error, we know we're under the repo root
-	l, _ := project.GetLabel(dirtyPath, project.Forward(args.Config.RepoRoot))
-	proj, err := project.Load(dirtyPath)
+	l, _ := project.GetLabel(project.Forward(args.Dir), projectFile, project.Forward(args.Config.RepoRoot))
+	proj, err := project.Load(filepath.Join(args.Dir, projectFile))
 	if err != nil {
 		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build "+
 			"definitions. Parsing error: %v", projectFile, err)
@@ -91,12 +90,13 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 	dc := getConfig(args.Config)
 	for _, ig := range proj.ItemGroups {
 		for _, ref := range ig.ProjectReferences {
-			ref.Include = project.Forward(ref.Include)
+			ref.Evaluate(proj)
+
 			dep := projectDep{}
 
 			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
 
-			l, err := project.GetLabel(path.Join(dir, ref.Include), repoRoot)
+			l, err := project.GetLabel(dir, ref.Include, repoRoot)
 			proj.Deps = append(proj.Deps, &dep)
 			if err != nil {
 				dep.Label = label.NoLabel

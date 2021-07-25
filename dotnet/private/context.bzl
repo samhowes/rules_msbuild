@@ -48,8 +48,8 @@ def dotnet_exec_context(ctx, is_executable, is_test = False, target_framework = 
     tfm = getattr(ctx.attr, "target_framework", target_framework)
     tfm_info = sdk.config.tfm_mapping.get(tfm, None)
     if tfm_info == None:
-        fail("Tfm {} was not configured for restore by nuget. If this was not a mistake, please add it to your " +
-             "nuget_fetch rule.".format(tfm))
+        fail("Tfm {} was not configured for restore by nuget. If this was not a mistake, please add it to your ".format(tfm) +
+             "nuget_fetch rule.")
 
     mode = ctx.var["COMPILATION_MODE"]
     configuration = "fastbuild"

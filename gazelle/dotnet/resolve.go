@@ -89,6 +89,10 @@ func findDep(c *config.Config, ix *resolve.RuleIndex, dep *projectDep, comments 
 	if dep.IsPackage {
 		return &dep.Label, comments
 	}
+	if dep.Label.Repo != "" {
+		// they referenced $(External) in the project file, we already have a resolved label
+		return &dep.Label, nil
+	}
 	spec := resolve.ImportSpec{
 		Lang: dotnetName,
 		Imp:  dep.Label.String(),

@@ -49,6 +49,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 ["AlternateCommonProps"] = Path.Combine(propsDirectory!, "AlternateCommonProps.props"),
                 ["ExecRoot"] = bazel.ExecRoot,
                 ["BINDIR"] = bazel.BinDir,
+                ["BazelExternal"] = Path.Combine(bazel.ExecRoot, "external"),
                 ["RestoreConfigFile"] = nuGetConfig,
                 ["PublishDir"] = Path.Combine(OutputPath, "publish", tfm) + "/",
                 ["UseAppHost"] = "false", // we'll basically be making our own via the launcher

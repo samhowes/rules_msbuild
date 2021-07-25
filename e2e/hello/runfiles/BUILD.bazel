@@ -1,0 +1,11 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "runfiles",
+    srcs = ["Program.cs"],
+    target_framework = "netcoreapp3.1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@rules_msbuild//dotnet/tools/Runfiles",
+    ],
+)

@@ -1,3 +1,7 @@
 <Project>
+    <!--
+        Only import when Bazel isn't controlling msbuild AND we actually want to use bazel to build.
+        These targets override the default msbuild targets and call bazel instead.
+      -->
     <Import Condition=" '$(UseBazel)' == 'true' And '$(BazelBuild)' == ''" Project="Bazel.targets"/>
 </Project>
