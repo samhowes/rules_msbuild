@@ -7,6 +7,7 @@ using Bzl;
 using RulesMSBuild.Tools.Bazel;
 using RulesMSBuild.Tools.Builder;
 using static TestRunner.TestLogger;
+using Files = Bzl.Files;
 
 namespace TestRunner
 {

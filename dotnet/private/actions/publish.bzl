@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":common.bzl", "write_cache_manifest")
+load(":common.bzl", "cache_set", "declare_caches", "write_cache_manifest")
 load("//dotnet/private:context.bzl", "dotnet_exec_context", "make_builder_cmd")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetPublishInfo")
 
 def publish(ctx):
     info = ctx.attr.target[DotnetLibraryInfo]
@@ -11,16 +11,15 @@ def publish(ctx):
 
     output_dir = ctx.actions.declare_directory(paths.join("publish", dotnet.config.tfm))
 
+    cache = declare_caches(ctx, "publish")
+
+    caches = info.caches
+    cache_manifest = write_cache_manifest(ctx, cache, caches)
+
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish")
 
-    cache_manifest = write_cache_manifest(ctx, depset([info.build_cache]))
-
-    inputs = depset(
-        [info.output_dir, info.intermediate_dir, info.build_cache, cache_manifest],
-        transitive = [info.dep_files, dotnet.sdk.runfiles],
-    )
-
-    outputs = [output_dir] + cmd_outputs
+    inputs = depset([cache_manifest], transitive = [info.files])
+    outputs = [output_dir, cache.result, cache.project] + cmd_outputs
 
     ctx.actions.run(
         mnemonic = "DotnetPublish",
@@ -31,4 +30,13 @@ def publish(ctx):
         env = dotnet.env,
         tools = dotnet.builder.files,
     )
-    return output_dir
+
+    publish_info = DotnetPublishInfo(
+        output_dir = output_dir,
+        files = depset(direct = outputs, transitive = [inputs]),
+        caches = cache_set([cache], transitive = [caches]),
+        library = info,
+        restore = restore,
+    )
+
+    return publish_info

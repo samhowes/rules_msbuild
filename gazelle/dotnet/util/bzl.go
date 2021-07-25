@@ -71,16 +71,15 @@ func ListWithComments(list []bzl.Expr, comments []bzl.Comment) *bzl.ListExpr {
 	if len(list) == 0 && len(comments) == 0 {
 		return nil
 	}
+	if len(comments) > 0 && len(list) == 0 {
+		// for some reason empty lists aren't written out, even if they have comments
+		// we'll have a comment for an error, so make sure the user actually sees something
+		list = append(list, &bzl.StringExpr{Value: ""})
+	}
 	expr := bzl.ListExpr{List: SortExprs(list)}
 	if len(comments) > 0 {
-		var commented *bzl.Comments
-		if len(list) > 0 {
-			commented = list[0].Comment()
-			commented.Before = append(comments, commented.Before...)
-		} else {
-			commented = expr.End.Comment()
-			commented.Before = append(commented.Before, comments...)
-		}
+		commented := list[0].Comment()
+		commented.Before = append(comments, commented.Before...)
 	}
 	return &expr
 }

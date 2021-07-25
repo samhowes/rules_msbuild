@@ -7,7 +7,6 @@ import (
 	bzl "github.com/bazelbuild/buildtools/build"
 	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
-	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -101,28 +100,15 @@ func (p *Project) Evaluate(s string) string {
 	return replaced
 }
 
-// NormalizePath takes an unclean absolute path to a project file and constructs a bazel label for it
+// GetLabel takes an unclean absolute path to a project file and constructs a bazel label for it
 // The path may contain any combination of `.`, `..`, `/` and `\`
 // Constructing a label is not strictly necessary, but this is bazel, and a label is a convenient notation
-func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
-	// even on non-windows, dotnet still uses paths with backslashes in project files
-	// even on windows, go uses '/' for path cleaning
-	dirtyProjectPath = strings.Replace(dirtyProjectPath, "\\", "/", -1)
-
-	// project files use relative paths, clean them to get the absolute path
-	cleaned := path.Clean(dirtyProjectPath)
-	// path.Clean will exclusively work with forward slashes
-	// repoRoot will be an actual windows path with backslashes on windows though
-	if os.PathSeparator == '\\' {
-		repoRoot = strings.Replace(repoRoot, "\\", "/", -1)
-	}
-	if !strings.HasPrefix(cleaned, repoRoot) {
-		err := fmt.Errorf("project path is not rooted in the repository: %s", cleaned)
+func GetLabel(referencePath, repoRoot string) (label.Label, error) {
+	if !strings.HasPrefix(referencePath, repoRoot) {
+		err := fmt.Errorf("project path is not rooted in the repository: %s", referencePath)
 		return label.NoLabel, err
 	}
-
-	rPath := cleaned[len(repoRoot)+1:]
-
+	rPath := referencePath[len(repoRoot)+1:]
 	lastSlash := strings.LastIndex(rPath, "/")
 
 	l := label.Label{
@@ -134,6 +120,10 @@ func NormalizePath(dirtyProjectPath, repoRoot string) (label.Label, error) {
 		l.Pkg = rPath[:lastSlash]
 	}
 	return l, nil
+}
+
+func Forward(p string) string {
+	return strings.Replace(p, "\\", "/", -1)
 }
 
 func (fg *FileGroup) IsExcluded(file string) bool {

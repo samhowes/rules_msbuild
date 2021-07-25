@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using FluentAssertions;
 using RulesMSBuild.Tools.Builder;
+using RulesMSBuild.Tools.Builder.Launcher;
 using Xunit;
 
 namespace RulesMSBuild.Tests.Tools

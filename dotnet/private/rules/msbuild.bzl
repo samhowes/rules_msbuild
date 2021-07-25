@@ -24,10 +24,11 @@ def _msbuild_tool_binary_impl(ctx):
     ]
 
 def _publish_impl(ctx):
-    output_dir = publish(ctx)
-    all = depset([output_dir])
+    info = publish(ctx)
+    all = depset([info.output_dir])
     return [
         DefaultInfo(files = all),
+        info,
         OutputGroupInfo(all = all),
     ]
 
@@ -36,7 +37,7 @@ def _restore_impl(ctx):
     restore_info, outputs = restore(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset([restore_info.restore_dir]),
+            files = depset([restore_info.output_dir]),
         ),
         restore_info,
         OutputGroupInfo(
@@ -173,7 +174,10 @@ msbuild_binary = rule(
 
 msbuild_test = rule(
     _test_impl,
-    attrs = _EXECUTABLE_ATTRS,
+    attrs = dicts.add(_EXECUTABLE_ATTRS, {
+        "dotnet_cmd": attr.string(default = "test"),
+        "test_env": attr.string_dict(),
+    }),
     executable = True,
     test = True,
     toolchains = TOOLCHAINS,

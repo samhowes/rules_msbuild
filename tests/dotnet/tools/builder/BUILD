@@ -1,16 +1,32 @@
 load("//dotnet:defs.bzl", "msbuild_test")
 
 msbuild_test(
-    name = "BuilderTest",
+    name = "BuilderTests",
     size = "small",
-    srcs = glob(["*.cs"]),
-    project_file = "BuilderTest.csproj",
-    target_framework = "netcoreapp3.1",
+    srcs = [
+        "BuildCacheTests.cs",
+        "BuildFrameworkTest.cs",
+        "BuilderTests.cs",
+        "E2eTests.cs",
+        "PathMapperTests.cs",
+        "TestProgram.cs",
+    ],
+    dotnet_cmd = "exec",
+    target_framework = "net5.0",
+    test_env = {
+        "BAZEL_DOTNET_SDKROOT": "$(BAZEL_DOTNET_SDKROOT)",
+    },
     deps = [
-        "//dotnet/tools/builder:Builder",  # keep
+        "//dotnet/tools/Runfiles",
+        "//dotnet/tools/builder:Builder",
         "@nuget//FluentAssertions",
+        "@nuget//Microsoft.Build.Tasks.Core",
         "@nuget//Microsoft.NET.Test.Sdk",
-        "@nuget//xunit",
-        "@nuget//xunit.runner.visualstudio",
+        "@nuget//Moq",
+        "@nuget//SamHowes.Microsoft.Build",
+        "@nuget//xunit.assert",
+        "@nuget//xunit.console",
+        "@nuget//xunit.core",
+        "@nuget//xunit.extensibility.core",
     ],
 )

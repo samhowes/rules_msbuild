@@ -68,10 +68,10 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 }
 
 func loadProject(args language.GenerateArgs, projectFile string) *project.Project {
-	dirtyPath := path.Join(args.Dir, projectFile)
+	dirtyPath := project.Forward(path.Join(args.Dir, projectFile))
 
 	// squash the error, we know we're under the repo root
-	l, _ := project.NormalizePath(dirtyPath, args.Config.RepoRoot)
+	l, _ := project.GetLabel(dirtyPath, project.Forward(args.Config.RepoRoot))
 	proj, err := project.Load(dirtyPath)
 	if err != nil {
 		log.Printf("%s: failed to parse project file. Skipping. This may result in incomplete build "+
@@ -85,26 +85,31 @@ func loadProject(args language.GenerateArgs, projectFile string) *project.Projec
 }
 
 func processDeps(args language.GenerateArgs, proj *project.Project) {
+	dir := project.Forward(args.Dir)
+	repoRoot := project.Forward(args.Config.RepoRoot)
+
 	dc := getConfig(args.Config)
 	for _, ig := range proj.ItemGroups {
 		for _, ref := range ig.ProjectReferences {
+			ref.Include = project.Forward(ref.Include)
 			dep := projectDep{}
 
 			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
 
-			l, err := project.NormalizePath(path.Join(args.Dir, ref.Include), args.Config.RepoRoot)
+			l, err := project.GetLabel(path.Join(dir, ref.Include), repoRoot)
+			proj.Deps = append(proj.Deps, &dep)
 			if err != nil {
 				dep.Label = label.NoLabel
 				dep.Comments = append(dep.Comments, fmt.Sprintf("could not add project reference: %v", err))
 				continue
 			}
 			dep.Label = l
-			proj.Deps = append(proj.Deps, &dep)
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
 			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
 
+			ref.Evaluate(proj)
 			switch strings.ToLower(ref.Include) {
 			case "microsoft.net.test.sdk":
 				proj.IsTest = true

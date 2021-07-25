@@ -1,12 +1,20 @@
 """Dotnet Providers"""
 
+DotnetCacheInfo = provider(
+    fields = {
+        "project_path": "",
+        "project": "",
+        "result": "",
+    },
+)
+
 DotnetRestoreInfo = provider(
     doc = "todo",
     fields = {
-        "project_file": "",
-        "restore_dir": "",
+        "output_dir": "",
         "target_framework": "",
-        "dep_files": "",
+        "files": "",
+        "caches": "depset of DotentCacheInfo",
     },
 )
 
@@ -15,14 +23,22 @@ DotnetLibraryInfo = provider(
     fields = {
         "assembly": "The primary assembly that was compiled",
         "output_dir": "The msbuild output directory as a declared file",
-        "runfiles": "runfiles",
-        "build_cache": "",
-        "build_caches": "depset of build_cache and all build_caches this library depends on",
-        "srcs": "depset of the transitive closure of all source files this library depends on",
-        "content": "depset of non-compiled files needed in the output directory as a sibling of the output assembly",
+        "runfiles": "",
+        "files": "depset of files",
+        "caches": "depset of DotnetCacheInfo",
+        "project_cache": "cache file for this evaluation of the project file",
         "restore": "DotnetRestoreInfo",
-        "dep_files": "depset of all files this library depends on",
-        "intermediate_dir": "",
+    },
+)
+
+DotnetPublishInfo = provider(
+    doc = "Contains information about a Dotnet library",
+    fields = {
+        "output_dir": "The msbuild output directory as a declared file",
+        "files": "depset of files",
+        "caches": "depset of DotnetCacheInfo",
+        "library": "DotnetLibraryInfo",
+        "restore": "DotnetRestoreInfo",
     },
 )
 

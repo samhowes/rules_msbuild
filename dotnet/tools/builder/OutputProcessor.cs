@@ -154,7 +154,7 @@ namespace RulesMSBuild.Tools.Builder
         
         protected virtual int RunCommand()
         {
-            var builder = new Builder(_context);
+            var builder = new Builder(_context, null!);
             return builder.Build();
         }
     }

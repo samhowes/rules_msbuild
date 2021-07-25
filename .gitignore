@@ -9,3 +9,5 @@ obj
 .vscode/c_cpp_properties.json
 .idea
 tmp
+*-bin
+
