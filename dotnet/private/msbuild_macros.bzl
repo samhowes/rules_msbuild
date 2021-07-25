@@ -84,8 +84,6 @@ def _msbuild_assembly(
         assembly_args):
     _steal_args(assembly_args, kwargs, ["data", "content"])
 
-    kwargs.setdefault("msbuild_directory", "//:msbuild_directory")
-
     srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)
     restore_name = name + "_restore"
