@@ -27,10 +27,10 @@ parameters:
     default: ' '
 
 jobs:
-  - ${{ each platform in parameters.platforms }}:
-      - job: ${{ platform.name }}
-        pool:
-          vmImage: ${{ platform.vmImage }}
+  # - ${{ each platform in parameters.platforms }}:
+      - job: wtf
+        pool: default
+          # vmImage: ${{ platform.vmImage }}
 
         steps:
           - bash: |
