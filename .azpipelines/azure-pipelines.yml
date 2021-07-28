@@ -59,6 +59,9 @@ jobs:
           - publish: bazel-out.tar.gz
             artifact: ${{ platform.name }}-bazel-out
             condition: always()
+          - publish: sandbox.tar.gz
+            artifact: ${{ platform.name }}-sandbox
+            condition: always()
 
           - task: PublishTestResults@2
             inputs:
