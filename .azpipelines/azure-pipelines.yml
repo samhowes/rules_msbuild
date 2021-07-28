@@ -22,8 +22,7 @@ parameters:
           vmImage: windows-2019
       - name: linux
         pool:
-          # vmImage: ubuntu-latest
-          name: Default
+          vmImage: ubuntu-latest
       - name: mac
         pool:
           vmImage: macOS-latest
