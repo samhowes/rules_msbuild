@@ -21,6 +21,7 @@ def build_tool_binary(ctx, dotnet):
         ctx.file.project_file,
         "-p:RestoreConfigFile=" + dotnet.sdk.config.nuget_config.path,
         "-nologo",
+        "-bl",
     ])
 
     inputs = depset(
