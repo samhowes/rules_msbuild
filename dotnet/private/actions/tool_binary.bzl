@@ -25,7 +25,7 @@ def build_tool_binary(ctx, dotnet):
     ])
 
     inputs = depset(
-        ctx.files.srcs + [ctx.file.project_file, dotnet.sdk.config.nuget_config],
+        ctx.files.srcs + [ctx.file.project_file, dotnet.sdk.config.nuget_config] + ctx.files._bazel_packages,
         transitive = [dep_files, dotnet.sdk.runfiles],
     )
     outputs = [output_dir, assembly]

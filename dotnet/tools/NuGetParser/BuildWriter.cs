@@ -99,6 +99,10 @@ namespace NuGetParser
         {
             _writer.WriteLine($@"    {propertyName} = ""{value}"",");
         }
+        public void SetAttrRaw(string propertyName, string value)
+        {
+            _writer.WriteLine($@"    {propertyName} = {value},");
+        }
         
         public void SetAttr<T>(string propertyName, T value)
         {
