@@ -20,12 +20,12 @@ def build_tool_binary(ctx, dotnet):
         "publish",
         ctx.file.project_file,
         "-p:RestoreConfigFile=" + dotnet.sdk.config.nuget_config.path,
-        "-v:quiet",
         "-nologo",
+        "-bl",
     ])
 
     inputs = depset(
-        ctx.files.srcs + [ctx.file.project_file, dotnet.sdk.config.nuget_config],
+        ctx.files.srcs + [ctx.file.project_file, dotnet.sdk.config.nuget_config] + ctx.files._bazel_packages,
         transitive = [dep_files, dotnet.sdk.runfiles],
     )
     outputs = [output_dir, assembly]

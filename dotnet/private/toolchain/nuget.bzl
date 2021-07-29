@@ -171,8 +171,8 @@ def _generate_nuget_configs(ctx, config):
         True,
         # todo(#46) allow custom package sources
         [
-            {"key": "bazel", "value": config.bazel_packages},
             {"key": "nuget.org", "value": "https://api.nuget.org/v3/index.json", "protocolVersion": "3"},
+            {"key": "bazel", "value": config.bazel_packages.realpath},
         ],
     )
     ctx.template(

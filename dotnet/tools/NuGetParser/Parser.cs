@@ -111,6 +111,11 @@ namespace NuGetParser
                 new BuildWriter(File.Create(Path.Join(Path.GetDirectoryName(PackagesFolder), "BUILD.bazel")));
             b.Load("@rules_msbuild//dotnet:defs.bzl", "tfm_mapping", "framework_info");
             b.Visibility();
+            
+            b.StartRule("filegroup", "bazel_packages");
+            b.SetAttrRaw("srcs", "glob([\"bazel_packages/**/*\"])");
+            b.EndRule();
+            
             b.StartRule("tfm_mapping", "tfm_mapping");
             b.SetAttr("frameworks", Tfms.OrderBy(t => t.Key).Select(t => ":" + t.Key));
             b.EndRule();

@@ -1,8 +1,5 @@
-load("//dotnet:defs.bzl", "msbuild_directory")
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
-
-msbuild_directory()
 
 # gazelle:prefix github.com/samhowes/rules_msbuild
 gazelle(

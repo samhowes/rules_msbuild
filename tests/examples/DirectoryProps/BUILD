@@ -5,5 +5,4 @@ msbuild_directory(
         "Directory.Build.props",
         "Directory.Build.targets",
     ],
-    deps = ["//:msbuild_directory"],
 )
