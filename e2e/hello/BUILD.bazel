@@ -1,3 +1,0 @@
-load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
-
-msbuild_directory()

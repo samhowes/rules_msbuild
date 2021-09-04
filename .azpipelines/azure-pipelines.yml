@@ -18,19 +18,22 @@ parameters:
     type: object
     default:
       - name: windows
-        vmImage: windows-2019
+        pool:
+          vmImage: windows-2019
       - name: linux
-        vmImage: ubuntu-latest
+        pool:
+          vmImage: ubuntu-18.04
       - name: mac
-        vmImage: macOS-latest
+        pool:
+          vmImage: macOS-latest
   - name: bazel_args
     default: ' '
 
 jobs:
   - ${{ each platform in parameters.platforms }}:
       - job: ${{ platform.name }}
-        pool:
-          vmImage: ${{ platform.vmImage }}
+        pool: ${{ platform.pool }}
+          
 
         steps:
           - bash: |

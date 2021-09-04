@@ -11,9 +11,11 @@ fi
 export MSYS2_ARG_CONV_EXCL="*"
 
 # if these don't build, nothing will
-bazel build $bazel_args //tests/sanity //tests/examples/HelloBazel
+bazel build $bazel_args --test_output=streamed //tests/sanity //tests/examples/HelloBazel
 
 bazel test $bazel_args //... --test_tag_filters=-e2e
+
+if [[ "${1:-}" == "half" ]]; then exit 0; fi;
 
 bazel run $bazel_args //:gazelle-dotnet
 
