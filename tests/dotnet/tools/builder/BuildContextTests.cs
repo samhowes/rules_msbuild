@@ -38,8 +38,12 @@ namespace RulesMSBuild.Tests.Tools
             var path = context.LabelPath("");
 
             var trimmed = path.Substring(cwd.Length +1);
-            
-            trimmed.Should().Be(Path.Combine(bin,expectedLabelPath));
+
+            var fullExpected = Path.Combine(bin, expectedLabelPath);
+            if (Path.DirectorySeparatorChar == '\\')
+                fullExpected = fullExpected.Replace('/', '\\');
+
+            trimmed.Should().Be(fullExpected);
 
         }
     }

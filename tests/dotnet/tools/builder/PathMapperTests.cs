@@ -44,17 +44,18 @@ namespace RulesMSBuild.Tests.Tools
             return pathMapper;
         }
 
-        [Fact]
-        public void RoundTrip_Works()
+        [Theory]
+        [PathData(@"C:\o\e\f\file.txt", @"$exec_root\f\file.txt")]
+        [PathData("/o/e/f/file.txt", @"$exec_root/f/file.txt")]
+        public void RoundTrip_Works(string input, string expectedStored)
         {
-            var path = "/o/e/f/file.txt";
-            var pathMapper = Init(path);
+            var pathMapper = Init(input);
 
-            var stored = pathMapper.ToBazel(path);
-            stored.Should().Be("$exec_root/f/file.txt");
+            var stored = pathMapper.ToBazel(input);
+            stored.Should().Be(expectedStored);
 
             var retrieved = pathMapper.FromBazel(stored);
-            retrieved.Should().Be("/o/e/f/file.txt");
+            retrieved.Should().Be(input);
         }
         
         [Theory]
@@ -74,7 +75,7 @@ namespace RulesMSBuild.Tests.Tools
         [Theory]
         [PathData(@"C:\o\e\f\a\file.txt", @"f/a/file.txt")]
         [PathData(@"/o/e/f/a/file.txt", @"f/a/file.txt")]
-        [PathData(@"C:\o\e\f\external\bar\a\file.txt", @"bar/f/a/file.txt")]
+        [PathData(@"C:\o\e\f\external\bar\a\file.txt", @"bar/a/file.txt")]
         [PathData(@"/o/e/f/external/bar/a/file.txt", @"bar/a/file.txt")]
         public void ToManifestPath_Works(string input, string expected)
         {
