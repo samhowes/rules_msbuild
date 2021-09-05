@@ -8,6 +8,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -61,7 +62,7 @@ func Load(projectFile string) (*Project, error) {
 
 	proj.TargetFramework, _ = proj.Properties["TargetFramework"]
 
-	baseName := path.Base(projectFile)
+	baseName := filepath.Base(projectFile)
 	projExt := path.Ext(baseName)
 	proj.Name = baseName[0 : len(baseName)-len(projExt)]
 
