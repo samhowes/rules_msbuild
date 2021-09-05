@@ -17,6 +17,7 @@ namespace RulesMSBuild.Tools.Builder
         const string ExecRoot = "$exec_root";
         private readonly Regex _toBazelRegex;
         private readonly Regex _fromBazelRegex;
+        private readonly string _externalPrefix;
 
         private static void SetInstance(PathMapper instance)
         {
@@ -38,10 +39,16 @@ namespace RulesMSBuild.Tools.Builder
             if (!execRoot.StartsWith(outputBase))
                 throw new ArgumentException($"Unexpected output_base<>exec_root combination: {outputBase}<>{execRoot}");
             _outputBase = outputBase;
-            _execRoot = execRoot;
+            // bazel invokes us at $output_base/sandbox/darwin-sandbox/17/execroot/<workspace_name>
+            // this code needs the actual folder named "execroot" not the folder that the bazel docs call "execRoot"
+            // which is "Working tree for the Bazel build & root of symlink forest: execRoot"
+            // https://docs.bazel.build/versions/main/output_directories.html
+            _execRoot = Path.GetDirectoryName(execRoot)!;
+            var hostWorkspace = execRoot[(_execRoot.Length + 1)..];
+            _externalPrefix = hostWorkspace + "/external"; 
             SetInstance(this);
             
-            var execRootSegment = execRoot[(outputBase.Length)..];
+            var execRootSegment = _execRoot[(outputBase.Length)..];
 
             _toBazelRegex = new Regex(@$"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?(/|\\)",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
@@ -62,10 +69,14 @@ namespace RulesMSBuild.Tools.Builder
 
         public virtual string ToManifestPath(string absolutePath)
         {
-
             var path = _toBazelRegex.Replace(absolutePath, "")
                 // even on non-windows, MSBuild still uses backslashes sometimes.
                 .Replace('\\','/');
+            
+            if (path.StartsWith(_externalPrefix))
+            {
+                path = path.Substring(_externalPrefix.Length + 1);
+            }
 
             return path;
         }

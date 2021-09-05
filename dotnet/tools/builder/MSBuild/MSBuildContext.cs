@@ -29,6 +29,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 // enables a faster nuget restore compatible with isolated builds
                 // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L1310
                 ["RestoreUseStaticGraphEvaluation"] = "true",
+                ["RestoreRecursive"] = "false", // only restore the entry project, not referenced projects
             };
 
             switch (Configuration.ToLower())

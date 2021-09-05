@@ -7,7 +7,7 @@ e2e_test(
         "build //...",
     ],
     run = {
-        "//runfiles": "bar\n\n",
+        "//RunfilesTest": "bar\n\n",
     },
 )
 

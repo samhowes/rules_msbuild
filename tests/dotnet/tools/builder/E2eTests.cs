@@ -58,24 +58,21 @@ namespace RulesMSBuild.Tests.Tools
             configId!.SetValue(null, 0);
             if (Path.IsPathRooted(projectName))
                 projectName = projectName[(_execRoot.Length + 1)..];
-            _context = new BuildContext(new Command()
+            _context = new BuildContext(new BuildCommand()
             {
                 Action = action,
-                NamedArgs =
-                {
-                    ["bazel_output_base"] = _tmp,
-                    ["bazel_bin_dir"] = "cpu-dbg",
-                    ["workspace"] = "e2e",
-                    ["package"] = (Path.GetDirectoryName(projectName) ?? "").Replace("\\","/"),
-                    ["label_name"] = Path.GetFileNameWithoutExtension(projectName) + "_" + action,
-                    ["nuget_config"] = "NuGet.config",
-                    ["tfm"] = "netcoreapp3.1",
-                    ["directory_bazel_props"] = "Bazel.props",
-                    ["configuration"] = "dbg",
-                    ["output_type"] = "lib",
-                    ["sdk_root"] = "foo",
-                    ["project_file"] = projectName,
-                }
+                bazel_output_base = _tmp,
+                bazel_bin_dir = "cpu-dbg",
+                workspace = "e2e",
+                package = (Path.GetDirectoryName(projectName) ?? "").Replace("\\","/"),
+                label_name = Path.GetFileNameWithoutExtension(projectName) + "_" + action,
+                nuget_config = "NuGet.config",
+                tfm = "netcoreapp3.1",
+                directory_bazel_props = "Bazel.props",
+                configuration = "dbg",
+                output_type = "lib",
+                sdk_root = "foo",
+                project_file = projectName,
             }) {DiagnosticsEnabled = true};
             
             _context.MakeTargetGraph(true);

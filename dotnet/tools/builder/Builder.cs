@@ -74,6 +74,7 @@ namespace RulesMSBuild.Tools.Builder
             try
             {
                 projectCollection = BeginBuild();
+                if (projectCollection == null) return -1;
                 
                 var result = ExecuteBuild(projectCollection);
 
@@ -100,7 +101,7 @@ namespace RulesMSBuild.Tools.Builder
             }
         }
 
-        public ProjectCollection BeginBuild()
+        public ProjectCollection? BeginBuild()
         {
             // GlobalProjectCollection loads EnvironmentVariables on Init. We use ExecRoot in the project files, we 
             // can't use MSBuildStartupDirectory because NuGet Restore uses a static graph restore which starts up a 
@@ -109,7 +110,10 @@ namespace RulesMSBuild.Tools.Builder
             // Setting it here allows the project file to read it for paths and we don't have to clear it later.
             _context.SetEnvironment();
 
-            _deps.Cache.Initialize(_context.LabelPath(".cache_manifest"), _buildManager);
+            if (!_deps.Cache.Initialize(_context.LabelPath(".cache_manifest"), _buildManager))
+            {
+                return null;
+            }
 
             var pc = new ProjectCollection(
                 _context.MSBuild.GlobalProperties, 
@@ -363,8 +367,9 @@ namespace RulesMSBuild.Tools.Builder
 
         private void CopyFiles(string filesKey, string destinationDirectory, bool trimPackage = false)
         {
-            if (!_context.Command.NamedArgs.TryGetValue(filesKey, out var contentListString) ||
-                contentListString == "") return;
+            // if (!_context.Command.NamedArgs.TryGetValue(filesKey, out var contentListString) ||
+            //     contentListString == "") return;
+            var contentListString = "";
             var contentList = contentListString.Split(";");
             var createdDirectories = new HashSet<string>();
             foreach (var filePath in contentList)

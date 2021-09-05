@@ -242,7 +242,8 @@ def _process_packages(ctx, config):
     for pkg_name, version in ctx.attr.builder_deps.items():
         _record_package(config, seen_names, pkg_name, version, [tfm], True)
 
-    for tfm in ctx.attr.target_frameworks + [tfm]:
+    gross_hardcoded_runfiles_tfm = "netstandard2.1"  #todo(151) remove this hack
+    for tfm in ctx.attr.target_frameworks + [tfm, gross_hardcoded_runfiles_tfm]:
         config.packages_by_tfm.setdefault(tfm, {})
 
     for spec, frameworks in ctx.attr.packages.items():

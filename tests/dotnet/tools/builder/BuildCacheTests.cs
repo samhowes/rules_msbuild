@@ -268,6 +268,8 @@ namespace RulesMSBuild.Tests.Tools
                 null!
             );
             _cache.Initialize(DoesNotExist, null);
+            
+            _cache.Result.ConfigCache = _cache.ConfigCache;
             _cache.Manifest = new CacheManifest()
             {
                 Projects = new Dictionary<string, string>()

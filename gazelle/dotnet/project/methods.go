@@ -84,7 +84,12 @@ func (i *ProjectReference) Evaluate(p *Project) {
 func (i *Item) Evaluate(p *Project) {
 	i.Include = p.Evaluate(Forward(i.Include))
 	i.Exclude = p.Evaluate(Forward(i.Exclude))
-	i.Remove = p.Evaluate(Forward(i.Remove))
+	if i.Condition == "" {
+		i.Remove = p.Evaluate(Forward(i.Remove))
+	} else {
+		i.Remove = ""
+	}
+
 }
 
 func (r *PackageReference) Evaluate(proj *Project) {

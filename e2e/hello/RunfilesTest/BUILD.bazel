@@ -1,8 +1,9 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
-    name = "runfiles",
+    name = "RunfilesTest",
     srcs = ["Program.cs"],
+    data = ["foo.txt"],
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
     deps = [

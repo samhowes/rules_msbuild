@@ -46,34 +46,31 @@ namespace RulesMSBuild.Tools.Builder.Caching
             _targetGraph = targetGraph;
         }
 
-        public void Initialize(string manifestPath, BuildManager? buildManager)
+        public bool Initialize(string manifestPath, BuildManager? buildManager)
         {
             int id = 0;
             _newConfigurationId = buildManager != null ? buildManager.GetNewConfigurationId : () => ++id;
             IConfigCache buildManagerConfigCache;
             if (!_files.Exists(manifestPath))
             {
-                Debug("No input caches found");
-                Manifest = new CacheManifest();
-                Result.ConfigCache = ConfigCache;
-                buildManagerConfigCache = ConfigCache;
+                Error($"Cache manifest does not exist at {manifestPath}, cannot build.");
+                return false;
             }
-            else
-            {
-                var cacheManifestJson = _files.GetContents(manifestPath);
-                var cacheManifest = JsonSerializer.Deserialize<CacheManifest>(cacheManifestJson,
-                    new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
-                Manifest = cacheManifest!;
 
-                var (caches, cachesInOrder) = DeserializeCaches();
-                AggregateCaches(cachesInOrder, caches);
-                var withOverride = new ConfigCacheWithOverride(ConfigCache);
-                buildManagerConfigCache = withOverride;
-                // only save new configurations to the output cache
-                Result.ConfigCache = withOverride.CurrentCache;
-            }
+            var cacheManifestJson = _files.GetContents(manifestPath);
+            var cacheManifest = JsonSerializer.Deserialize<CacheManifest>(cacheManifestJson,
+                new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
+            Manifest = cacheManifest!;
+
+            var (caches, cachesInOrder) = DeserializeCaches();
+            AggregateCaches(cachesInOrder, caches);
+            var withOverride = new ConfigCacheWithOverride(ConfigCache);
+            buildManagerConfigCache = withOverride;
+            // only save new configurations to the output cache
+            Result.ConfigCache = withOverride.CurrentCache;
 
             buildManager?.ReuseOldCaches(buildManagerConfigCache, ResultsCache);
+            return true;
         }
 
         public void CloneConfiguration(BuildRequestData data, string toolsVersion, ProjectInstance project)
@@ -193,6 +190,7 @@ namespace RulesMSBuild.Tools.Builder.Caching
 
         public void Save()
         {
+            Debug("Saving caches...");
             if (!string.IsNullOrEmpty(Manifest?.Output?.Project))
                 SaveProject(_pathMapper.ToAbsolute(Manifest.Output.Project));
             if (!string.IsNullOrEmpty(Manifest?.Output?.Result))
@@ -201,6 +199,7 @@ namespace RulesMSBuild.Tools.Builder.Caching
 
         public void Save(string path)
         {
+            Debug($"Saving {path}");
             FilterResults();
             DoTranslate(path, CreateWriteTranslator, (t) => TranslateResult(ref Result, t));
         }
@@ -239,6 +238,7 @@ namespace RulesMSBuild.Tools.Builder.Caching
 
         public void SaveProject(string path)
         {
+            Debug($"Saving project {path}");
             Project!.TranslateEntireState = true;
             DoTranslate(path, CreateWriteTranslator, (t) => TranslateProject(ref Project, t));
         }

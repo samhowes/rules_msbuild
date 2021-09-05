@@ -41,7 +41,9 @@ namespace TestRunner
             Info($"Using input workspace {config!.WorkspaceRoot}");
 
             using var testRunner = new TestRunner(runfiles, config);
-            return testRunner.Run();
+            var exitCode = testRunner.Run();
+            Debug($"testRunner exit code is {exitCode}");
+            return exitCode;
         }
 
     }

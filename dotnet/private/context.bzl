@@ -127,6 +127,7 @@ def make_builder_cmd(ctx, dotnet, action):
     outputs = []
     add_diagnostics(ctx, dotnet, outputs)
 
+    workspace = ctx.label.workspace_name
     args = ctx.actions.args()
     args.add_all([
         dotnet.builder.assembly.path,
@@ -142,7 +143,7 @@ def make_builder_cmd(ctx, dotnet, action):
         "--bazel_output_base",
         dotnet.sdk.config.trim_path,
         "--workspace",
-        ctx.workspace_name,
+        workspace if workspace else ctx.workspace_name,
         "--package",
         ctx.label.package,
         "--label_name",

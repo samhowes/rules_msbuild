@@ -9,7 +9,7 @@ namespace runfiles
         static void Main(string[] args)
         {
             var runfiles = Runfiles.Create();
-            var path = runfiles.Rlocation("hello/runfiles/foo.txt");
+            var path = runfiles.Rlocation("hello/RunfilesTest/foo.txt");
             Console.WriteLine(File.ReadAllText(path));
         }
     }

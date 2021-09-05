@@ -49,6 +49,11 @@ namespace TestRunner
 
         public bool Run(string command, out BazelResult result)
         {
+            if (TestLogger.DebugEnabled)
+            {
+                command += " --sandbox_debug";
+            } 
+            Console.WriteLine($"Starting a new bazel process with command: '{command}'");
             using var bazel = new Process()
             {
                 StartInfo = new ProcessStartInfo
@@ -86,6 +91,7 @@ namespace TestRunner
                 bazel.Kill(true);
             }
             res.Finish(bazel.ExitCode);
+            Console.WriteLine($"bazel command finished with exit code {bazel.ExitCode} and success = {res.Success}");
             return res.Success;
         }
 

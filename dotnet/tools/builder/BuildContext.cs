@@ -23,7 +23,7 @@ namespace RulesMSBuild.Tools.Builder
             }
         }
         public static BuildContext Current;
-        public Command Command { get; }
+        public BuildCommand Command { get; }
 
         public void SetEnvironment()
         {
@@ -50,43 +50,43 @@ namespace RulesMSBuild.Tools.Builder
         // TaskItem for that referenced project because it is missing metadata before being resolved. 
         private string ToolPath(string subpath) => Path.Combine(Bazel.OutputBase, subpath);
         
-        public BuildContext(Command command)
+        public BuildContext(BuildCommand command)
         {
             Current = this;
             Command = command;
             Bazel = new BazelContext(command);
-            NuGetConfig = ToolPath(command.NamedArgs["nuget_config"]);
-            Tfm = command.NamedArgs["tfm"];
+            NuGetConfig = ToolPath(command.nuget_config);
+            Tfm = command.tfm;
             MSBuild = new MSBuildContext(
                 command.Action,
                 Bazel,
-                ToolPath(command.NamedArgs["directory_bazel_props"]),
+                ToolPath(command.directory_bazel_props),
                 NuGetConfig,
                 Tfm,
-                command.NamedArgs["configuration"]
+                command.configuration
             );
 
-            IsExecutable = command.NamedArgs["output_type"] == "exe";
+            IsExecutable = command.output_type == "exe";
             
-            SdkRoot = ToolPath(command.NamedArgs["sdk_root"]);
+            SdkRoot = ToolPath(command.sdk_root);
             
-            ProjectFile = ExecPath(command.NamedArgs["project_file"]);
+            ProjectFile = ExecPath(command.project_file);
             ProjectDirectory = Path.GetDirectoryName(ProjectFile)!;
-            
-            IsTest = command.NamedArgs.TryGetValue("is_test", out _);
+
+            IsTest = !string.IsNullOrEmpty(command.is_test);
 
             ProjectBazelProps = new Dictionary<string, string>()
             {
                 ["Workspace"] = Bazel.Label.Workspace
             };
-            void TrySetProp(string arg, string name)
+            void TrySetProp(string? value, string name)
             {
-                if (command.NamedArgs.TryGetValue(arg, out var value)
-                    && !string.IsNullOrEmpty(value))
+                value = value?.Trim('\'', '"');
+                if (!string.IsNullOrEmpty(value))
                     ProjectBazelProps![name] = value;
             }
-            TrySetProp("version", "Version");
-            TrySetProp("package_version", "PackageVersion");
+            TrySetProp(command.version, "Version");
+            TrySetProp(command.package_version, "PackageVersion");
             
             if (DiagnosticsEnabled)
             {
@@ -130,6 +130,7 @@ namespace RulesMSBuild.Tools.Builder
             public string Package = null!;
             public string Name = null!;
             private string? _str;
+            public bool IsExternal { get; set; }
 
             public override string ToString()
             {
@@ -140,20 +141,27 @@ namespace RulesMSBuild.Tools.Builder
 
             public BazelLabel(){}
         }
-        public BazelContext(Command command)
+        public BazelContext(BuildCommand command)
         {
-            OutputBase = Path.GetFullPath(command.NamedArgs["bazel_output_base"]);
-            // bazel invokes us at the exec root
+            OutputBase = Path.GetFullPath(command.bazel_output_base);
+            // bazel invokes us at $output_base/sandbox/darwin-sandbox/17/execroot/<workspace_name>
             ExecRoot = Directory.GetCurrentDirectory();
             // Suffix = ExecRoot[OutputBase.Length..];
-            BinDir = Path.GetFullPath(Path.Combine(ExecRoot, command.NamedArgs["bazel_bin_dir"]));
+            BinDir = Path.GetFullPath(Path.Combine(ExecRoot, command.bazel_bin_dir));
                 
             Label = new BazelLabel(
-                command.NamedArgs["workspace"], 
-                command.NamedArgs["package"], 
-                command.NamedArgs["label_name"]);
+                command.workspace, 
+                command.package, 
+                command.label_name);
 
-            OutputDir = Path.GetFullPath(Path.Combine(BinDir, Label.Package));
+            var outputSuffix = Label.Package;
+            if (command.project_file.StartsWith("external"))
+            {
+                Label.IsExternal = true;
+                outputSuffix = Path.Combine("external", Label.Workspace, outputSuffix);
+            }
+
+            OutputDir = Path.GetFullPath(Path.Combine(BinDir, outputSuffix));
         }
 
         public string OutputBase { get; }

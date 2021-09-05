@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.RegularExpressions;
 using System.Threading;
+using CommandLine;
+using CommandLine.Text;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Locator;
@@ -18,51 +20,60 @@ using static RulesMSBuild.Tools.Builder.BazelLogger;
 
 namespace RulesMSBuild.Tools.Builder
 {
-    public class Command
-    {
-        public string Action = null!;
-        public readonly List<string> PositionalArgs = new List<string>();
-        public readonly Dictionary<string, string> NamedArgs = new Dictionary<string, string>();
-    }
-
     public class Program
     {
-        private static Regex MsBuildVariableRegex = new Regex(@"\$\((\w+)\)", RegexOptions.Compiled);
-        
         static int Main(string[] args)
         {
-            // Environment.SetEnvironmentVariable("MSBUILDDONOTTHROWINTERNAL", "1");
             if (DebugEnabled)
             {
                 Debug($"Received {args.Length} arguments: {string.Join(" ", args)}");
             }
-            
-            var command = ParseArgs(args);
 
-            switch (command.Action)
+            var code = -1;
+            switch (args[0])
             {
                 case "inspect":
-                    return Inspect(command);
+                    code = Inspect(args[1]);
+                    break;
                 
                 case "launcher":
-                    return MakeLauncher(command);
-                
-                case "pack":
-                case "restore":
-                case "publish":
-                case "build":
-                    return Build(command);
-                    
+                    code = MakeLauncher(args.Skip(1));
+                    break;
+
                 default:
-                    return Fail($"Unknown command: {command.Action}");
-                    
+                    var parser = new CommandLine.Parser(with => with.HelpWriter = null);
+            
+                    var result = parser.ParseArguments<BuildCommand>(args);
+                    if (result.Errors?.Any() == true)
+                    {
+                        var text = HelpText.AutoBuild(result);
+                        Console.Error.WriteLine(text.ToString());
+                        return -1;
+                    }
+                    var command = (BuildCommand)result.Value;
+
+                    switch (command.Action)
+                    {
+                        case "pack":
+                        case "restore":
+                        case "publish":
+                        case "build":
+                            code = Build((BuildCommand) command);
+                            break;
+                        default:
+                            return Fail($"Unknown command: {command.Action}");
+                    }
+
+                    break;
             }
+            Debug($"exiting with code {code}");
+            return code;
         }
 
-        private static int Inspect(Command command)
+        private static int Inspect(string file)
         {
             RegisterSdk("/usr/local/share/dotnet/sdk/5.0.203");
-            var file = command.PositionalArgs[0];
+            
             InspectImpl(file);
             return 0;
         }
@@ -177,43 +188,7 @@ namespace RulesMSBuild.Tools.Builder
             // var itemGroups = project.Items.GroupBy(i => i.ItemType).OrderBy(g => g.Key).ToList();
         }
 
-        private static Command ParseArgs(string[] args)
-        {
-            var command = new Command {Action = args[0]};
-            ParseArgsImpl(args, 1, command);
-            return command;
-        }
-
-        private static void ParseArgsImpl(string[] args, int start, Command command)
-        {
-            for (var i = start; i < args.Length; i++)
-            {
-                var arg = args[i];
-                if (arg == "@file")
-                {
-                    var fileArgs = File.ReadAllLines(args[i + 1])
-                        .SelectMany(l => l.Split(' '))
-                        .ToArray();
-                    ParseArgsImpl(fileArgs, 0, command);
-                    i++;
-                    continue;
-                }
-                
-                if (arg.Length == 0 || arg[0] != '-')
-                {
-                    command.PositionalArgs.Add(arg);
-                    continue;
-                }
-
-                // assume a well formed array of args in the form [`--name` `value`]
-                var name = arg[2..];
-                var value = args[i + 1];
-                command.NamedArgs[name] = value;
-                i++;
-            }
-        }
-
-        private static int Build(Command command)
+        private static int Build(BuildCommand command)
         {
             var context = new BuildContext(command);
             RegisterSdk(context.SdkRoot);
@@ -251,10 +226,10 @@ namespace RulesMSBuild.Tools.Builder
         }
 
 
-        private static int MakeLauncher(Command command)
+        private static int MakeLauncher(IEnumerable<string> args)
         {
             var factory = new LauncherFactory();
-            return factory.Create(command.PositionalArgs.ToArray());
+            return factory.Create(args.ToArray());
         }
     }
 

@@ -6,7 +6,7 @@ def nuget_deps():
         use_host = True,
         target_frameworks = ["net5.0", "netcoreapp3.1", "netstandard2.1"],
         packages = {
-            "CommandLineParser:2.9.0-preview1": ["netcoreapp3.1"],  # keep
+            "CommandLineParser:2.9.0-preview1": ["netcoreapp3.1", "net5.0"],  # keep
             # test deps
             "FluentAssertions:5.10.3": ["netcoreapp3.1", "net5.0"],
             "Microsoft.Build.Locator:1.4.1": ["net5.0"],

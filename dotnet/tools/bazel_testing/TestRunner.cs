@@ -27,6 +27,7 @@ namespace TestRunner
         public int Run()
         {
             var testTmpDir = BazelEnvironment.GetTmpDir();
+            Info($"Creating test directory with {testTmpDir}");
             // assumes we're not in a sandbox i.e. tags = ["local"]
             var execRootIndex = testTmpDir.IndexOf("/execroot/", StringComparison.OrdinalIgnoreCase);
             if (execRootIndex < 0) throw new Exception($"Bad tmpdir: {testTmpDir}");
@@ -69,6 +70,7 @@ namespace TestRunner
                 Debug(dest);
             }
 
+            Info("Initializing workspace...");
             var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName, _config.WorkspaceTpl);
 
             _bazel = new BazelRunner(_config.Bazel, outputUserRoot!, testDir);
@@ -96,8 +98,13 @@ namespace TestRunner
 
             foreach (var command in _config.Commands.Skip(commandIndex))
             {
+                Info($"Executing test command '{command}'");
                 if (!_bazel!.Run(command, out var result))
+                {
+                    Info("Detected a test failure");
                     return result.ExitCode;
+                }
+                    
             }
 
             if (_config.Run == null) return 0;
@@ -113,7 +120,7 @@ namespace TestRunner
                 }
             }
             
-            return hasFailure ? 0 : 1;
+            return hasFailure ? 1 : 0;
         }
 
         private void UpdateWorkspaceForLocal(string originalWorkspace)
