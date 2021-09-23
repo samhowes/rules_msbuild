@@ -146,8 +146,10 @@ standard [Microsoft.Build](https://www.nuget.org/packages/Microsoft.Build) NuGet
 
 ## Resources
 
-1. This implementation is styled after the implementation of
+1. This Starlark implementation is styled after the implementation of
    [rules_go](https://github.com/bazelbuild/rules_go)
 1. JayConrod (from rules_go) did a great intro to implementing bazel rules in his blog post:
    [Writing Bazel rules](https://jayconrod.com/posts/106/writing-bazel-rules--simple-binary-rule)
+1. [MSBuild Static Graph docs](https://github.com/dotnet/msbuild/blob/main/documentation/specs/static-graph.md)
+1. [Limitations of Static Graph](https://github.com/dotnet/msbuild/issues/5204)
 
