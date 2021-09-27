@@ -113,7 +113,9 @@ namespace TestRunner
             {
                 if (!_bazel!.Run($"run {command}", out var result))
                     return result.ExitCode;
-                if (result.Stdout != expectedOutput)
+                var expected = expectedOutput.Replace("\r", "");
+                var actual = result.Stdout.Replace("\r", "");
+                if (actual != expected)
                 {
                     Console.WriteLine($"Incorrect output from: `bazel {result.Command}`\nexpected: '{expectedOutput}'\nactual: '{result.Stdout}'");
                     hasFailure = true;
