@@ -4,6 +4,8 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <PackAsTool>true</PackAsTool>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <Authors>Sam Howes</Authors>
     </PropertyGroup>
 
     <ItemGroup>

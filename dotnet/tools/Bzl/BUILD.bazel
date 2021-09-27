@@ -4,7 +4,7 @@ load("//:version.bzl", "VERSION")
 exports_files(["WORKSPACE.tpl"])
 
 msbuild_binary(
-    name = "Bzl",
+    name = "SamHowes.Bzl",
     srcs = [
         "Files.cs",
         "Program.cs",
