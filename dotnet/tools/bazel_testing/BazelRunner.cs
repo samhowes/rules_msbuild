@@ -120,6 +120,8 @@ namespace TestRunner
                 "OLDPWD",
                 "PYTHON_RUNFILES",
                 "RUN_UNDER_RUNFILES",
+                "RUNFILES_MANIFEST_FILE",
+                "RUNFILES_MANIFEST_ONLY",
                 "RUNFILES_DIR",
                 "RUNFILES",
                 "TEST_BINARY",

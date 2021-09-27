@@ -56,11 +56,15 @@ ${{COMMAND}}
         ),
     )
 
+    runner = ctx.attr._test_runner[DefaultInfo];
     runfiles = ([config] + ctx.files._tar +
                 ctx.files.bazel_binary +
                 ctx.files.workspace_files)
     return [DefaultInfo(
-        runfiles = ctx.runfiles(files = runfiles).merge(ctx.attr._test_runner[DefaultInfo].data_runfiles),
+        runfiles = ctx.runfiles(
+            files = runfiles,
+            transitive_files = runner.files)
+            .merge(runner.data_runfiles),
         executable = executable,
     )]
 
