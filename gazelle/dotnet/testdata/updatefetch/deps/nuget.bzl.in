@@ -15,4 +15,5 @@ def nuget_deps():
             "bar:3": [
             ],
         },
+        target_frameworks = [],
     )

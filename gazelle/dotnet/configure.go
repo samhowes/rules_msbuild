@@ -21,6 +21,7 @@ type dotnetConfig struct {
 	srcsMode          project.SrcsMode
 	srcsModeString    string
 	debug             bool
+	frameworks        map[string]bool
 }
 
 func (dc *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
@@ -68,7 +69,7 @@ func (f macroFlag) String() string {
 }
 
 func (d *dotnetLang) RegisterFlags(fs *flag.FlagSet, cmd string, c *config.Config) {
-	dc := &dotnetConfig{packages: map[string]*project.NugetSpec{}}
+	dc := &dotnetConfig{packages: map[string]*project.NugetSpec{}, frameworks: map[string]bool{}}
 	c.Exts[dotnetName] = dc
 	switch cmd {
 	case "fix", "update", "update-repos":

@@ -1,0 +1,8 @@
+load("//anything:whatever.bzl", "foo")
+
+foo()
+
+load("//:deps/nuget.bzl", "nuget_deps")
+
+# gazelle:repository_macro deps/nuget.bzl%nuget_deps
+nuget_deps()

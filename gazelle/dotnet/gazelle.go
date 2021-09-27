@@ -60,7 +60,9 @@ var kinds = map[string]rule.KindInfo{
 	"msbuild_library": commonInfo,
 	"msbuild_binary":  commonInfo,
 	"msbuild_test":    commonInfo,
-	"nuget_fetch":     {},
+	"nuget_fetch": {MergeableAttrs: map[string]bool{
+		"target_frameworks": true,
+	}},
 }
 
 func (d *dotnetLang) Fix(c *config.Config, f *rule.File) {
