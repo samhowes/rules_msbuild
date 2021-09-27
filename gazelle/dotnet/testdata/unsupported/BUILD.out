@@ -8,10 +8,7 @@ load("@rules_msbuild//dotnet:defs.bzl", "msbuild_library")
 # gazelle-err: unsupported item group element: Unkown
 msbuild_library(
     name = "unsupported",
-    srcs = glob(["*.cs"]) + [
-        # gazelle-err: unsupported Compile attribute: Condition
-        "foo.bar",
-    ],
+    srcs = glob(["*.cs"]) + ["foo.bar"],
     content = [
         # gazelle-err: unsupported Content attribute: Foo
         # gazelle-err: unsupported Content element: CopyToOutputDirectory

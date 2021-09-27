@@ -22,7 +22,8 @@ tag="0.0.1"
 base_out="$(dirname "$tarfile")"
 git ls-files > "$tarfile".files
 
-tar -czf "$tarfile" -T "$tarfile.files"
+# -h to not have the files be symlinks
+tar -czf "$tarfile" -h -T "$tarfile.files"
 
 case "$(uname)" in
   MSYS*)

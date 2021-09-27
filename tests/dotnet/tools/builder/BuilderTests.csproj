@@ -4,9 +4,13 @@
     <TargetFramework>net5.0</TargetFramework>
     <MSBuildPackageVersion>16.9.0</MSBuildPackageVersion>
     <LangVersion>9.0</LangVersion>
-    <GenerateProgramFile>false</GenerateProgramFile>
+    <GenerateProgramFile Condition="$(BazelBuild) != ''">false</GenerateProgramFile>
   </PropertyGroup>
-
+  
+  <ItemGroup>
+    <Compile Condition="$(BazelBuild) == ''" Remove="TestProgram.cs" />
+  </ItemGroup>
+  
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="5.10.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />

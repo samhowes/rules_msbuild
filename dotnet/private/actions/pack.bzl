@@ -26,7 +26,7 @@ def pack(ctx):
         ctx.actions.write(
             runfiles_manifest,
             "\n".join([
-                "%s %s" % (to_manifest_path(ctx, r), r.path)
+                "%s %s" % (to_manifest_path(ctx, r), to_manifest_path(ctx, r, True))
                 for r in runfiles
             ]),
         )

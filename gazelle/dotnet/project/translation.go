@@ -70,7 +70,7 @@ func (p *Project) SetProperties() {
 func (p *Project) ProcessItemGroup(fgKey string, getItems func(ig *ItemGroup) []*Item) {
 	for _, ig := range p.ItemGroups {
 		for _, i := range getItems(ig) {
-			p.EvaluateItem(i)
+			i.Evaluate(p)
 			itemType := i.XMLName.Local
 			fg := p.GetFileGroup(itemType)
 			comments := util.CommentErrs(i.Unsupported.Messages(itemType))

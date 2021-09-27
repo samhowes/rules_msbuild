@@ -27,6 +27,7 @@ namespace TestRunner
         public int Run()
         {
             var testTmpDir = BazelEnvironment.GetTmpDir();
+            Info($"Creating test directory with {testTmpDir}");
             // assumes we're not in a sandbox i.e. tags = ["local"]
             var execRootIndex = testTmpDir.IndexOf("/execroot/", StringComparison.OrdinalIgnoreCase);
             if (execRootIndex < 0) throw new Exception($"Bad tmpdir: {testTmpDir}");
@@ -69,6 +70,7 @@ namespace TestRunner
                 Debug(dest);
             }
 
+            Info("Initializing workspace...");
             var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName, _config.WorkspaceTpl);
 
             _bazel = new BazelRunner(_config.Bazel, outputUserRoot!, testDir);
@@ -81,8 +83,8 @@ namespace TestRunner
                 workspaceMaker.Init(true);
                 UpdateWorkspaceForLocal(originalWorkspace);
 
-                if (!_bazel!.Run("run //:gazelle", out var exitCode))
-                    return exitCode;
+                if (!_bazel!.Run("run //:gazelle", out var result))
+                    return result.ExitCode;
                 // this is cheating, but oh well
                 File.WriteAllText("WORKSPACE",
                     File.ReadAllText("WORKSPACE")
@@ -96,11 +98,31 @@ namespace TestRunner
 
             foreach (var command in _config.Commands.Skip(commandIndex))
             {
-                if (!_bazel!.Run(command, out var exitCode))
-                    return exitCode;
+                Info($"Executing test command '{command}'");
+                if (!_bazel!.Run(command, out var result))
+                {
+                    Info("Detected a test failure");
+                    return result.ExitCode;
+                }
+                    
             }
 
-            return 0;
+            if (_config.Run == null) return 0;
+            bool hasFailure = false;
+            foreach (var (command, expectedOutput) in _config.Run)
+            {
+                if (!_bazel!.Run($"run {command}", out var result))
+                    return result.ExitCode;
+                var expected = expectedOutput.Replace("\r", "");
+                var actual = result.Stdout.Replace("\r", "");
+                if (actual != expected)
+                {
+                    Console.WriteLine($"Incorrect output from: `bazel {result.Command}`\nexpected: '{expectedOutput}'\nactual: '{result.Stdout}'");
+                    hasFailure = true;
+                }
+            }
+            
+            return hasFailure ? 1 : 0;
         }
 
         private void UpdateWorkspaceForLocal(string originalWorkspace)
@@ -121,6 +143,7 @@ namespace TestRunner
 
         public void Dispose()
         {
+            return;
             var cwd = Directory.GetCurrentDirectory();
             foreach (var path in _cleanup.Select(Path.GetFullPath))
             {

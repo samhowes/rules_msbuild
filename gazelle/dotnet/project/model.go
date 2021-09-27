@@ -87,17 +87,13 @@ type PackageReference struct {
 	Unsupported
 }
 
-func (r *PackageReference) Evaluate(proj *Project) {
-	r.Include = proj.Evaluate(r.Include)
-	r.Version = proj.Evaluate(r.Version)
-}
-
 type Item struct {
 	XMLName xml.Name
 	Include string `xml:"Include,attr"`
 	Exclude string `xml:"Exclude,attr"`
 	// Remove is not directly output to starlark, but is used to filter globbed files
-	Remove string `xml:"Remove,attr"`
+	Remove    string `xml:"Remove,attr"`
+	Condition string `xml:"Condition,attr"`
 	Unsupported
 }
 

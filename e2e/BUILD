@@ -3,6 +3,12 @@ load(":test.bzl", "e2e_test")
 
 e2e_test(
     name = "e2e_hello",
+    commands = [
+        "build //...",
+    ],
+    run = {
+        "//RunfilesTest": "bar\n\n",
+    },
 )
 
 e2e_test(

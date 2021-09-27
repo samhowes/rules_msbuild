@@ -11,10 +11,15 @@
         <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\','/'))</BazelPackage>
         <!-- If the file is at the root, msbuild will generate a relative path to this directory, bazel wants this to be empty -->
         <BazelPackage Condition="$(BazelPackage.StartsWith(../))"></BazelPackage>
+        <BazelExternal>$(BazelExecRoot)/external</BazelExternal>
     </PropertyGroup>
 
     <PropertyGroup  Condition="$(BazelBuild) == ''">
-        <!-- Override MSBuild properties -->
+        <!-- Override MSBuild properties, these settings help IDEs find output files. -->
+        <!--
+            If UseBazel is not 'true' these will instruct msbuild to construct a similar output tree, but under
+            dotnet-bin instead of bazel-bin.
+         -->
         <OutputPath>$(BazelWorkspacePath)$(BazelBin)/$(BazelPackage)</OutputPath>
         <BaseIntermediateOutputPath>$(OutputPath)/obj</BaseIntermediateOutputPath>
         <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>

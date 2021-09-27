@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -124,6 +125,10 @@ func LaunchDotnet(args []string, info LaunchInfo) {
 			// just assume we need to set the value for windows
 			if err := os.Setenv(bazel.RUNFILES_MANIFEST_FILE, manifestPath); err != nil {
 				panic(fmt.Errorf("failed to set the manifest file path: %v", err))
+			}
+
+			if err := os.Setenv("RUNFILES_MANIFEST_ONLY", "1"); err != nil {
+				log.Panicf("failed to set manifest_only variable: %v", err)
 			}
 			diag(func() {
 				abs, _ := filepath.Abs(manifestPath)

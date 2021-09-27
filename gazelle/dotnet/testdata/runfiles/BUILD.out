@@ -1,0 +1,8 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_library")
+
+msbuild_library(
+    name = "runfiles",
+    target_framework = "netstandard2.1",
+    visibility = ["//visibility:public"],
+    deps = ["@rules_msbuild//dotnet/tools/Runfiles"],
+)

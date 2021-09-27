@@ -1,3 +1,6 @@
 <Project>
+    <!--
+        Only import Bazel.props when bazel isn't controlling msbuild.
+        If UseBazel is not 'true' these props will configure dotnet to output to a bazel-like directory structure -->
     <Import Condition="$(BazelBuild) == ''" Project="Bazel.props" />
 </Project>

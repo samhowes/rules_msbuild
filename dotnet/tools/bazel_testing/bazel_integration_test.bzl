@@ -28,6 +28,7 @@ def _rules_msbuild_integration_test_impl(ctx):
             workspaceTpl = to_manifest_path(ctx, tpl),
             bazel = to_manifest_path(ctx, bazel),
             commands = ctx.attr.commands,
+            run = ctx.attr.run,
         )),
     )
     test_runner = to_manifest_path(ctx, ctx.executable._test_runner)
@@ -55,11 +56,15 @@ ${{COMMAND}}
         ),
     )
 
+    runner = ctx.attr._test_runner[DefaultInfo];
     runfiles = ([config] + ctx.files._tar +
                 ctx.files.bazel_binary +
                 ctx.files.workspace_files)
     return [DefaultInfo(
-        runfiles = ctx.runfiles(files = runfiles).merge(ctx.attr._test_runner[DefaultInfo].data_runfiles),
+        runfiles = ctx.runfiles(
+            files = runfiles,
+            transitive_files = runner.files)
+            .merge(runner.data_runfiles),
         executable = executable,
     )]
 
@@ -71,6 +76,7 @@ rules_msbuild_integration_test = rule(
             allow_files = True,
         ),
         "commands": attr.string_list(default = ["build //..."]),
+        "run": attr.string_dict(),
         "bazel_binary": attr.label(mandatory = True, allow_files = True),
         "_tar": attr.label(allow_files = True, default = Label("//:tar")),
         "_test_runner": attr.label(

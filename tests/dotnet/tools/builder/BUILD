@@ -5,6 +5,7 @@ msbuild_test(
     size = "small",
     srcs = [
         "BuildCacheTests.cs",
+        "BuildContextTests.cs",
         "BuildFrameworkTest.cs",
         "BuilderTests.cs",
         "E2eTests.cs",

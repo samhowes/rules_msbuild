@@ -13,6 +13,7 @@ filegroup(
         "Caching/CacheManifest.cs",
         "Caching/Label.cs",
         "Caching/LabelResult.cs",
+        "Command.cs",
         "Diagnostics/Debugger.cs",
         "Diagnostics/GraphViz/DotWriter.cs",
         "Diagnostics/GraphViz/IStyler.cs",
@@ -43,6 +44,7 @@ msbuild_binary(
     target_framework = "net5.0",
     visibility = ["//:__subpackages__"],
     deps = [
+        "@nuget//CommandLineParser",
         "@nuget//Microsoft.Build.Locator",
         "@nuget//Microsoft.Build.Utilities.Core",
         "@nuget//SamHowes.Microsoft.Build",
