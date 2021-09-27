@@ -63,6 +63,7 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		return res
 	}
 
+	dc.frameworks[info.Project.TargetFramework] = true
 	res.Gen = append(res.Gen, info.Project.GenerateRules(args.File)...)
 
 	return res

@@ -41,13 +41,13 @@ func (d *dotnetLang) ImportRepos(args language.ImportReposArgs) language.ImportR
 		return res
 	}
 
-	return importReposImpl(packages)
+	return importReposImpl(packages, nil)
 
 }
 
 func (d *dotnetLang) customUpdateRepos(c *config.Config) {
 	dc := getConfig(c)
-	res := importReposImpl(dc.packages)
+	res := importReposImpl(dc.packages, dc.frameworks)
 
 	var macroPath string
 	if dc.macroFileName != "" {
@@ -171,10 +171,9 @@ func mergePackages(gen *rule.Rule, old *rule.Rule) {
 	}
 }
 
-func importReposImpl(packages map[string]*project.NugetSpec) language.ImportReposResult {
+func importReposImpl(packages map[string]*project.NugetSpec, frameworks map[string]bool) language.ImportReposResult {
 	r := rule.NewRule("nuget_fetch", "nuget")
 
-	frameworks := map[string]bool{}
 	rValue := map[string][]string{}
 	for _, p := range packages {
 		k := fmt.Sprintf("%s:%s", p.Name, p.Version.Raw)
@@ -182,7 +181,6 @@ func importReposImpl(packages map[string]*project.NugetSpec) language.ImportRepo
 		i := 0
 		for tfm, _ := range p.Tfms {
 			tfms[i] = tfm
-			frameworks[tfm] = true
 			i++
 		}
 		sort.Strings(tfms)
@@ -192,7 +190,7 @@ func importReposImpl(packages map[string]*project.NugetSpec) language.ImportRepo
 	r.SetAttr("use_host", true)
 	r.SetAttr("packages", rValue)
 	frameworksList := make([]string, 0, len(frameworks))
-	for k, _ := range frameworks {
+	for k := range frameworks {
 		frameworksList = append(frameworksList, k)
 	}
 	sort.Strings(frameworksList)
