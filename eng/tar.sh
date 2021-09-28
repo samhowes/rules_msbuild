@@ -19,7 +19,9 @@ done
 outs=("${dest[@]}")
 
 tag="0.0.1"
-base_out="$(dirname "$tarfile")"
+base_out="$(basename "$tarfile")"
+base_out="${base_out%.*}"
+base_out="${base_out%.*}"
 git ls-files > "$tarfile".files
 
 # -h to not have the files be symlinks
@@ -51,6 +53,6 @@ do
 
   f="${ins[i]}"
   o="${outs[i]}"
-  sed "s|download/.*.tar.gz|download/$tag/$tarfile|" "$f" > "$o"
+  sed "s|download/.*.tar.gz|download/$tag/$base_out-$tag.tar.gz|" "$f" > "$o"
   replace -E "s|sha256 = \"[0-9a-f]+\"|sha256 = \"$sha\"|g" "$o"
 done

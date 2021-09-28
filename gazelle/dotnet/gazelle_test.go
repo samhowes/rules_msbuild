@@ -2,11 +2,9 @@ package dotnet
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -23,15 +21,15 @@ const testDataPath = "gazelle/dotnet/testdata/"
 // directory in `testdata/*`. Please see `testdata/README.md` for more
 // information on each test.
 func TestGazelleBinary(t *testing.T) {
-	tests := map[string][]bazel.RunfileEntry{}
-	repo_tests := map[string][]bazel.RunfileEntry{}
-
-	testTypeMap := map[string]map[string][]bazel.RunfileEntry{}
+	filemap := map[string][]bazel.RunfileEntry{}
+	//var tests []string
+	//var repoTests []string
 
 	files, err := bazel.ListRunfiles()
 	if err != nil {
 		t.Fatalf("bazel.ListRunfiles() error: %v", err)
 	}
+
 	for _, f := range files {
 		if !strings.HasPrefix(f.ShortPath, testDataPath) {
 			continue
@@ -45,64 +43,34 @@ func TestGazelleBinary(t *testing.T) {
 			continue
 		}
 
-		d := parts[0]
+		testName := parts[0]
 
-		if strings.Index(d, ".") > 0 {
-			parts = strings.SplitN(parts[1], "/", 2)
-			d = path.Join(d, parts[0])
-		}
-
-		tMap, exists := testTypeMap[d]
+		fileList, exists := filemap[testName]
 		if !exists {
-			testTypeMap[d] = tests
-			tMap = tests
+			fileList = []bazel.RunfileEntry{}
+			filemap[testName] = fileList
 		}
 
-		if strings.HasSuffix(f.Path, "WORKSPACE.out") || strings.HasSuffix(f.Path, ".bzl.out") {
-			testTypeMap[d] = repo_tests
-			tMap = repo_tests
-			// unless all the files happen to be after "W" or the iteration isn't in alphabetical order, then we will
-			// have accumulated test files in tests, move them to repo_tests
-			tArray := tests[d]
-			delete(tests, d)
-			repo_tests[d] = tArray
-		}
-
-		tMap[d] = append(tMap[d], f)
+		filemap[testName] = append(filemap[testName], f)
 	}
 
-	if len(tests) == 0 || len(repo_tests) == 0 {
-		t.Fatal("one of tests or repo tests not found")
-	}
-
-	for testName, files := range tests {
-		testPath(t, testName, false, files)
-	}
-
-	for testName, files := range repo_tests {
+	for testName, files := range filemap {
 		testPath(t, testName, true, files)
 	}
 }
 
-func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry) {
-	t.Run(name, func(t *testing.T) {
+func testPath(t *testing.T, testName string, repos bool, files []bazel.RunfileEntry) {
+	t.Run(testName, func(t *testing.T) {
 		var args []string
-		baseName := strings.SplitN(name, "/", 2)[0]
-		parts := strings.Split(baseName, ".")
-		if len(parts) > 1 {
-			args = append(args, fmt.Sprintf("--%s=%s", parts[0], parts[1]))
-		}
-
 		var inputs []testtools.FileSpec
 		var goldens []testtools.FileSpec
 
 		for _, f := range files {
-			path := f.Path
-			trim := testDataPath + name + "/"
+			trim := testDataPath + testName + "/"
 			shortPath := strings.TrimPrefix(f.ShortPath, trim)
-			info, err := os.Stat(path)
+			info, err := os.Stat(f.Path)
 			if err != nil {
-				t.Fatalf("os.Stat(%q) error: %v", path, err)
+				t.Fatalf("os.Stat(%q) error: %v", f.Path, err)
 			}
 
 			// Skip dirs.
@@ -110,10 +78,11 @@ func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry)
 				continue
 			}
 
-			content, err := ioutil.ReadFile(path)
+			content, err := ioutil.ReadFile(f.Path)
 			if err != nil {
-				t.Errorf("ioutil.ReadFile(%q) error: %v", path, err)
+				t.Errorf("ioutil.ReadFile(%q) error: %v", f.Path, err)
 			}
+
 			// Now trim the common prefix off.
 			if strings.HasSuffix(shortPath, ".in") {
 				inputs = append(inputs, testtools.FileSpec{
@@ -137,6 +106,10 @@ func testPath(t *testing.T, name string, repos bool, files []bazel.RunfileEntry)
 			}
 		}
 
+		t.Logf("^^^^^^^^^^^%s^^^^^^^^^^", testName)
+		for _, f := range inputs {
+			t.Log(f.Path)
+		}
 		dir, cleanup := testtools.CreateFiles(t, inputs)
 		if false {
 			defer cleanup()
@@ -171,10 +144,13 @@ func runCommand(t *testing.T, dir string, args ...string) {
 	cmd.Stderr = &stderr
 	cmd.Dir = dir
 
+	t.Log(dir)
+	t.Logf("%s", strings.Join(args, ","))
+	t.Log("======================================")
 	err := cmd.Run()
 
-	t.Log(stdout.String())
-	t.Log(stderr.String())
+	t.Logf("stdout: %s", stdout.String())
+	t.Logf("stderr: %s", stderr.String())
 	if err != nil {
 		t.Fatal(err)
 	}

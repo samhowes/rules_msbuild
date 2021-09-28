@@ -84,6 +84,83 @@ func (d *dotnetLang) customUpdateRepos(c *config.Config) {
 	if err := f.Save(f.Path); err != nil {
 		log.Fatalf("error saving %s: %v", f.Path, err)
 	}
+
+	workspace, err := rule.LoadWorkspaceFile("WORKSPACE", "")
+	if err != nil {
+		log.Fatalf("error loading WORKSPACE: %v", err)
+	}
+
+	if ensureMacroInWorkspace(dc, workspace, len(workspace.Loads)-1) {
+		workspace.Sync()
+
+		if err := workspace.Save(workspace.Path); err != nil {
+			log.Fatalf("error saving %s: %v", workspace.Path, err)
+		}
+	}
+}
+
+// ensureMacroInWorkspace adds a call to the repository macro if the -to_macro
+// flag was used, and the macro was not called or declared with a
+// '# gazelle:repository_macro' directive.
+//
+// ensureMacroInWorkspace returns true if the WORKSPACE file was updated
+// and should be saved.
+func ensureMacroInWorkspace(uc *dotnetConfig, workspace *rule.File, insertIndex int) (updated bool) {
+	if uc.macroFileName == "" {
+		return false
+	}
+
+	// Check whether the macro is already declared.
+	// We won't add a call if the macro is declared but not called. It might
+	// be called somewhere else.
+	macroValue := uc.macroFileName + "%" + uc.macroDefName
+	for _, d := range workspace.Directives {
+		if d.Key == "repository_macro" && d.Value == macroValue {
+			return false
+		}
+	}
+
+	// Try to find a load and a call.
+	var load *rule.Load
+	var call *rule.Rule
+	var loadedDefName string
+	for _, l := range workspace.Loads {
+		switch l.Name() {
+		case ":" + uc.macroFileName, "//:" + uc.macroFileName, "@//:" + uc.macroFileName:
+			load = l
+			pairs := l.SymbolPairs()
+			for _, pair := range pairs {
+				if pair.From == uc.macroDefName {
+					loadedDefName = pair.To
+				}
+			}
+		}
+	}
+
+	for _, r := range workspace.Rules {
+		if r.Kind() == loadedDefName {
+			call = r
+		}
+	}
+
+	// Add the load and call if they're missing.
+	if call == nil {
+		if load == nil {
+			load = rule.NewLoad("//:" + uc.macroFileName)
+			load.Insert(workspace, insertIndex)
+		}
+		if loadedDefName == "" {
+			load.Add(uc.macroDefName)
+		}
+
+		call = rule.NewRule(uc.macroDefName, "")
+		call.InsertAt(workspace, insertIndex)
+	}
+
+	// Add the directive to the call.
+	call.AddComment("# gazelle:repository_macro " + macroValue)
+
+	return true
 }
 
 func mergePackages(gen *rule.Rule, old *rule.Rule) {
