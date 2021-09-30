@@ -10,7 +10,7 @@ Links
 > These docs are under construction. If you are looking for a released version of building dotnet
 > with Bazel, head over to [bazelbuild/rules_dotnet](https://github.com/bazelbuild/rules_dotnet)
 
-# Coming soon...
+# In Beta!
 ```bash
 # set up a hello world dotnet app
 mkdir -p HelloBazelDotnet/AwesomeExecutable && cd HelloBazelDotnet/AwesomeExecutable
