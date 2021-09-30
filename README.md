@@ -7,8 +7,7 @@
 <!--
 Links
  -->
-> These docs are under construction. If you are looking for a released version of building dotnet
-> with Bazel, head over to [bazelbuild/rules_dotnet](https://github.com/bazelbuild/rules_dotnet)
+> These docs are under construction. Please open an issue for any specific questions!
 
 # In Beta!
 ```bash
