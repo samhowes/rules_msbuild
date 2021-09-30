@@ -3,7 +3,9 @@
 set -e
 if [[ ! -f WORKSPACE ]]; then echo >&2 "not at root"; exit 1; fi
 
-tag="0.0.1"
+tag="0.0.5"
+
+echo "VERSION = \"$tag\"" > version.bzl
 
 if [[ "${tag:-}" == "" ]]; then
   echo "provide a tag as an argument"
@@ -33,9 +35,10 @@ url=$(get_url)
 
 if [[ "$url" == "" ]]; then
   echo "Creating release $tag"
-  gh release create "$tag" -F ReleaseNotes.md $tarfile $nuget
+  gh release create "$tag" --title "v$tag" -F ReleaseNotes.md $tarfile $nuget
   url=$(get_url)
 else
   echo "Release exists"
+  exit 1
 fi
 

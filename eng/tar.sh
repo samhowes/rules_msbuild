@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+tag="$1"
+
 ins=()
 dest=()
 tarfile=""
-for ((i=1; i <= $#; i++))
+for ((i=2; i <= $#; i++))
 do
   a="${!i}"
   if [[ $a == "--" ]]; then
@@ -18,7 +20,6 @@ do
 done
 outs=("${dest[@]}")
 
-tag="0.0.1"
 base_out="$(basename "$tarfile")"
 base_out="${base_out%.*}"
 base_out="${base_out%.*}"

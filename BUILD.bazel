@@ -1,5 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//:version.bzl", "VERSION")
 
 # gazelle:prefix github.com/samhowes/rules_msbuild
 gazelle(
@@ -56,7 +57,7 @@ genrule(
         "WORKSPACE.tpl",
         "ReleaseNotes.gen.md",
     ],
-    cmd = "$(location :eng/tar.sh) $(SRCS) -- $(OUTS)",
+    cmd = "$(location :eng/tar.sh) %s $(SRCS) -- $(OUTS)" % VERSION,
     exec_tools = ["eng/tar.sh"],
     tags = ["local"],
     visibility = ["//:__subpackages__"],

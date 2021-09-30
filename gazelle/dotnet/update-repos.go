@@ -85,12 +85,13 @@ func (d *dotnetLang) customUpdateRepos(c *config.Config) {
 		log.Fatalf("error saving %s: %v", f.Path, err)
 	}
 
-	workspace, err := rule.LoadWorkspaceFile("WORKSPACE", "")
+	workspace, err := rule.LoadWorkspaceFile(filepath.Join(c.RepoRoot, "WORKSPACE"), "")
 	if err != nil {
 		log.Fatalf("error loading WORKSPACE: %v", err)
 	}
 
-	if ensureMacroInWorkspace(dc, workspace, len(workspace.Loads)-1) {
+	workspaceIndex := len(workspace.Loads) + len(workspace.Rules)
+	if ensureMacroInWorkspace(dc, workspace, workspaceIndex) {
 		workspace.Sync()
 
 		if err := workspace.Save(workspace.Path); err != nil {
@@ -148,6 +149,7 @@ func ensureMacroInWorkspace(uc *dotnetConfig, workspace *rule.File, insertIndex 
 		if load == nil {
 			load = rule.NewLoad("//:" + uc.macroFileName)
 			load.Insert(workspace, insertIndex)
+			insertIndex++
 		}
 		if loadedDefName == "" {
 			load.Add(uc.macroDefName)
