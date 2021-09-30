@@ -17,7 +17,7 @@ dotnet new console --no-restore
 cd .. && dotnet new sln && dotnet sln add AwesomeExecutable
  
 dotnet tool install -g SamHowes.Bzl
-bzl init                         # automatically configure your workspace
+samhowes.bzl                     # automatically configure your workspace
 bazel run //:gazelle             # generate build files with custom Gazelle language
 bazel build //...                # use bazel to build .csproj files
 bazel run //AwesomeExecutable    # => Hello World!
