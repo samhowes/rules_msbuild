@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\builder\Builder.csproj" />
-    <ProjectReference Include="..\Bzl\Bzl.csproj" />
+    <ProjectReference Include="..\Bzl\SamHowes.Bzl.csproj" />
     <ProjectReference Include="..\Runfiles\Runfiles.csproj" />
   </ItemGroup>
 
