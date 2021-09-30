@@ -34,12 +34,12 @@ Check out the `tests/` directory & `e2e/` directory for examples
 1. Bazel sandboxing compatible
 
 ### Blockers
-1. [End to End Testing on Windows](https://github.com/samhowes/rules_msbuild/pull/152)
-1. [Backlog](https://github.com/samhowes/rules_msbuild/projects/4)
 1. Updating docs
 
 
-# (Future) Usage
+# Usage
+
+> Note: [SamHowes.Bzl](https://www.nuget.org/packages/SamHowes.Bzl/) and using gazelle (as described above) is strongly reccomended. 
 
 ```python
 # //WORKSPACE
