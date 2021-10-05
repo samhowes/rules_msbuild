@@ -35,6 +35,13 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+DEPS = [
+    "@nuget//CommandLineParser",
+    "@nuget//Microsoft.Build.Locator",
+    "@nuget//Microsoft.Build.Utilities.Core",
+    "@nuget//SamHowes.Microsoft.Build",
+]
+
 exports_files(["Builder.csproj"])
 
 msbuild_binary(
@@ -43,10 +50,5 @@ msbuild_binary(
     project_file = "Builder.csproj",
     target_framework = "net5.0",
     visibility = ["//:__subpackages__"],
-    deps = [
-        "@nuget//CommandLineParser",
-        "@nuget//Microsoft.Build.Locator",
-        "@nuget//Microsoft.Build.Utilities.Core",
-        "@nuget//SamHowes.Microsoft.Build",
-    ],
+    deps = DEPS,
 )

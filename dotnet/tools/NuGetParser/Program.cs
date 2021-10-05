@@ -1,8 +1,6 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 
 namespace NuGetParser
@@ -11,49 +9,71 @@ namespace NuGetParser
     {
         static int Main(string[] args)
         {
-            string intermediateBase = "";
-            string packagesFolder = "";
-            List<string>? projects = null;
-            var dict = new Dictionary<string, string>();
-            for (var i = 0; i < args.Length; i++)
+            try
             {
-                var arg = args[i];
-                if (arg[0] == '-')
-                {
-                    var name = arg[1..];
-                    switch (name.ToLower())
-                    {
-                        case "dotnet_path":
-                            break;
-                        case "intermediate_base":
-                            intermediateBase = args[i + 1];
-                            break;
-                        case "packages_folder":
-                            packagesFolder = args[i + 1];
-                            break;
-                        default:
-                            dict[name] = args[i + 1];
-                            break;
-                    }
+                var argsDict = args.Select(a => a.Split("=")).ToDictionary(p => p[0][2..], p => p[1]);
+                var restorer = new Restorer(argsDict["spec_path"], argsDict["dotnet_path"], argsDict["test_logger"]);
+                var frameworks = restorer.Restore();
 
-                    i++;
-                    continue;
-                }
+                var files = new Files();
+                var parser = new Parser(argsDict["packages_folder"], files, Console.WriteLine, 
+                    new AssetsReader(files));
 
-                projects = args[i..].ToList();
-                break;
+                if (!parser.Parse(frameworks, argsDict)) return 1;
+                return 0;
             }
-            Console.WriteLine(string.Join(",", projects!));
-
-            var parser = new Parser(intermediateBase, packagesFolder, dict);
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
             
-            if (!parser.Parse(projects)) return 1;
-            return 0;
+            return 1;
         }
     }
 
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    public class FrameworkInfo
+    {
+        public FrameworkInfo(string tfm)
+        {
+            Tfm = tfm;
+        }
+
+        public string Tfm { get; set; }
+        public List<FrameworkRestoreGroup> RestoreGroups { get; set; } = new List<FrameworkRestoreGroup>();
+
+        public void AddPackage(string packageName, string packageVersion)
+        {
+            var id = new PackageId(packageName, packageVersion);
+            var found = false;
+            foreach (var group in RestoreGroups)
+            {
+                if (!group.Packages.ContainsKey(id.Name))
+                {
+                    found = true;
+                    group.Packages[id.Name] = id.Version;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                var group = new FrameworkRestoreGroup();
+                group.Packages[id.Name] = id.Version;
+                RestoreGroups.Add(group);
+            }
+        }
+    }
+
+    public class FrameworkRestoreGroup
+    {
+        public string ProjectFileName { get; set; }
+        public Dictionary<string, string> Packages { get; set; } =
+            new Dictionary<string, string>();
+
+        public string ObjDirectory { get; set; }
+    }
+
+
     public class TfmInfo
     {
         public string Tfm { get; }

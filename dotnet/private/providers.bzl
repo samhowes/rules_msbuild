@@ -65,12 +65,12 @@ NuGetPackageVersionInfo = provider(
     },
 )
 
-NuGetFilegroupInfo = provider(
+NuGetPackageFrameworkVersionInfo = provider(
     doc = "A group of files for a NuGet package.",
     fields = {
         "tfm": "the tfm of this filegroup",
         "version": "the version of the nuget package that tfm depends on",
-        "all_dep_files": "depset of all the files that this filegroup depends on",
+        "all_files": "depset of all the files that this restoration depends on",
     },
 )
 

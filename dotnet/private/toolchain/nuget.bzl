@@ -45,11 +45,22 @@ load(
     "prepare_project_file",
 )
 load("//dotnet/private/msbuild:nuget.bzl", "NUGET_BUILD_CONFIG", "prepare_nuget_config")
-load("//dotnet/private/toolchain:common.bzl", "BUILDER_PACKAGES", "default_tfm", "detect_host_platform")
+load("//dotnet/private/toolchain:common.bzl", "default_tfm", "detect_host_platform")
 load("//dotnet/private:providers.bzl", "DEFAULT_SDK", "MSBuildSdk")
 load("//dotnet/private:context.bzl", "dotnet_context", "make_cmd")
 
 _TfmInfo = provider(fields = ["tfn", "implicit_deps"])
+
+def nuget_deps_helper(frameworks, packages):
+    """Convert frameworks and packages into a single list that is consumable by the nuget_fetch deps attribute
+
+    A list item is in the format "<package_name>/<version>:tfm,tfm,tfm".
+    For a list of frameworks, we'll just omit the left half of the item.
+    """
+    res = [",".join(frameworks)]
+    for (pkg, tfms) in packages.items():
+        res.append(pkg + ":" + ",".join(tfms))
+    return res
 
 def _nuget_fetch_impl(ctx):
     config = struct(
@@ -73,23 +84,51 @@ def _nuget_fetch_impl(ctx):
 
     _generate_nuget_configs(ctx, config)
     parser_project = _copy_parser(ctx, config)
-    fetch_project, tfm_projects = _generate_fetch_project(ctx, config, parser_project)
 
-    args = make_cmd(paths.basename(str(fetch_project)), "restore")
-    args = [dotnet.path] + args + ["-p:BazelFetch=true"]
-    ctx.report_progress("Fetching NuGet packages for frameworks: {}".format(", ".join(config.packages_by_tfm.keys())))
+    spec = ctx.attr.deps + nuget_deps_helper(ctx.attr.target_frameworks, ctx.attr.packages)
+
+    spec_path = config.fetch_base.get_child("spec.txt")
+    ctx.file(spec_path, "\n".join(spec))
+
+    substitutions = prepare_project_file(
+        None,
+        paths.join(str(config.intermediate_base.basename), "$(MSBuildProjectName)"),
+        [],
+        [],
+        config.fetch_config,
+        None,  # no tfm for the traversal project
+        exec_root = STARTUP_DIR,
+    )
+    props = config.fetch_base.get_child("Restore.props")
+    ctx.template(
+        props,
+        ctx.attr._master_template,
+        substitutions = substitutions,
+    )
+
+    if "foo" != "bar":
+        pass
+    args = [
+        dotnet.path,
+        "run",
+        "--property:BazelFetch=true",
+        "--",
+        "--spec_path=" + str(spec_path),
+        "--dotnet_path=%s" % dotnet.path,
+        "--packages_folder=%s" % str(ctx.path(config.packages_folder)),
+        "--test_logger=%s" % ctx.attr.test_logger,
+        "--nuget_build_config=%s" % NUGET_BUILD_CONFIG,
+    ]
+    ctx.report_progress("Fetching NuGet packages")
+
     result = ctx.execute(
         args,
         environment = dotnet.env,
-        quiet = False,
-        working_directory = str(fetch_project.dirname),
+        quiet = True,
+        working_directory = str(parser_project.dirname),
     )
     if result.return_code != 0:
-        fail("failed executing '{}': {}".format(" ".join(args), result.stdout))
-
-    # first we have to collect all the target framework information for each package
-    ctx.report_progress("Generating build files")
-    _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects)
+        fail("failed executing '{}':\nstdout: {}\nstderr: {}".format(" ".join(args), result.stdout, result.stderr))
 
 def _configure_host_packages(ctx, dotnet, config):
     if not ctx.attr.use_host:
@@ -139,25 +178,6 @@ def _copy_parser(ctx, config):
 
     return config.parser_base.get_child(parser_path.basename)
 
-def _pkg(name, version, pkg_id = None):
-    name_lower = name.lower()
-    version_lower = version.lower()
-    if pkg_id == None:
-        pkg_id = name_lower + "/" + version_lower
-
-    return struct(
-        name = name,
-        name_lower = name_lower,
-        # this field has to be compatible with the NuGetPackageInfo struct
-        version = version,
-        label = "//{}".format(name),
-        pkg_id = pkg_id,
-        frameworks = {},  # dict[tfm: string] string is a filegroup to be written into a build file
-        all_files = [],  # list[str]
-        deps = {},  # dict[tfm: list[pkg]]
-        filegroups = {},  # dict[tfm: list[string]]
-    )
-
 def _fetch_custom_packages(ctx, config):
     ctx.download(
         "https://github.com/samhowes/SamHowes.Microsoft.Build/releases/download/0.0.1/SamHowes.Microsoft.Build.16.9.0.nupkg",
@@ -193,138 +213,12 @@ def _generate_nuget_configs(ctx, config):
         substitutions = substitutions,
     )
 
-def _generate_fetch_project(ctx, config, parser_project):
-    build_traversal = MSBuildSdk(name = "Microsoft.Build.Traversal", version = "3.0.3")
-
-    _process_packages(ctx, config)
-
-    tfm_projects = []
-    for tfm, pkgs in config.packages_by_tfm.items():
-        proj = config.fetch_base.get_child(tfm + ".proj")
-        tfm_projects.append(proj)
-        substitutions = prepare_project_file(
-            DEFAULT_SDK,
-            paths.join(str(config.intermediate_base.basename), tfm),
-            [],
-            pkgs.values(),
-            config.fetch_config,  # this has to be specified for _every_ project
-            tfm,
-            exec_root = STARTUP_DIR,
-        )
-        ctx.template(
-            proj,
-            ctx.attr._tfm_template,
-            substitutions = substitutions,
-        )
-
-    substitutions = prepare_project_file(
-        build_traversal,
-        paths.join(str(config.intermediate_base.basename), "traversal"),
-        [p.basename for p in tfm_projects] + [str(parser_project)],
-        [],
-        config.fetch_config,
-        None,  # no tfm for the traversal project
-        exec_root = STARTUP_DIR,
-    )
-    fetch_project = config.fetch_base.get_child("nuget.fetch.proj")
-    ctx.template(
-        fetch_project,
-        ctx.attr._master_template,
-        substitutions = substitutions,
-    )
-    return fetch_project, tfm_projects
-
-def _process_packages(ctx, config):
-    seen_names = {}
-    sdk_version = ctx.path(ctx.attr.dotnet_sdk_root).dirname.get_child("sdk").readdir()[-1]
-
-    tfm = default_tfm(sdk_version.basename)
-    for pkg_name, version in ctx.attr.builder_deps.items():
-        _record_package(config, seen_names, pkg_name, version, [tfm], True)
-
-    gross_hardcoded_runfiles_tfm = "netstandard2.1"  #todo(151) remove this hack
-    for tfm in ctx.attr.target_frameworks + [tfm, gross_hardcoded_runfiles_tfm]:
-        config.packages_by_tfm.setdefault(tfm, {})
-
-    for spec, frameworks in ctx.attr.packages.items():
-        parts = spec.split(":")
-        if len(parts) != 2:
-            fail("Invalid version spec, expected `packagename:version-string` got {}".format(spec))
-
-        requested_name = parts[0]
-        version_spec = parts[1]
-
-        _record_package(config, seen_names, requested_name, version_spec, frameworks)
-
-    pkg_name, version, tfm = ctx.attr.test_logger.split(":")
-    _record_package(config, seen_names, pkg_name, version, ctx.attr.target_frameworks)
-
-def _record_package(config, seen_names, requested_name, version_spec, frameworks, use_existing = False):
-    # todo(#53) don't count on the Version Spec being a precise version
-    pkg = _pkg(requested_name, version_spec)
-
-    if pkg.name_lower in seen_names and not use_existing:
-        # todo(#47)
-        fail("Found multiple versions of package {}. Multiple package versions are not supported.".format(pkg.name_lower))
-    if not use_existing:
-        seen_names[pkg.name_lower] = True
-
-    config.packages[pkg.pkg_id] = pkg
-
-    for tfm in frameworks:
-        tfm_dict = config.packages_by_tfm.setdefault(tfm, {})
-        if not use_existing or pkg.name_lower not in tfm_dict:
-            tfm_dict[pkg.name_lower] = pkg
-
-def _process_assets_json(ctx, dotnet, config, parser_project, tfm_projects):
-    args = [
-        dotnet.path,
-        "build",
-        "-p:BazelFetch=true",
-        "-p:OutputPath=bin",
-        "-p:AppendTargetFrameworkToOutputPath=false",
-        "--no-restore",
-        str(parser_project),
-    ]
-
-    result = ctx.execute(
-        args,
-        environment = dotnet.env,
-        working_directory = str(parser_project.dirname),
-    )
-    if result.return_code != 0:
-        fail("failed to build nuget parser, please file an issue.\nstdout: {}\nstderr: {}".format(result.stdout, result.stderr))
-
-    args = [
-        dotnet.path,
-        "exec",
-        paths.join(str(parser_project.dirname), "bin", paths.split_extension(parser_project.basename)[0] + ".dll"),
-        "-dotnet_path",
-        dotnet.path,
-        "-intermediate_base",
-        str(config.intermediate_base),
-        "-packages_folder",
-        str(ctx.path(config.packages_folder)),
-        "-test_logger",
-        ctx.attr.test_logger.split(":")[0],
-        "-nuget_build_config",
-        NUGET_BUILD_CONFIG,
-    ]
-    args.extend([str(p) for p in tfm_projects])
-
-    result = ctx.execute(args, quiet = True, environment = dotnet.env)
-    if result.return_code != 0:
-        fail("failed to process restored packages, please file an issue.\nexit code: {}\nstdout: {}\nstderr: {}".format(result.return_code, "foo" + result.stdout + "bar", "what" + result.stderr + "how"))
-
 nuget_fetch = repository_rule(
     implementation = _nuget_fetch_impl,
     attrs = {
         "packages": attr.string_list_dict(),
         "test_logger": attr.string(
-            default = "JunitXml.TestLogger:3.0.87:netstandard2.0",
-        ),
-        "builder_deps": attr.string_dict(
-            default = BUILDER_PACKAGES,
+            default = "JunitXml.TestLogger/3.0.87",
         ),
         # todo(#63) link this to the primary nuget folder if it is not the primary nuget folder
         "dotnet_sdk_root": attr.label(
@@ -337,6 +231,10 @@ nuget_fetch = repository_rule(
                    "`dotnet nuget locals global-packages --list"),
         ),
         "target_frameworks": attr.string_list(mandatory = True),
+        "deps": attr.string_list(
+            doc = ("Use nuget_deps_helper to specify target_frameworks and nuget packages for workspaces that you " +
+                   "depend on"),
+        ),
         "_master_template": attr.label(
             default = Label("@rules_msbuild//dotnet/private/msbuild:project.tpl.proj"),
         ),
