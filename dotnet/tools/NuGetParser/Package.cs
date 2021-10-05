@@ -13,10 +13,6 @@ namespace NuGetParser
         
         public string RequestedName { get; }
         public string Label { get; }
-        public string CanonicalName { get; set; }
-
-        public Dictionary<string, FrameworkDependency> Frameworks { get; } =
-            new Dictionary<string, FrameworkDependency>();
 
         public Dictionary<string, PackageVersion> Versions { get; } = new Dictionary<string, PackageVersion>(StringComparer.OrdinalIgnoreCase);
 
@@ -29,32 +25,27 @@ namespace NuGetParser
 
     public class PackageVersion
     {
-        public PackageVersion(Package pkg, string version)
+        public PackageVersion(PackageId id)
         {
-            String = version;
-            Id = $"{pkg.RequestedName}/{version}".ToLower();
-            Label = pkg.Label + ":" + version;
+            Id = id;
         }
 
-        public string Label { get; }
-
-        public string String { get; }
-        public string Id { get; }
+        public PackageId Id { get; }
+        
         // todo(#99): append nupkg to this
-        public List<string> AllFiles { get; } = new List<string>();
-        public string CanonicalId { get; set; }
+        public List<string> AllFiles { get; set; } = new List<string>();
+        public Dictionary<string, List<PackageId>> Deps { get; set; } = new Dictionary<string, List<PackageId>>();
     }
 
     public class FrameworkDependency
     {
-        public string Version { get; }
+        public Dictionary<string, PackageVersion> Versions { get; }
+            = new Dictionary<string, PackageVersion>(StringComparer.OrdinalIgnoreCase);
 
-        public FrameworkDependency(string tfm, string version)
+        public FrameworkDependency(string tfm)
         {
             Tfm = tfm;
-            Version = version;
         }
         public string Tfm { get; set; }
-        public List<Package> Deps { get; } = new List<Package>();
     }
 }
