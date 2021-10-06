@@ -38,7 +38,7 @@ load(
 load(
     "//dotnet/private/rules:nuget_download.bzl",
     _framework_info = "framework_info",
-    _nuget_package_framework = "nuget_package_framework",
+    _nuget_package_framework_version = "nuget_package_framework_version",
     _nuget_package_version = "nuget_package_version",
     _tfm_mapping = "tfm_mapping",
 )
@@ -52,6 +52,7 @@ load(
 )
 load(
     "//dotnet/private/toolchain:nuget.bzl",
+    _nuget_deps_helper = "nuget_deps_helper",
     _nuget_fetch = "nuget_fetch",
 )
 
@@ -71,11 +72,12 @@ dotnet_toolchain = _dotnet_toolchain
 dotnet_sdk = _dotnet_sdk
 dotnet_config = _dotnet_config
 nuget_fetch = _nuget_fetch
+nuget_deps_helper = _nuget_deps_helper
 
 # nuget download rules used by generated build files
 nuget_package_download = _nuget_package_download
 framework_info = _framework_info
-nuget_package_framework = _nuget_package_framework
+nuget_package_framework_version = _nuget_package_framework_version
 nuget_package_version = _nuget_package_version
 tfm_mapping = _tfm_mapping
 

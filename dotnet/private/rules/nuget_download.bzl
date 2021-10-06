@@ -5,7 +5,7 @@ load(
     "//dotnet/private:providers.bzl",
     "DotnetLibraryInfo",
     "FrameworkInfo",
-    "NuGetFilegroupInfo",
+    "NuGetPackageFrameworkVersionInfo",
     "NuGetPackageInfo",
     "NuGetPackageVersionInfo",
     "TfmMappingInfo",
@@ -13,32 +13,31 @@ load(
 
 def _nuget_package_download_impl(ctx):
     tfms = {}
-    for target in ctx.attr.frameworks:
-        info = target[NuGetFilegroupInfo]
-        tfms[info.tfm] = info
+    for target in ctx.attr.framework_versions:
+        info = target[NuGetPackageFrameworkVersionInfo]
+        tfms.setdefault(info.tfm, []).append(info)
+
+    for tfm, info_list in tfms.items():
+        tfms[tfm] = depset([], transitive = [i.all_files for i in info_list])
 
     return [NuGetPackageInfo(
         name = ctx.attr.name,
         frameworks = tfms,
     )]
 
-def _nuget_package_framework_impl(ctx):
+def _nuget_package_framework_version_impl(ctx):
     # the name is the tfm of the package this belongs to by convention
-    tfm = ctx.attr.name
+    tfm = ctx.attr.name.split("-")[-1]
     version = ctx.attr.version[NuGetPackageVersionInfo]
     files = [version.all_files]
     for target in ctx.attr.deps:
-        pkg = target[NuGetPackageInfo]
-        group = pkg.frameworks.get(tfm, None)
-        if group == None:
-            fail("Package {} has not been restored for target framework {}.".format(target, tfm))
+        version_info = target[NuGetPackageFrameworkVersionInfo]
+        files.append(version_info.all_files)
 
-        files.append(group.all_dep_files)
-
-    return [NuGetFilegroupInfo(
+    return [NuGetPackageFrameworkVersionInfo(
         tfm = tfm,
         version = version.version,
-        all_dep_files = depset(
+        all_files = depset(
             direct = [],
             transitive = files,
         ),
@@ -64,13 +63,13 @@ def _framework_info_impl(ctx):
 nuget_package_download = rule(
     _nuget_package_download_impl,
     attrs = {
-        "frameworks": attr.label_list(mandatory = True, providers = [NuGetFilegroupInfo]),
+        "framework_versions": attr.label_list(mandatory = True, providers = [NuGetPackageFrameworkVersionInfo]),
     },
     executable = False,
 )
 
-nuget_package_framework = rule(
-    _nuget_package_framework_impl,
+nuget_package_framework_version = rule(
+    _nuget_package_framework_version_impl,
     attrs = {
         "version": attr.label(
             mandatory = True,
@@ -78,7 +77,7 @@ nuget_package_framework = rule(
         ),
         "deps": attr.label_list(
             mandatory = True,
-            providers = [NuGetPackageInfo],
+            providers = [NuGetPackageFrameworkVersionInfo],
         ),
     },
 )

@@ -1,12 +1,15 @@
 # this will be appended to the templated WORKSPACE fragment in Bzl
 
-load("@rules_msbuild//dotnet:defs.bzl", "nuget_fetch")
+load("@rules_msbuild//dotnet:defs.bzl", "nuget_deps_helper", "nuget_fetch")
+load("@rules_msbuild//deps:public_nuget.bzl", "FRAMEWORKS", "PACKAGES")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 nuget_fetch(
     name = "nuget",
     packages = {
-        "CommandLineParser:2.9.0-preview1": ["netcoreapp3.1"],
+        "CommandLineParser/2.8.0": ["net5.0"],
     },
-    target_frameworks = ["netcoreapp3.1"],
+    target_frameworks = ["net5.0"],
     use_host = True,
+    deps = nuget_deps_helper(FRAMEWORKS, PACKAGES),
 )

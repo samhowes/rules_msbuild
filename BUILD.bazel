@@ -17,7 +17,7 @@ GO_ARGS = [
 ]
 
 DOTNET_ARGS = [
-    "--deps_macro=deps/nuget.bzl%nuget_deps",
+    "--deps_macro=deps:nuget.bzl%nuget_deps",
     "--srcs_mode=explicit",
 ]
 

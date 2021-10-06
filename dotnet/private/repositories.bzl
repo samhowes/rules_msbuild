@@ -52,9 +52,10 @@ def dotnet_rules_repositories():
     _maybe(
         git_repository,
         name = "bazel_gazelle",
-        #        branch = "windows-custom-lang",
-        commit = "1e3fe3fff6781035a5d4ff6f90ca33c29df5e553",
-        shallow_since = "1621471198 -0400",
+        #        path = "../bazel-gazelle",
+        #        branch = "other",
+        commit = "f3d57a478ca0043905f818766b60bb21674eaaad",
+        shallow_since = "1633489567 -0400",
         remote = "https://github.com/samhowes/bazel-gazelle",
     )
 

@@ -57,7 +57,7 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 	dc := getConfig(args.Config)
 	if args.Rel == "" && dc.macroFileName != "" {
 		// we've collected all the package information by now, we can store it in the macro
-		d.customUpdateRepos(args.Config)
+		d.customUpdateRepos(args)
 	}
 	if info.Project == nil {
 		return res
