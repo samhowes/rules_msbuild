@@ -1,0 +1,11 @@
+load("@rules_msbuild//dotnet:defs.bzl", "nuget_fetch")
+load(":public_nuget.bzl", "FRAMEWORKS", "PACKAGES")
+
+def nuget_deps():
+    nuget_fetch(
+        name = "nuget",
+        packages = {},
+        target_frameworks = ["netcoreapp3.1"],
+        use_host = True,
+        deps = nuget_deps_helper(FRAMEWORKS, PACKAGES),
+    )

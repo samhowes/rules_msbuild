@@ -1,0 +1,3 @@
+load("//anything:whatever.bzl", "foo")
+
+foo()

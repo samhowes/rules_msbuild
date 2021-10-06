@@ -45,6 +45,9 @@ func (d *dotnetLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{{
 		Name:    "@rules_msbuild//dotnet:defs.bzl",
 		Symbols: symbols,
+	}, {
+		Name:    "@rules_msbuild//deps:public_nuget.bzl",
+		Symbols: []string{"PACKAGES", "FRAMEWORKS"},
 	}}
 }
 
@@ -60,7 +63,8 @@ var kinds = map[string]rule.KindInfo{
 	"msbuild_library": commonInfo,
 	"msbuild_binary":  commonInfo,
 	"msbuild_test":    commonInfo,
-	"nuget_fetch": {MergeableAttrs: map[string]bool{
+	"nuget_fetch":     {},
+	"nuget_deps_helper": {MergeableAttrs: map[string]bool{
 		"target_frameworks": true,
 	}},
 }
