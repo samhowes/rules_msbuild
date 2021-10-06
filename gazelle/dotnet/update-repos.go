@@ -224,7 +224,10 @@ func importReposImpl(packages map[string]*project.NugetSpec, frameworks map[stri
 		}
 	}
 
-	pkg := path.Dir(f.Path[len(args.Dir)+1:])
+	pkg := filepath.Dir(f.Path[len(args.Dir)+1:])
+	if filepath.Separator == '\\' {
+		pkg = strings.ReplaceAll(pkg, "\\", "/")
+	}
 	deps := r.Attr("deps")
 	var publicDeps map[string]map[string]bool
 	if deps != nil {
@@ -349,7 +352,7 @@ func loadReferencedPackages(deps bzl.Expr, loaded map[string]string, args langua
 			l.Pkg = pkg
 		}
 
-		fPath := path.Join(args.Config.RepoRoot, l.Pkg, l.Name)
+		fPath := filepath.Join(args.Config.RepoRoot, l.Pkg, l.Name)
 		content, err := ioutil.ReadFile(fPath)
 		if err != nil {
 			log.Printf("error loading %s: %v", l, err)
