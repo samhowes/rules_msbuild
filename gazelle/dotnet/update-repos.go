@@ -51,7 +51,8 @@ func (d *dotnetLang) customUpdateRepos(args language.GenerateArgs) {
 	dc := getConfig(args.Config)
 	var macroPath string
 	if dc.macroFileName != "" {
-		macroPath = filepath.Join(args.Config.RepoRoot, filepath.Clean(dc.macroFileName))
+		macroPath = strings.Replace(dc.macroFileName, ":", "/", -1)
+		macroPath = filepath.Join(args.Config.RepoRoot, filepath.Clean(macroPath))
 	}
 
 	f, err := rule.LoadMacroFile(macroPath, "", dc.macroDefName)
@@ -136,7 +137,7 @@ func fixLoads(f *rule.File, loads []*rule.Load) {
 
 // ensureMacroInWorkspace adds a call to the repository macro if the -to_macro
 // flag was used, and the macro was not called or declared with a
-// '# gazelle:repository_macro' directive.
+// '# gazelle:nuget_macro' directive.
 //
 // ensureMacroInWorkspace returns true if the WORKSPACE file was updated
 // and should be saved.
@@ -150,7 +151,7 @@ func ensureMacroInWorkspace(uc *dotnetConfig, workspace *rule.File, insertIndex 
 	// be called somewhere else.
 	macroValue := uc.macroFileName + "%" + uc.macroDefName
 	for _, d := range workspace.Directives {
-		if d.Key == "repository_macro" && d.Value == macroValue {
+		if d.Key == "nuget_macro" && d.Value == macroValue {
 			return false
 		}
 	}
@@ -198,7 +199,7 @@ func ensureMacroInWorkspace(uc *dotnetConfig, workspace *rule.File, insertIndex 
 	}
 
 	// Add the directive to the call.
-	call.AddComment("# gazelle:repository_macro " + macroValue)
+	call.AddComment("# gazelle:nuget_macro " + macroValue)
 
 	return true
 }

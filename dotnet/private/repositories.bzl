@@ -50,12 +50,13 @@ def dotnet_rules_repositories():
     #    ],
     #)
     _maybe(
-        git_repository,
+        native.local_repository,
         name = "bazel_gazelle",
+        path = "../bazel-gazelle",
         #        branch = "windows-custom-lang",
-        commit = "1e3fe3fff6781035a5d4ff6f90ca33c29df5e553",
-        shallow_since = "1621471198 -0400",
-        remote = "https://github.com/samhowes/bazel-gazelle",
+        #        commit = "1e3fe3fff6781035a5d4ff6f90ca33c29df5e553",
+        #        shallow_since = "1621471198 -0400",
+        #        remote = "https://github.com/samhowes/bazel-gazelle",
     )
 
 def _maybe(repo_rule, name, **kwargs):

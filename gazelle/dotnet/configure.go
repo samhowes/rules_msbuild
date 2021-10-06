@@ -108,6 +108,7 @@ func (d *dotnetLang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
 func (d *dotnetLang) KnownDirectives() []string {
 	return []string{
 		"srcs_mode",
+		"nuget_macro",
 		"public_nuget",
 		"public_nuget_frameworks",
 	}

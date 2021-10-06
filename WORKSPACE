@@ -20,7 +20,7 @@ dotnet_register_toolchains(
 
 load("//deps:nuget.bzl", "nuget_deps")
 
-# gazelle:repository_macro deps:nuget.bzl%nuget_deps
+# gazelle:nuget_macro deps:nuget.bzl%nuget_deps
 nuget_deps()
 
 ### golang ###
