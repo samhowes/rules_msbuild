@@ -35,13 +35,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-DEPS = [
-    "@nuget//CommandLineParser",
-    "@nuget//Microsoft.Build.Locator",
-    "@nuget//Microsoft.Build.Utilities.Core",
-    "@nuget//SamHowes.Microsoft.Build",
-]
-
 exports_files(["Builder.csproj"])
 
 msbuild_binary(
@@ -50,5 +43,13 @@ msbuild_binary(
     project_file = "Builder.csproj",
     target_framework = "net5.0",
     visibility = ["//:__subpackages__"],
-    deps = DEPS,
+    deps = [
+        "@nuget//CommandLineParser",
+        "@nuget//Microsoft.Build.Locator",
+        # gazelle-err: unsupported attribute: ExcludeAssets
+        "@nuget//Microsoft.Build.Utilities.Core",
+        # gazelle-err: unsupported attribute: ExcludeAssets
+        # gazelle-err: unsupported attribute: GeneratePathProperty
+        "@nuget//SamHowes.Microsoft.Build",
+    ],
 )

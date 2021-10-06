@@ -1,0 +1,20 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_test")
+
+msbuild_test(
+    name = "NuGetParserTests",
+    srcs = ["ParserTests.cs"],
+    target_framework = "net5.0",
+    deps = [
+        "//dotnet/tools/NuGetParser",
+        "@nuget//FluentAssertions",
+        "@nuget//Microsoft.NET.Test.Sdk",
+        "@nuget//Moq",
+        # gazelle-err: unsupported element: IncludeAssets
+        # gazelle-err: unsupported element: PrivateAssets
+        "@nuget//coverlet.collector",
+        "@nuget//xunit",
+        # gazelle-err: unsupported element: IncludeAssets
+        # gazelle-err: unsupported element: PrivateAssets
+        "@nuget//xunit.runner.visualstudio",
+    ],
+)
