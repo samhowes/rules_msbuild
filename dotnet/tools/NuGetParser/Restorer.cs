@@ -65,8 +65,9 @@ namespace NuGetParser
         public void Save(string path)
         {
             _project.Add(Import("Sdk.targets"));
-            
-            using var writer = XmlWriter.Create(File.CreateText(path), new XmlWriterSettings() {Indent = true});
+
+            using var textWriter = File.CreateText(path);
+            using var writer = XmlWriter.Create(textWriter, new XmlWriterSettings() {Indent = true});
             _project.Save(writer);
         }
 
