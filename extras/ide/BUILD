@@ -23,4 +23,5 @@ sh_test(
         "HOME",
         "DOTNET_CLI_HOME",
     ],
+    tags = ["manual"],
 )

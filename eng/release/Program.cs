@@ -13,6 +13,7 @@ namespace release
     class Program
     {
         private static void Info(string message) => Console.WriteLine(message);
+
         private static void Die(string message)
         {
             Console.WriteLine(message);
@@ -85,7 +86,6 @@ namespace release
                 {
                     readOutputs = true;
                 }
-                    
             };
 
             process.Start();
@@ -94,12 +94,13 @@ namespace release
             if (process.ExitCode != 0) Die("Command failed");
             return outputs;
         }
-        
+
         enum Action
         {
             Release,
             Clean
         }
+
         static int Main(string[] args)
         {
             var nugetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY");
@@ -107,14 +108,14 @@ namespace release
             {
                 Die("No NUGET_API_KEY found");
             }
-            
+
             var action = Action.Release;
             if (args.Length > 0)
             {
                 if (!Enum.TryParse<Action>(args[0], true, out action))
                     Die($"Failed to parse action from {args[0]}");
             }
-            
+
             // var env = Environment.GetEnvironmentVariables();
             // foreach (var key in env.Keys.Cast<string>().OrderBy(k => k))
             // {
@@ -125,7 +126,7 @@ namespace release
             if (Directory.Exists(work))
                 Directory.Delete(work, true);
             Directory.CreateDirectory(work);
-            
+
             Info($"Work directory: {work}");
             var root = BazelEnvironment.GetWorkspaceRoot();
             Directory.SetCurrentDirectory(root);
@@ -142,53 +143,42 @@ namespace release
                 Run($"git push --delete origin \"{version}\"");
                 return 0;
             }
-            
-            Info("Checking for existing release...");
-            var existingRelease = TryRun($"gh release view {version}");
-            if (existingRelease != null)
-            {
-                Die($"Failed to release: {version} already exists");
-            }
-            
-            var outputs = Bazel("build //:tar");
-            var tarSource = outputs[0];
-            var tarAlias = Path.Combine(work, $"rules_msbuild-{version}.tar.gz");
-            Run($"ln -s {tarSource} {tarAlias}");
 
-            Copy(outputs[1], "dotnet/tools/Bzl/WORKSPACE.tpl");
-            var releaseNotes = "ReleaseNotes.md";
-            Copy(outputs[2], releaseNotes);
-            
+            VerifyNewRelease(version);
+
+            var tarAlias = BuildTar(work, version, out var releaseNotes);
+
             var originalNotes = File.ReadAllText(releaseNotes);
             const string marker = "<!--marker-->";
             var markerIndex = originalNotes.IndexOf(marker, StringComparison.Ordinal);
             if (markerIndex < 0) Die("Failed to find marker in release notes");
 
             var notes = new StringBuilder(originalNotes[..(markerIndex + marker.Length + 2)]);
-            
+
             notes.AppendLine($"[SamHowes.Bzl: {version}](https://www.nuget.org/packages/SamHowes.Bzl/{version})")
                 .AppendLine();
-            
+
             var lastRelease = RunJson<GitHubRelease>("gh release view --json");
-            var prs = RunJson<List<GitHubPr>>($"gh pr list --search \"is:closed closed:>={lastRelease.CreatedAt}\" --json");
-                
+            var prs = RunJson<List<GitHubPr>>(
+                $"gh pr list --search \"is:closed closed:>={lastRelease.CreatedAt}\" --json");
+
             notes.AppendLine("Changelog:");
             for (var i = 0; i < prs.Count; i++)
             {
                 var pr = prs[i];
-                notes.AppendLine($"{i+1}. [PR #{pr.Number}: {pr.Title}]({pr.Url})");
+                notes.AppendLine($"{i + 1}. [PR #{pr.Number}: {pr.Title}]({pr.Url})");
                 var toMatch = pr.Title + pr.Body;
                 var closed = string.Join(", ", Regex.Matches(toMatch, @"#\d+").Select(m => m.Value));
                 notes.Append("  Issues: ");
                 notes.AppendLine(closed);
             }
-            
+
             File.WriteAllText(releaseNotes, notes.ToString());
 
             Info("Building bzl...");
-            outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl_nuget");
+            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl_nuget");
             var nupkg = outputs.Single();
-            
+
             Info("Creating release...");
             Run($"gh release create {version} ",
                 "--prerelease",
@@ -199,8 +189,42 @@ namespace release
                 nupkg);
 
             Run($"dotnet nuget push {nupkg} --api-key {nugetApiKey} --source https://api.nuget.org/v3/index.json");
-            
+
             return 0;
+        }
+
+        private static string BuildTar(string work, Group version, out string releaseNotes)
+        {
+            var outputs = Bazel("build //:tar");
+            var tarSource = outputs[0];
+            var tarAlias = Path.Combine(work, $"rules_msbuild-{version}.tar.gz");
+            Run($"ln -s {tarSource} {tarAlias}");
+
+            var workspaceTemplate = "dotnet/tools/Bzl/WORKSPACE.tpl";
+            Copy(outputs[1], workspaceTemplate);
+            releaseNotes = "ReleaseNotes.md";
+            Copy(outputs[2], releaseNotes);
+
+            var usage = string.Join("\n", File.ReadAllLines(workspaceTemplate).Skip(2));
+
+            const string readmePath = "README.md";
+            var readme = File.ReadAllText(readmePath);
+
+            File.WriteAllText(readmePath,
+                Regex.Replace(readme, @"(```python\s+#\s?\/\/WORKSPACE).*?(```)", "$1\n" + usage + "\n$2",
+                    RegexOptions.Singleline));
+
+            return tarAlias;
+        }
+
+        private static void VerifyNewRelease(Group version)
+        {
+            Info("Checking for existing release...");
+            var existingRelease = TryRun($"gh release view {version}");
+            if (existingRelease != null)
+            {
+                Die($"Failed to release: {version} already exists");
+            }
         }
 
         private static T RunJson<T>(string command)
