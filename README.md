@@ -67,17 +67,6 @@ go_register_toolchains(version = "1.16.2")
 gazelle_dependencies()
 ```
 
-```python
-# //hello/BUILD
-load("@rules_msbuild//dotnet:def.bzl", "dotnet_binary")
-
-dotnet_binary(
-    name = "hello",
-    srcs = ["Program.cs"],
-)
-```
-
-`bazel build //hello`
 
 # Background
 
