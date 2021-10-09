@@ -1,3 +1,4 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
@@ -33,9 +34,14 @@ msbuild_library(
     protos = [":greet_proto"],
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
-    deps = [
-        "@nuget//Grpc.AspNetCore",
-        "@nuget//Grpc.Net.Client",
-        "@nuget//Grpc.Tools",
-    ],
+    deps = ["@nuget//Grpc.AspNetCore"],
+)
+
+build_test(
+    name = "Protos.Net_test",
+    expected_files = {
+        "netcoreapp3.1": [
+            "Protos.Net.dll",
+        ],
+    },
 )

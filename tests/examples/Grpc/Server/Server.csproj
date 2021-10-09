@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\protos\Protos.csproj" />
+    <ProjectReference Include="..\Protos\Protos.csproj" />
   </ItemGroup>
 
 </Project>
