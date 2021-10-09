@@ -82,7 +82,7 @@ def _msbuild_assembly(
         deps,
         kwargs,
         assembly_args):
-    _steal_args(assembly_args, kwargs, ["data", "content"])
+    _steal_args(assembly_args, kwargs, ["data", "content", "protos"])
 
     srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)

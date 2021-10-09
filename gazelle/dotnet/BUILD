@@ -50,7 +50,10 @@ go_test(
 # extension and thus only has the dotnet language installed.
 gazelle_binary(
     name = "gazelle-dotnet",
-    languages = [":dotnet"],
+    languages = [
+        "@bazel_gazelle//language/proto:go_default_library",
+        ":dotnet",
+    ],
     visibility = [
         "//:__pkg__",
     ],

@@ -21,9 +21,11 @@ def build_assembly(ctx, dotnet):
     cache_manifest = write_cache_manifest(ctx, cache, caches)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
 
+    protos = _getProtos(ctx)
+
     inputs = depset(
         [cache_manifest, ctx.file.project_file] + ctx.files.srcs + ctx.files.content,
-        transitive = files + [restore.files],
+        transitive = files + [restore.files] + protos,
     )
 
     outputs = [output_dir, assembly, intermediate_dir, intermediate_assembly, cache.project, cache.result] + cmd_outputs
@@ -49,6 +51,13 @@ def build_assembly(ctx, dotnet):
     )
 
     return info, outputs
+
+def _getProtos(ctx):
+    deps = []
+    for p in ctx.attr.protos:
+        info = p[ProtoInfo]
+        deps.append(depset(info.direct_sources, transitive = [info.transitive_sources]))
+    return deps
 
 def _process_deps(ctx, dotnet):
     files = []

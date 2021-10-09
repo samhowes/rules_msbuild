@@ -32,6 +32,7 @@ Check out the `tests/` directory & `e2e/` directory for examples
 1. Automated BUILD file generation
 1. Runfiles Library
 1. Bazel sandboxing compatible
+1. Grpc & Proto support Out of the Box
 
 ### Blockers
 1. Updating docs

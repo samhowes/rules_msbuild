@@ -37,6 +37,8 @@ type Project struct {
 	Deps      []interface{}
 	Directory *DirectoryInfo
 	srcsModes map[string]SrcsMode
+	Ext       string
+	Protos    []string
 }
 
 type FileGroup struct {
@@ -69,6 +71,7 @@ type ItemGroup struct {
 	Content           []*Item             `xml:"Content"`
 	ProjectReferences []*ProjectReference `xml:"ProjectReference"`
 	PackageReferences []*PackageReference `xml:"PackageReference"`
+	Protobuf          []*Protobuf         `xml:"Protobuf"`
 	// None items are completely ignored
 	None []*Item `xml:"None"`
 	Unsupported
@@ -95,6 +98,12 @@ type Item struct {
 	Remove    string `xml:"Remove,attr"`
 	Condition string `xml:"Condition,attr"`
 	Unsupported
+}
+
+type Protobuf struct {
+	XMLName xml.Name
+	Item
+	GrpcServices string `xml:"GrpcServices,attr"`
 }
 
 type Unsupported struct {

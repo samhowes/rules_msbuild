@@ -66,3 +66,27 @@ load("@rules_msbuild//dotnet:defs.bzl", "BAZEL_VERSION")
 
 #depend on the Bazel binaries, also accepts an array of versions
 bazel_binaries([BAZEL_VERSION])
+
+### proto & grpc
+http_archive(
+    name = "rules_proto_grpc",
+    sha256 = "28724736b7ff49a48cb4b2b8cfa373f89edfcb9e8e492a8d5ab60aa3459314c8",
+    strip_prefix = "rules_proto_grpc-4.0.1",
+    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/4.0.1.tar.gz"],
+)
+
+load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_proto_grpc_toolchains")
+
+rules_proto_grpc_toolchains()
+
+rules_proto_grpc_repos()
+
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+
+rules_proto_dependencies()
+
+rules_proto_toolchains()
+
+load("@rules_proto_grpc//go:repositories.bzl", rules_proto_grpc_go_repos = "go_repos")
+
+rules_proto_grpc_go_repos()

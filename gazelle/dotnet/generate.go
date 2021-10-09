@@ -35,9 +35,6 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		if strings.HasSuffix(f, "proj") {
 			info.Project = loadProject(args, f)
 			info.Project.Directory = info
-			if info.Project != nil {
-				res.Imports = append(res.Imports, info.Project.Deps)
-			}
 			continue
 		}
 
@@ -47,11 +44,7 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		}
 
 		ext := path.Ext(f)
-		if info.SrcsMode == project.Explicit {
-			info.Exts[ext] = append(info.Exts[ext], f)
-		} else {
-			info.Exts[ext] = nil
-		}
+		info.Exts[ext] = append(info.Exts[ext], f)
 	}
 
 	dc := getConfig(args.Config)
@@ -59,12 +52,23 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		// we've collected all the package information by now, we can store it in the macro
 		d.customUpdateRepos(args)
 	}
+
+	for _, r := range args.OtherGen {
+		if r.Kind() == "proto_library" {
+			info.Protos = append(info.Protos, r)
+		}
+	}
+
 	if info.Project == nil {
 		return res
 	}
 
+	res.Imports = append(res.Imports, info.Project.Deps)
 	dc.frameworks[info.Project.TargetFramework] = true
-	res.Gen = append(res.Gen, info.Project.GenerateRules(args.File)...)
+
+	rule := info.Project.GenerateRule(args.File)
+
+	res.Gen = append(res.Gen, rule)
 
 	return res
 }

@@ -3,7 +3,7 @@ load("//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
     name = "HelloBazel",
-    srcs = glob(["Program.cs"]),
+    srcs = ["Program.cs"],
     packable = True,
     project_file = "HelloBazel.csproj",
     target_framework = "netcoreapp3.1",
