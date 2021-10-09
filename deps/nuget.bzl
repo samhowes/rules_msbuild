@@ -12,7 +12,7 @@ def nuget_deps():
             "Microsoft.Build.Utilities.Core/16.9.0": ["net5.0"],
             "Microsoft.NET.Test.Sdk/16.7.1": ["net5.0", "netcoreapp3.1"],
             "Moq/4.16.1": ["net5.0"],
-            "Newtonsoft.Json/13.0.1": ["netcoreapp3.1"],
+            "Newtonsoft.Json/13.0.1": ["net5.0", "netcoreapp3.1"],
             "SamHowes.Microsoft.Build/16.9.0": ["net5.0"],
             "coverlet.collector/1.3.0": ["net5.0"],
             "xunit.assert/2.4.1": ["net5.0"],

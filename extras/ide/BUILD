@@ -1,3 +1,4 @@
+# gazelle:exclude **/*
 filegroup(
     name = "ide",
     srcs = [
