@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <Target Name="PrintVars">
+    <Message Importance="high" Text="BazelWorkspace: $(BazelWorkspaceName)"/>
+    <Message Importance="high" Text="BazelWorkspacePath: $(BazelWorkspacePath)"/>
+    <Message Importance="high" Text="BazelBin: $(BazelBin)"/>
+    <Message Importance="high" Text="BazelNuGetWorkspace: $(BazelNuGetWorkspace)"/>
+    <Message Importance="high" Text="BazelExecRoot: $(BazelExecRoot)"/>
+    <Message Importance="high" Text="BazelPackage: $(BazelPackage)"/>
+    <Message Importance="high" Text="BazelExternal: $(BazelExternal)"/>
+    <Message Importance="high" Text="OutputPath: $(OutputPath)"/>
+    <Message Importance="high" Text="BaseIntermediateOutputPath: $(BaseIntermediateOutputPath)"/>
+    <Message Importance="high" Text="IntermediateOutputPath: $(IntermediateOutputPath)"/>
+    <Message Importance="high" Text="BuildProjectReferences: $(BuildProjectReferences)"/>
+  </Target>
+</Project>

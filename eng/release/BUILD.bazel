@@ -5,5 +5,8 @@ msbuild_binary(
     srcs = ["Program.cs"],
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
-    deps = ["//dotnet/tools/Runfiles"],
+    deps = [
+        "//dotnet/tools/Runfiles",
+        "@nuget//Newtonsoft.Json",
+    ],
 )

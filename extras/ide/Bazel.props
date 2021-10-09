@@ -6,7 +6,7 @@
         <BazelBin Condition="$(UseBazel) != 'true'">dotnet-bin</BazelBin>
         <BazelBin Condition="$(BazelBin) == ''">@@bazel_bin@@</BazelBin>
         <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@nuget_workspace_name@@</BazelNuGetWorkspace>
-        <BazelExecRoot>bazel-$(BazelWorkspaceName)</BazelExecRoot>
+        <BazelExecRoot>$(BazelWorkspacePath)bazel-$(BazelWorkspaceName)</BazelExecRoot>
 
         <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\','/'))</BazelPackage>
         <!-- If the file is at the root, msbuild will generate a relative path to this directory, bazel wants this to be empty -->
@@ -21,7 +21,7 @@
             dotnet-bin instead of bazel-bin.
          -->
         <OutputPath>$(BazelWorkspacePath)$(BazelBin)/$(BazelPackage)</OutputPath>
-        <BaseIntermediateOutputPath>$(OutputPath)/obj</BaseIntermediateOutputPath>
+        <BaseIntermediateOutputPath>$(OutputPath)obj</BaseIntermediateOutputPath>
         <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
         <BuildProjectReferences Condition="$(UseBazel) == 'true'">false</BuildProjectReferences>
     </PropertyGroup>
