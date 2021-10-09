@@ -3,8 +3,8 @@ workspace(name = "@@workspace_name@@")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_msbuild",
-    sha256 = "21cf600f23b3557dad50de43ffe7cab89fb12cdd95b96cca429a392abfcdaa68",
-    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.5/rules_msbuild-0.0.5.tar.gz"],
+    sha256 = "cb71dacbdb7ec33203e9a4e5127b3df4657be10b3b0fad214312b9faac994cdd",
+    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.6/rules_msbuild-0.0.6.tar.gz"],
 )
 load("@rules_msbuild//dotnet:repositories.bzl", "dotnet_register_toolchains", "dotnet_rules_repositories")
 
