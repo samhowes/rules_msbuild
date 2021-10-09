@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/bazelbuild/bazel-gazelle/label"
+	"github.com/bazelbuild/bazel-gazelle/rule"
 	bzl "github.com/bazelbuild/buildtools/build"
 	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
@@ -21,6 +22,7 @@ type DirectoryInfo struct {
 	Base     string
 	Project  *Project
 	SrcsMode SrcsMode
+	Protos   []*rule.Rule
 }
 
 type SrcsMode int
@@ -63,8 +65,8 @@ func Load(projectFile string) (*Project, error) {
 	proj.TargetFramework, _ = proj.Properties["TargetFramework"]
 
 	baseName := filepath.Base(projectFile)
-	projExt := path.Ext(baseName)
-	proj.Name = baseName[0 : len(baseName)-len(projExt)]
+	proj.Ext = path.Ext(baseName)
+	proj.Name = baseName[0 : len(baseName)-len(proj.Ext)]
 
 	return &proj, nil
 }
@@ -220,6 +222,17 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 		if p.LangExt == ".cs" {
 			p.appendFiles(dir, key, rel, ".cshtml")
 		}
+	}
+
+	for _, proto := range dir.Protos {
+		l := label.Label{Pkg: path.Join(p.FileLabel.Pkg, rel), Name: proto.Name()}
+		var str string
+		if rel == "" {
+			str = ":" + l.Name
+		} else {
+			str = l.String()
+		}
+		p.Protos = append(p.Protos, str)
 	}
 
 	if p.IsWeb {

@@ -87,7 +87,9 @@ namespace RulesMSBuild.Tools.Builder
             }
             TrySetProp(command.version, "Version");
             TrySetProp(command.package_version, "PackageVersion");
-            
+
+            ProjectBazelProps["AssemblyName"] = Bazel.PrimaryName;
+
             if (DiagnosticsEnabled)
             {
                 MSBuild.BuildEnvironment["NUGET_SHOW_STACK"] = "true";
@@ -161,8 +163,16 @@ namespace RulesMSBuild.Tools.Builder
                 outputSuffix = Path.Combine("external", Label.Workspace, outputSuffix);
             }
 
+            if (command.Action != "build")
+            {
+                var suffixStart = Label.Name.LastIndexOf('_');
+                PrimaryName = Label.Name[..suffixStart];
+            }
+
             OutputDir = Path.GetFullPath(Path.Combine(BinDir, outputSuffix));
         }
+
+        public string PrimaryName { get; set; }
 
         public string OutputBase { get; }
         public string OutputDir { get; }

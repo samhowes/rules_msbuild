@@ -1,0 +1,20 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_library")
+
+# gazelle:srcs_mode explicit
+
+proto_library(
+    name = "greet_proto",
+    srcs = ["greet.proto"],
+    visibility = ["//visibility:public"],
+)
+
+msbuild_library(
+    name = "Proto.Net",
+    srcs = [],
+    project_file = "Proto.csproj",
+    protos = [":greet_proto"],
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+    deps = ["@nuget//Grpc.AspNetCore"],
+)

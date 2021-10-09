@@ -9,7 +9,7 @@ import (
 	"github.com/samhowes/rules_msbuild/gazelle/dotnet/util"
 )
 
-func (p *Project) GenerateRules(f *rule.File) []*rule.Rule {
+func (p *Project) GenerateRule(f *rule.File) *rule.Rule {
 	var kind string
 	if p.IsTest {
 		kind = "msbuild_test"
@@ -19,11 +19,23 @@ func (p *Project) GenerateRules(f *rule.File) []*rule.Rule {
 		kind = "msbuild_library"
 	}
 
-	p.Rule = rule.NewRule(kind, p.Name)
-	rules := []*rule.Rule{p.Rule}
-
 	p.ProcessItemGroup("Compile", func(ig *ItemGroup) []*Item { return ig.Compile })
 	p.ProcessItemGroup("Content", func(ig *ItemGroup) []*Item { return ig.Content })
+
+	name := p.Name
+	setProjectFile := false
+	if len(p.Directory.Protos) > 0 && !p.IsExe {
+		// gazelle for go also creates a rule with the name of the directory
+		// so we don't have conflicting names, make ours .net
+		name = name + ".Net"
+		setProjectFile = true
+	}
+
+	p.Rule = rule.NewRule(kind, name)
+
+	if setProjectFile {
+		p.Rule.SetAttr("project_file", p.Name+p.Ext)
+	}
 
 	p.CollectFiles(p.Directory, "")
 
@@ -37,12 +49,16 @@ func (p *Project) GenerateRules(f *rule.File) []*rule.Rule {
 		p.Rule.SetAttr("visibility", []string{"//visibility:public"})
 	}
 
+	if len(p.Protos) > 0 {
+		p.Rule.SetAttr("protos", p.Protos)
+	}
+
 	p.Rule.SetAttr("target_framework", p.TargetFramework)
 	if len(p.Data) > 0 {
 		p.Rule.SetAttr("data", util.MakeGlob(util.MakeStringExprs(p.Data), nil))
 	}
 
-	return rules
+	return p.Rule
 }
 
 // todo: delete this when I decide to not re-introduce msbuild_properties

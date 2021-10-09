@@ -71,11 +71,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 case "build":
                     Targets = new[]
                     {
-                        // "GetTargetFrameworks",
                         "Build",
-                        // "GetCopyToOutputDirectoryItems",
-                        // "GetTargetPath",
-                        // "GetNativeManifest",
                     };
                     break;
                 case "publish":

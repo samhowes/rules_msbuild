@@ -55,6 +55,7 @@ var commonInfo = rule.KindInfo{
 	MergeableAttrs: map[string]bool{
 		"srcs":             true,
 		"target_framework": true,
+		"protos":           true,
 	},
 	ResolveAttrs: map[string]bool{"deps": true},
 }

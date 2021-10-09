@@ -1,0 +1,39 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+# gazelle-err: unsupported item group element: Protobuf
+msbuild_binary(
+    name = "Server",
+    srcs = [
+        "Program.cs",
+        "Services/GreeterService.cs",
+        "Startup.cs",
+    ],
+    content = [
+        "appsettings.Development.json",
+        "appsettings.json",
+    ],
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tests/examples/Grpc/Protos:Protos.Net",
+        "@nuget//Grpc.AspNetCore",
+    ],
+)
+
+build_test(
+    name = "Server_test",
+    expected_files = {
+        "net5.0": [
+            "Google.Protobuf.dll",
+            "Grpc.AspNetCore.Server.ClientFactory.dll",
+            "Grpc.AspNetCore.Server.dll",
+            "Grpc.Core.Api.dll",
+            "Grpc.Net.Client.dll",
+            "Grpc.Net.ClientFactory.dll",
+            "Grpc.Net.Common.dll",
+            "Protos.Net.dll",
+            "Server.dll",
+        ],
+    },
+)
