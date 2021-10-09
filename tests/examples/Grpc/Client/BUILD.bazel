@@ -24,7 +24,7 @@ build_test(
             "Grpc.Net.Client.dll",
             "Grpc.Net.ClientFactory.dll",
             "Grpc.Net.Common.dll",
-            "Proto.Net.dll",
+            "Protos.Net.dll",
         ],
     },
 )

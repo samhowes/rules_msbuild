@@ -7,8 +7,7 @@ def nuget_deps():
         packages = {
             "FluentAssertions/5.10.3": ["net5.0", "netcoreapp3.1"],
             "Grpc.AspNetCore/2.40.0": ["net5.0", "netcoreapp3.1"],
-            "Grpc.Net.Client/2.40.0": ["net5.0", "netcoreapp3.1"],
-            "Grpc.Tools/2.41.0": ["netcoreapp3.1"],
+            "Grpc.Net.Client/2.40.0": ["net5.0"],
             "Microsoft.Build.Tasks.Core/16.9.0": ["net5.0"],
             "Microsoft.Build.Utilities.Core/16.9.0": ["net5.0"],
             "Microsoft.NET.Test.Sdk/16.7.1": ["net5.0", "netcoreapp3.1"],
