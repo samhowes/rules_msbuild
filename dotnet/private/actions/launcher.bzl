@@ -43,6 +43,9 @@ def make_launcher(ctx, dotnet, info):
         for k, v in extra_env.items()
     ]))
 
+    for k in ["HOME", "USERPROFILE"]:
+        env.pop(k, 0)
+
     launcher_template = ctx.file._launcher_template
     if is_bin_launcher:
         args = ctx.actions.args()
