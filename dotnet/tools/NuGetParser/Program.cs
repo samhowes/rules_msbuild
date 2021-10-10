@@ -66,11 +66,12 @@ namespace NuGetParser
 
     public class FrameworkRestoreGroup
     {
-        public string ProjectFileName { get; set; }
+        public string ProjectFileName { get; set; } = null!;
+
         public Dictionary<string, string> Packages { get; set; } =
             new Dictionary<string, string>();
 
-        public string ObjDirectory { get; set; }
+        public string ObjDirectory { get; set; } = null!;
     }
 
 

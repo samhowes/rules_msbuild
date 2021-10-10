@@ -16,7 +16,7 @@ namespace TestRunner
         private readonly Runfiles _runfiles;
         private readonly TestConfig _config;
         private readonly List<string> _cleanup = new List<string>();
-        private BazelRunner? _bazel;
+        private BazelRunner _bazel;
 
         public TestRunner(Runfiles runfiles, TestConfig config)
         {
@@ -143,7 +143,7 @@ namespace TestRunner
 
         public void Dispose()
         {
-            return;
+            // return;
             var cwd = Directory.GetCurrentDirectory();
             foreach (var path in _cleanup.Select(Path.GetFullPath))
             {

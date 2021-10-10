@@ -29,10 +29,6 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics
         public bool SetProperties(IDictionary<string, string>? properties)
         {
             return false;
-            if (properties == null) return false;
-            PropertiesString = string.Join(";", properties.OrderBy(g => g.Key).Select(g => $"{g.Key}={g.Value}"));
-            UniqueName = Name + ";" + PropertiesString;
-            return true;
         }
 
         public TargetGraph.Node GetOrAdd(string name)

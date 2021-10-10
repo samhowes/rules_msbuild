@@ -63,7 +63,7 @@ namespace NuGetParser
     
     public class AssetsReader
     {
-        private readonly Files _files;
+        private readonly Files _files = null!;
         private JsonElement _assets;
         private JsonElement _frameworkInfo;
         private JsonElement _libraries;

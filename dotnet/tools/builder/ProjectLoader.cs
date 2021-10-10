@@ -203,12 +203,10 @@ namespace RulesMSBuild.Tools.Builder
                                         }
                                         default:
                                             throw new Exception(":(");
-                                            break;
                                     }
                                     break;
                                 default:
                                     throw new Exception(":(");
-                                    break;
                             }
 
                             if (!buildTask.Parameters.TryGetValue("Targets", out var targets))
@@ -256,14 +254,14 @@ namespace RulesMSBuild.Tools.Builder
             }
         }
 
-        private static ProjectPropertyInstance? GetProperty(string beforeName, ProjectInstance? project)
+        private static ProjectPropertyInstance? GetProperty(string beforeName, ProjectInstance project)
         {
             var propertyName = beforeName[2..^1];
             var property = project.Properties.SingleOrDefault(p => p.Name == propertyName);
             return property;
         }
 
-        private static string ResolveTarget(string originalName, ProjectInstance? project)
+        private static string ResolveTarget(string originalName, ProjectInstance project)
         {
             var property = GetProperty(originalName, project);
             return property?.EvaluatedValue ?? originalName;

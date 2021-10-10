@@ -4,6 +4,7 @@
     <ExecRoot>$(MSBuildStartupDirectory)</ExecRoot>
     <RestoreConfigFile>$(MSBuildStartupDirectory)/$(RestoreConfigFile)</RestoreConfigFile>
     <AssemblyName>builder</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <Import Project="$(ExecRoot)/external/dotnet_sdk/Directory.Bazel.props" Condition="$(_IsBootstrapping) == 'true'" />
