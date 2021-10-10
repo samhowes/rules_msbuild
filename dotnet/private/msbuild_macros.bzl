@@ -96,6 +96,7 @@ def _msbuild_assembly(
     is_packable = kwargs.pop("packable", False)
     version = kwargs.pop("version", None)
     package_version = kwargs.pop("package_version", version)
+    visibility = kwargs.get("visibility", None)
 
     msbuild_restore(
         name = restore_name,
@@ -124,6 +125,7 @@ def _msbuild_assembly(
             project_file = project_file,
             version = package_version,
             target = ":" + name + "_publish",
+            visibility = visibility,
         )
 
 def _steal_args(dest, src, args):
