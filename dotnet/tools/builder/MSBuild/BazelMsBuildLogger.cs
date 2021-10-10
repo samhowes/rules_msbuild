@@ -12,16 +12,22 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
     public interface IBazelMsBuildLogger: INodeLogger
     {
         bool HasError { get; }
+        void Error(string message);
     }
     
     public class BazelMsBuildLogger : ConsoleLogger, IBazelMsBuildLogger
     {
         public bool HasError { get; set; }
 
+        public void Error(string message) => _myWrite(message);
+        
         private static WriteHandler Write(WriteHandler? other, Func<string, string> trimPath)
         {
             other ??= Console.Out.Write;
-            return (m) => other(trimPath(m));
+            return (m) =>
+            {
+                other(trimPath(m));
+            };
         }
         
         public BazelMsBuildLogger(
@@ -31,6 +37,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             SetColor,
             ResetColor)
         {
+            _myWrite = Write(write, trimPath);
         }
 
         public override void Initialize(IEventSource eventSource)
@@ -80,7 +87,9 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
         /// When set, we'll try reading background color.
         /// </summary>
         private static bool _supportReadingBackgroundColor = true;
-        
+
+        private readonly WriteHandler _myWrite;
+
         /// <summary>
         /// Some platforms do not allow getting current background color. There
         /// is not way to check, but not-supported exception is thrown. Assume

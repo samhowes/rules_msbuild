@@ -28,7 +28,11 @@ namespace RulesMSBuild.Tools.Builder
             Cache = new BuildCache(context.Bazel.Label, PathMapper, new Files(), context.TargetGraph);
             ProjectLoader = new ProjectLoader(context.ProjectFile, Cache, PathMapper, context.TargetGraph);
             BuildLog = buildLog ?? new BazelMsBuildLogger(
-                m => Console.Out.Write(m),
+                m =>
+                {
+                    Console.Out.Write(m);
+                    Console.Out.Flush();
+                },
                 context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
                 (m) => PathMapper.ToBazel(m));
 
@@ -56,6 +60,7 @@ namespace RulesMSBuild.Tools.Builder
         private readonly TargetGraph? _targetGraph;
         private BuildParameters _buildParameters;
         private readonly BuildManager _buildManager;
+        private readonly IBazelMsBuildLogger _log;
 
         public Builder(BuildContext context, BuilderDependencies deps)
         {
@@ -64,25 +69,32 @@ namespace RulesMSBuild.Tools.Builder
             _action = _context.Command.Action.ToLower();
             _buildManager = BuildManager.DefaultBuildManager;
             _targetGraph = context.TargetGraph;
+            _log = deps.BuildLog;
         }
 
         public int Build()
         {
             Debug("$exec_root: " + _context.Bazel.ExecRoot);
             Debug("$output_base: " + _context.Bazel.OutputBase);
-            ProjectCollection? projectCollection = null;
+            ProjectInstance? project = null;
             try
             {
-                projectCollection = BeginBuild();
-                if (projectCollection == null) return -1;
+                project = BeginBuild();
+                if (project == null) return -1;
                 
-                var result = ExecuteBuild(projectCollection);
+                var result = ExecuteBuild(project);
 
                 EndBuild(result);
                 return (int) result;
             }
-            catch
+            catch (Exception ex)
             {
+                var shouldThrow = true;
+                if (ex is BazelException)
+                {
+                    _log.Error(ex.Message);
+                    shouldThrow = false;
+                }
                 try
                 {
                     _buildManager.EndBuild();
@@ -91,17 +103,18 @@ namespace RulesMSBuild.Tools.Builder
                 {
                     //ignored
                 }
-                
-                throw;
+
+                if (shouldThrow)
+                    throw;
+                return 1;
             }
             finally
             {
                 _buildManager.Dispose();
-                projectCollection?.Dispose();
             }
         }
 
-        public ProjectCollection? BeginBuild()
+        public ProjectInstance? BeginBuild()
         {
             // GlobalProjectCollection loads EnvironmentVariables on Init. We use ExecRoot in the project files, we 
             // can't use MSBuildStartupDirectory because NuGet Restore uses a static graph restore which starts up a 
@@ -120,6 +133,27 @@ namespace RulesMSBuild.Tools.Builder
                 _deps.Loggers,
                 ToolsetDefinitionLocations.Default);
             
+            
+            // our restore outputs are relative to the project directory
+            Environment.CurrentDirectory = _context.ProjectDirectory;
+
+            ProjectInstance project;
+            try
+            {
+                project = _deps.ProjectLoader.Load(pc);
+            }
+            catch (ProjectCacheMissException missingException)
+            {
+                Fail($"invalid ProjectReference",
+                    $"ProjectReference: \"{_deps.PathMapper.ToBazel(missingException.ProjectPath)}\" is not " +
+                    $"listed in the deps attribute of {_context.Bazel.Label}.\nDid you remember to " +
+                    $"`bazel run //:gazelle` after updating your project file?");
+                return null;
+            }
+
+            if (!ValidateTfm(project))
+                return null;
+            
             _buildParameters = new BuildParameters(pc)
             {
                 EnableNodeReuse = false,
@@ -137,28 +171,21 @@ namespace RulesMSBuild.Tools.Builder
                 ProjectRootElementCache = pc.ProjectRootElementCache,
             };
             _buildManager.BeginBuild(_buildParameters);
-            
+
             if (_deps.BuildLog.HasError)
             {
                 Console.WriteLine("Failed to initialize build manager, please file an issue.");
+                return null;
             }
 
-            return pc;
+            return project;
         }
 
-        private BuildResultCode ExecuteBuild(ProjectCollection projectCollection)
+        private BuildResultCode ExecuteBuild(ProjectInstance project)
         {
             var source = new TaskCompletionSource<BuildResultCode>();
             var flags = BuildRequestDataFlags.ReplaceExistingProjectInstance;
-
-            // our restore outputs are relative to the project directory
-            Environment.CurrentDirectory = _context.ProjectDirectory;
-
-            var project = _deps.ProjectLoader.Load(projectCollection);
-
-            if (!ValidateTfm(project))
-                return BuildResultCode.Failure;
-
+            
             var data = new BuildRequestData(
                 project,
                 _context.MSBuild.Targets, null, flags
@@ -402,6 +429,16 @@ namespace RulesMSBuild.Tools.Builder
                     src.CopyTo(dest.FullName, true);
                 }
             }
+        }
+
+        public void Error(string message) => BazelLogger.Error(_deps.PathMapper.ToBazel(message));
+        public void Fail(string shortMessage, string message)
+        {
+            BazelLogger.Error("__________________________________________________");
+            BazelLogger.Error($"Project \"{_deps.PathMapper.ToBazel(_context.ProjectFile)}\": error {shortMessage}");
+            
+            BazelLogger.Error("");
+            BazelLogger.Error(_deps.PathMapper.ToBazel(message));
         }
     }
 }
