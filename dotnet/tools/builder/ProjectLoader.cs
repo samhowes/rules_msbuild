@@ -70,9 +70,7 @@ namespace RulesMSBuild.Tools.Builder
                 if (projectPath != _entryProjectPath)
                 {
                     var manifestPath = _pathMapper.ToManifestPath(projectPath);
-                    throw new BazelException(
-                        $"Expected to find {projectPath} in cache. Only {_entryProjectPath} is expected to miss the " +
-                        $"cache.\nManifestPath:{manifestPath}");
+                    throw new ProjectCacheMissException(projectPath);
                 }
                 foreach (var (name, value) in projectCollection.GlobalProperties)
                 {
@@ -272,8 +270,22 @@ namespace RulesMSBuild.Tools.Builder
         }
     }
 
+    internal class ProjectCacheMissException : BazelException
+    {
+        public string ProjectPath { get; }
+
+        public ProjectCacheMissException(string projectPath)
+        {
+            ProjectPath = projectPath;
+        }
+    }
+
     public class BazelException : Exception
     {
+        public BazelException()
+        {
+            
+        }
         public BazelException(string message) : base(message)
         {
         }
