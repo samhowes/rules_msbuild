@@ -95,7 +95,7 @@ namespace TestRunner
             return res.Success;
         }
 
-        private static void SetEnv(IDictionary<string,string?> env, string workspaceRoot)
+        private static void SetEnv(IDictionary<string,string> env, string workspaceRoot)
         {
             // credit to rules_nodejs: https://github.com/bazelbuild/rules_nodejs/blob/stable/internal/bazel_integration_test/test_runner.js#L356
             var bazelKeys = new List<string>()

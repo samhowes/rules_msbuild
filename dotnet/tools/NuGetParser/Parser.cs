@@ -27,30 +27,8 @@ namespace NuGetParser
         {
             // explicitly load all requested packages first so we populate the requested name field properly
             LoadPackages(frameworks);
-
-            // now load the full closure of packages
-            // foreach (var tfmParser in tfms)
-            // {
-            //     if (!Try(tfmParser.Tfm, () => tfmParser.ProcessPackages())) return false;
-            // }
-
             if (!GenerateBuildFiles(args)) return false;
-
             return true;
-
-            bool Try(string tfm, Func<bool> func)
-            {
-                try
-                {
-                    return func();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to process packages for tfm {tfm}, please file an issue.");
-                    Console.WriteLine(ex.ToString());
-                    return false;
-                }
-            }
         }
 
         public Dictionary<string, Package> LoadPackages(List<FrameworkInfo> frameworks)

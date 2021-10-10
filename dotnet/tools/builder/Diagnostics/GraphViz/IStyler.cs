@@ -24,7 +24,6 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
         public NodeStyle GetAttrs(TargetGraph.Node node)
         {
             var style = new NodeStyle();
-            string? penwidth = null;
             if (node.CachePoint)
             {
                 style.Penwidth = "8.0";

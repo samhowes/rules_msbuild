@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -13,7 +14,8 @@ namespace RulesMSBuild.Tools.Builder.Diagnostics.GraphViz
             _styler = styleMode switch
             {
                 StyleMode.Build => new BuildStyler(),
-                StyleMode.Inspect => new InspectStyler()
+                StyleMode.Inspect => new InspectStyler(),
+                _ => throw new ArgumentOutOfRangeException(nameof(styleMode), styleMode, null)
             };
         }
         public enum StyleMode
