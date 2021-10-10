@@ -35,7 +35,7 @@ do
     echo "##[error]Artifact path does not exist"
     status=1
   fi;
-  echo "##vso[artifact.upload containerfolder=binaries;artifactname=$suffix/$artifact_name]$artifact_path"
+  echo "##vso[artifact.upload containerfolder=$suffix;artifactname=$suffix]$artifact_path"
   echo
 done
 echo "##[endgroup]"
