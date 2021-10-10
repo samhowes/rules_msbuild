@@ -6,7 +6,7 @@ msbuild_test(
     name = "BzlTests",
     size = "small",
     srcs = ["WorkspaceMakerTests.cs"],
-    data = glob(["testdata/**"]),
+    data = glob(["testdata/**"]) + ["WORKSPACE.FAKE.tpl"],
     target_framework = "netcoreapp3.1",
     deps = [
         "//dotnet/tools/Bzl:SamHowes.Bzl",

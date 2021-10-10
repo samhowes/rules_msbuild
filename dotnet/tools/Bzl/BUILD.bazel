@@ -6,6 +6,7 @@ exports_files(["WORKSPACE.tpl"])
 msbuild_binary(
     name = "SamHowes.Bzl",
     srcs = [
+        "BuildReader.cs",
         "Files.cs",
         "Program.cs",
         "WorkspaceMaker.cs",

@@ -1,2 +1,0 @@
-workspace(name = "simple")
-%dotnet_register_toolchains

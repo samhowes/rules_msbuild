@@ -19,8 +19,10 @@ namespace Bzl
             DestinationPath = destinationPath;
         }
     }
+
     public class WorkspaceMaker
     {
+        private const string MarkerName = "generated";
         private static class Templates
         {
             public static readonly Template Workspace = new Template(":WORKSPACE.tpl", "WORKSPACE");
@@ -29,6 +31,7 @@ namespace Bzl
         
         private readonly LabelRunfiles _runfiles;
         private readonly string _workspaceRoot;
+        private readonly string _workspaceName;
 
         private static readonly Regex TemplateRegex = new Regex(@"@@(\w+)@@",
             RegexOptions.Compiled | RegexOptions.Multiline);
@@ -40,6 +43,7 @@ namespace Bzl
         {
             _runfiles = new LabelRunfiles(runfiles, new Label("rules_msbuild", "dotnet/tools/Bzl"));
             _workspaceRoot = workspaceRoot;
+            _workspaceName = workspaceName;
             _workspaceTemplate = workspaceTemplate != null
                 ? new Template(workspaceTemplate, Templates.Workspace.DestinationPath)
                 : Templates.Workspace;
@@ -53,13 +57,10 @@ namespace Bzl
 
         public void Init(bool force=false, bool workspaceOnly=false)
         {
-            var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
-            if (!workspaceFile.Exists || force)
-            {
-                ExpandTemplate(_workspaceTemplate);
-                if (!workspaceOnly)
-                    ExpandTemplate(Templates.RootBuild);
-            }
+            WriteWorkspace(force);
+
+            if (!workspaceOnly)
+                ExpandTemplate(Templates.RootBuild);
 
             if (workspaceOnly) return;
             var msbuildRoot = _workspaceRoot;
@@ -84,6 +85,47 @@ namespace Bzl
                 CopyTemplate(src, dest);
                 ReportFile(dest);
             }
+        }
+
+        private void WriteWorkspace(bool force)
+        {
+            var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
+            BuildWriter writer;
+            BuildReader? reader = null;
+            Stream? temp = null;
+            if (!workspaceFile.Exists || force)
+            {
+                writer = new BuildWriter(File.Create(workspaceFile.FullName));
+                writer.Call("workspace", ("name", _workspaceName));
+            }
+            else
+            {
+                reader = new BuildReader(workspaceFile.OpenRead());
+                temp = new MemoryStream();
+                writer = new BuildWriter(temp);
+                writer.Raw(reader.GetUntilMarker(MarkerName), false);
+            }
+
+            writer.StartMarker(MarkerName);
+            writer.Raw(File.ReadAllText(_runfiles.Runfiles.Rlocation(_workspaceTemplate.Target)));
+            writer.EndMarker(MarkerName);
+
+            if (reader != null)
+            {
+                reader.SkipToEnd(MarkerName);
+                writer.Raw(reader.ReadAll(), false);
+                reader.Dispose();
+            }
+
+            if (temp != null)
+            {
+                writer.Flush();
+                temp.Seek(0, SeekOrigin.Begin);
+                using var dest = workspaceFile.Create();
+                temp.CopyTo(dest);
+            }
+            
+            writer.Dispose();
         }
 
         private void ExpandTemplate(Template t)
