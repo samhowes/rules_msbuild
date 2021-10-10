@@ -56,6 +56,7 @@ jobs:
 
           - script: |
               bash .ci/tar.sh
+              bazel run //.azpipelines:publish
             displayName: 'tar outputs'
             condition: always()
 

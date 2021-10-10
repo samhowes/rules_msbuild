@@ -55,7 +55,7 @@ gazelle_binary(
         ":dotnet",
     ],
     visibility = [
-        "//:__pkg__",
+        "//:__subpackages__",
     ],
 )
 

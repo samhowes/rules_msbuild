@@ -5,7 +5,7 @@ load(":msbuild.bzl", "TOOLCHAINS")
 def _nuget_package_impl(ctx):
     pkg = pack(ctx)
     return [
-        DefaultInfo(files = depset([pkg])),
+        DefaultInfo(files = depset([pkg]), runfiles = ctx.runfiles([pkg])),
     ]
 
 nuget_package = rule(
