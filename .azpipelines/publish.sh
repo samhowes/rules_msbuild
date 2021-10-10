@@ -13,20 +13,29 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
 
 echo "##[group]Artifacts"
 status=0
+
+suffix="$(uname -m)"
+if [[ "$suffix" == "x86_64" ]]; then suffix="amd64"; fi;
+suffix="$(uname -s)-$suffix"
+suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
+
 for ((i=1; i <= $#; i++))
 do
   target="${!i}"
   ((i=i+1))
+  artifact_name="${target:2}"
+  artifact_name="${artifact_name//\//.}"
+  artifact_name="${artifact_name//:/.}"
   artifact="rules_msbuild/${!i}"
   artifact_path="$(rlocation $artifact)"
-  echo "$target"
+  echo "$target => $artifact_name"
   echo "  $artifact"
   echo "  $artifact_path"
   if [[ ! -f "$artifact_path" ]]; then
     echo "##[error]Artifact path does not exist"
     status=1
   fi;
-  echo "##vso[artifact.upload containerfolder=binaries;artifactname=$target]$artifact_path"
+  echo "##vso[artifact.upload containerfolder=binaries;artifactname=$suffix/$artifact_name]$artifact_path"
   echo
 done
 echo "##[endgroup]"
