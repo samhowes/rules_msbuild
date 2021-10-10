@@ -16,8 +16,9 @@ status=0
 
 suffix="$(uname -m)"
 if [[ "$suffix" == "x86_64" ]]; then suffix="amd64"; fi;
-suffix="$(uname -s)-$suffix"
-suffix=$(echo "$suffix" | tr '[:upper:]' '[:lower:]')
+os_name="$(uname -s)"
+if [[ "$os_name" == *"nt"* ]]; then os_name="windows"; fi;
+suffix=$(echo "$os_name-$suffix" | tr '[:upper:]' '[:lower:]')
 
 for ((i=1; i <= $#; i++))
 do
