@@ -78,6 +78,7 @@ namespace NuGetParser
                     _writer.WriteLine();
             }
             _writer.WriteLine(")");
+            _writer.WriteLine();
         }
 
         public void Quote(string s) => _writer.Write($"\"{s}\"");
@@ -122,10 +123,13 @@ namespace NuGetParser
             _writer.WriteLine();
         }
 
-        public void Raw(string s)
+        public void Raw(string s, bool addWhitespace = true)
         {
-            _writer.WriteLine(s);
-            _writer.WriteLine();
+            _writer.Write(s);
+            if (addWhitespace)
+            {
+                _writer.WriteLine();
+            }
         }
 
         public void InlineCall(string functionName, string value)
@@ -134,6 +138,21 @@ namespace NuGetParser
             _writer.Write(value);
             _writer.WriteLine(")");
             _writer.WriteLine();
+        }
+
+        public void StartMarker(string markerName)
+        {
+            _writer.WriteLine($"# bzl:{markerName} start");
+        }
+        
+        public void EndMarker(string markerName)
+        {
+            _writer.WriteLine($"# bzl:{markerName} end");
+        }
+
+        public void Flush()
+        {
+            _writer.Flush();
         }
     }
 }

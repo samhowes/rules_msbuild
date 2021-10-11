@@ -1,0 +1,6 @@
+workspace(name = "simple")
+
+# bzl:generated start
+FAKE_WORKSPACE
+# bzl:generated end
+

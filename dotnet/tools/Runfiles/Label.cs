@@ -15,15 +15,15 @@ namespace RulesMSBuild.Tools.Bazel
 
             if (Package == "")
             {
-                RelativeRpath = Target;
+                RelativeRpath = Name;
             }
-            else if (Target == "")
+            else if (Name == "")
             {
                 RelativeRpath = Package;
             }
             else
             {
-                RelativeRpath = $"{Package}/{Target}";
+                RelativeRpath = $"{Package}/{Name}";
             }
             
         }
@@ -47,7 +47,7 @@ namespace RulesMSBuild.Tools.Bazel
                     IsRelative = true;
                     Package = "";
                     Workspace = DefaultWorkspace;
-                    Target = RawValue[1..];
+                    Name = RawValue[1..];
 
                     return true;
                 case '/':
@@ -67,19 +67,19 @@ namespace RulesMSBuild.Tools.Bazel
                 {
                     case ':':
                         Package = RawValue[nextIndex..i];
-                        Target = RawValue[(i + 1)..];
+                        Name = RawValue[(i + 1)..];
                         return true;
                 }
             }
 
             Package = RawValue[nextIndex..];
-            Target = "";
+            Name = "";
             return true;
         }
 
         public string Package { get; set; }
 
-        public string Target { get; set; }
+        public string Name { get; set; }
 
         public bool IsRelative { get; set; }
 

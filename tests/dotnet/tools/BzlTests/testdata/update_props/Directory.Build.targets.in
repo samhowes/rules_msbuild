@@ -1,0 +1,10 @@
+<Project>
+    <Target Name="SpecialTarget">
+        <Message Text="foo"/>
+    </Target>
+
+    <!--  bzl:generated start  -->
+    content that will be erased
+    <!--  bzl:generated end  -->
+
+</Project>

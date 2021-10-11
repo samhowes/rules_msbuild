@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <UseBazel>false</UseBazel>
+        <UseBazel>true</UseBazel>
     </PropertyGroup>
     <Import Project="Bazel.props"/>
 

@@ -1,0 +1,5 @@
+workspace(name = "custom_name")
+
+# bzl:generated start
+old contents
+# bzl:generated end

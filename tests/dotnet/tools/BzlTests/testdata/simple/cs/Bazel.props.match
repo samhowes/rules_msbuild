@@ -1,4 +1,0 @@
-simple</BazelWorkspaceName>
-../</BazelWorkspacePath>
-bazel-bin</BazelBin>
-nuget</BazelNuGetWorkspace>

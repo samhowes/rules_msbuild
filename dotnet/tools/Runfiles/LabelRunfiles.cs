@@ -25,6 +25,7 @@ namespace RulesMSBuild.Tools.Bazel
         }
         public string Rlocation(Label label)
         {
+            if (label.IsRelative) return PackagePath(label.Name);
             var rpath = Rpath(label);
             return Runfiles.Rlocation(rpath);
         }

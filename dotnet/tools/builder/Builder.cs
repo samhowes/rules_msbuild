@@ -160,6 +160,7 @@ namespace RulesMSBuild.Tools.Builder
                 DetailedSummary = true,
                 Loggers = pc.Loggers,
                 ResetCaches = false,
+                MaxNodeCount = 1,
                 LogTaskInputs = _context.DiagnosticsEnabled,
                 ProjectLoadSettings = _context.DiagnosticsEnabled ? 
                     ProjectLoadSettings.RecordEvaluatedItemElements 
@@ -218,6 +219,21 @@ namespace RulesMSBuild.Tools.Builder
                             });
                         }
                     }
+                    
+                    
+                    // the dll will be placed at    <root>/tools/<tfm>/any/<primaryName>.dll
+                    // runfiles will be at          <root>/content/runfiles
+                    var packDir = _context.OutputPath("pack");
+                    Directory.CreateDirectory(packDir);
+                    var path = Path.Combine(packDir, "runfiles.info");
+                    WriteRunfilesInfo(path, "../../../content/runfiles");
+                    project.AddItem("None", path, new[]
+                    {
+                        // new KeyValuePair<string, string>("What", "wow"),
+                        new KeyValuePair<string, string>("Pack", "true"),
+                        new KeyValuePair<string, string>("PackagePath", $"tools/{_context.Tfm}/any/"),
+                    });
+                    
                     // The default 'Pack' implementation by nuget sets a global property for the target framework
                     // this invalidates cache entries since they are keyed by ProjectFullPath + GlobalProperties
                     // We enforce a single target framework though, so this specification is not necessary
@@ -309,20 +325,25 @@ namespace RulesMSBuild.Tools.Builder
                             basename += ".exe";
                         }
 
-                        File.WriteAllLines(_context.OutputPath(_context.Tfm, "runfiles.info"), new string[]
-                        {
-                            // first line is the expected location of the runfiles directory from the assembly location
-                            $"../{basename}.runfiles",
-                            // second line is the origin workspace (nice to have)
-                            _context.Bazel.Label.Workspace,
-                            // third is the package (nice to have)
-                            _context.Bazel.Label.Package
-                        });
+                        WriteRunfilesInfo(_context.OutputPath(_context.Tfm, "runfiles.info"), $"../{basename}.runfiles");
                     }
 
                     break;
                 }
             }
+        }
+
+        private void WriteRunfilesInfo(string outputPath, string expectedRelativePath)
+        {
+            File.WriteAllLines(outputPath, new string[]
+            {
+                // first line is the expected location of the runfiles directory from the assembly location
+                expectedRelativePath,
+                // second line is the origin workspace (nice to have)
+                _context.Bazel.Label.Workspace,
+                // third is the package (nice to have)
+                _context.Bazel.Label.Package
+            });
         }
 
         /// <summary>

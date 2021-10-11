@@ -17,9 +17,9 @@ namespace Bzl
                 workspaceRoot = Path.Combine(cwd, workspaceName);
             }
 
-            var runfiles = Runfiles.CreateNuget();
-
-            var workspaceMaker = new WorkspaceMaker(runfiles, workspaceRoot, workspaceName);
+            var runfiles = Runfiles.Create<Program>();
+            var templates = Templates.CreateDefault(runfiles.Runfiles);
+            var workspaceMaker = new WorkspaceMaker(workspaceRoot, workspaceName, templates);
             workspaceMaker.Init();
             
             Console.WriteLine("Workspace created, next steps:");

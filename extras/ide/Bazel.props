@@ -20,7 +20,8 @@
             If UseBazel is not 'true' these will instruct msbuild to construct a similar output tree, but under
             dotnet-bin instead of bazel-bin.
          -->
-        <OutputPath>$(BazelWorkspacePath)$(BazelBin)/$(BazelPackage)</OutputPath>
+        <OutputPath>$(BazelWorkspacePath)$(BazelBin)/</OutputPath>
+        <OutputPath Condition="$(BazelPackage) != ''">$(OutputPath)/$(BazelPackage)/</OutputPath>
         <BaseIntermediateOutputPath>$(OutputPath)obj</BaseIntermediateOutputPath>
         <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
         <BuildProjectReferences Condition="$(UseBazel) == 'true'">false</BuildProjectReferences>
