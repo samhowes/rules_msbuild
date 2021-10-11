@@ -1,0 +1,5 @@
+<Project>
+    <PropertyGroup>
+        <AwesomeProperty>SpecialValue</AwesomeProperty>
+    </PropertyGroup>
+</Project>

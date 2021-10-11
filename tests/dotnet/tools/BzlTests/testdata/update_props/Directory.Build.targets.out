@@ -1,0 +1,10 @@
+<Project>
+    <Target Name="SpecialTarget">
+        <Message Text="foo"/>
+    </Target>
+
+    <!--  bzl:generated start  -->
+    FAKE_DIRECTORY_TARGETS
+    <!--  bzl:generated end  -->
+
+</Project>

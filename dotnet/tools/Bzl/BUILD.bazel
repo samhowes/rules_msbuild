@@ -9,7 +9,9 @@ msbuild_binary(
         "BuildReader.cs",
         "Files.cs",
         "Program.cs",
+        "Templates.cs",
         "WorkspaceMaker.cs",
+        "XmlMerger.cs",
     ],
     data = [
         "BUILD.root.tpl.bazel",

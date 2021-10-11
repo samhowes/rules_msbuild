@@ -1,9 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Permissions;
+using System.Text;
 using System.Text.RegularExpressions;
 using Bzl;
 using FluentAssertions;
@@ -18,16 +17,31 @@ namespace BzlTests
         private static string _basePath;
         private string _testDir;
 
-        private const string WorkspaceTemplate = "WORKSPACE_TEMPLATE";
-
         [Theory]
         [MemberData(nameof(GetWorkspaces), DisableDiscoveryEnumeration = true)]
         public void WorkspaceInit(string workspaceName)
         {
             _testDir = BazelEnvironment.GetTmpDir($"{nameof(WorkspaceInit)}_{workspaceName}");
             var specs = CollectSpecs(workspaceName);
-            var maker = new WorkspaceMaker(_runfiles.Runfiles, _testDir, workspaceName,
-                "rules_msbuild/tests/dotnet/tools/BzlTests/WORKSPACE.FAKE.tpl");
+
+            var templates = new Templates()
+            {
+                Workspace = new Template("WORKSPACE", "FAKE_WORKSPACE"),
+                RootBuild = new Template("BUILD.bazel", "FAKE_ROOT_BUILD"),
+                BazelProps = new Template("Bazel.props", "FAKE_BAZEL_PROPS"),
+                BazelTargets = new Template("Bazel.targets", "FAKE_BAZEL_TARGETS"),
+                DirectoryProps = new Template("Directory.Build.props", "FAKE_DIRECTORY_PROPS"),
+                DirectoryTargets = new Template("Directory.Build.targets", "FAKE_DIRECTORY_TARGETS"),
+                SolutionProps = new Template("Directory.Solution.props", "FAKE_SOLUTION_PROPS"),
+                SolutionTargets = new Template("Directory.Solution.targets", "FAKE_SOLUTION_TARGETS"),
+            };
+
+            foreach (var template in templates.XmlMerge)
+            {
+                template.Contents = $"<Project>\n    {template.Contents}\n</Project>\n";
+            }
+            
+            var maker = new WorkspaceMaker(_testDir, workspaceName, templates);
 
             maker.Init();
 
@@ -35,15 +49,46 @@ namespace BzlTests
             {
                 var info = new FileInfo(Path.Combine(_testDir, spec.Rel));
                 info.Exists.Should().BeTrue($"`{spec.Rel}` should have been created.");
-                var contents = File.ReadAllText(info.FullName).Replace("\r", "").Trim();
-                foreach (var regex in spec.Regexes)
-                {
-                    regex.IsMatch(contents).Should().BeTrue($"`{regex}` should have matched:\n```\n{contents}\n```");
-                }
+                var contents = File.ReadAllLines(info.FullName);
+                // var joined = string.Join("\n", contents);
+                // foreach (var regex in spec.Regexes)
+                // {
+                //     regex.IsMatch(joined).Should().BeTrue($"`{regex}` should have matched:\n```\n{joined}\n```");
+                // }
 
-                if (!string.IsNullOrEmpty(spec.Contents))
+                if (spec.Contents.Length > 0 )
                 {
-                    contents.Should().Be(spec.Contents);
+                    var builder = new StringBuilder().AppendLine(spec.Rel);
+
+                    var expectedIndex = 0;
+                    var actualIndex = 0;
+
+                    var actual = contents;
+                    var expected = spec.Contents;
+                    var failed = false;
+                    for (;expectedIndex < expected.Length && actualIndex < actual.Length;)
+                    {
+                        var e = expected[expectedIndex];
+                        var a = actual[actualIndex];
+                        if (string.CompareOrdinal(e, a) == 0)
+                        {
+                            builder.Append("   ");
+                            builder.AppendLine(e);
+                        }
+                        else
+                        {
+                            failed = true;
+                            builder.Append(" - ");
+                            builder.AppendLine(e);
+                            builder.Append(" + ");
+                            builder.AppendLine(a);    
+                        }
+                        
+                        expectedIndex++;
+                        actualIndex++;
+                    }
+
+                    failed.Should().Be(false, builder.ToString());
                 }
             }
         }
@@ -69,9 +114,10 @@ namespace BzlTests
                     switch (extension)
                     {
                         case ".out":
-                            spec.Contents = File.ReadAllText(path).Replace("\r", "").Trim();
+                            spec.Contents = File.ReadAllLines(path);
                             break;
                         case ".match":
+                            spec.Contents = Array.Empty<string>();
                             spec.Regexes = File.ReadAllLines(path).Select(l =>
                                 {
                                     if (!l.StartsWith("%"))
@@ -134,6 +180,6 @@ namespace BzlTests
     {
         public string Rel { get; set; }
         public List<Regex> Regexes { get; set; } = new List<Regex>();
-        public string Contents { get; set; }
+        public string[] Contents { get; set; }
     }
 }

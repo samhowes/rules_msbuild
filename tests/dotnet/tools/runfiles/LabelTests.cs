@@ -25,7 +25,7 @@ namespace RulesMSBuild.Tools.RunfilesTests
                 label.Workspace.Should().Be(workspace);
             
             label.Package.Should().Be(package);
-            label.Target.Should().Be(target);
+            label.Name.Should().Be(target);
             label.RelativeRpath.Should().Be(rpath);
         }
     }

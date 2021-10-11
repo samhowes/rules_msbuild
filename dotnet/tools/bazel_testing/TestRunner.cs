@@ -71,7 +71,10 @@ namespace TestRunner
             }
 
             Info("Initializing workspace...");
-            var workspaceMaker = new WorkspaceMaker(_runfiles, testDir, workspaceName, _config.WorkspaceTpl);
+            var templates = Templates.CreateDefault(Runfiles.Create());
+            templates.Workspace = new Template("WORKSPACE",
+                File.ReadAllText(_runfiles.Rlocation(_config.WorkspaceTpl)));
+            var workspaceMaker = new WorkspaceMaker(testDir, workspaceName, templates);
 
             _bazel = new BazelRunner(_config.Bazel, outputUserRoot!, testDir);
 

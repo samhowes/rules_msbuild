@@ -1,6 +1,10 @@
 <Project>
-    <!--
-        Only import Bazel.props when bazel isn't controlling msbuild.
-        If UseBazel is not 'true' these props will configure dotnet to output to a bazel-like directory structure -->
-    <Import Condition="$(BazelBuild) == ''" Project="Bazel.props" />
+    <PropertyGroup>
+        <!--  Set to false to have your ide build without Bazel. Useful for debugging.
+            Files will be output to //dotnet-bin instead of //bazel-bin
+        -->
+        <UseBazel>true</UseBazel>
+    </PropertyGroup>
+    <!-- Only import Bazel.props when bazel isn't controlling msbuild. -->
+    <Import Condition="$(BazelBuild) == ''" Project="Bazel.props"/>
 </Project>

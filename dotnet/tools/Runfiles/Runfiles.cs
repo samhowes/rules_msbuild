@@ -80,10 +80,10 @@ namespace RulesMSBuild.Tools.Bazel
         /// <returns>An instance of <see cref="LabelRunfiles"/> which uses bazel labels to compute runfiles paths for
         /// you</returns>
         /// <exception cref="IOException">If a runfiles directory cannot be found.</exception>
-        public static LabelRunfiles Create<TEntry>(Label defaultPackage = null) where TEntry : class
+        public static LabelRunfiles Create<TEntry>() where TEntry : class
         {
             const string infoName = "runfiles.info";
-            var assemblyLocation = typeof(TEntry).Assembly.Location;
+            var assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
             var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
             var infoFile = new FileInfo(
                 Path.Combine(assemblyDirectory!,infoName));
@@ -99,11 +99,8 @@ namespace RulesMSBuild.Tools.Bazel
             }
 
             var expectedLocation = lines[0];
-            if (defaultPackage == null)
-            {
-                defaultPackage = new Label(lines[1], lines[2]);
-            }
-            
+            var defaultPackage = new Label(lines[1], lines[2]);
+
             if (!TryCreate(Environment.GetEnvironmentVariables(), out var runfiles))
             {
                 // no one has told us where the runfiles are, this means:
@@ -135,7 +132,6 @@ namespace RulesMSBuild.Tools.Bazel
                     runfiles = new ManifestBased(Path.Combine(expectedDir, "MANIFEST"));
                 }
             }
-
 
             return new LabelRunfiles(runfiles, defaultPackage);
         }
@@ -177,33 +173,40 @@ namespace RulesMSBuild.Tools.Bazel
         /// <returns></returns>
         public static Runfiles Create(IDictionary env, bool checkNuGet = false)
         {
-            if (checkNuGet)
-            {
-                var binDir = Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!;
-                var settingsPath = Path.Combine(binDir!, "DotnetToolSettings.xml");
-                if (File.Exists(settingsPath))
-                {
-                    // assume we're in <package_root>/<tfm>/<cpu>/
-                    // our runfiles root is at <package_root>/content/runfiles 
-                    var runfilesRoot = Path.GetFullPath(Path.Combine(binDir, "../../../content/runfiles"));
-                    if (!Directory.Exists(runfilesRoot))
-                        throw new IOException(
-                            $"Found DotnetToolSettings.xml at {settingsPath}, but could not find a recognizable " +
-                            $"runfiles root at {runfilesRoot}.");
-                    env["RUNFILES_MANIFEST_ONLY"] = "0";
-                    // convert slashes just for consistency with bazel
-                    runfilesRoot = runfilesRoot.Replace('\\', '/');
-                    env["RUNFILES_DIR"] = runfilesRoot;
-                    return new DirectoryBased(runfilesRoot);
-                }
-            }
+            if (checkNuGet && TryCreateNuget(env, out var runfiles))
+                return runfiles;
             
-            if (TryCreate(env, out var runfiles)) return runfiles;
+            if (TryCreate(env, out runfiles)) return runfiles;
 
             throw new IOException(
                 "Cannot find runfiles: To use a directory, set $RUNFILES_DIR, To use a manifest, set " +
                 $"RUNFILES_MANIFEST_ONLY=1 set RUNFILES_MANIFEST_FILE. Alternatively, use {nameof(Create)}<TEntry>, " +
                 $"where TEntry is a class defined in an assembly copied to the output directory.");
+        }
+
+        private static bool TryCreateNuget(IDictionary env, out Runfiles runfiles)
+        {
+            runfiles = null;
+            var binDir = Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!;
+            var settingsPath = Path.Combine(binDir!, "DotnetToolSettings.xml");
+            if (File.Exists(settingsPath))
+            {
+                // assume we're in <package_root>/<tfm>/<cpu>/
+                // our runfiles root is at <package_root>/content/runfiles 
+                var runfilesRoot = Path.GetFullPath(Path.Combine(binDir, "../../../content/runfiles"));
+                if (!Directory.Exists(runfilesRoot))
+                    throw new IOException(
+                        $"Found DotnetToolSettings.xml at {settingsPath}, but could not find a recognizable " +
+                        $"runfiles root at {runfilesRoot}.");
+                env["RUNFILES_MANIFEST_ONLY"] = "0";
+                // convert slashes just for consistency with bazel
+                runfilesRoot = runfilesRoot.Replace('\\', '/');
+                env["RUNFILES_DIR"] = runfilesRoot;
+                runfiles = new DirectoryBased(runfilesRoot);
+                return true;
+            }
+
+            return false;
         }
 
         private static bool TryCreate(IDictionary env, out Runfiles runfiles)

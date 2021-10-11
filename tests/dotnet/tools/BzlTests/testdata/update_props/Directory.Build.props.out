@@ -1,0 +1,10 @@
+<Project>
+    <PropertyGroup>
+        <AwesomeProperty>SpecialValue</AwesomeProperty>
+    </PropertyGroup>
+
+    <!--  bzl:generated start  -->
+    FAKE_DIRECTORY_PROPS
+    <!--  bzl:generated end  -->
+
+</Project>

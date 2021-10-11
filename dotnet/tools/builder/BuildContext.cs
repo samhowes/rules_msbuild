@@ -168,6 +168,10 @@ namespace RulesMSBuild.Tools.Builder
                 var suffixStart = Label.Name.LastIndexOf('_');
                 PrimaryName = Label.Name[..suffixStart];
             }
+            else
+            {
+                PrimaryName = Label.Name;
+            }
 
             OutputDir = Path.GetFullPath(Path.Combine(BinDir, outputSuffix));
         }

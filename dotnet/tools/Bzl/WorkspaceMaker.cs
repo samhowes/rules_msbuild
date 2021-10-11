@@ -3,50 +3,28 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using RulesMSBuild.Tools.Bazel;
 using NuGetParser;
 
 namespace Bzl
 {
-    public class Template
-    {
-        public string Target { get; }
-        public string DestinationPath { get; }
-
-        public Template(string target, string destinationPath)
-        {
-            Target = target;
-            DestinationPath = destinationPath;
-        }
-    }
-
     public class WorkspaceMaker
     {
         private const string MarkerName = "generated";
-        private static class Templates
-        {
-            public static readonly Template Workspace = new Template(":WORKSPACE.tpl", "WORKSPACE");
-            public static readonly Template RootBuild = new Template(":BUILD.root.tpl.bazel", "BUILD.bazel");
-        }
-        
-        private readonly LabelRunfiles _runfiles;
+
         private readonly string _workspaceRoot;
         private readonly string _workspaceName;
+        private readonly Templates _templates;
 
         private static readonly Regex TemplateRegex = new Regex(@"@@(\w+)@@",
             RegexOptions.Compiled | RegexOptions.Multiline);
 
-        private readonly Dictionary<string,string> _variables;
-        private readonly Template _workspaceTemplate;
+        private readonly Dictionary<string, string> _variables;
 
-        public WorkspaceMaker(Runfiles runfiles, string workspaceRoot, string workspaceName, string? workspaceTemplate = null)
+        public WorkspaceMaker(string workspaceRoot, string workspaceName, Templates templates)
         {
-            _runfiles = new LabelRunfiles(runfiles, new Label("rules_msbuild", "dotnet/tools/Bzl"));
             _workspaceRoot = workspaceRoot;
             _workspaceName = workspaceName;
-            _workspaceTemplate = workspaceTemplate != null
-                ? new Template(workspaceTemplate, Templates.Workspace.DestinationPath)
-                : Templates.Workspace;
+            _templates = templates;
             _variables = new Dictionary<string, string>()
             {
                 ["workspace_name"] = workspaceName,
@@ -55,59 +33,89 @@ namespace Bzl
             };
         }
 
-        public void Init(bool force=false, bool workspaceOnly=false)
+        public void Init(bool force = false, bool workspaceOnly = false)
         {
-            WriteWorkspace(force);
+            WriteBzl(_templates.Workspace, (writer) => writer.Call("workspace", ("name", _workspaceName)), force);
 
             if (!workspaceOnly)
-                ExpandTemplate(Templates.RootBuild);
+                WriteBzl(_templates.RootBuild, (_) => { }, force);
 
             if (workspaceOnly) return;
-            var msbuildRoot = _workspaceRoot;
-            Files.Walk(_workspaceRoot, (path, isDirectory) =>
+            _variables["workspace_path"] = "";
+
+            foreach (var template in _templates.XmlMerge)
             {
-                if (isDirectory) return true;
-                if (path.EndsWith(".sln") || path.EndsWith("proj"))
+                var file = new FileInfo(Path.Combine(_workspaceRoot, template.Destination));
+                var created = false;
+                Stream original;
+                if (!file.Exists)
                 {
-                    msbuildRoot = Path.GetDirectoryName(path);
-                    return false;
+                    original = new MemoryStream();
+                    var initial = new StreamWriter(original);
+                    initial.Write("<Project>\n</Project>\n");
+                    initial.Flush();
+                    original.Seek(0, SeekOrigin.Begin);
+                    created = true;
+                }
+                else
+                {
+                    original = file.OpenRead();
+                }
+                
+                string replaced;
+                using (original)
+                {
+                    var merger = new XmlMerger(original);
+                    const string projectOpen = "<Project>";
+                    const string projectClose = "</Project>";
+
+                    var fragmentStart = template.Contents.IndexOf(projectOpen, StringComparison.OrdinalIgnoreCase);
+                    fragmentStart = template.Contents.IndexOf('\n', fragmentStart) + 1;
+
+                    var fragmentEnd = template.Contents.LastIndexOf(projectClose, StringComparison.OrdinalIgnoreCase);
+
+                    var fragment = template.Contents[fragmentStart..fragmentEnd]; 
+                    
+                    var substituted = SubstituteVariables(fragment);
+                    replaced = merger.Replace(MarkerName, substituted);
                 }
 
-                return true;
-            });
+                using var writer = file.CreateText();
+                writer.Write(replaced);
+                ReportFile(template.Destination, created);
+            }
 
-            var workspacePath = msbuildRoot == _workspaceRoot ? "" : Path.GetRelativePath(msbuildRoot, _workspaceRoot) + "/";
-            _variables["workspace_path"] = workspacePath;
-
-            foreach (var src in _runfiles.ListRunfiles("//extras/ide"))
+            foreach (var template in _templates.Overwrite)
             {
-                var dest = Path.Combine(msbuildRoot, Path.GetFileName(src));
-                CopyTemplate(src, dest);
-                ReportFile(dest);
+                var dest = Path.Combine(_workspaceRoot, template.Destination);
+                File.WriteAllText(dest, SubstituteVariables(template.Contents));
+                Console.WriteLine($"Overwrote: {template.Destination}");
             }
         }
 
-        private void WriteWorkspace(bool force)
+        private void WriteBzl(Template template, Action<BuildWriter> onNotExists, bool force)
         {
-            var workspaceFile = new FileInfo(Path.Combine(_workspaceRoot, "WORKSPACE"));
+            var file = new FileInfo(Path.Combine(_workspaceRoot, template.Destination));
             BuildWriter writer;
             BuildReader? reader = null;
             Stream? temp = null;
-            if (!workspaceFile.Exists || force)
+            var created = false;
+            if (!file.Exists || force)
             {
-                writer = new BuildWriter(File.Create(workspaceFile.FullName));
-                writer.Call("workspace", ("name", _workspaceName));
+                writer = new BuildWriter(File.Create(file.FullName));
+                onNotExists(writer);
+                created = true;
             }
             else
             {
-                reader = new BuildReader(workspaceFile.OpenRead());
+                reader = new BuildReader(file.OpenRead());
                 temp = new MemoryStream();
                 writer = new BuildWriter(temp);
                 writer.Raw(reader.GetUntilMarker(MarkerName), false);
             }
 
             writer.StartMarker(MarkerName);
-            writer.Raw(File.ReadAllText(_runfiles.Runfiles.Rlocation(_workspaceTemplate.Target)));
+            writer.Raw(template.Contents);
             writer.EndMarker(MarkerName);
 
             if (reader != null)
@@ -121,41 +129,41 @@ namespace Bzl
             {
                 writer.Flush();
                 temp.Seek(0, SeekOrigin.Begin);
-                using var dest = workspaceFile.Create();
+                using var dest = file.Create();
                 temp.CopyTo(dest);
             }
-            
+
             writer.Dispose();
+            ReportFile(template.Destination, created);
         }
 
-        private void ExpandTemplate(Template t)
-        {
-            var sourcePath = t.Target.StartsWith("//") || t.Target.StartsWith(":")
-                ? _runfiles.PackagePath(t.Target)
-                : _runfiles.Runfiles.Rlocation(t.Target); 
-            CopyTemplate(sourcePath, t.DestinationPath);
-            ReportFile(t.DestinationPath);
-        }
-
-        private void ReportFile(string path)
+        private void ReportFile(string path, bool created)
         {
             if (Path.IsPathRooted(path))
             {
                 path = path[(_workspaceRoot.Length + 1)..];
             }
-            Console.WriteLine($"Created: {path}");
+
+            var text = created ? "Created" : "Updated";
+            Console.WriteLine($"{text}: {path}");
         }
-        
+
         private void CopyTemplate(string templatePath, string workspaceRelativeDest)
         {
             var contents = File.ReadAllText(templatePath);
+            contents = SubstituteVariables(contents);
+
+            File.WriteAllText(Path.Combine(_workspaceRoot, workspaceRelativeDest), contents);
+        }
+
+        private string SubstituteVariables(string contents)
+        {
             contents = TemplateRegex.Replace(contents, (match) =>
             {
                 if (_variables.TryGetValue(match.Groups[1].Value, out var replacement)) return replacement;
                 return match.Value;
             });
-            
-            File.WriteAllText(Path.Combine(_workspaceRoot, workspaceRelativeDest), contents);
+            return contents;
         }
     }
 }

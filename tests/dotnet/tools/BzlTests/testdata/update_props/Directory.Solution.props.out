@@ -1,0 +1,10 @@
+<Project>
+    <PropertyGroup>
+        <AwesomeProperty>SpecialValue</AwesomeProperty>
+    </PropertyGroup>
+
+    <!--  bzl:generated start  -->
+    FAKE_SOLUTION_PROPS
+    <!--  bzl:generated end  -->
+
+</Project>
