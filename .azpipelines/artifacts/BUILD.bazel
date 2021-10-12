@@ -1,0 +1,5 @@
+filegroup(
+    name = "gazelle-dotnet",
+    srcs = glob(["gazelle-dotnet/**/*"]),
+    visibility = ["//:__subpackages__"],
+)

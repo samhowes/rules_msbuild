@@ -1,0 +1,14 @@
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
+string_flag(
+    name = "mode",
+    build_setting_default = "build",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "release",
+    flag_values = {
+        ":mode": "release",
+    },
+)
