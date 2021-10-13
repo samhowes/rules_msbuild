@@ -1,5 +1,7 @@
+exports_files(glob(["*/**/*"]))
+
 filegroup(
-    name = "gazelle-dotnet",
-    srcs = glob(["gazelle-dotnet/**/*"]),
-    visibility = ["//:__subpackages__"],
+    name = "artifacts",
+    srcs = glob(["*/**/*"]),
+    visibility = ["//visibility:public"],
 )

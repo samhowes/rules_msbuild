@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\dotnet\tools\Bzl\SamHowes.Bzl.csproj" />
     <ProjectReference Include="..\..\dotnet\tools\Runfiles\Runfiles.csproj" />
   </ItemGroup>
 

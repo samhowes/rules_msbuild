@@ -1,13 +1,13 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
-    name = "release",
+    name = "tar",
     srcs = ["Program.cs"],
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [
-        "//dotnet/tools/Bzl:SamHowes.Bzl",
         "//dotnet/tools/Runfiles",
         "@nuget//Newtonsoft.Json",
+        "@nuget//SharpZipLib",
     ],
 )

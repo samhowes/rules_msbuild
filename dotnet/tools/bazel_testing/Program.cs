@@ -12,7 +12,6 @@ namespace TestRunner
     {
         public string WorkspaceRoot { get; set; } = null!;
         public string ReleaseTar { get; set; } = null!;
-        public string WorkspaceTpl { get; set; } = null!;
         public string Bazel { get; set; } = null!;
         public List<string> Commands { get; set; } = null!;
         public Dictionary<string,string>? Run { get; set; }

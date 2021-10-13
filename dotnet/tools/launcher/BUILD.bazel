@@ -37,7 +37,6 @@ go_library(
     ],
 )
 
-# todo(#41) precompile this into an exe and publish as an artifact
 go_binary(
     name = "launcher_windows",
     embed = [":launcher_lib"],

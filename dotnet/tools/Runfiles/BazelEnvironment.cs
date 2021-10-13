@@ -35,14 +35,20 @@ namespace RulesMSBuild.Tools.Bazel
                 $"Failed to find a unique path after 1000 attempts. Maybe you need to clean the temp directory?");
         }
 
+        const string BuildWorkspaceDirectory = "BUILD_WORKSPACE_DIRECTORY";
         public static string GetWorkspaceRoot()
         {
-            const string key = "BUILD_WORKSPACE_DIRECTORY";
-            var value = Environment.GetEnvironmentVariable(key);
+            var value = TryGetWorkspaceRoot();
             if (string.IsNullOrEmpty(value))
                 throw new Exception(
-                    $"Environment variable `{key}` is not set. Did you run this executable with bazel run?");
+                    $"Environment variable `{BuildWorkspaceDirectory}` is not set. Did you run this executable with bazel run?");
 
+            return value;
+        }
+
+        public static string TryGetWorkspaceRoot()
+        {
+            var value = Environment.GetEnvironmentVariable(BuildWorkspaceDirectory);
             return value;
         }
     }

@@ -2,7 +2,7 @@ load(":util.bzl", "expand")
 
 PACKAGES = [
     "//gazelle/dotnet:gazelle-dotnet",
-    "//dotnet/tools/Bzl:SamHowes.Bzl_nuget",
+    "//dotnet/tools/launcher",
 ]
 
 sh_binary(

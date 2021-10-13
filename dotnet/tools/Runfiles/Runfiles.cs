@@ -258,8 +258,7 @@ namespace RulesMSBuild.Tools.Bazel
                            && !path.Contains("/./")
                            && !path.EndsWith("/.")
                            && !path.Contains("//"),
-                "path is not normalized: \"%s\"",
-                path);
+                $"path is not normalized: \"{path}\"");
 
             Check.Argument(
                 !path.StartsWith("\\"), "path is absolute without a drive letter: \"%s\"", path);

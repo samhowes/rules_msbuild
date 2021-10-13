@@ -1,5 +1,6 @@
 ## Initial release 
 
+<!--marker-->
 ```python
 http_archive(
     name = "rules_msbuild",
