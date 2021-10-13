@@ -35,6 +35,7 @@ Check out the `tests/` directory & `e2e/` directory for examples
 1. Runfiles Library
 1. Bazel sandboxing compatible
 1. [Grpc & Proto support](./tests/examples/Grpc) Out of the Box via [grpc-dotnet](https://github.com/grpc/grpc-dotnet)
+1. No third party workspace dependencies
 
 # Contents
 1. [Usage](#usage)
