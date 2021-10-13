@@ -1,0 +1,8 @@
+filegroup(
+    name = "gazelle-dotnet",
+    srcs = select({
+        "//config:release": ["//.azpipelines/artifacts"],
+        "//conditions:default": ["//gazelle/dotnet:gazelle-dotnet"],
+    }),
+    visibility = ["//visibility:public"],
+)

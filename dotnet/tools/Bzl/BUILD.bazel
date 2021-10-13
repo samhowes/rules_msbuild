@@ -3,14 +3,6 @@ load("//:version.bzl", "VERSION")
 
 exports_files(["WORKSPACE.tpl"])
 
-filegroup(
-    name = "gazelle-dotnet",
-    srcs = select({
-        "//config:release": ["//.azpipelines/artifacts"],
-        "//conditions:default": ["//gazelle/dotnet:gazelle-dotnet"],
-    }),
-)
-
 msbuild_binary(
     name = "SamHowes.Bzl",
     srcs = [
@@ -25,8 +17,8 @@ msbuild_binary(
     data = [
         "BUILD.root.tpl.bazel",
         "WORKSPACE.tpl",
-        ":gazelle-dotnet",
         "//extras/ide",
+        "//tools:gazelle-dotnet",
     ],
     packable = True,
     target_framework = "netcoreapp3.1",

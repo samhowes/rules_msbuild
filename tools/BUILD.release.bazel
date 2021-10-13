@@ -1,0 +1,15 @@
+# use gazelle-dotnet with:
+# load("@rules_msbuild//tools:gazelle.bzl", "gazelle")
+# gazelle(name="gazelle", args=[...])
+# see https://github.com/samhowes/rules_msbuild for more info
+
+filegroup(
+    name = "gazelle-dotnet",
+    srcs = select({
+        "@platforms//os:linux": ["//.azpipelines/artifacts:linux-amd64/gazelle-dotnet"],
+        "@platforms//os:macos": ["//.azpipelines/artifacts:darwin-amd64/gazelle-dotnet"],
+        "@platforms//os:windows": ["//.azpipelines/artifacts:windows-amd64/gazelle-dotnet.exe"],
+        "//conditions:default": ["//.azpipelines/artifacts:does_not_exist"],
+    }),
+    visibility = ["//visibility:public"],
+)

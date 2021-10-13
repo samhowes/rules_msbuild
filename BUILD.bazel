@@ -43,7 +43,7 @@ gazelle_binary(
 gazelle(
     name = "gazelle-dotnet",
     args = DOTNET_ARGS,
-    gazelle = "//gazelle/dotnet:gazelle-dotnet",
+    gazelle = "//tools:gazelle-dotnet",
 )
 
 genrule(
