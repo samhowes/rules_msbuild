@@ -8,5 +8,4 @@ def gazelle(name, args = []):
         srcs = ["@rules_msbuild//tools:gazelle.sh"],
         args = ["$(location @rules_msbuild//tools:gazelle-dotnet)"] + args,
         data = ["@rules_msbuild//tools:gazelle-dotnet"],
-        deps = ["@bazel_tools//tools/bash/runfiles"],
     )

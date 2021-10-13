@@ -256,6 +256,12 @@ namespace release
 
         private static (string tarAlias, string usage) BuildTar(string work, string version)
         {
+            foreach (var file in Directory.GetFiles("bazel-bin", "rules_msbuild.*"))
+            {
+                Console.WriteLine($"Removing old artifact: {file}");
+                File.Delete(file);
+            }
+        
             var outputs = Bazel("build //:tar");
             var tarSource = outputs[0];
             var tarAlias = Path.Combine(work, $"rules_msbuild-{version}.tar.gz");

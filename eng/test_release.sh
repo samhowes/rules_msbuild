@@ -26,3 +26,11 @@ dotnet new console -o console --no-restore
 dotnet exec "$tool" _test "$tarfile"
 
 bazel run //:gazelle
+result="$(bazel run //console)"
+
+if [[ "$result" != "Hello World!" ]]; then
+  echo "test failed, bad output: $result"
+  exit 1
+fi
+
+echo "SUCCESS"

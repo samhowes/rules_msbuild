@@ -35,7 +35,6 @@ namespace tar
             {
                 var actual = await process.StandardOutput.ReadLineAsync();
                 if (actual == null) break;
-
                 if (Path.GetFileName(actual) == outputName) continue;
 
                 var tarValue = actual;

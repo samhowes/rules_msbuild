@@ -3,6 +3,8 @@
 # gazelle(name="gazelle", args=[...])
 # see https://github.com/samhowes/rules_msbuild for more info
 
+exports_files(["gazelle.sh"])
+
 filegroup(
     name = "gazelle-dotnet",
     srcs = select({
