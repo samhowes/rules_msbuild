@@ -21,7 +21,8 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
 
             var propsDirectory = Path.GetDirectoryName(directoryBazelPropsPath);
             
-            var noWarn = "";
+            var noWarn = "NU1603"; // Microsoft.TestPlatform.TestHost 16.7.1 depends on Newtonsoft.Json (>= 9.0.1) but Newtonsoft.Json 9.0.1 was not found. An approximate best match of Newtonsoft.Json 13.0.1 was resolved.
+
             GlobalProperties = new Dictionary<string, string>
             {
                 ["Configuration"] = Configuration,
