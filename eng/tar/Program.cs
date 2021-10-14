@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -54,8 +55,9 @@ namespace tar
             if (process.ExitCode != 0) return process.ExitCode;
 
             var runfiles = Runfiles.Create<Program>();
+            var exe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
             var debugGazelle =
-                runfiles.Runfiles.Rlocation("rules_msbuild/gazelle/dotnet/gazelle-dotnet_/gazelle-dotnet");
+                runfiles.Runfiles.Rlocation($"rules_msbuild/gazelle/dotnet/gazelle-dotnet_/gazelle-dotnet{exe}");
             if (File.Exists(debugGazelle))
             {
                 var gazellePath = Util.GetGazellePath();
