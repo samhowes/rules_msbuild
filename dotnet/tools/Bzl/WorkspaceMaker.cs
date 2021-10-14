@@ -91,6 +91,16 @@ namespace Bzl
                 File.WriteAllText(dest, SubstituteVariables(template.Contents));
                 Console.WriteLine($"Overwrote: {template.Destination}");
             }
+
+            var depsFolder = new DirectoryInfo(Path.Combine(_workspaceRoot, "deps"));
+            if (!depsFolder.Exists)
+                depsFolder.Create();
+            var nugetDeps = new FileInfo(Path.Combine(depsFolder.FullName, "nuget.bzl"));
+            if (!nugetDeps.Exists)
+            {
+                using var _ = nugetDeps.Create();
+                ReportFile("deps/nuget.bzl", true);
+            }
         }
 
         private void WriteBzl(Template template, Action<BuildWriter> onNotExists, bool force)

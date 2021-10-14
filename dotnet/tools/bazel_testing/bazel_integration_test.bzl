@@ -15,7 +15,6 @@ def _rules_msbuild_integration_test_impl(ctx):
 
     config = ctx.actions.declare_file("%s.config.json" % ctx.attr.name)
     tar = [f for f in ctx.files._tar if "tar" in f.path][0]
-    tpl = [f for f in ctx.files._tar if "WORKSPACE" in f.path][0]
     ctx.actions.write(
         output = config,
         content = json.encode(dict(
@@ -25,7 +24,6 @@ def _rules_msbuild_integration_test_impl(ctx):
                 ctx.attr.name.split("_", 1)[1],
             ),
             releaseTar = to_manifest_path(ctx, tar),
-            workspaceTpl = to_manifest_path(ctx, tpl),
             bazel = to_manifest_path(ctx, bazel),
             commands = ctx.attr.commands,
             run = ctx.attr.run,
@@ -56,14 +54,15 @@ ${{COMMAND}}
         ),
     )
 
-    runner = ctx.attr._test_runner[DefaultInfo];
+    runner = ctx.attr._test_runner[DefaultInfo]
     runfiles = ([config] + ctx.files._tar +
                 ctx.files.bazel_binary +
                 ctx.files.workspace_files)
     return [DefaultInfo(
         runfiles = ctx.runfiles(
             files = runfiles,
-            transitive_files = runner.files)
+            transitive_files = runner.files,
+        )
             .merge(runner.data_runfiles),
         executable = executable,
     )]

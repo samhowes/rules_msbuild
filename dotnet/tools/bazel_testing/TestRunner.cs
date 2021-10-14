@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Text;
 using Bzl;
 using RulesMSBuild.Tools.Bazel;
 using RulesMSBuild.Tools.Builder;
+using SamHowes.Bzl;
 using static TestRunner.TestLogger;
 using Files = Bzl.Files;
 
@@ -39,6 +40,7 @@ namespace TestRunner
             {
                 DeleteDirectory(execDir);
             }
+
             _cleanup.Add(execDir);
 
             var workspaceName = PosixPath.GetFileName(_config.WorkspaceRoot);
@@ -71,10 +73,7 @@ namespace TestRunner
             }
 
             Info("Initializing workspace...");
-            var templates = Templates.CreateDefault(Runfiles.Create());
-            templates.Workspace = new Template("WORKSPACE",
-                File.ReadAllText(_runfiles.Rlocation(_config.WorkspaceTpl)));
-            var workspaceMaker = new WorkspaceMaker(testDir, workspaceName, templates);
+            var workspaceMaker = ConfigureMaker(testDir, workspaceName);
 
             _bazel = new BazelRunner(_config.Bazel, outputUserRoot!, testDir);
 
@@ -107,7 +106,6 @@ namespace TestRunner
                     Info("Detected a test failure");
                     return result.ExitCode;
                 }
-                    
             }
 
             if (_config.Run == null) return 0;
@@ -120,27 +118,30 @@ namespace TestRunner
                 var actual = result.Stdout.Replace("\r", "");
                 if (actual != expected)
                 {
-                    Console.WriteLine($"Incorrect output from: `bazel {result.Command}`\nexpected: '{expectedOutput}'\nactual: '{result.Stdout}'");
+                    Console.WriteLine(
+                        $"Incorrect output from: `bazel {result.Command}`\nexpected: '{expectedOutput}'\nactual: '{result.Stdout}'");
                     hasFailure = true;
                 }
             }
-            
+
             return hasFailure ? 1 : 0;
+        }
+
+        private WorkspaceMaker ConfigureMaker(string testDir, string workspaceName)
+        {
+            var templates = Templates.CreateDefault(Runfiles.Create());
+
+            var workspaceTemplate =
+                Util.UpdateWorkspaceTemplate(_runfiles, _config.ReleaseTar, $"file:{_config.ReleaseTar}");
+
+            templates.Workspace = new Template("WORKSPACE", workspaceTemplate);
+            var workspaceMaker = new WorkspaceMaker(testDir, workspaceName, templates);
+            return workspaceMaker;
         }
 
         private void UpdateWorkspaceForLocal(string originalWorkspace)
         {
             var workspace = File.ReadAllText("WORKSPACE");
-            bool replaced = false;
-            workspace = Regex.Replace(workspace, @"http_archive\(.*\n\s+name = ""rules_msbuild"",\n.*\n\s+(?<urls>.*)",
-                match =>
-                {
-                    replaced = true;
-                    return match.Value.Replace(match.Groups["urls"].Value, $"urls = [\"file:{_config.ReleaseTar}\"],");
-                });
-            if (!replaced)
-                throw new Exception("Failed to replace url in workspace");
-
             File.WriteAllText("WORKSPACE", workspace + originalWorkspace);
         }
 

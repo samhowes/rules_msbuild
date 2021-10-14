@@ -1,5 +1,6 @@
 PACKAGES = {
     "CommandLineParser/2.9.0-preview1": ["netcoreapp3.1", "net5.0"],
+    "CommandLineParser/2.8.0": ["netcoreapp3.1"],
     "Microsoft.Build.Locator/1.4.1": ["net5.0"],
     "Microsoft.Build.Tasks.Core/16.9.0:16": ["net5.0"],
     "Microsoft.Build.Utilities.Core/16.9.0:16": ["net5.0"],

@@ -43,22 +43,18 @@ gazelle_binary(
 gazelle(
     name = "gazelle-dotnet",
     args = DOTNET_ARGS,
-    gazelle = "//gazelle/dotnet:gazelle-dotnet",
+    gazelle = "//tools:gazelle-dotnet",
 )
 
 genrule(
     name = "tar",
-    srcs = [
-        "//dotnet/tools/Bzl:WORKSPACE.tpl",
-        ":ReleaseNotes.md",
-    ],
+    srcs = [],
     outs = [
         "rules_msbuild.tar.gz",
-        "WORKSPACE.tpl",
-        "ReleaseNotes.gen.md",
+        "rules_msbuild.tar.gz.sha256",
     ],
-    cmd = "$(location :eng/tar.sh) %s $(SRCS) -- $(OUTS)" % VERSION,
-    exec_tools = ["eng/tar.sh"],
+    cmd = "$(location //eng/tar) $(OUTS)",
+    exec_tools = ["//eng/tar"],
     tags = ["local"],
     visibility = ["//:__subpackages__"],
 )

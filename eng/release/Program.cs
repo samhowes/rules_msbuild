@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RulesMSBuild.Tools.Bazel;
+using SamHowes.Bzl;
 
 namespace release
 {
@@ -101,7 +105,7 @@ namespace release
             Clean
         }
 
-        static int Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
             var nugetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY");
             if (string.IsNullOrEmpty(nugetApiKey))
@@ -131,6 +135,8 @@ namespace release
             var root = BazelEnvironment.GetWorkspaceRoot();
             Directory.SetCurrentDirectory(root);
 
+            await DownloadArtifacts();
+
             var versionContents = File.ReadAllText(Path.Combine(root, "version.bzl"));
             var versionMatch = Regex.Match(versionContents, @"VERSION.*?=.*?""([^""]+)""");
             if (!versionMatch.Success) Die("Failed to parse version from version.bzl");
@@ -146,14 +152,20 @@ namespace release
 
             VerifyNewRelease(version);
 
-            var tarAlias = BuildTar(work, version, out var releaseNotes);
+            var (tarAlias, usage) = BuildTar(work, version.Value);
 
-            var originalNotes = File.ReadAllText(releaseNotes);
+            const string releaseNotes = "ReleaseNotes.md";
+            var originalNotes = await File.ReadAllTextAsync(releaseNotes);
             const string marker = "<!--marker-->";
             var markerIndex = originalNotes.IndexOf(marker, StringComparison.Ordinal);
             if (markerIndex < 0) Die("Failed to find marker in release notes");
 
-            var notes = new StringBuilder(originalNotes[..(markerIndex + marker.Length + 2)]);
+            var notes = new StringBuilder(originalNotes[..(markerIndex + marker.Length)]);
+
+            notes.AppendLine();
+            notes.AppendLine("```python");
+            notes.Append(usage);
+            notes.AppendLine("```");
 
             notes.AppendLine($"[SamHowes.Bzl: {version}](https://www.nuget.org/packages/SamHowes.Bzl/{version})")
                 .AppendLine();
@@ -173,48 +185,104 @@ namespace release
                 notes.AppendLine(closed);
             }
 
-            File.WriteAllText(releaseNotes, notes.ToString());
+            await File.WriteAllTextAsync(releaseNotes, notes.ToString());
 
             Info("Building bzl...");
-            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl_nuget");
+            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl_nuget --//config:mode=release");
             var nupkg = outputs.Single();
 
             Info("Creating release...");
-            Run($"gh release create {version} ",
-                "--prerelease",
-                "--draft",
-                $"--title v{version}",
-                "-F ReleaseNotes.md",
-                tarAlias,
-                nupkg);
+            if (false)
+            {
+                Run($"gh release create {version} ",
+                    "--prerelease",
+                    "--draft",
+                    $"--title v{version}",
+                    "-F ReleaseNotes.md",
+                    tarAlias,
+                    nupkg);
 
-            Run($"dotnet nuget push {nupkg} --api-key {nugetApiKey} --source https://api.nuget.org/v3/index.json");
+                Run($"dotnet nuget push {nupkg} --api-key {nugetApiKey} --source https://api.nuget.org/v3/index.json");
+            }
 
             return 0;
         }
 
-        private static string BuildTar(string work, Group version, out string releaseNotes)
+        private static async Task DownloadArtifacts()
         {
-            var outputs = Bazel("build //:tar");
+            var artifactsBase = ".azpipelines/artifacts";
+            var inSourceControl = Run("git", "ls-files", artifactsBase).Split("\n").ToHashSet();
+            var http = new HttpClient()
+            {
+                BaseAddress = new Uri("https://dev.azure.com/samhowes/rules_msbuild/_apis/build/builds")
+            };
+            var client = new JsonClient(http);
+
+            var builds =
+                await client.GetAsync<Response<List<Build>>>(
+                    "?definitions=6&resultFilter=succeeded&branchName=refs/heads/master&$top=1");
+            var buildLink = builds.Value[0].Links["self"].Href;
+            var artifacts = await client.GetAsync<Response<List<JsonApiEntity<Artifact>>>>($"{buildLink}/artifacts");
+            var downloaded = new List<string>();
+            foreach (var artifact in artifacts.Value)
+            {
+                if (!artifact.Name.EndsWith("amd64")) continue;
+
+                var url = artifact.Resource.DownloadUrl;
+                var response = await http.GetAsync(url);
+                if (!response.IsSuccessStatusCode) throw new Exception($"Failed to download {url}");
+                var zipStream = await response.Content.ReadAsStreamAsync();
+                var zipLib = new ZipArchive(zipStream);
+
+                foreach (var entry in zipLib.Entries)
+                {
+                    var destPath = Path.Combine(artifactsBase, entry.FullName);
+                    if (entry.FullName.EndsWith('/'))
+                    {
+                        Directory.CreateDirectory(destPath);
+                        continue;
+                    }
+
+                    if (inSourceControl.Contains(destPath))
+                        downloaded.Add(destPath);
+                    await using var dest = File.Create(destPath);
+                    await using var source = entry.Open();
+                    await source.CopyToAsync(dest);
+                }
+            }
+
+            Run("git", downloaded.Prepend("update-index --assume-unchanged").ToArray());
+        }
+
+        private static (string tarAlias, string usage) BuildTar(string work, string version)
+        {
+            foreach (var file in Directory.GetFiles("bazel-bin", "rules_msbuild.*"))
+            {
+                Console.WriteLine($"Removing old artifact: {file}");
+                File.Delete(file);
+            }
+        
+            var outputs = Bazel("build //:tar --//config:mode=release");
             var tarSource = outputs[0];
             var tarAlias = Path.Combine(work, $"rules_msbuild-{version}.tar.gz");
             Run($"ln -s {tarSource} {tarAlias}");
 
-            var workspaceTemplate = "dotnet/tools/Bzl/WORKSPACE.tpl";
-            Copy(outputs[1], workspaceTemplate);
-            releaseNotes = "ReleaseNotes.md";
-            Copy(outputs[2], releaseNotes);
+            var url =
+                $"https://github.com/samhowes/rules_msbuild/releases/download/{version}/rules_msbuild-{version}.tar.gz";
+            var workspaceTemplateContents =
+                Util.UpdateWorkspaceTemplate(Runfiles.Create<Program>().Runfiles, tarSource, url);
 
-            var usage = string.Join("\n", File.ReadAllLines(workspaceTemplate).Skip(2));
+            File.WriteAllText("dotnet/tools/Bzl/WORKSPACE.tpl", workspaceTemplateContents);
+
+            var usage = workspaceTemplateContents;
 
             const string readmePath = "README.md";
             var readme = File.ReadAllText(readmePath);
+            var regex = new Regex(@"(```python\s+#\s?\/\/WORKSPACE).*?(```)", RegexOptions.Singleline);
+            
+            File.WriteAllText(readmePath, regex.Replace(readme, "$1\n" + usage + "$2", 1));
 
-            File.WriteAllText(readmePath,
-                Regex.Replace(readme, @"(```python\s+#\s?\/\/WORKSPACE).*?(```)", "$1\n" + usage + "\n$2",
-                    RegexOptions.Singleline));
-
-            return tarAlias;
+            return (tarAlias, usage);
         }
 
         private static void VerifyNewRelease(Group version)
@@ -256,5 +324,56 @@ namespace release
     public class GitHubRelease
     {
         public string CreatedAt { get; set; }
+    }
+
+    public class JsonClient
+    {
+        private readonly HttpClient _http;
+
+        public JsonClient(HttpClient http)
+        {
+            _http = http;
+        }
+
+        public async Task<T> GetAsync<T>(string url)
+        {
+            var response = await _http.GetAsync(url);
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode) throw new Exception($"HTTP {response.StatusCode} for {url}:\n{body}");
+            return JsonConvert.DeserializeObject<T>(body);
+        }
+    }
+
+    public class Response<T>
+    {
+        public int Count { get; set; }
+        public T Value { get; set; }
+    }
+
+    public class DevOpsResource
+    {
+        [JsonProperty("_links")] public Dictionary<string, Link> Links { get; set; }
+    }
+
+    public class Link
+    {
+        public string Href { get; set; }
+    }
+
+    public class Build : DevOpsResource
+    {
+    }
+
+    public class JsonApiEntity<T>
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public T Resource { get; set; }
+    }
+
+    public class Artifact
+    {
+        public string Url { get; set; }
+        public string DownloadUrl { get; set; }
     }
 }

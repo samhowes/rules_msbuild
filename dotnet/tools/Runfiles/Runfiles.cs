@@ -93,13 +93,14 @@ namespace RulesMSBuild.Tools.Bazel
             }
 
             var lines = File.ReadAllLines(infoFile.FullName);
-            if (lines.Length != 3)
+            if (lines.Length != 4)
             {
                 throw new IOException($"Unexpected `{infoName}` format, expected three lines, got: {lines.Length}");
             }
 
             var expectedLocation = lines[0];
             var defaultPackage = new Label(lines[1], lines[2]);
+            var strategy = lines[3];
 
             if (!TryCreate(Environment.GetEnvironmentVariables(), out var runfiles))
             {
@@ -121,7 +122,7 @@ namespace RulesMSBuild.Tools.Bazel
                 
                 // since no environment variables were set, we just have to take our best guess at which method to use
                 // on non-windows, there *should* be a runfiles tree, so use a directory based.
-                if (Path.DirectorySeparatorChar != '\\')
+                if (strategy == "directory" || Path.DirectorySeparatorChar != '\\')
                 {
                     runfiles = new DirectoryBased(expectedDir);
                 }
@@ -258,8 +259,7 @@ namespace RulesMSBuild.Tools.Bazel
                            && !path.Contains("/./")
                            && !path.EndsWith("/.")
                            && !path.Contains("//"),
-                "path is not normalized: \"%s\"",
-                path);
+                $"path is not normalized: \"{path}\"");
 
             Check.Argument(
                 !path.StartsWith("\\"), "path is absolute without a drive letter: \"%s\"", path);

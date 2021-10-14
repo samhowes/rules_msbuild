@@ -35,6 +35,7 @@ Check out the `tests/` directory & `e2e/` directory for examples
 1. Runfiles Library
 1. Bazel sandboxing compatible
 1. [Grpc & Proto support](./tests/examples/Grpc) Out of the Box via [grpc-dotnet](https://github.com/grpc/grpc-dotnet)
+1. No third party workspace dependencies
 
 # Contents
 1. [Usage](#usage)
@@ -54,24 +55,14 @@ Check out the `tests/` directory & `e2e/` directory for examples
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_msbuild",
-    sha256 = "67818f4d2f193766cef952ba8efe72f26ec6323606c681baf58e437bc9ca94ac",
-    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.6/rules_msbuild-0.0.6.tar.gz"],
+    sha256 = "96df9be286fff1fadf61f46f64065158a2a1bb8d2e61f39d4ec4affa443012a9",
+    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.8/rules_msbuild-0.0.8.tar.gz"],
 )
 load("@rules_msbuild//dotnet:repositories.bzl", "dotnet_register_toolchains", "dotnet_rules_repositories")
 
 dotnet_rules_repositories()
 # See https://dotnet.microsoft.com/download/dotnet for valid versions
 dotnet_register_toolchains(version = "host")
-
-# gazelle and launcher dependencies
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
-load("@rules_msbuild//dotnet:deps.bzl", "dotnet_rules_dependencies")
-
-dotnet_rules_dependencies()
-go_rules_dependencies()
-go_register_toolchains(version = "1.16.2")
-gazelle_dependencies()
 ```
 ## Compiling Assemblies
 `msbuild_library` and `msbuild_binary` are macros that compile [framework dependent](https://andrewlock.net/should-i-use-self-contained-or-framework-dependent-publishing-in-docker-images/) assemblies that can be run with `dotnet run`. The macros define the targets `<name>_restore`, `<name>`, and `<name>_publish` 
