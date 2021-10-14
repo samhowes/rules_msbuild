@@ -58,6 +58,13 @@ namespace tar
                 var gazellePath = Util.GetGazellePath();
                 files[$".azpipelines/artifacts/{gazellePath}"] = debugGazelle;
             }
+            var debugLauncher =
+                runfiles.Runfiles.Rlocation("rules_msbuild/dotnet/tools/launcher/launcher_windows_/launcher_windows.exe");
+            if (File.Exists(debugLauncher))
+            {
+                var launcherPath = runfiles.Runfiles.Rlocation(debugLauncher);
+                files[".azpipelines/artifacts/windows-amd64/launcher_windows.exe"] = launcherPath;
+            }
 
             await using (var output = File.Create(outputName))
             await using (var gzoStream = new GZipOutputStream(output))
