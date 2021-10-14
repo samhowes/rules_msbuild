@@ -98,7 +98,7 @@ namespace Bzl
             var nugetDeps = new FileInfo(Path.Combine(depsFolder.FullName, "nuget.bzl"));
             if (!nugetDeps.Exists)
             {
-                nugetDeps.Create();
+                using var _ = nugetDeps.Create();
                 ReportFile("deps/nuget.bzl", true);
             }
         }
