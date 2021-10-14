@@ -262,7 +262,7 @@ namespace release
                 File.Delete(file);
             }
         
-            var outputs = Bazel("build //:tar");
+            var outputs = Bazel("build //:tar --//config:mode=release");
             var tarSource = outputs[0];
             var tarAlias = Path.Combine(work, $"rules_msbuild-{version}.tar.gz");
             Run($"ln -s {tarSource} {tarAlias}");

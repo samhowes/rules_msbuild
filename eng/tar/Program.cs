@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using RulesMSBuild.Tools.Bazel;
+using SamHowes.Bzl;
 
 namespace tar
 {
@@ -47,6 +48,15 @@ namespace tar
                 }
 
                 files[tarValue] = actual;
+            }
+
+            var runfiles = Runfiles.Create<Program>();
+            var debugGazelle =
+                runfiles.Runfiles.Rlocation("rules_msbuild/gazelle/dotnet/gazelle-dotnet_/gazelle-dotnet");
+            if (File.Exists(debugGazelle))
+            {
+                var gazellePath = Util.GetGazellePath();
+                files[$".azpipelines/artifacts/{gazellePath}"] = debugGazelle;
             }
 
             await using (var output = File.Create(outputName))

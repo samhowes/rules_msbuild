@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
@@ -146,7 +146,7 @@ namespace RulesMSBuild.Tools.Builder
             {
                 Fail($"invalid ProjectReference",
                     $"ProjectReference: \"{_deps.PathMapper.ToBazel(missingException.ProjectPath)}\" is not " +
-                    $"listed in the deps attribute of {_context.Bazel.Label}.\nDid you remember to " +
+                    $"listed in the deps attribute of {_context.Bazel.Label}. Did you remember to " +
                     $"`bazel run //:gazelle` after updating your project file?");
                 return null;
             }
@@ -455,11 +455,20 @@ namespace RulesMSBuild.Tools.Builder
         public void Error(string message) => BazelLogger.Error(_deps.PathMapper.ToBazel(message));
         public void Fail(string shortMessage, string message)
         {
-            BazelLogger.Error("__________________________________________________");
-            BazelLogger.Error($"Project \"{_deps.PathMapper.ToBazel(_context.ProjectFile)}\": error {shortMessage}");
-            
-            BazelLogger.Error("");
-            BazelLogger.Error(_deps.PathMapper.ToBazel(message));
+            var projectPath = _deps.PathMapper.ToBazel(_context.ProjectFile);
+            var summary = new StringBuilder()
+                .AppendLine("__________________________________________________")
+                .AppendLine($"Project \"{projectPath}\": (Build target(s)):")
+                .AppendLine()
+                .AppendLine($"{projectPath}(-1,-1): error BZ0001: {_deps.PathMapper.ToBazel(message)}");
+            BazelLogger.Error(summary.ToString());
+            /* proper error output from normal build that triggers IDE parsing:
+0>__________________________________________________
+0>Project "$exec_root/rules_msbuild/eng/tar/tar.csproj" (Build target(s)):
+0>
+0>$exec_root/rules_msbuild/eng/tar/Program.cs(62,30): Error CS1026 : ) expected
+0>Done building project "tar.csproj" -- FAILED.
+            */
         }
     }
 }

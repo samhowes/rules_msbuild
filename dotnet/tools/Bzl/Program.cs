@@ -105,30 +105,8 @@ namespace Bzl
             // if we're in nuget, runfiles will be directory-based, and this will work just fine on windows
             if (Directory.Exists(artifactsFolder))
             {
-                string releasedSubfolder;
-                string gazelleName = "gazelle-dotnet";
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
-                    RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
-                {
-                    releasedSubfolder = "linux";
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    releasedSubfolder = "darwin";
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    releasedSubfolder = "windows";
-                    gazelleName += ".exe";
-                }
-                else
-                {
-                    Console.Error.WriteLine($"Unknown platform: {Environment.OSVersion}");
-                    return null;
-                }
-
-                releasedSubfolder = $"{releasedSubfolder}-amd64";
-                gazellePath = Path.Combine(artifactsFolder, releasedSubfolder, gazelleName);
+                var subPath = Util.GetGazellePath();
+                gazellePath = Path.Combine(artifactsFolder, subPath);
             }
             else
             {

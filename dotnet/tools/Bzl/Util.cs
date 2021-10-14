@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using RulesMSBuild.Tools.Bazel;
 
@@ -45,6 +46,34 @@ namespace SamHowes.Bzl
                 throw new Exception("Failed to replace url in workspace");
             workspaceTemplate = workspaceTemplate[..index] + section;
             return workspaceTemplate;
+        }
+
+        public static string GetGazellePath()
+        {
+            string releasedSubfolder;
+            string gazelleName = "gazelle-dotnet";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+            {
+                releasedSubfolder = "linux";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                releasedSubfolder = "darwin";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                releasedSubfolder = "windows";
+                gazelleName += ".exe";
+            }
+            else
+            {
+                Console.Error.WriteLine($"Unknown platform: {Environment.OSVersion}");
+                return null;
+            }
+
+            releasedSubfolder = $"{releasedSubfolder}-amd64";
+            return Path.Combine(releasedSubfolder, gazelleName);
         }
     }
 }
