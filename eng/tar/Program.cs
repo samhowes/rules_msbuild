@@ -27,14 +27,12 @@ namespace tar
                 root = Directory.GetCurrentDirectory();
 
             var process = Process.Start(new ProcessStartInfo("git", "ls-files") {RedirectStandardOutput = true});
-            await process!.WaitForExitAsync();
-            if (process.ExitCode != 0) return process.ExitCode;
 
             var outputName = args.Length >= 1 ? args[0] : "test.tar.gz";
             var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (;;)
             {
-                var actual = await process.StandardOutput.ReadLineAsync();
+                var actual = await process!.StandardOutput.ReadLineAsync();
                 if (actual == null) break;
                 if (Path.GetFileName(actual) == outputName) continue;
 
@@ -49,6 +47,11 @@ namespace tar
 
                 files[tarValue] = actual;
             }
+
+            // wait for exit AFTER reading all the standard output:
+            // https://stackoverflow.com/questions/439617/hanging-process-when-run-with-net-process-start-whats-wrong
+            await process!.WaitForExitAsync();
+            if (process.ExitCode != 0) return process.ExitCode;
 
             var runfiles = Runfiles.Create<Program>();
             var debugGazelle =
