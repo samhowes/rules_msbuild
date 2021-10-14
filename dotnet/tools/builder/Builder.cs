@@ -226,7 +226,7 @@ namespace RulesMSBuild.Tools.Builder
                     var packDir = _context.OutputPath("pack");
                     Directory.CreateDirectory(packDir);
                     var path = Path.Combine(packDir, "runfiles.info");
-                    WriteRunfilesInfo(path, "../../../content/runfiles");
+                    WriteRunfilesInfo(path, "../../../content/runfiles", true);
                     project.AddItem("None", path, new[]
                     {
                         // new KeyValuePair<string, string>("What", "wow"),
@@ -325,7 +325,7 @@ namespace RulesMSBuild.Tools.Builder
                             basename += ".exe";
                         }
 
-                        WriteRunfilesInfo(_context.OutputPath(_context.Tfm, "runfiles.info"), $"../{basename}.runfiles");
+                        WriteRunfilesInfo(_context.OutputPath(_context.Tfm, "runfiles.info"), $"../{basename}.runfiles", false);
                     }
 
                     break;
@@ -333,7 +333,7 @@ namespace RulesMSBuild.Tools.Builder
             }
         }
 
-        private void WriteRunfilesInfo(string outputPath, string expectedRelativePath)
+        private void WriteRunfilesInfo(string outputPath, string expectedRelativePath, bool useDirectory)
         {
             File.WriteAllLines(outputPath, new string[]
             {
@@ -342,7 +342,9 @@ namespace RulesMSBuild.Tools.Builder
                 // second line is the origin workspace (nice to have)
                 _context.Bazel.Label.Workspace,
                 // third is the package (nice to have)
-                _context.Bazel.Label.Package
+                _context.Bazel.Label.Package,
+                // runfiles strategy to use
+                useDirectory ? "directory" : "auto"
             });
         }
 
