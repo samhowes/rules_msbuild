@@ -1,0 +1,1 @@
+Copied from [@rules_nodejs//tools/stardoc](https://github.com/bazelbuild/rules_nodejs/tree/stable/tools/stardoc) for a non-table based docs layout

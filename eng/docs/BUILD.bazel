@@ -1,0 +1,15 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+DOCS = [
+    "//dotnet:rules.md",
+]
+
+msbuild_binary(
+    name = "docs",
+    srcs = ["Program.cs"],
+    args = DOCS,
+    data = DOCS,
+    target_framework = "net5.0",
+    visibility = ["//visibility:public"],
+    deps = ["//dotnet/tools/Runfiles"],
+)

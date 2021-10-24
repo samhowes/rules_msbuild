@@ -11,9 +11,9 @@ _download_sdk_attrs = {
     "shas": attr.string_dict(),
 }
 
-def dotnet_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
+def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
     if not version:
-        fail('dotnet_register_toolchains: version must be a string like "3.1.100" or "host"')
+        fail('msbuild_register_toolchains: version must be a string like "3.1.100" or "host"')
 
     if version == "host":
         _dotnet_host_sdk(name = SDK_NAME, nuget_repo = nuget_repo)

@@ -42,64 +42,6 @@ Newtonsoft.Json.nuspec
 </dependencies>
 ```
 
-The dependency on (Framework, Package, Verion) lends nicely to managing packages at the project level, and not the solution level.
+The dependency on (Framework, Package, Version) lends nicely to managing packages at the project level, and not the solution level.
 
 Bazel encourages [managing packages at the repository level](https://docs.bazel.build/versions/master/external.html#shadowing-dependencies) and [not using versions in target names](https://docs.bazel.build/versions/4.0.0/best-practices.html#versioning).
-
-The strategy rules_msbuild will attempt to take is naming the lastest version of a package `package` and previous versions of a package `package-v1`.
-
-# Modes of NuGet Operation
-
-## 1. Locked Restore
-
-The ideal case:
-
-1. Packages are listed
-1. Frameworks depending on those packages are known and listed
-1. Transitive closure has been precomputed
-1. Complete BUILD files can be generated
-
-## 2. Bootstrapping
-
-First run of the repository or Reinitialization
-
-1. Packages are listed
-1. Frameworks depending on those packages are unknown and not listed
-1. Transitive closure cannot be computed
-1. Fake build files can be generated
-
-Goals:
-
-1. Single source of truth for Target Framework
-   1. Allow the dependent target to specify the Target Framework
-   1. Do not require that the TargetFramework be listed by the user next to the package
-1. Easy to change the Target Framework at any time
-1. Allow easy bootstrapping of a [Locked Restore](#1-locked-restore)
-
-Algorithm:
-
-1. Generate faux targets that don't actually build
-1. Bazel is now in a valid state for analysis
-1. Fail the loading phase: packages can't be retrieved without knowledge of Frameworks dependent on those packages
-1. Instruct the user to execute @nuget//:bootstrap
-1. @nuget//:bootstrap
-   1. Depends on a Bazel query that discovers target frameworks depending on Packages
-   1. Outputs a listing packages by framework requesting that package
-1. An [Unlocked Restore](#3-unlocked-restore) can now occur
-
-## 3. Unlocked Restore
-
-Bootstrapping has occurred:
-
-1. Packages are listed
-1. Frameworks depending on those packages are listed
-1. Transitive closure must be computed
-1. Complete BUILD files can be generated
-
-# Bootstrap process
-
-```bash
-bazel build //... --build_tag_filters "nuget_restore"
-bazel query rdeps | bazel run @nuget//:bootstrap
-bazel build //...
-```

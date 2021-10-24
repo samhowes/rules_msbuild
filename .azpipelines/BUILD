@@ -1,4 +1,4 @@
-load(":util.bzl", "expand")
+load("//eng:util.bzl", "expand")
 
 PACKAGES = [
     "//gazelle/dotnet:gazelle-dotnet",

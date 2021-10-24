@@ -188,7 +188,7 @@ namespace release
             await File.WriteAllTextAsync(releaseNotes, notes.ToString());
 
             Info("Building bzl...");
-            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl_nuget --//config:mode=release");
+            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl.nupkg --//config:mode=release");
             var nupkg = outputs.Single();
 
             Info("Creating release...");

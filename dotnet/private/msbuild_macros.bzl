@@ -33,13 +33,14 @@ def msbuild_project(
 def msbuild_binary_macro(
         name,
         srcs = None,
+        args = [],
         project_file = None,
         target_framework = None,
         deps = [],
         **kwargs):
     srcs = _get_srcs(srcs)
     project_file = _guess_project_file(name, srcs, project_file)
-    _msbuild_assembly(name, msbuild_binary, project_file, target_framework, srcs, deps, kwargs, {})
+    _msbuild_assembly(name, msbuild_binary, project_file, target_framework, srcs, deps, kwargs, {"args": args})
 
     msbuild_publish(
         name = name + "_publish",
@@ -121,7 +122,7 @@ def _msbuild_assembly(
 
     if is_packable:
         nuget_package(
-            name = name + "_nuget",
+            name = name + ".nupkg",
             project_file = project_file,
             version = package_version,
             target = ":" + name + "_publish",
