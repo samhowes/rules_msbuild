@@ -60,7 +60,7 @@ namespace Bzl
             foreach (var (label, originalDest, propertyName) in toLoad)
             {
                 var property = properties[propertyName];
-                var location = lRunfiles.Rlocation(label);
+                var location = lRunfiles.Rlocation(new Label(label));
                 var contents = File.ReadAllText(location);
                 var dest = originalDest;
                 if (dest == null)

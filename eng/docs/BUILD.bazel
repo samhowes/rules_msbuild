@@ -1,13 +1,14 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+load("//eng:util.bzl", "expand")
 
 DOCS = [
-    "//dotnet:rules.md",
+    "//dotnet/private/rules:docs",
 ]
 
 msbuild_binary(
     name = "docs",
     srcs = ["Program.cs"],
-    args = DOCS,
+    args = expand(DOCS),
     data = DOCS,
     target_framework = "net5.0",
     visibility = ["//visibility:public"],

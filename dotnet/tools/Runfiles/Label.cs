@@ -61,6 +61,7 @@ namespace RulesMSBuild.Tools.Bazel
                     break;
             }
 
+            var lastSlash = (int?)null;
             for (var i = RawValue.Length - 1; i >= nextIndex; --i)
             {
                 switch (RawValue[i])
@@ -69,11 +70,14 @@ namespace RulesMSBuild.Tools.Bazel
                         Package = RawValue[nextIndex..i];
                         Name = RawValue[(i + 1)..];
                         return true;
+                    case '/':
+                        lastSlash ??= i;
+                        break;
                 }
             }
 
             Package = RawValue[nextIndex..];
-            Name = "";
+            Name = RawValue[(lastSlash!.Value+1)..];
             return true;
         }
 

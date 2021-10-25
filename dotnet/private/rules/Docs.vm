@@ -31,7 +31,7 @@ msbuild_library(
 
 The following graph will be generated:
 
-![Project graph](//docs/FooBar.graphviz.svg)
+![Project graph](//docs:FooBar.graphviz.svg)
 
 Specifying `is_packable = True` will also generate a `<name>.nupkg` target that depends 
 on the `<name>_publish` target.

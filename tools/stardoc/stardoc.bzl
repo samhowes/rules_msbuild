@@ -4,10 +4,10 @@ load("@io_bazel_stardoc//stardoc:stardoc.bzl", _stardoc = "stardoc")
 
 _PKG = "@rules_msbuild//tools/stardoc"
 
-def stardoc(name, visibility = None, **kwargs):
+def stardoc(name, out = None, **kwargs):
     _stardoc(
         name = name,
-        out = name,
+        out = out,
         #        aspect_template = _PKG + ":templates/aspect.vm",
         #        header_template = _PKG + ":templates/header.vm",
         #        func_template = _PKG + ":templates/func.vm",

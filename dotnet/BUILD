@@ -16,20 +16,10 @@ exports_files(
     visibility = ["//docs:__subpackages__"],
 )
 
-stardoc(
-    name = "rules.md",
-    header_template = "Rules.vm",
-    input = "defs.rules.bzl",
-    deps = [
-        ":bzl",
-    ],
-)
-
 bzl_library(
     name = "bzl",
     srcs = glob(["*.bzl"]),
     deps = [
-        "//dotnet/private:bzl",
         "//dotnet/private/rules:bzl",
         "//dotnet/private/toolchain:bzl",
     ],

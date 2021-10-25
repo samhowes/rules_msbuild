@@ -18,8 +18,8 @@ mkdir HelloBazelDotnet && cd HelloBazelDotnet
 dotnet new console -o AwesomeExecutable --no-restore
 dotnet new sln && dotnet sln add AwesomeExecutable
  
-dotnet tool install -g SamHowes.Bzl
-samhowes.bzl                     # automatically generate a WORKSPACE and ide integration files
+dotnet tool install -g SamHowes.Bzl     # installs dotnet cli tool `bzl`
+bzl                              # automatically generate a WORKSPACE and ide integration files
 bazel run //:gazelle             # generate build files with custom Gazelle language
 bazel build //...                # use bazel to build .csproj, .fsproj, or .vbproj files
 bazel run //AwesomeExecutable    # => Hello World!
@@ -38,17 +38,19 @@ Check out the `tests/` directory & `e2e/` directory for examples
 1. No third party workspace dependencies
 
 # Contents
-1. [Usage](#usage)
-    1. [msbuild_library](#msbuild_library)
-    1. [msbuild_binary](#msbuild_binary)
-    1. [NuGet Dependencies](#nuget-dependencies)
-1. [Sharp Edges](#watch-out-for-sharp-edges)
-1. [Implementation Details](./docs/ImplementationDetails.md)
-
+1. Overview 
+    1. [Usage](#usage)
+        1. [msbuild_library](#msbuild_library)
+        1. [msbuild_binary](#msbuild_binary)
+        1. [NuGet Dependencies](#nuget-dependencies)
+    1. [Sharp Edges](#watch-out-for-sharp-edges)
+1. [Build File Generation with Gazelle](gazelle/dotnet/Readme.md)<!-- toc:start -->
+1. [Rules](docs/rules.md)<!-- toc:end -->
+1. [Implementation Details](docs/ImplementationDetails.md)
 
 # Usage
 
-> Note: [SamHowes.Bzl](https://www.nuget.org/packages/SamHowes.Bzl/) and using `bazel run //:gazelle` (as described above) is strongly reccomended. 
+> Note: [SamHowes.Bzl](https://www.nuget.org/packages/SamHowes.Bzl/) and using `bazel run //:gazelle` (as described above) is strongly recommended. 
 ## Workspace
 ```python
 # //WORKSPACE
@@ -148,7 +150,7 @@ def nuget_deps():
 # Watch out for sharp edges!
 These rules are still in "beta" and the core functionality is still being refined. 
 
-These rules assume you have used `dotnet tool install -g samhowes.bzl` to setup your workspace  and
+These rules assume you have used `dotnet tool install -g samhowes.bzl` to set up your workspace  and
  run `bazel run //:gazelle` after adding any source files, nuget packages, or project references.
  
 Any issues with the label [sharp-edge](https://github.com/samhowes/rules_msbuild/issues?q=is%3Aissue+is%3Aopen+label%3Asharp-edge) are specifically known to be confusing and  make working with these rules 

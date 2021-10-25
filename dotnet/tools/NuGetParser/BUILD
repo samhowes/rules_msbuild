@@ -8,6 +8,6 @@ msbuild_binary(
 )
 
 filegroup(
-    name = "NuGetParser_srs",
+    name = "files",
     srcs = glob(["*"]),
 )

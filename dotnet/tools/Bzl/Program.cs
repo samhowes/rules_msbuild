@@ -99,7 +99,7 @@ namespace Bzl
         private static string? FindGazelle(LabelRunfiles runfiles)
         {
             // are we released?
-            var artifactsFolder = runfiles.Rlocation($"//.azpipelines/artifacts:gazelle-dotnet");
+            var artifactsFolder = runfiles.Rlocation($"rules_msbuild/.azpipelines/artifacts:gazelle-dotnet");
             string? gazellePath = null;
 
             // if we're in nuget, runfiles will be directory-based, and this will work just fine on windows
@@ -110,7 +110,7 @@ namespace Bzl
             }
             else
             {
-                gazellePath = runfiles.Rlocation("//gazelle/dotnet:gazelle-dotnet_/gazelle-dotnet");
+                gazellePath = runfiles.Rlocation("rules_msbuild/gazelle/dotnet:gazelle-dotnet_/gazelle-dotnet");
             }
 
             if (gazellePath == null || !File.Exists(gazellePath))

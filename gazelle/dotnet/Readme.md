@@ -54,5 +54,5 @@ gazelle_binary(
 
 ## Generated rules
 
-The primary rules ([msbuild_binary, msbuild_library, and msbuild_test](//docs:Rules.md)) are all 
+The primary rules ([msbuild_binary, msbuild_library, and msbuild_test](../../docs/rules.md)) are all 
 generated from gazelle-dotnet, as well as NuGet dependency management via `nuget_fetch`.   

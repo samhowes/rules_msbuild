@@ -7,6 +7,7 @@ bzl_library(
     srcs = glob(["*.bzl"]),
     visibility = ["//visibility:public"],
     deps = [
+        "//dotnet:bzl",
         "//dotnet/private/msbuild:bzl",
         "@bazel_skylib//lib:dicts",
         "@bazel_skylib//lib:paths",
