@@ -82,14 +82,16 @@ namespace release
             File.Copy("bazel-bin/rules_msbuild.tar.gz", tar);
             File.Copy("bazel-bin/rules_msbuild.tar.gz.sha256", Path.Combine(_work, "rules_msbuild.tar.gz.sha256"));
             
-            Run($"unzip {nupkg} -d {nupkg}");
+            Directory.SetCurrentDirectory(_work);
+            Run($"unzip {nupkg} -d nupkg");
             Run($"chmod -R 755 nupkg");
-
-            var tool = Path.Combine(_work, "nupkg/tools/netcoreapp3.1/any/SamHowes.Bzl.dll");
+            
             Directory.SetCurrentDirectory(test);
-
+            var tool = Path.Combine(_work, "nupkg/tools/netcoreapp3.1/any/SamHowes.Bzl.dll");
+            
             Run("dotnet new console -o console --no-restore");
             Run($"dotnet exec {tool} _test {tar}");
+            Bazel("clean --expunge");
             Bazel("run //:gazelle");
             var result = TryRun("bazel run //console");
             if (result.Trim() != "Hello World!")
@@ -145,7 +147,7 @@ namespace release
             }
 
             _nuGetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY");
-            if (string.IsNullOrEmpty(_nuGetApiKey))
+            if (_action == Action.Release && string.IsNullOrEmpty(_nuGetApiKey))
             {
                 Die("No NUGET_API_KEY found");
             }

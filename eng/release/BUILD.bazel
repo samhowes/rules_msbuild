@@ -11,6 +11,7 @@ msbuild_binary(
     deps = [
         "//dotnet/tools/Bzl:SamHowes.Bzl",
         "//dotnet/tools/Runfiles",
+        "//dotnet/tools/bazel_testing:TestRunner",
         "@nuget//Newtonsoft.Json",
     ],
 )
