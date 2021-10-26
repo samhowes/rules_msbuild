@@ -256,6 +256,9 @@ nuget_fetch = repository_rule(
         "_parser_project": attr.label(
             default = Label("@rules_msbuild//dotnet/tools/NuGetParser:NuGetParser.csproj"),
         ),
+        "_parser": attr.label(
+            default = Label("@rules_msbuild//dotnet/tools/NuGetParser:files"),
+        ),
         "_parser_srcs": attr.label(
             default = Label("@rules_msbuild//dotnet/tools/NuGetParser:NuGetParser_srcs"),
         ),

@@ -1,9 +1,7 @@
-"""Dependencies of dotnet_rules"""
-
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-def dotnet_rules_repositories():
+def msbuild_rules_dependencies():
     # Repository of standard constraint settings and values.
     # Bazel declares this automatically after 0.28.0, but it's better to
     # define an explicit version.

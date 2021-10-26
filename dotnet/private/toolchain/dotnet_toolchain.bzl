@@ -1,5 +1,3 @@
-"""Repository rules to define dotnet_toolchain"""
-
 load("//dotnet/private:platforms.bzl", "PLATFORMS")
 load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetSdkInfo")
 
@@ -50,7 +48,6 @@ dotnet_toolchain = rule(
         ),
     },
     doc = "Defines a Dotnet toolchain based on an SDK",
-    #    provides = [platform_common.ToolchainInfo],
 )
 
 def declare_toolchains(host, sdk, builder):

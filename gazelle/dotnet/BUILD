@@ -46,8 +46,6 @@ go_test(
     ],
 )
 
-# This gazelle binary is used exclusively for testing the gazelle language
-# extension and thus only has the dotnet language installed.
 gazelle_binary(
     name = "gazelle-dotnet",
     languages = [

@@ -52,7 +52,7 @@ namespace NuGetParser
             {
                 AllPackages.GetOrAdd(requestedName, () => new Package(requestedName));
             }
-            
+
             var packages = new Dictionary<string, PackageVersion>(StringComparer.OrdinalIgnoreCase);
             _assetsReader.Init(restoreGroup.ObjDirectory, framework.Tfm);
             foreach (var packageVersion in _assetsReader.GetPackages())
@@ -63,7 +63,7 @@ namespace NuGetParser
                     var p = new Package(packageVersion.Id.Name);
                     return p;
                 });
-                
+
                 if (package.Versions.TryGetValue(packageVersion.Id.Version, out var existingVersion))
                 {
                     existingVersion.Deps[framework.Tfm] = packageVersion.Deps[framework.Tfm];
@@ -73,7 +73,7 @@ namespace NuGetParser
                 {
                     package.Versions[packageVersion.Id.Version] = packageVersion;
                 }
-                
+
                 // record locally for auto version upgrades
                 packages[version.Id.Name] = version;
             }
@@ -91,20 +91,20 @@ namespace NuGetParser
                 version.Deps.GetOrAdd(framework.Tfm, () => new List<PackageId>());
                 info.ImplicitDeps.Add(package);
             }
-            
+
             // now process deps for version upgrades
             foreach (var packageVersion in packages.Values)
             {
                 if (!packageVersion.Deps.TryGetValue(framework.Tfm, out var deps)) continue;
-                
+
                 for (var i = 0; i < deps.Count; i++)
                 {
                     var dep = deps[i];
                     var actual = packages[dep.Name];
-                    
+
                     // nuget chose a different version for this package (likely an upgrade)
                     if (actual.Id.Version != dep.Version)
-                         deps[i] = actual.Id;
+                        deps[i] = actual.Id;
                 }
             }
         }
@@ -139,8 +139,8 @@ namespace NuGetParser
                 var buildPath = Path.Join(Path.GetDirectoryName(PackagesFolder), pkg.RequestedName, "BUILD.bazel");
                 Directory.CreateDirectory(Path.GetDirectoryName(buildPath));
                 using var b = new BuildWriter(File.Create(buildPath));
-                b.Load("@rules_msbuild//dotnet:defs.bzl", "nuget_package_download", "nuget_package_framework_version",
-                    "nuget_package_version");
+                b.Load("@rules_msbuild//dotnet:defs.nuget.bzl", "nuget_package_download",
+                    "nuget_package_framework_version", "nuget_package_version");
                 b.Visibility();
                 b.StartRule("nuget_package_download", pkg.RequestedName);
 
@@ -184,7 +184,7 @@ namespace NuGetParser
         {
             using var b =
                 new BuildWriter(File.Create(Path.Join(Path.GetDirectoryName(PackagesFolder), "BUILD.bazel")));
-            b.Load("@rules_msbuild//dotnet:defs.bzl", "tfm_mapping", "framework_info");
+            b.Load("@rules_msbuild//dotnet:defs.nuget.bzl", "tfm_mapping", "framework_info");
             b.Visibility();
 
             b.StartRule("filegroup", "bazel_packages");

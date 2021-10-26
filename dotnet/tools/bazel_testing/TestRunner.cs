@@ -83,6 +83,7 @@ namespace TestRunner
             {
                 commandIndex++;
                 workspaceMaker.Init(true);
+                _bazel.Run("sync --only rules_msbuild", out var _);
                 UpdateWorkspaceForLocal(originalWorkspace);
 
                 if (!_bazel!.Run("run //:gazelle", out var result))
@@ -95,6 +96,7 @@ namespace TestRunner
             else
             {
                 workspaceMaker.Init(true, true);
+                _bazel.Run("sync --only rules_msbuild", out var _);
                 UpdateWorkspaceForLocal(originalWorkspace);
             }
 
@@ -147,7 +149,7 @@ namespace TestRunner
 
         public void Dispose()
         {
-            // return;
+            return;
             var cwd = Directory.GetCurrentDirectory();
             foreach (var path in _cleanup.Select(Path.GetFullPath))
             {

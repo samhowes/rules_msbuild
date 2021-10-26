@@ -3,6 +3,6 @@ set -e
 
 pkg="dotnet/tools/Bzl"
 
-bazel build "//$pkg:SamHowes.Bzl_nuget"
+bazel build "//$pkg:SamHowes.Bzl.nupkg"
 
 dotnet tool update -g Bzl --add-source "bazel-bin/$pkg"

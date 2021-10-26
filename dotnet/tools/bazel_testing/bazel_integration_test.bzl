@@ -1,5 +1,5 @@
 load("//dotnet/tools/launcher:launch.bzl", "launch_script")
-load("//dotnet:util.bzl", "to_manifest_path")
+load("//dotnet/private/util:util.bzl", "to_manifest_path")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _rules_msbuild_integration_test_impl(ctx):

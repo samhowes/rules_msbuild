@@ -64,7 +64,7 @@ build_test(
 )
 
 build_test(
-    name = "HelloBazel_nuget_test",
+    name = "HelloBazel.nupkg_test",
     expected_files = {
         "": [
             "HelloBazel.1.2.3.nupkg",

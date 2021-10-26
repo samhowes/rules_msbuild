@@ -14,7 +14,19 @@ namespace RulesMSBuild.Tools.Bazel
         public Label DefaultPackage { get; set; }
         public Dictionary<string, string> GetEnvVars() => Runfiles.GetEnvVars();
 
-        public string PackagePath(string subpath)
+        public string Rlocation(Label label)
+        {
+            if (label.IsRelative) return PackagePath(label.Name);
+            var rpath = Rpath(label);
+            return Runfiles.Rlocation(rpath);
+        }
+
+        public string Rlocation(string path)
+        {
+            return Runfiles.Rlocation(path);
+        }
+        
+        private string PackagePath(string subpath)
         {
             if (subpath[0] == ':')
             {
@@ -23,13 +35,7 @@ namespace RulesMSBuild.Tools.Bazel
             var rpath = $"{DefaultPackage.Workspace}/{DefaultPackage.Package}/{subpath}";
             return Runfiles.Rlocation(rpath);
         }
-        public string Rlocation(Label label)
-        {
-            if (label.IsRelative) return PackagePath(label.Name);
-            var rpath = Rpath(label);
-            return Runfiles.Rlocation(rpath);
-        }
-
+        
         private string Rpath(Label label)
         {
             var workspace = label.Workspace == Label.DefaultWorkspace ? DefaultPackage.Workspace : label.Workspace;

@@ -199,6 +199,8 @@ namespace RulesMSBuild.Tools.Builder
                     {
                         Directory.CreateDirectory(_context.MSBuild.RestoreDir);
                     }
+                    // todo: do this better
+                    _context.ProjectBazelProps["AssemblyName"] = _context.Bazel.Label.Name.Split("_")[0];
                     new BazelPropsWriter().WriteProperties(
                         _context.ProjectExtensionPath(".bazel.props"),
                         _context.ProjectBazelProps);

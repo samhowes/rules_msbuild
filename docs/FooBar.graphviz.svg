@@ -1,0 +1,89 @@
+<!--http://magjac.com/graphviz-visual-editor/?dot=digraph%20g%0A%7B%0A%09node%20%5Bshape%3Dbox%20style%3Dfilled%5D%0A%09subgraph%20cluster_0%20%7B%0A%09%09f%5Blabel%3D%3C%2F%2FFoo%3AFoo%3E%5D%0A%09%09b%5Blabel%3D%3C%2F%2FBar%3ABar%3E%5D%0A%09%09fr%5Blabel%3D%3C%2F%2FFoo%3AFoo_restore%3E%5D%0A%09%09br%5Blabel%3D%3C%2F%2FBar%3ABar_restore%3E%5D%0A%09%09fp%5Blabel%3D%3C%2F%2FFoo%3AFoo_publish%3E%5D%0A%09%09bp%5Blabel%3D%3C%2F%2FBar%3ABar_publish%3E%5D%0A%09%09%0A%09%09fp%20-%3E%20f%20-%3E%20fr%0A%09%09fp%20-%3E%20bp%20-%3E%20b%0A%09%09f%20-%3E%20b%20-%3E%20br%0A%09%09fr%20-%3E%20br%0A%09%7D%0A%7D-->
+<svg width="200" height="300" viewBox="0 0 604.5 750" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g id="graph0" class="graph" transform="translate(9.829268292682928,723.939024390244) scale(2.457317073170732)">
+        <title>g</title>
+        <polygon fill="white" stroke="transparent" points="-4,4 -4,-288 242,-288 242,4 -4,4"></polygon>
+        <g id="clust1" class="cluster">
+            <title>cluster_0</title>
+            <polygon fill="none" stroke="black" points="8,-8 8,-276 230,-276 230,-8 8,-8"></polygon>
+        </g>
+        <!-- f -->
+        <g id="node1" class="node">
+            <title>f</title>
+            <polygon fill="lightgrey" stroke="black" points="87.74,-196 16.26,-196 16.26,-160 87.74,-160 87.74,-196"></polygon>
+            <text text-anchor="start" x="24.38" y="-173.8" font-family="Times,serif" font-size="14.00">//Foo:Foo</text>
+        </g>
+        <!-- b -->
+        <g id="node2" class="node">
+            <title>b</title>
+            <polygon fill="lightgrey" stroke="black" points="218.1,-124 149.9,-124 149.9,-88 218.1,-88 218.1,-124"></polygon>
+            <text text-anchor="start" x="157.95" y="-101.8" font-family="Times,serif" font-size="14.00">//Bar:Bar</text>
+        </g>
+        <!-- f&#45;&gt;b -->
+        <g id="edge5" class="edge">
+            <title>f-&gt;b</title>
+            <path fill="none" stroke="black" d="M84.29,-159.88C101.87,-150.55 123.81,-138.92 142.63,-128.94"></path>
+            <polygon fill="black" stroke="black" points="144.39,-131.97 151.59,-124.19 141.11,-125.78 144.39,-131.97"></polygon>
+        </g>
+        <!-- fr -->
+        <g id="node3" class="node">
+            <title>fr</title>
+            <polygon fill="lightgrey" stroke="black" points="132.32,-124 15.68,-124 15.68,-88 132.32,-88 132.32,-124"></polygon>
+            <text text-anchor="start" x="23.84" y="-101.8" font-family="Times,serif" font-size="14.00">//Foo:Foo_restore</text>
+        </g>
+        <!-- f&#45;&gt;fr -->
+        <g id="edge2" class="edge">
+            <title>f-&gt;fr</title>
+            <path fill="none" stroke="black" d="M57.44,-159.7C59.89,-151.9 62.84,-142.51 65.57,-133.83"></path>
+            <polygon fill="black" stroke="black" points="68.96,-134.69 68.62,-124.1 62.29,-132.59 68.96,-134.69"></polygon>
+        </g>
+        <!-- br -->
+        <g id="node4" class="node">
+            <title>br</title>
+            <polygon fill="lightgrey" stroke="black" points="175.68,-52 62.32,-52 62.32,-16 175.68,-16 175.68,-52"></polygon>
+            <text text-anchor="start" x="70.41" y="-29.8" font-family="Times,serif" font-size="14.00">//Bar:Bar_restore</text>
+        </g>
+        <!-- b&#45;&gt;br -->
+        <g id="edge6" class="edge">
+            <title>b-&gt;br</title>
+            <path fill="none" stroke="black" d="M167.93,-87.7C160.06,-79.22 150.44,-68.86 141.83,-59.58"></path>
+            <polygon fill="black" stroke="black" points="144.25,-57.05 134.88,-52.1 139.12,-61.81 144.25,-57.05"></polygon>
+        </g>
+        <!-- fr&#45;&gt;br -->
+        <g id="edge7" class="edge">
+            <title>fr-&gt;br</title>
+            <path fill="none" stroke="black" d="M85.12,-87.7C90.36,-79.56 96.7,-69.69 102.48,-60.7"></path>
+            <polygon fill="black" stroke="black" points="105.54,-62.41 108,-52.1 99.65,-58.62 105.54,-62.41"></polygon>
+        </g>
+        <!-- fp -->
+        <g id="node5" class="node">
+            <title>fp</title>
+            <polygon fill="lightgrey" stroke="black" points="178.96,-268 59.04,-268 59.04,-232 178.96,-232 178.96,-268"></polygon>
+            <text text-anchor="start" x="67.27" y="-245.8" font-family="Times,serif" font-size="14.00">//Foo:Foo_publish</text>
+        </g>
+        <!-- fp&#45;&gt;f -->
+        <g id="edge1" class="edge">
+            <title>fp-&gt;f</title>
+            <path fill="none" stroke="black" d="M102.44,-231.7C94.32,-223.22 84.41,-212.86 75.53,-203.58"></path>
+            <polygon fill="black" stroke="black" points="77.81,-200.91 68.37,-196.1 72.76,-205.75 77.81,-200.91"></polygon>
+        </g>
+        <!-- bp -->
+        <g id="node6" class="node">
+            <title>bp</title>
+            <polygon fill="lightgrey" stroke="black" points="222.32,-196 105.68,-196 105.68,-160 222.32,-160 222.32,-196"></polygon>
+            <text text-anchor="start" x="113.84" y="-173.8" font-family="Times,serif" font-size="14.00">//Bar:Bar_publish</text>
+        </g>
+        <!-- fp&#45;&gt;bp -->
+        <g id="edge3" class="edge">
+            <title>fp-&gt;bp</title>
+            <path fill="none" stroke="black" d="M130.12,-231.7C135.36,-223.56 141.7,-213.69 147.48,-204.7"></path>
+            <polygon fill="black" stroke="black" points="150.54,-206.41 153,-196.1 144.65,-202.62 150.54,-206.41"></polygon>
+        </g>
+        <!-- bp&#45;&gt;b -->
+        <g id="edge4" class="edge">
+            <title>bp-&gt;b</title>
+            <path fill="none" stroke="black" d="M168.94,-159.7C171.17,-151.9 173.85,-142.51 176.33,-133.83"></path>
+            <polygon fill="black" stroke="black" points="179.73,-134.68 179.11,-124.1 173,-132.76 179.73,-134.68"></polygon>
+        </g>
+    </g>
+</svg>

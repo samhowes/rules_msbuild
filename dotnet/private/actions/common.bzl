@@ -1,5 +1,5 @@
 load("//dotnet/private:providers.bzl", "DotnetCacheInfo", "NuGetPackageInfo")
-load("//dotnet:util.bzl", "to_manifest_path")
+load("//dotnet/private/util:util.bzl", "to_manifest_path")
 
 def declare_caches(ctx, action_name):
     project = None
