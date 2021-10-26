@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -10,150 +9,98 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RulesMSBuild.Tools.Bazel;
-using SamHowes.Bzl;
+using static release.Util;
 
 namespace release
 {
+    enum Action
+    {
+        Release,
+        Clean,
+        Test,
+    }
     class Program
     {
-        private static void Info(string message) => Console.WriteLine(message);
-
-        private static void Die(string message)
-        {
-            Console.WriteLine(message);
-            Environment.Exit(1);
-        }
-
-        private static string Run(string command, params string[] args)
-        {
-            var (process, output) = RunImpl(string.Join(" ", args.Prepend(command)));
-            if (process.ExitCode != 0) Die("Command failed");
-            return output;
-        }
-
-        private static string TryRun(string command)
-        {
-            var (process, output) = RunImpl(command);
-            if (process.ExitCode != 0) return null;
-            return output;
-        }
-
-        private static (Process process, string) RunImpl(string command)
-        {
-            var parts = command.Split(' ');
-            var filename = parts[0];
-            var args = string.Join(' ', parts.Skip(1));
-            var process = Process.Start(new ProcessStartInfo(filename, args)
-            {
-                RedirectStandardOutput = true
-            });
-            var builder = new StringBuilder();
-            process!.OutputDataReceived += (_, data) =>
-            {
-                builder.AppendLine(data.Data);
-                Console.Out.WriteLine(data.Data);
-                Console.Out.Flush();
-            };
-            process!.BeginOutputReadLine();
-            process!.WaitForExit();
-            return (process, builder.ToString());
-        }
-
-
-        private static List<string> Bazel(string args)
-        {
-            var startInfo = new ProcessStartInfo("bazel", args)
-            {
-                RedirectStandardError = true
-            };
-            var process = Process.Start(startInfo);
-            var outputs = new List<string>();
-            var readOutputs = false;
-            process!.ErrorDataReceived += (_, data) =>
-            {
-                Console.Error.WriteLine($"{data.Data}");
-                var line = data.Data;
-                if (string.IsNullOrEmpty(line)) return;
-
-                if (readOutputs)
-                {
-                    if (line[0..2] != "  ")
-                    {
-                        readOutputs = false;
-                        return;
-                    }
-
-                    outputs.Add(Path.GetFullPath(line[2..]));
-                }
-
-                if (line.IndexOf("up-to-date:", StringComparison.Ordinal) > 0)
-                {
-                    readOutputs = true;
-                }
-            };
-
-            process.Start();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
-            if (process.ExitCode != 0) Die("Command failed");
-            return outputs;
-        }
-
-        enum Action
-        {
-            Release,
-            Clean
-        }
+        private static Action _action;
+        private static string _work;
+        private static string _root;
+        private static string _nuGetApiKey;
+        private static string _version;
 
         static async Task<int> Main(string[] args)
         {
-            var nugetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY");
-            if (string.IsNullOrEmpty(nugetApiKey))
-            {
-                Die("No NUGET_API_KEY found");
-            }
-
-            var action = Action.Release;
-            if (args.Length > 0)
-            {
-                if (!Enum.TryParse<Action>(args[0], true, out action))
-                    Die($"Failed to parse action from {args[0]}");
-            }
-
-            // var env = Environment.GetEnvironmentVariables();
-            // foreach (var key in env.Keys.Cast<string>().OrderBy(k => k))
-            // {
-            //     Info($"{key}={env[key]}");
-            // }
-
-            var work = Path.Combine(Directory.GetCurrentDirectory(), "_work");
-            if (Directory.Exists(work))
-                Directory.Delete(work, true);
-            Directory.CreateDirectory(work);
-
-            Info($"Work directory: {work}");
-            var root = BazelEnvironment.GetWorkspaceRoot();
-            Directory.SetCurrentDirectory(root);
+            Setup(args);
 
             await DownloadArtifacts();
-
-            var versionContents = File.ReadAllText(Path.Combine(root, "version.bzl"));
-            var versionMatch = Regex.Match(versionContents, @"VERSION.*?=.*?""([^""]+)""");
-            if (!versionMatch.Success) Die("Failed to parse version from version.bzl");
-            var version = versionMatch.Groups[1];
-            Info($"Using version: {version}");
-
-            if (action == Action.Clean)
+            
+            if (_action == Action.Clean)
             {
-                Run($"gh release delete \"{version}\" -y");
-                Run($"git push --delete origin \"{version}\"");
+                Run($"gh release delete \"{_version}\" -y");
+                Run($"git push --delete origin \"{_version}\"");
                 return 0;
             }
 
-            VerifyNewRelease(version);
+            VerifyNewRelease();
 
-            var (tarAlias, usage) = BuildTar(work, version.Value);
+            var (tarAlias, usage) = BuildTar(_work, _version);
 
+            await MakeNotes(usage);
+
+            Info("Building bzl...");
+            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl.nupkg --//config:mode=release");
+            var nupkg = outputs.Single();
+
+            if (_action == Action.Release)
+            {
+                Info("Creating release...");
+                Run($"gh release create {_version} ",
+                    "--prerelease",
+                    "--draft",
+                    $"--title v{_version}",
+                    "-F ReleaseNotes.md",
+                    tarAlias,
+                    nupkg);
+
+                Run($"dotnet nuget push {nupkg} --api-key {_nuGetApiKey} --source https://api.nuget.org/v3/index.json");
+            }
+            else if (_action == Action.Test)
+            {
+                VerifyTar();
+            }
+
+            return 0;
+        }
+
+        private static void VerifyTar()
+        {
+            var test = Path.Combine(_work, "test");
+            if (Directory.Exists(test)) Directory.Delete(test, true);
+            Directory.CreateDirectory(test);
+            
+            var nupkg = Path.GetFullPath($"bazel-bin/dotnet/tools/Bzl/SamHowes.Bzl.{_version}.nupkg");
+            var tar = Path.Combine(_work, "rules_msbuild.tar.gz");
+            File.Copy("bazel-bin/rules_msbuild.tar.gz", tar);
+            File.Copy("bazel-bin/rules_msbuild.tar.gz.sha256", Path.Combine(_work, "rules_msbuild.tar.gz.sha256"));
+            
+            Run($"unzip {nupkg} -d {nupkg}");
+            Run($"chmod -R 755 nupkg");
+
+            var tool = Path.Combine(_work, "nupkg/tools/netcoreapp3.1/any/SamHowes.Bzl.dll");
+            Directory.SetCurrentDirectory(test);
+
+            Run("dotnet new console -o console --no-restore");
+            Run($"dotnet exec {tool} _test {tar}");
+            Bazel("run //:gazelle");
+            var result = TryRun("bazel run //console");
+            if (result.Trim() != "Hello World!")
+            {
+                Die($"test failed, bad output: {result}");
+            }
+            Info("SUCCESS");
+        }
+
+        private static async Task MakeNotes(string usage)
+        {
             const string releaseNotes = "ReleaseNotes.md";
             var originalNotes = await File.ReadAllTextAsync(releaseNotes);
             const string marker = "<!--marker-->";
@@ -167,7 +114,7 @@ namespace release
             notes.Append(usage);
             notes.AppendLine("```");
 
-            notes.AppendLine($"[SamHowes.Bzl: {version}](https://www.nuget.org/packages/SamHowes.Bzl/{version})")
+            notes.AppendLine($"[SamHowes.Bzl: {_version}](https://www.nuget.org/packages/SamHowes.Bzl/{_version})")
                 .AppendLine();
 
             var lastRelease = RunJson<GitHubRelease>("gh release view --json");
@@ -186,26 +133,37 @@ namespace release
             }
 
             await File.WriteAllTextAsync(releaseNotes, notes.ToString());
+        }
 
-            Info("Building bzl...");
-            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl.nupkg --//config:mode=release");
-            var nupkg = outputs.Single();
-
-            Info("Creating release...");
-            if (false)
+        private static void Setup(string[] args)
+        {
+            _action = Action.Release;
+            if (args.Length > 0)
             {
-                Run($"gh release create {version} ",
-                    "--prerelease",
-                    "--draft",
-                    $"--title v{version}",
-                    "-F ReleaseNotes.md",
-                    tarAlias,
-                    nupkg);
-
-                Run($"dotnet nuget push {nupkg} --api-key {nugetApiKey} --source https://api.nuget.org/v3/index.json");
+                if (!Enum.TryParse<Action>(args[0], true, out _action))
+                    Die($"Failed to parse action from {args[0]}");
             }
 
-            return 0;
+            _nuGetApiKey = Environment.GetEnvironmentVariable("NUGET_API_KEY");
+            if (string.IsNullOrEmpty(_nuGetApiKey))
+            {
+                Die("No NUGET_API_KEY found");
+            }
+
+            _work = Path.Combine(Directory.GetCurrentDirectory(), "_work");
+            if (Directory.Exists(_work))
+                Directory.Delete(_work, true);
+            Directory.CreateDirectory(_work);
+
+            Info($"Work directory: {_work}");
+            _root = BazelEnvironment.GetWorkspaceRoot();
+            Directory.SetCurrentDirectory(_root);
+            
+            var versionContents = File.ReadAllText(Path.Combine(_root, "version.bzl"));
+            var versionMatch = Regex.Match(versionContents, @"VERSION.*?=.*?""([^""]+)""");
+            if (!versionMatch.Success) Die("Failed to parse version from version.bzl");
+            _version = versionMatch.Groups[1].Value;
+            Info($"Using version: {_version}");
         }
 
         private static async Task DownloadArtifacts()
@@ -270,7 +228,7 @@ namespace release
             var url =
                 $"https://github.com/samhowes/rules_msbuild/releases/download/{version}/rules_msbuild-{version}.tar.gz";
             var workspaceTemplateContents =
-                Util.UpdateWorkspaceTemplate(Runfiles.Create<Program>().Runfiles, tarSource, url);
+                SamHowes.Bzl.Util.UpdateWorkspaceTemplate(Runfiles.Create<Program>().Runfiles, tarSource, url);
 
             File.WriteAllText("dotnet/tools/Bzl/WORKSPACE.tpl", workspaceTemplateContents);
 
@@ -285,31 +243,14 @@ namespace release
             return (tarAlias, usage);
         }
 
-        private static void VerifyNewRelease(Group version)
+        private static void VerifyNewRelease()
         {
             Info("Checking for existing release...");
-            var existingRelease = TryRun($"gh release view {version}");
+            var existingRelease = TryRun($"gh release view {_version}");
             if (existingRelease != null)
             {
-                Die($"Failed to release: {version} already exists");
+                Die($"Failed to release: {_version} already exists");
             }
-        }
-
-        private static T RunJson<T>(string command)
-        {
-            var type = typeof(T);
-            if (type.IsGenericType)
-                type = type.GetGenericArguments()[0];
-            var fields = type.GetProperties().Select(p => p.Name[0].ToString().ToLower() + p.Name[1..]);
-            var result = Run(command + " " + string.Join(",", fields));
-            return JsonConvert.DeserializeObject<T>(result);
-        }
-
-        private static void Copy(string src, string dest)
-        {
-            var templateDest = new FileInfo(dest);
-            File.Copy(src, templateDest.FullName, true);
-            templateDest.IsReadOnly = false;
         }
     }
 

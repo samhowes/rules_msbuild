@@ -2,7 +2,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":common.bzl", "declare_caches", "write_cache_manifest")
 load("//dotnet/private:context.bzl", "dotnet_exec_context", "make_builder_cmd")
 load("//dotnet/private:providers.bzl", "DotnetPublishInfo")
-load("//dotnet:util.bzl", "to_manifest_path")
+load("//dotnet/private/util:util.bzl", "to_manifest_path")
 
 def pack(ctx):
     info = ctx.attr.target[DotnetPublishInfo]
