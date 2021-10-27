@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
+using TestRunner;
 
 namespace release
 {
@@ -60,6 +61,7 @@ namespace release
             {
                 RedirectStandardError = true
             };
+            
             var process = Process.Start(startInfo);
             var outputs = new List<string>();
             var readOutputs = false;
