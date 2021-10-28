@@ -2,8 +2,8 @@
 # This lets us glob() up all the files inside the examples to make them inputs to tests
 # To update these lines, just run `update_deleted.sh`
 # (Note, we cannot use common --deleted_packages because the bazel version command doesn't support it)
-build --deleted_packages=e2e/hello,e2e/hello/Binary,e2e/hello/RunfilesTest
-query --deleted_packages=e2e/hello,e2e/hello/Binary,e2e/hello/RunfilesTest
+build --deleted_packages=e2e/hello,e2e/hello/Binary,e2e/hello/Library,e2e/hello/RunfilesTest
+query --deleted_packages=e2e/hello,e2e/hello/Binary,e2e/hello/Library,e2e/hello/RunfilesTest
 
 build:diag --define=BUILD_DIAG=1 -c dbg
 test:diag --define=BUILD_DIAG=1

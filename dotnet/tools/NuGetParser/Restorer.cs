@@ -57,9 +57,13 @@ namespace NuGetParser
         {
             _project.Add(new XElement("ItemGroup",
                 packages.Select(p =>
-                    new XElement("PackageReference",
-                        new XAttribute("Include", p.name),
-                        new XAttribute("Version", p.version)))));   
+                {
+                    var el = new XElement("PackageReference",
+                        new XAttribute("Include", p.name));
+                    if (!string.IsNullOrEmpty(p.version))
+                        el.Add(new XAttribute("Version", p.version));
+                    return el;
+                })));   
         }
 
         public void Save(string path)
@@ -160,6 +164,9 @@ namespace NuGetParser
                 var tfms = parts.Last().Split(",");
                 foreach (var tfm in tfms)
                 {
+                    if (string.IsNullOrEmpty(tfm))
+                        throw new CustomException($"Invalid tfm '{tfm}'");
+                    
                     if (!frameworks.TryGetValue(tfm, out var tfmInfo))
                     {
                         tfmInfo = new FrameworkInfo(tfm);

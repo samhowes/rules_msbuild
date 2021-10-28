@@ -6,6 +6,7 @@ msbuild_binary(
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [
+        "//Library",
         "@nuget//CommandLineParser",
     ],
 )

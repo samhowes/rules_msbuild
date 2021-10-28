@@ -30,7 +30,7 @@ namespace Bzl
     {
         static int Main(string[] args)
         {
-            if (args[0] == "_test")
+            if (args.Length > 0 && args[0] == "_test")
                 return Test(args[1]);
             
             return Parser.Default.ParseArguments<InitOptions, GazelleOptions>(args)
@@ -116,7 +116,7 @@ namespace Bzl
             if (gazellePath == null || !File.Exists(gazellePath))
             {
                 Console.Error.WriteLine(
-                    "Failed to locate gazelle-dotnet binary, please file an issue at github.com/samhowes/rules_msbuild");
+                    $"Failed to locate gazelle-dotnet binary at path {gazellePath}, please file an issue at github.com/samhowes/rules_msbuild");
                 return null;
             }
 

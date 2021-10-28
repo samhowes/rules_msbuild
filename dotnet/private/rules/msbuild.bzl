@@ -209,12 +209,23 @@ _ASSEMBLY_ATTRS = dicts.add(_RESTORE_COMMON_ATTRS, {
 If `project_file` is not specified, the extension of these files will be used to infer the project name.
 i.e. given:
 ```
-msbuild_binary(name = "Foo", srcs = ["Program.cs"])
+msbuild_binary(name = "Foo", srcs = ["Program.cs"], target_framework = "net5.0")
 ```
 
 rules_msbuild will attempt to compile `Foo.csproj`.
 """,
         allow_files = True,
+    ),
+    "lang": attr.string(
+        doc = """oneof (cs, fs, vb): If project_file and srcs are both absent, infer the attributes using this language
+
+i.e. given:
+```
+msbuild_binary(name = "Foo", lang = "fs", target_framework = "net5.0")
+```
+
+rules_msbuild will attempt to compile `Foo.fsproj` by globbing for `**/*.fs` files.
+""",
     ),
     "restore": attr.label(
         doc = "The restore target that this assembly depends on: `<name>_restore.`",

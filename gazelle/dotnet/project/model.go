@@ -84,10 +84,16 @@ type ProjectReference struct {
 }
 
 type PackageReference struct {
-	XMLName xml.Name
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
+	XMLName   xml.Name
+	Include   string   `xml:"Include,attr"`
+	Version   string   `xml:"Version,attr"`
+	VersionEl *Version `xml:"Version"`
 	Unsupported
+}
+
+type Version struct {
+	XMLName xml.Name
+	Value   string `xml:",chardata"`
 }
 
 type Item struct {

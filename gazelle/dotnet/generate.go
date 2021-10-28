@@ -64,7 +64,9 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 	}
 
 	res.Imports = append(res.Imports, info.Project.Deps)
-	dc.frameworks[info.Project.TargetFramework] = true
+	if info.Project.TargetFramework != "" {
+		dc.frameworks[info.Project.TargetFramework] = true
+	}
 
 	rule := info.Project.GenerateRule(args.File)
 

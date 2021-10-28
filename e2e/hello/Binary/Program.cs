@@ -1,6 +1,7 @@
 ﻿using System;
 using CommandLine;
 using CommandLine.Text;
+using Library;
 
 namespace Hello
 {
@@ -16,6 +17,7 @@ namespace Hello
     {
         public static void Main(string[] args)
         {
+            var c = new CoolClass();
             var parsed = Parser.Default.ParseArguments<EchoVerb>(new string[]{"<3"});
             var result = parsed.MapResult<EchoVerb, int>(
                 (EchoVerb verb) => {
