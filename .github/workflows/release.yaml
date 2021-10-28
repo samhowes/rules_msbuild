@@ -22,6 +22,8 @@ jobs:
 
       - name: Release
         run: |
+          git config user.name "GitHub Actions"
+          git config user.email <>
           git checkout -b release
           git add .
           git commit -m "release"
