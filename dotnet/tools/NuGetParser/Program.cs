@@ -5,6 +5,14 @@ using System.Linq;
 
 namespace NuGetParser
 {
+
+    public class CustomException : Exception
+    {
+        public CustomException(string message) : base(message)
+        {
+            
+        }
+    }
     class Program
     {
         static int Main(string[] args)
@@ -16,11 +24,15 @@ namespace NuGetParser
                 var frameworks = restorer.Restore();
 
                 var files = new Files();
-                var parser = new Parser(argsDict["packages_folder"], files, Console.WriteLine, 
+                var parser = new Parser(argsDict["packages_folder"], files, Console.WriteLine,
                     new AssetsReader(files));
 
                 if (!parser.Parse(frameworks, argsDict)) return 1;
                 return 0;
+            }
+            catch (CustomException ex)
+            {
+                Console.WriteLine(ex.Message);
             }
             catch (Exception ex)
             {

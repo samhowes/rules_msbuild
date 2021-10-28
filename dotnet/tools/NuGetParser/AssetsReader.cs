@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -8,59 +7,6 @@ using System.Text.Json;
 
 namespace NuGetParser
 {
-    public class PackageId
-    {
-        public PackageId(string name, string version)
-        {
-            if (version[0] == '[')
-            {
-                var parts = version.Split(",");
-                if (parts.Length > 1)
-                {
-                    // "[1.2.3, )"
-                    version = parts[0][1..];
-                }
-                else
-                {
-                    // "[1.2.3]"
-                    version = version[1..^1];
-                }
-            }
-            
-            Name = name;
-            Version = version;
-            String = $"{name}/{version}";
-        }
-        public PackageId(string id)
-        {
-            var parts = id.Split('/');
-            Name = parts[0];
-            Version = parts[1];
-            String = id;
-        }
-
-        public static implicit operator PackageId(string id)
-        {
-            return new PackageId(id);
-        }
-
-        public static explicit operator string(PackageId id) => id.String;
-        
-        public string Name { get; set; } = null!;
-        public string Version { get; } = null!;
-        public string String { get; set; } = null!;
-
-        public override int GetHashCode()
-        {
-            return Version.GetHashCode(StringComparison.OrdinalIgnoreCase);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return StringComparer.OrdinalIgnoreCase.Equals(Version, obj);
-        }
-    }
-    
     public class AssetsReader
     {
         private readonly Files _files = null!;

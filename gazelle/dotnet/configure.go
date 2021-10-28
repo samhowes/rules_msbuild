@@ -25,7 +25,7 @@ type dotnetConfig struct {
 }
 
 func (dc *dotnetConfig) recordPackage(ref *project.PackageReference, tfm string) {
-	if dc.macroFileName == "" {
+	if dc.macroFileName == "" || tfm == "" {
 		return
 	}
 	spec, exists := dc.packages[ref.Include]

@@ -9,12 +9,8 @@ msbuild_test(
         "@nuget//FluentAssertions",
         "@nuget//Microsoft.NET.Test.Sdk",
         "@nuget//Moq",
-        # gazelle-err: unsupported element: IncludeAssets
-        # gazelle-err: unsupported element: PrivateAssets
         "@nuget//coverlet.collector",
         "@nuget//xunit",
-        # gazelle-err: unsupported element: IncludeAssets
-        # gazelle-err: unsupported element: PrivateAssets
         "@nuget//xunit.runner.visualstudio",
     ],
 )

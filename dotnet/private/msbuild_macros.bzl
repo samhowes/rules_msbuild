@@ -16,8 +16,9 @@ load(
 def msbuild_directory_macro(
         name = "msbuild_directory",
         srcs = [],
-        deps = []):
-    msbuild_project(name, srcs, deps, [":__subpackages__"])
+        deps = [],
+        visibility = [":__subpackages__"]):
+    msbuild_project(name, srcs, deps, visibility)
 
 def msbuild_project(
         name,
@@ -32,41 +33,21 @@ def msbuild_project(
 
 def msbuild_binary_macro(
         name,
-        srcs = None,
         args = [],
-        project_file = None,
-        target_framework = None,
-        deps = [],
         **kwargs):
-    srcs = _get_srcs(srcs)
-    project_file = _guess_project_file(name, srcs, project_file)
-    _msbuild_assembly(name, msbuild_binary, project_file, target_framework, srcs, deps, kwargs, {"args": args})
-
-    msbuild_publish(
-        name = name + "_publish",
-        project_file = project_file,
-        target = ":" + name,
-    )
+    _msbuild_assembly(name, msbuild_binary, kwargs, {"args": args})
 
 def msbuild_library_macro(
         name,
-        srcs = [],
-        project_file = None,
-        target_framework = None,
-        deps = [],
         **kwargs):
-    _msbuild_assembly(name, msbuild_library, project_file, target_framework, srcs, deps, kwargs, {})
+    _msbuild_assembly(name, msbuild_library, kwargs, {})
 
 def msbuild_test_macro(
         name,
-        srcs = [],
-        project_file = None,
-        target_framework = None,
-        deps = [],
         **kwargs):
     test_args = _steal_args({}, kwargs, ["size", "dotnet_cmd", "test_env"])
 
-    _msbuild_assembly(name, msbuild_test, project_file, target_framework, srcs, deps, kwargs, test_args)
+    _msbuild_assembly(name, msbuild_test, kwargs, test_args)
 
 _KNOWN_EXTS = {
     ".cs": True,
@@ -77,28 +58,28 @@ _KNOWN_EXTS = {
 def _msbuild_assembly(
         name,
         assembly_impl,
-        project_file,
-        target_framework,
-        srcs,
-        deps,
         kwargs,
         assembly_args):
     _steal_args(assembly_args, kwargs, ["data", "content", "protos"])
 
-    srcs = _get_srcs(srcs)
-    project_file = _guess_project_file(name, srcs, project_file)
-    restore_name = name + "_restore"
+    srcs, project_file = _guess_inputs(name, kwargs)
 
+    deps = kwargs.pop("deps", [])
+    target_framework = kwargs.pop("target_framework", None)
     restore_deps = []
     for d in deps:
         l = Label(d)
-        restore_deps.append(l.relative(":{}_restore".format(l.name)))
+        rel = str(l.relative(":{}_restore".format(l.name)))
+        if rel[0] == "@" and d[0] != "@":
+            rel = "//" + rel.split("//")[1]
+        restore_deps.append(rel)
 
     is_packable = kwargs.pop("packable", False)
     version = kwargs.pop("version", None)
     package_version = kwargs.pop("package_version", version)
     visibility = kwargs.get("visibility", None)
 
+    restore_name = name + "_restore"
     msbuild_restore(
         name = restore_name,
         target_framework = target_framework,
@@ -129,6 +110,13 @@ def _msbuild_assembly(
             visibility = visibility,
         )
 
+    if assembly_impl != msbuild_test:
+        msbuild_publish(
+            name = name + "_publish",
+            project_file = project_file,
+            target = ":" + name,
+        )
+
 def _steal_args(dest, src, args):
     for a in args:
         if a in src:
@@ -136,29 +124,44 @@ def _steal_args(dest, src, args):
             dest[a] = val
     return dest
 
-def _get_srcs(srcs):
-    if srcs != None:
-        return srcs
-    return native.glob(
-        ["**/*"],
-        exclude = [
-            "bin/**",
-            "obj/**",
-            "*proj",
-            "BUILD*",
-        ],
-    )
+def _guess_inputs(name, kwargs):
+    srcs = kwargs.pop("srcs", None)
+    project_file = kwargs.pop("project_file", None)
+    lang = kwargs.pop("lang", "")
+    lang_ext = ""
+    if lang:
+        lang_ext = "." + lang
 
-def _guess_project_file(name, srcs, project_file):
     if project_file != None:
-        return project_file
+        _, ext = paths.split_extension(project_file)
+        lang_ext = ext[:3]
+        lang = lang_ext[1:]
+    else:
+        if srcs == None:
+            srcs = native.glob(
+                ["**/*" + lang_ext],
+                exclude = [
+                    "bin/**",
+                    "obj/**",
+                    "*proj",
+                    "BUILD*",
+                ],
+            )
+        if lang_ext:
+            project_file = name + lang_ext + "proj"
+        else:
+            for src in srcs:
+                _, lang_ext = paths.split_extension(src)
+                if _KNOWN_EXTS.get(lang_ext, False):
+                    project_file = name + lang_ext + "proj"
+                    lang = lang_ext[1:]
+                    break
 
-    for src in srcs:
-        _, ext = paths.split_extension(src)
-        if _KNOWN_EXTS.get(ext, False):
-            return name + ext + "proj"
+        if project_file == None:
+            target = "//{}:{}" % (native.package(), name)
+            langs = ", ".join(_KNOWN_EXTS.keys())
+            fail("Target {} is missing oneof (project_file, srcs, lang) attributes and no source files were found to " +
+                 "infer from. Please directly specify one of the attributes or add a source file with one of the " +
+                 "following extensions: {}".format(target, langs))
 
-    if project_file == None:
-        fail("Target {} is missing project_file attribute and has no srcs to determine project type from. " +
-             "Please directly specify project_file or add a source file with one of the following " +
-             "extensions: {}".format(name, ", ".join(_KNOWN_EXTS.keys())))
+    return srcs, project_file

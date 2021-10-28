@@ -49,10 +49,6 @@ namespace TestRunner
 
         public bool Run(string command, out BazelResult result)
         {
-            if (TestLogger.DebugEnabled)
-            {
-                command += " --sandbox_debug";
-            } 
             Console.WriteLine($"Starting a new bazel process with command: '{command}'");
             using var bazel = new Process()
             {

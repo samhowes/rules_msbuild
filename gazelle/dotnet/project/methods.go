@@ -97,6 +97,9 @@ func (i *Item) Evaluate(p *Project) {
 
 func (r *PackageReference) Evaluate(proj *Project) {
 	r.Include = proj.Evaluate(r.Include)
+	if r.Version == "" && r.VersionEl != nil {
+		r.Version = r.VersionEl.Value
+	}
 	r.Version = proj.Evaluate(r.Version)
 }
 
