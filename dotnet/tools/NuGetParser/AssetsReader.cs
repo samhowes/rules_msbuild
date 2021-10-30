@@ -18,7 +18,7 @@ namespace NuGetParser
         private JsonElement _libraries;
         private JsonElement _tfmPackages;
         private string _tfm = null!;
-        private readonly Dictionary<string, PackageId> _overrides = null!;
+        private readonly Dictionary<string, PackageOverride> _overrides = null!;
         private readonly Dictionary<string, PackageId> _downloadDeps = null!;
 
         // for testing with moq
@@ -30,7 +30,7 @@ namespace NuGetParser
         {
             _files = files;
             _context = context;
-            _overrides = new Dictionary<string, PackageId>(StringComparer.OrdinalIgnoreCase);
+            _overrides = new Dictionary<string, PackageOverride>(StringComparer.OrdinalIgnoreCase);
             _downloadDeps = new Dictionary<string, PackageId>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -84,12 +84,15 @@ namespace NuGetParser
 
                     var overridesName = @ref.Name + ".Ref";
                     string overridesPath;
+                    bool packageIsDownloaded;
                     if (_downloadDeps.TryGetValue(overridesName, out var overridesPackageId))
                     {
+                        packageIsDownloaded = true;
                         overridesPath = Path.Combine(_context.PackagesFolder, overridesPackageId.String.ToLower());
                     }
                     else
                     {
+                        packageIsDownloaded = false;
                         overridesPath = Path.Combine(_context.DotnetRoot, "packs", overridesName, tfmVersion + ".0");    
                     }
                         
@@ -100,7 +103,8 @@ namespace NuGetParser
                         .Select(a => new PackageId(a[0], a[1]));
                     foreach (var packageId in overridesList)
                     {
-                        _overrides.GetOrAdd(packageId.Name, () => packageId);
+                        _overrides.GetOrAdd(packageId.Name, () => new PackageOverride(packageId))
+                            .IsDownloaded = packageIsDownloaded;
                     }
                 }
             }
@@ -128,13 +132,15 @@ namespace NuGetParser
 
                 var version = new PackageVersion(id);
 
-                PackageId? overrideId;
-                if (_overrides.TryGetValue(id.Name, out overrideId))
+                PackageOverride? pkgOverride;
+                if (_overrides.TryGetValue(id.Name, out pkgOverride))
                 {
-                    version.Override = overrideId;
+                    version.Override = pkgOverride.Id;
                 }
 
-                if (overrideId == null || id.Compare(overrideId) > 0)
+                if (pkgOverride == null 
+                    || id.Compare(pkgOverride.Id) > 0
+                    || pkgOverride.IsDownloaded)
                 {
                     version.AllFiles = packageDesc.Value.GetProperty("files")
                         .EnumerateArray()
@@ -185,6 +191,17 @@ namespace NuGetParser
             {
                 yield return downloadDep.Value;
             }
+        }
+    }
+
+    public class PackageOverride
+    {
+        public PackageId Id { get; }
+        public bool IsDownloaded { get; set; }
+
+        public PackageOverride(PackageId id)
+        {
+            Id = id;
         }
     }
 }

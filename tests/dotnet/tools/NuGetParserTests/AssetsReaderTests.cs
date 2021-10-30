@@ -80,6 +80,14 @@ namespace NuGetParserTests
 
             _files.Verify(f => f.ReadAllLines($"{PackagesFolder}/microsoft.netcore.app.ref/3.1.0/data/PackageOverrides.txt"),
                 Times.Exactly(1));
+            
+            var versions = _assetsReader.GetPackages().ToList();
+
+            versions.Count.Should().Be(1);
+            var version = versions.Single();
+
+            // we should download this one because we downloaded the override
+            version.AllFiles.Count.Should().Be(15);
         }
 
         private static void SetupAssets(Action<JObject>? modify = null)
