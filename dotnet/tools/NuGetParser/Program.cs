@@ -27,7 +27,7 @@ namespace NuGetParser
                 restorer.Restore();
 
                 var files = new Files();
-                var reader = new AssetsReader(files, Path.GetDirectoryName(context.Args["dotnet_path"])!);
+                var reader = new AssetsReader(files, context);
                 var parser = new Parser(context, files, reader);
                 var generator = new BuildGenerator(context);
                 parser.Parse();
