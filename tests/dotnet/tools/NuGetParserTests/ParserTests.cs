@@ -57,6 +57,7 @@ namespace NuGetParserTests
             _context = new NuGetContext(new Dictionary<string, string>()
             {
                 ["packages_folder"] = "",
+                ["dotnet_path"] = "",
             });
             _parser = new Parser(_context, _files.Object, _assetsReader.Object);
         }

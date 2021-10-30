@@ -33,7 +33,7 @@ namespace NuGetParserTests
         [Theory] // 2.8.0 is in the assets file
         [InlineData("2.9.0", 15)]
         [InlineData("2.7.0", 15)]
-        [InlineData("2.8.0", 0)]  // only exact match skips file population
+        [InlineData("2.8.0", 15)] 
         public void Overrides_IgnoreFiles(string overrideVersion, int expectedFileCount)
         {
             var json = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "project.assets.json"));
