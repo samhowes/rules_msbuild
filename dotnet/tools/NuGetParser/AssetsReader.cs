@@ -85,7 +85,10 @@ namespace NuGetParser
                     string overridesPath;
                     if (_downloadDeps.TryGetValue(overridesName, out var overridesPackageId))
                     {
-                        overridesPath = Path.Combine(_context.PackagesFolder, overridesPackageId.String.ToLower());
+                        var rel = overridesPackageId.String.ToLower();
+                        if (Path.DirectorySeparatorChar == '\\')
+                            rel = rel.Replace('/', '\\');
+                        overridesPath = Path.Combine(_context.PackagesFolder, rel);
                     }
                     else
                     {
