@@ -93,7 +93,12 @@ namespace NuGetParser
 
         public override bool Equals(object? obj)
         {
-            return StringComparer.OrdinalIgnoreCase.Equals(Version, obj);
+            if (obj is PackageId otherId)
+            {
+                return StringComparer.OrdinalIgnoreCase.Equals(Version, otherId.Version);    
+            }
+
+            return false;
         }
     }
 }

@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -84,15 +83,12 @@ namespace NuGetParser
 
                     var overridesName = @ref.Name + ".Ref";
                     string overridesPath;
-                    bool packageIsDownloaded;
                     if (_downloadDeps.TryGetValue(overridesName, out var overridesPackageId))
                     {
-                        packageIsDownloaded = true;
                         overridesPath = Path.Combine(_context.PackagesFolder, overridesPackageId.String.ToLower());
                     }
                     else
                     {
-                        packageIsDownloaded = false;
                         overridesPath = Path.Combine(_context.DotnetRoot, "packs", overridesName, tfmVersion + ".0");    
                     }
                         
@@ -103,8 +99,7 @@ namespace NuGetParser
                         .Select(a => new PackageId(a[0], a[1]));
                     foreach (var packageId in overridesList)
                     {
-                        _overrides.GetOrAdd(packageId.Name, () => new PackageOverride(packageId))
-                            .IsDownloaded = packageIsDownloaded;
+                        _overrides.GetOrAdd(packageId.Name, () => new PackageOverride(packageId));
                     }
                 }
             }
@@ -132,21 +127,15 @@ namespace NuGetParser
 
                 var version = new PackageVersion(id);
 
-                PackageOverride? pkgOverride;
-                if (_overrides.TryGetValue(id.Name, out pkgOverride))
+                if (_overrides.TryGetValue(id.Name, out var pkgOverride))
                 {
                     version.Override = pkgOverride.Id;
                 }
-
-                if (pkgOverride == null 
-                    || id.Compare(pkgOverride.Id) > 0
-                    || pkgOverride.IsDownloaded)
-                {
-                    version.AllFiles = packageDesc.Value.GetProperty("files")
-                        .EnumerateArray()
-                        .Select(f => f.GetString())
-                        .ToList();
-                }
+                
+                version.AllFiles = packageDesc.Value.GetProperty("files")
+                    .EnumerateArray()
+                    .Select(f => f.GetString())
+                    .ToList();
 
                 var meta = _tfmPackages.GetProperty(id.String);
                 if (meta.TryGetProperty("dependencies", out var deps))

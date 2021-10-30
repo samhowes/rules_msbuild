@@ -13,7 +13,7 @@ namespace NuGetParserTests
 {
     public class AssetsReaderTests
     {
-        private static Mock<Files> _files;
+        private readonly Mock<Files> _files;
         private readonly AssetsReader _assetsReader;
         const string ObjDirectory = "foo-obj";
         const string Tfm = "net5.0";
@@ -31,9 +31,9 @@ namespace NuGetParserTests
         }
 
         [Theory] // 2.8.0 is in the assets file
-        [InlineData("2.9.0", 0)] // higher override version means bazel won't see the files in the nuget folder
-        [InlineData("2.7.0", 15)] // lower means we'll actually download the requested package
-        [InlineData("2.8.0", 0)] // equal means no download
+        [InlineData("2.9.0", 15)]
+        [InlineData("2.7.0", 15)]
+        [InlineData("2.8.0", 0)]  // only exact match skips file population
         public void Overrides_IgnoreFiles(string overrideVersion, int expectedFileCount)
         {
             var json = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "project.assets.json"));
@@ -56,7 +56,7 @@ namespace NuGetParserTests
             version.AllFiles.Count.Should().Be(expectedFileCount);
         }
 
-        private static void SetupOverrides(string overrideVersion, string? overridesPath)
+        private void SetupOverrides(string overrideVersion, string? overridesPath)
         {
             _files.Setup(f => f.ReadAllLines(overridesPath))
                 .Returns(new[] {$"CommandLineParser|{overrideVersion}"});
@@ -90,7 +90,7 @@ namespace NuGetParserTests
             version.AllFiles.Count.Should().Be(15);
         }
 
-        private static void SetupAssets(Action<JObject>? modify = null)
+        private void SetupAssets(Action<JObject>? modify = null)
         {
             var json = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "project.assets.json"));
             var jobject = JObject.Parse(json);
