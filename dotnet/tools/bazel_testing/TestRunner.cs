@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Bzl;
 using RulesMSBuild.Tools.Bazel;
-using RulesMSBuild.Tools.Builder;
-using Bzl;
 using static TestRunner.TestLogger;
 using Files = Bzl.Files;
 

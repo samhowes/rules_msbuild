@@ -25,7 +25,7 @@ namespace RulesMSBuild.Tools.Builder
                 new XElement("Project",
                     new XElement("ItemGroup",
                         new XElement("PackageReference",
-                            new XAttribute("Update", "Runfiles"),
+                            new XAttribute("Update", "RulesMSBuild.Runfiles"),
                             new XAttribute("Version", Environment.GetEnvironmentVariable("RULES_MSBUILD_VERSION")!))));
             WriteXml(xml, path);
         }

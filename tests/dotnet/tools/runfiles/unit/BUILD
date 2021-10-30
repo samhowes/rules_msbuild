@@ -7,7 +7,6 @@ msbuild_test(
         "LabelTests.cs",
         "MockFile.cs",
         "RunfilesTest.cs",
-        "integration/DotnetCat.cs",
     ],
     target_framework = "netcoreapp3.1",
     deps = [
