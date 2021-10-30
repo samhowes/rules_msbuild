@@ -1,6 +1,7 @@
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
-load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("//:version.bzl", "VERSION")
 
 # gazelle:prefix github.com/samhowes/rules_msbuild
@@ -66,4 +67,10 @@ genrule(
     exec_tools = ["//eng/tar"],
     tags = ["local"],
     visibility = ["//:__subpackages__"],
+)
+
+bzl_library(
+    name = "bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = ["//visibility:public"],
 )
