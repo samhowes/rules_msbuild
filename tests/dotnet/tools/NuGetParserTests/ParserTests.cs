@@ -14,7 +14,6 @@ namespace NuGetParserTests
 {
     public class ParserTests
     {
-        private List<FrameworkInfo> _frameworks;
         private readonly Mock<Files> _files;
         private Parser _parser;
         private readonly StringBuilder _log;
@@ -55,13 +54,16 @@ namespace NuGetParserTests
             _assetsReader.Setup(a => a.GetPackages())
                 .Returns(GetPackages);
 
-            _context = new NuGetContext(new Dictionary<string, string>());
+            _context = new NuGetContext(new Dictionary<string, string>()
+            {
+                ["packages_folder"] = "",
+            });
             _parser = new Parser(_context, _files.Object, _assetsReader.Object);
         }
 
         private void SetupMultipleVersions()
         {
-            _frameworks = new List<FrameworkInfo>()
+            _context.Frameworks = new List<FrameworkInfo>()
             {
                 new("net5.0")
                 {
@@ -295,7 +297,7 @@ namespace NuGetParserTests
 
         private void SetupFrameworks()
         {
-            _frameworks = new List<FrameworkInfo>()
+            _context.Frameworks = new List<FrameworkInfo>()
             {
                 new("net5.0")
                 {
@@ -317,7 +319,7 @@ namespace NuGetParserTests
 
         private void SetupMultipleFrameworks()
         {
-            _frameworks = new List<FrameworkInfo>()
+            _context.Frameworks = new List<FrameworkInfo>()
             {
                 new("netcoreapp3.1")
                 {
