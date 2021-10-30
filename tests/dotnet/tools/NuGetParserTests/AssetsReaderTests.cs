@@ -78,7 +78,11 @@ namespace NuGetParserTests
             var errorMessage = _assetsReader.Init(ObjDirectory, Tfm);
             errorMessage.Should().BeNull();
 
-            _files.Verify(f => f.ReadAllLines($"{PackagesFolder}/microsoft.netcore.app.ref/3.1.0/data/PackageOverrides.txt"),
+            var path = $"{PackagesFolder}/microsoft.netcore.app.ref/3.1.0/data/PackageOverrides.txt";
+            if (Path.DirectorySeparatorChar == '\\')
+                path = path.Replace('/', '\\');
+            
+            _files.Verify(f => f.ReadAllLines(path),
                 Times.Exactly(1));
             
             var versions = _assetsReader.GetPackages().ToList();
