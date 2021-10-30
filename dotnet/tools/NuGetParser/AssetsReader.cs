@@ -1,26 +1,32 @@
 #nullable enable
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace NuGetParser
 {
     public class AssetsReader
     {
         private readonly Files _files = null!;
+        private readonly string _dotnetRoot = null!;
         private JsonElement _assets;
         private JsonElement _frameworkInfo;
         private JsonElement _libraries;
         private JsonElement _tfmPackages;
         private string _tfm = null!;
+        private readonly Dictionary<string,PackageId> _overrides = null!;
 
         // for testing with moq
         protected AssetsReader() {}
-        public AssetsReader(Files files)
+        public AssetsReader(Files files, string dotnetRoot)
         {
             _files = files;
+            _dotnetRoot = dotnetRoot;
+            _overrides = new Dictionary<string, PackageId>(StringComparer.OrdinalIgnoreCase);
         }
 
         public virtual string? Init(string objDirectory, string tfm)
@@ -48,6 +54,35 @@ namespace NuGetParser
             _tfmPackages = _assets.GetProperty("targets").EnumerateObject().Single().Value;
             _assets.GetRequired("libraries", out _libraries);
             
+            if (_frameworkInfo.TryGetProperty("frameworkReferences", out var refs))
+            {
+                foreach (var @ref in refs.EnumerateObject())
+                {
+                    if (@ref.Value.TryGetProperty("privateAssets", out var assets))
+                    {
+                        if (assets.GetString() != "all") continue;
+
+                        var match = Regex.Match(tfm, @"[\d\.]+");
+                        if (!match.Success) continue;
+                        
+                        var tfmVersion = match.Value;
+                        
+                        var overrides = Path.Combine(
+                            _dotnetRoot, "packs",
+                            @ref.Name + ".Ref", tfmVersion + ".0",
+                            "data", "PackageOverrides.txt");
+
+                        var overridesList = _files.ReadAllLines(overrides)
+                            .Select(l => l.Split('|'))
+                            .Select(a => new PackageId(a[0], a[1]));
+                        foreach (var packageId in overridesList)
+                        {
+                            _overrides.GetOrAdd(packageId.Name, () => packageId);
+                        }
+                    }
+                }
+            }
+            
             return null;
         }
 
@@ -69,13 +104,21 @@ namespace NuGetParser
             {
                 var id = new PackageId(packageDesc.Name);
 
-                var version = new PackageVersion(id)
+                var version = new PackageVersion(id);
+
+                PackageId? overrideId;
+                if (_overrides.TryGetValue(id.Name, out overrideId))
                 {
-                    AllFiles = packageDesc.Value.GetProperty("files")
+                    version.Override = overrideId;
+                }
+
+                if (overrideId == null || id.Compare(overrideId) > 0)
+                {
+                    version.AllFiles = packageDesc.Value.GetProperty("files")
                         .EnumerateArray()
                         .Select(f => f.GetString())
-                        .ToList()
-                };
+                        .ToList();
+                }
                 
                 var meta = _tfmPackages.GetProperty(id.String);
                 if (meta.TryGetProperty("dependencies", out var deps))

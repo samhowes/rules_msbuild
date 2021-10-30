@@ -85,6 +85,7 @@ nuget_package_framework_version = rule(
 nuget_package_version = rule(
     _nuget_package_version_impl,
     attrs = {
+        "override": attr.string(),
         "all_files": attr.label_list(mandatory = True, allow_files = True),
     },
 )

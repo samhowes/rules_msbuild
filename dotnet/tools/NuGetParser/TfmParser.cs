@@ -30,5 +30,10 @@ namespace NuGetParser
         {
             return Directory.EnumerateFiles(path);
         }
+
+        public virtual string[] ReadAllLines(string path)
+        {
+            return File.ReadAllLines(path);
+        }
     }
 }

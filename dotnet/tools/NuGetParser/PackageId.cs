@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Linq;
 
 namespace NuGetParser
 {
@@ -50,6 +51,40 @@ namespace NuGetParser
         public string Name { get; set; }
         public string Version { get; }
         public string String { get; set; }
+
+        private (int[], string?)? _versionParts;
+
+        public int Compare(PackageId other)
+        {
+            var left = VersionParts;
+            var right = other.VersionParts;
+            for (int i = 0; i < left.number.Length; i++)
+            {
+                if (i > right.number.Length - 1) return 1;
+                var diff = left.number[i] - right.number[i];
+                if (diff == 0) continue;
+                return diff;
+            }
+            // same version, if qualifier is not null, then it is a pre-release
+            if (left.qualifier != null && right.qualifier == null) return -1;
+            if (right.qualifier != null && left.qualifier == null) return 1;
+
+            // todo: properly compare the qualifier
+            return 0; 
+        }
+
+        public (int[] number, string? qualifier) VersionParts
+        {
+            get
+            {
+                if (_versionParts != null) return _versionParts.Value;
+                var numberAndString = Version.Split('-');
+                var numbers = numberAndString[0].Split('.').Select(Int32.Parse).ToArray();
+                var str = numberAndString.Length > 1 ? numberAndString[1] : null;
+                _versionParts = (numbers, str);
+                return _versionParts.Value;
+            }
+        }
 
         public override int GetHashCode()
         {

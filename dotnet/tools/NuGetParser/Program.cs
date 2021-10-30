@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace NuGetParser
@@ -26,7 +27,8 @@ namespace NuGetParser
                 restorer.Restore();
 
                 var files = new Files();
-                var parser = new Parser(context, files, new AssetsReader(files));
+                var reader = new AssetsReader(files, Path.GetDirectoryName(context.Args["dotnet_path"])!);
+                var parser = new Parser(context, files, reader);
                 var generator = new BuildGenerator(context);
                 parser.Parse();
                 generator.GenerateBuildFiles();

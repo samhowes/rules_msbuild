@@ -59,6 +59,8 @@ def _dotnet_host_sdk_impl(ctx):
     for p in dotnet_root.readdir():
         if p.basename == "sdk":
             ctx.symlink(p.get_child(version).realpath, "sdk/" + version)
+            flder = "NuGetFallbackFolder"
+            ctx.symlink(p.get_child(flder).realpath, "sdk/" + flder)
             continue
         ctx.symlink(p.realpath, p.basename)
     _sdk_build_file(ctx, version)

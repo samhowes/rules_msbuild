@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,6 +36,7 @@ namespace NuGetParser
         // todo(#99): append nupkg to this
         public List<string> AllFiles { get; set; } = new List<string>();
         public Dictionary<string, List<PackageId>> Deps { get; set; } = new Dictionary<string, List<PackageId>>();
+        public PackageId? Override { get; set; }
     }
 
     public class FrameworkDependency
