@@ -11,19 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\dotnet\tools\Runfiles\Runfiles.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="integration\DotnetCat.cs" />
-    <Compile Remove="integration\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="integration\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="integration\**" />
+    <ProjectReference Include="..\..\..\..\..\dotnet\tools\Runfiles\Runfiles.csproj" />
   </ItemGroup>
 </Project>

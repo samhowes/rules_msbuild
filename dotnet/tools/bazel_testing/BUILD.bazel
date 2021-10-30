@@ -13,7 +13,7 @@ msbuild_binary(
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [
-        "//dotnet/tools/Bzl:SamHowes.Bzl",
+        "//dotnet/tools/Bzl",
         "//dotnet/tools/Runfiles",
         "//dotnet/tools/builder:Builder",
     ],

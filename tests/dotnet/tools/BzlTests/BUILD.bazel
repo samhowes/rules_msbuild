@@ -9,7 +9,7 @@ msbuild_test(
     data = glob(["testdata/**"]) + ["WORKSPACE.FAKE.tpl"],
     target_framework = "netcoreapp3.1",
     deps = [
-        "//dotnet/tools/Bzl:SamHowes.Bzl",
+        "//dotnet/tools/Bzl",
         "//dotnet/tools/Runfiles",
         "@nuget//FluentAssertions",
         "@nuget//Microsoft.NET.Test.Sdk",

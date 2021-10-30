@@ -63,6 +63,7 @@ func Load(projectFile string) (*Project, error) {
 	}
 
 	proj.TargetFramework, _ = proj.Properties["TargetFramework"]
+	proj.PackageId, _ = proj.Properties["PackageId"]
 
 	baseName := filepath.Base(projectFile)
 	proj.Ext = path.Ext(baseName)

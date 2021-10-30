@@ -25,6 +25,7 @@ load("//dotnet/private:providers.bzl", "DotnetSdkInfo")
 load("//dotnet/private/msbuild:environment.bzl", "NUGET_ENVIRONMENTS", "isolated_environment")
 load("//dotnet/private/msbuild:xml.bzl", "EXEC_ROOT", "INTERMEDIATE_BASE")
 load("//dotnet/private/actions:common.bzl", "add_diagnostics")
+load("//:version.bzl", "VERSION")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
@@ -108,6 +109,7 @@ def _make_env(dotnet_sdk_root, os):
         "DOTNET_NOLOGO": "1",
         # "NUGET_SHOW_STACK": "true",
         # "BUILDER_DEBUG": "1",
+        "RULES_MSBUILD_VERSION": VERSION,
     }
 
     if os not in NUGET_ENVIRONMENTS:

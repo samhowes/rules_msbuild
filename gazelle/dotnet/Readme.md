@@ -29,7 +29,7 @@ To generate or update build files run: `bazel run //:gazelle`.
 This will run a precompiled executable for your platform and generate build rules for proto_library 
 and rules_msbuild targets. (windows-amd64, darwin-amd64 or linux-amd64 are supported).
 
-This binary is also packaged with `SamHowes.Bzl` and can be run with `samhowes.bzl gazelle`.
+This binary is also packaged with `SamHowes.Bzl` and can be run with `bzl gazelle`.
 
 ### Use gazelle-dotnet alongside your existing gazelle rule
 

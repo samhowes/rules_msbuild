@@ -75,6 +75,7 @@ def _msbuild_assembly(
         restore_deps.append(rel)
 
     is_packable = kwargs.pop("packable", False)
+    package_id = kwargs.pop("package_id", name)
     version = kwargs.pop("version", None)
     package_version = kwargs.pop("package_version", version)
     visibility = kwargs.get("visibility", None)
@@ -105,6 +106,7 @@ def _msbuild_assembly(
         nuget_package(
             name = name + ".nupkg",
             project_file = project_file,
+            package_id = package_id,
             version = package_version,
             target = ":" + name + "_publish",
             visibility = visibility,

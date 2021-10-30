@@ -7,6 +7,6 @@ msbuild_binary(
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [
-        "@rules_msbuild//dotnet/tools/Runfiles",
+        "@nuget//RulesMSBuild.Runfiles",
     ],
 )

@@ -9,12 +9,7 @@ load(
     "//dotnet/private:nuget_macros.bzl",
     _nuget_package_download = "nuget_package_download",
 )
-load(
-    "//dotnet/private/rules:nuget.bzl",
-    _nuget_package = "nuget_package",
-)
 
-# nuget download rules used by generated build files
 nuget_package_download = _nuget_package_download
 framework_info = _framework_info
 nuget_package_framework_version = _nuget_package_framework_version

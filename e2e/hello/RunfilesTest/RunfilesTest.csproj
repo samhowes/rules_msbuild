@@ -6,6 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(BazelExternal)/rules_msbuild/dotnet/tools/Runfiles/Runfiles.csproj" />
+    <PackageReference Include="RulesMSBuild.Runfiles" />
   </ItemGroup>
 </Project>

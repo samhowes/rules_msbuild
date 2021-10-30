@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using RulesMSBuild.Tools.Bazel;
-using SamHowes.Bzl;
+using Bzl;
 
 namespace tar
 {
@@ -19,8 +19,11 @@ namespace tar
         static Regex ReleaseRegex = new Regex(@"(?<name>.*)(\.release)(?<ext>\..*)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        static async Task<int> Main(string[] args)
+        static async Task<int> Main(string[] argsArray)
         {
+            var args = argsArray.Select(a => a.TrimStart('-').Split('='))
+                .ToDictionary(p => p[0], p => p[1]);
+            
             var root = BazelEnvironment.TryGetWorkspaceRoot();
             if (root != null)
                 Directory.SetCurrentDirectory(root);
@@ -29,7 +32,13 @@ namespace tar
 
             var process = Process.Start(new ProcessStartInfo("git", "ls-files") {RedirectStandardOutput = true});
 
-            var outputName = args.Length >= 1 ? args[0] : "test.tar.gz";
+            if (args.TryGetValue("tar", out var outputName))
+            {
+                outputName = outputName.Split(" ")[0];
+            }
+            else
+                outputName = "test.tar.gz";
+            
             var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (;;)
             {
@@ -69,6 +78,15 @@ namespace tar
             {
                 var launcherPath = runfiles.Runfiles.Rlocation(debugLauncher);
                 files[".azpipelines/artifacts/windows-amd64/launcher_windows.exe"] = launcherPath;
+            }
+
+            if (args.TryGetValue("packages", out var packagesString))
+            {
+                var packages = packagesString.Split(",");
+                foreach (var package in packages)
+                {
+                    files[$".azpipelines/artifacts/packages/{Path.GetFileName(package)}"] = Path.GetFullPath(package);
+                }
             }
 
             await using (var output = File.Create(outputName))

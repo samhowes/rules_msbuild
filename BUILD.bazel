@@ -1,4 +1,6 @@
 load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary")
+load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("//:version.bzl", "VERSION")
 
@@ -46,15 +48,29 @@ gazelle(
     gazelle = "//tools:gazelle-dotnet",
 )
 
+PACKAGES = [
+    "//dotnet/tools/Runfiles:Runfiles.nupkg",
+]
+
 genrule(
     name = "tar",
-    srcs = [],
+    srcs = PACKAGES,
     outs = [
         "rules_msbuild.tar.gz",
         "rules_msbuild.tar.gz.sha256",
     ],
-    cmd = "$(location //eng/tar) $(OUTS)",
+    cmd = " ".join([
+        "$(location //eng/tar)",
+        " --tar=" + shell.quote("$(OUTS)"),
+        "--packages=" + ",".join(["$(location %s)" % p for p in PACKAGES]),
+    ]),
     exec_tools = ["//eng/tar"],
     tags = ["local"],
     visibility = ["//:__subpackages__"],
+)
+
+bzl_library(
+    name = "bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = ["//visibility:public"],
 )

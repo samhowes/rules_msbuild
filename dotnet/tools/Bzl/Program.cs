@@ -5,7 +5,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using CommandLine;
 using RulesMSBuild.Tools.Bazel;
-using SamHowes.Bzl;
 
 namespace Bzl
 {

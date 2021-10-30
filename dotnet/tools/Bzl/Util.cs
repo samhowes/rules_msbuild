@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using RulesMSBuild.Tools.Bazel;
 
-namespace SamHowes.Bzl
+namespace Bzl
 {
     public static class Util
     {

@@ -1,56 +1,57 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using static NuGetParser.Package;
 
 namespace NuGetParser
 {
-    public class Parser
+    public class NuGetContext
     {
+        public Dictionary<string, string> Args { get; }
+        public List<FrameworkInfo> Frameworks { get; set; }
+
         public readonly string PackagesFolder;
         public readonly Dictionary<string, Package> AllPackages = PackageDict();
         public readonly Dictionary<string, TfmInfo> Tfms = new Dictionary<string, TfmInfo>();
+
+        public NuGetContext(Dictionary<string, string> args)
+        {
+            Args = args;
+            PackagesFolder = args["packages_folder"];
+        }
+    }
+
+    public class Parser
+    {
+        private readonly NuGetContext _context;
         private readonly Files _files;
-        private readonly Action<string> _writeLine;
         private readonly AssetsReader _assetsReader;
 
-        public Parser(string packagesFolder, Files files, Action<string> writeLine, AssetsReader assetsReader)
+        public Parser(NuGetContext context, Files files, AssetsReader assetsReader)
         {
-            PackagesFolder = packagesFolder;
+            _context = context;
             _files = files;
-            _writeLine = writeLine;
             _assetsReader = assetsReader;
         }
 
-        public bool Parse(List<FrameworkInfo> frameworks, Dictionary<string, string> args)
+        public void Parse()
         {
-            // explicitly load all requested packages first so we populate the requested name field properly
-            LoadPackages(frameworks);
-            if (!GenerateBuildFiles(args)) return false;
-            return true;
-        }
-
-        public Dictionary<string, Package> LoadPackages(List<FrameworkInfo> frameworks)
-        {
-            foreach (var framework in frameworks)
+            foreach (var framework in _context.Frameworks)
             {
                 var info = new TfmInfo(framework.Tfm);
-                Tfms[info.Tfm] = info;
+                _context.Tfms[info.Tfm] = info;
                 foreach (var restoreGroup in framework.RestoreGroups)
                 {
                     LoadRestoreGroup(restoreGroup, framework, info);
                 }
             }
-
-            return AllPackages;
         }
 
         private void LoadRestoreGroup(FrameworkRestoreGroup restoreGroup, FrameworkInfo framework, TfmInfo info)
         {
             foreach (var (requestedName, _) in restoreGroup.Packages)
             {
-                AllPackages.GetOrAdd(requestedName, () => new Package(requestedName));
+                _context.AllPackages.GetOrAdd(requestedName, () => new Package(requestedName));
             }
 
             var packages = new Dictionary<string, PackageVersion>(StringComparer.OrdinalIgnoreCase);
@@ -58,7 +59,7 @@ namespace NuGetParser
             foreach (var packageVersion in _assetsReader.GetPackages())
             {
                 var version = packageVersion;
-                var package = AllPackages.GetOrAdd(version.Id.Name, () =>
+                var package = _context.AllPackages.GetOrAdd(version.Id.Name, () =>
                 {
                     var p = new Package(packageVersion.Id.Name);
                     return p;
@@ -80,7 +81,7 @@ namespace NuGetParser
 
             foreach (var implicitDep in _assetsReader.GetImplicitDependencies())
             {
-                var package = AllPackages.GetOrAdd(implicitDep.Name, () => new Package(implicitDep.Name));
+                var package = _context.AllPackages.GetOrAdd(implicitDep.Name, () => new Package(implicitDep.Name));
                 var version = package.Versions.GetOrAdd(implicitDep.Version, () =>
                 {
                     var v = new PackageVersion(implicitDep);
@@ -111,7 +112,7 @@ namespace NuGetParser
 
         private void WalkPackage(PackageVersion version)
         {
-            var root = Path.Combine(PackagesFolder, version.Id.String.ToLower());
+            var root = Path.Combine(_context.PackagesFolder, version.Id.String.ToLower());
 
             void Walk(string path)
             {
@@ -128,87 +129,6 @@ namespace NuGetParser
             }
 
             Walk(root);
-        }
-
-        private bool GenerateBuildFiles(Dictionary<string, string> args)
-        {
-            var allFiles = new List<string>();
-            var packagesName = Path.GetFileName(PackagesFolder);
-            foreach (var pkg in AllPackages.Values.OrderBy(p => p.RequestedName))
-            {
-                var buildPath = Path.Join(Path.GetDirectoryName(PackagesFolder), pkg.RequestedName, "BUILD.bazel");
-                Directory.CreateDirectory(Path.GetDirectoryName(buildPath));
-                using var b = new BuildWriter(File.Create(buildPath));
-                b.Load("@rules_msbuild//dotnet:defs.nuget.bzl", "nuget_package_download",
-                    "nuget_package_framework_version", "nuget_package_version");
-                b.Visibility();
-                b.StartRule("nuget_package_download", pkg.RequestedName);
-
-
-                var frameworkVersions = pkg.Versions.Values.SelectMany(
-                        v => v.Deps.Select(d => (v, Tfm: d.Key, label: $"{v.Id.Version}-{d.Key}")))
-                    .ToList();
-
-                b.SetAttr("framework_versions", frameworkVersions.Select((t) => ":" + t.label));
-                b.EndRule();
-
-                foreach (var frameworkVersion in frameworkVersions)
-                {
-                    b.StartRule("nuget_package_framework_version", frameworkVersion.label);
-                    b.SetAttr("version", ":" + frameworkVersion.v.Id.Version);
-                    b.SetAttr("deps",
-                        frameworkVersion.v.Deps[frameworkVersion.Tfm]
-                            .Select(d => $"@nuget//{d.Name}:{d.Version}-{frameworkVersion.Tfm}").OrderBy(d => d));
-                    b.EndRule();
-                }
-
-                foreach (var version in pkg.Versions.Values.OrderBy(v => v.Id.String))
-                {
-                    b.StartRule("nuget_package_version", version.Id.Version);
-                    var paths = version.AllFiles.Select(f =>
-                            string.Join("/", packagesName, version.Id.String.ToLower(), f))
-                        .ToList();
-                    allFiles.AddRange(paths);
-                    var labels = paths.Select(p => "//:" + p);
-                    b.SetAttr("all_files", labels);
-                    b.EndRule();
-                }
-            }
-
-            WriteMainBuild(allFiles, args);
-
-            return true;
-        }
-
-        private void WriteMainBuild(List<string> allFiles, Dictionary<string, string> args)
-        {
-            using var b =
-                new BuildWriter(File.Create(Path.Join(Path.GetDirectoryName(PackagesFolder), "BUILD.bazel")));
-            b.Load("@rules_msbuild//dotnet:defs.nuget.bzl", "tfm_mapping", "framework_info");
-            b.Visibility();
-
-            b.StartRule("filegroup", "bazel_packages");
-            b.SetAttrRaw("srcs", "glob([\"bazel_packages/**/*\"])");
-            b.EndRule();
-
-            b.StartRule("tfm_mapping", "tfm_mapping");
-            b.SetAttr("frameworks", Tfms.OrderBy(t => t.Key).Select(t => ":" + t.Key));
-            b.EndRule();
-
-            foreach (var (tfm, info) in Tfms)
-            {
-                b.StartRule("framework_info", tfm);
-                b.SetAttr("implicit_deps", info.ImplicitDeps.Select(d => d.Label).Distinct().OrderBy(d => d));
-                b.EndRule();
-            }
-
-            b.StartRule("alias", "test_logger");
-            b.SetAttr("actual", "//" + args["test_logger"].Split("/")[0]);
-            b.EndRule();
-
-            b.Raw($"exports_files([\"{args["nuget_build_config"]}\"])");
-
-            b.InlineCall("exports_files", b.BzlValue(allFiles, prefix: ""));
         }
     }
 }

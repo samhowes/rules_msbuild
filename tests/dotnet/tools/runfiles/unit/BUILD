@@ -3,7 +3,11 @@ load("//dotnet:defs.bzl", "msbuild_test")
 msbuild_test(
     name = "RunfilesTests",
     size = "small",
-    srcs = glob(["*.cs"]),
+    srcs = [
+        "LabelTests.cs",
+        "MockFile.cs",
+        "RunfilesTest.cs",
+    ],
     target_framework = "netcoreapp3.1",
     deps = [
         "//dotnet/tools/Runfiles",

@@ -201,9 +201,11 @@ namespace RulesMSBuild.Tools.Builder
                     }
                     // todo: do this better
                     _context.ProjectBazelProps["AssemblyName"] = _context.Bazel.Label.Name.Split("_")[0];
-                    new BazelPropsWriter().WriteProperties(
+                    var writer =new BazelPropsWriter(); 
+                    writer.WriteProperties(
                         _context.ProjectExtensionPath(".bazel.props"),
                         _context.ProjectBazelProps);
+                    writer.WriteTargets(_context.ProjectExtensionPath(".bazel.targets"));
                     break;
                 case "pack":
                     var runfilesManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
