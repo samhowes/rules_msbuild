@@ -20,6 +20,7 @@ namespace NuGetParserTests
         private readonly StringBuilder _log;
         private Mock<AssetsReader> _assetsReader;
         private List<List<PackageVersion>> _packages;
+        private readonly NuGetContext _context;
 
         const string PackageName = "CommandLineParser";
         const string ImplicitDepName = "NETStandard.Library";
@@ -54,7 +55,8 @@ namespace NuGetParserTests
             _assetsReader.Setup(a => a.GetPackages())
                 .Returns(GetPackages);
 
-            _parser = new Parser("", _files.Object, (line) => _log.AppendLine(line), _assetsReader.Object);
+            _context = new NuGetContext(new Dictionary<string, string>());
+            _parser = new Parser(_context, _files.Object, _assetsReader.Object);
         }
 
         private void SetupMultipleVersions()
@@ -129,7 +131,8 @@ namespace NuGetParserTests
         public void LoadRequestedPackages_Works()
         {
             SetupMultipleVersions();
-            var packages = _parser.LoadPackages(_frameworks);
+            _parser.Parse();
+            var packages = _context.AllPackages;
             packages.Keys.Should().Equal(PackageName, ImplicitDepName);
 
             AssertPackages(packages, false);
@@ -147,7 +150,8 @@ namespace NuGetParserTests
         public void ProcessPackages_DoesntDuplicateCommonPackages()
         {
             SetupMultipleVersions();
-            var packages = _parser.LoadPackages(_frameworks);
+            _parser.Parse();
+            var packages = _context.AllPackages;
 
             var package = packages[PackageName];
             var preview = package.Versions["2.9.0-preview1"];
@@ -170,15 +174,15 @@ namespace NuGetParserTests
         public void ProcessPackages_RegistersDepsCorrectly()
         {
             SetupMultipleVersions();
-            _parser.LoadPackages(_frameworks);
+            _parser.Parse();
 
-            _parser.Tfms.Values.Count.Should().Be(1);
+            _context.Tfms.Values.Count.Should().Be(1);
 
-            _parser.AllPackages.Keys.Should().Equal(
+            _context.AllPackages.Keys.Should().Equal(
                 PackageName,
                 ImplicitDepName);
 
-            var commandLine = _parser.AllPackages[PackageName];
+            var commandLine = _context.AllPackages[PackageName];
             commandLine.Versions.Keys.Should().Equal("2.8.0", "2.9.0-preview1");
 
             var standard = commandLine.Versions["2.8.0"];
@@ -193,18 +197,18 @@ namespace NuGetParserTests
         {
             SetupVersionUpgrade();
             
-            _parser.LoadPackages(_frameworks);
+            _parser.Parse();
 
-            _parser.AllPackages.Keys.Should().Equal(PackageName, ImplicitDepName);
+            _context.AllPackages.Keys.Should().Equal(PackageName, ImplicitDepName);
 
-            var imp = _parser.AllPackages[ImplicitDepName];
+            var imp = _context.AllPackages[ImplicitDepName];
 
             imp.Versions.Count.Should().Be(1);
             var version = imp.Versions.Values.Single();
 
             version.Id.Version.Should().Be("2.0.0");
 
-            var package = _parser.AllPackages[PackageName];
+            var package = _context.AllPackages[PackageName];
             var packageVersion = package.Versions.Values.Single();
             var dep = packageVersion.Deps.Values.Single().Single();
             
@@ -225,7 +229,8 @@ namespace NuGetParserTests
                 new PackageId(ImplicitFrameworkName, "3.1.0")
             });
 
-            var packages = _parser.LoadPackages(_frameworks);
+            _parser.Parse();
+            var packages = _context.AllPackages;
 
             packages.Keys.Should().Equal(PackageName, ImplicitFrameworkName);
 

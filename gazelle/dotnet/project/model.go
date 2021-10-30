@@ -21,6 +21,7 @@ type Project struct {
 
 	Properties      map[string]string
 	TargetFramework string
+	PackageId       string
 	IsExe           bool
 	IsWeb           bool
 	IsTest          bool

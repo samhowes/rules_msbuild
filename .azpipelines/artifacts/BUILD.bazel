@@ -1,7 +1,14 @@
 exports_files(glob(["*/**/*"]))
 
+package(default_visibility = ["//visibility:public"])
+
 filegroup(
     name = "artifacts",
-    srcs = glob(["*/**/*"]),
-    visibility = ["//visibility:public"],
+    srcs = glob([
+        "darwin-amd64/**/*",
+        "linux-amd64/**/*",
+        "windows-amd64/**/*",
+    ]),
 )
+
+exports_files(["packages"])

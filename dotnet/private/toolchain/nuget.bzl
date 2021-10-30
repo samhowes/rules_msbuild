@@ -193,6 +193,7 @@ def _generate_nuget_configs(ctx, config):
         [
             {"key": "nuget.org", "value": "https://api.nuget.org/v3/index.json", "protocolVersion": "3"},
             {"key": "bazel", "value": config.bazel_packages.realpath},
+            {"key": "rules_msbuild", "value": ctx.path(ctx.attr._embedded_packages).realpath.dirname},
         ],
     )
     ctx.template(
@@ -238,19 +239,8 @@ nuget_fetch = repository_rule(
         "_master_template": attr.label(
             default = Label("@rules_msbuild//dotnet/private/msbuild:project.tpl.proj"),
         ),
-        "_tfm_template": attr.label(
-            default = Label("@rules_msbuild//dotnet/private/msbuild:project.tpl.proj"),
-        ),
         "_config_template": attr.label(
             default = Label("@rules_msbuild//dotnet/private/msbuild:NuGet.tpl.config"),
-            allow_single_file = True,
-        ),
-        "_nuget_import_template": attr.label(
-            default = Label("@rules_msbuild//dotnet/private/toolchain:BUILD.nuget_import.bazel"),
-            allow_single_file = True,
-        ),
-        "_root_template": attr.label(
-            default = Label("@rules_msbuild//dotnet/private/toolchain:BUILD.nuget.bazel"),
             allow_single_file = True,
         ),
         "_parser_project": attr.label(
@@ -259,8 +249,8 @@ nuget_fetch = repository_rule(
         "_parser": attr.label(
             default = Label("@rules_msbuild//dotnet/tools/NuGetParser:files"),
         ),
-        "_parser_srcs": attr.label(
-            default = Label("@rules_msbuild//dotnet/tools/NuGetParser:NuGetParser_srcs"),
+        "_embedded_packages": attr.label(
+            default = Label("@rules_msbuild//.azpipelines/artifacts:packages/.gitkeep"),
         ),
     },
 )

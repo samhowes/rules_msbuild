@@ -1,4 +1,5 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+load("//eng:util.bzl", "expand")
 
 msbuild_binary(
     name = "tar",
@@ -10,7 +11,7 @@ msbuild_binary(
     target_framework = "net5.0",
     visibility = ["//visibility:public"],
     deps = [
-        "//dotnet/tools/Bzl:SamHowes.Bzl",
+        "//dotnet/tools/Bzl",
         "//dotnet/tools/Runfiles",
         "@nuget//Newtonsoft.Json",
         "@nuget//SharpZipLib",

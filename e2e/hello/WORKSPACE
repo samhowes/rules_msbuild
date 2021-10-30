@@ -8,6 +8,7 @@ nuget_fetch(
     name = "nuget",
     packages = {
         "CommandLineParser/2.8.0": ["net5.0"],
+        "RulesMSBuild.Runfiles/": ["net5.0"],
     },
     target_frameworks = ["net5.0"],
     use_host = True,

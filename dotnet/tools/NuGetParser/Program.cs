@@ -20,14 +20,16 @@ namespace NuGetParser
             try
             {
                 var argsDict = args.Select(a => a.Split("=")).ToDictionary(p => p[0][2..], p => p[1]);
-                var restorer = new Restorer(argsDict["spec_path"], argsDict["dotnet_path"], argsDict["test_logger"]);
-                var frameworks = restorer.Restore();
+                
+                var context = new NuGetContext(argsDict);
+                var restorer = new Restorer(context);
+                restorer.Restore();
 
                 var files = new Files();
-                var parser = new Parser(argsDict["packages_folder"], files, Console.WriteLine,
-                    new AssetsReader(files));
-
-                if (!parser.Parse(frameworks, argsDict)) return 1;
+                var parser = new Parser(context, files, new AssetsReader(files));
+                var generator = new BuildGenerator(context);
+                parser.Parse();
+                generator.GenerateBuildFiles();
                 return 0;
             }
             catch (CustomException ex)

@@ -12,6 +12,7 @@ nuget_package = rule(
     _nuget_package_impl,
     attrs = {
         "project_file": attr.label(mandatory = True, allow_single_file = True),
+        "package_id": attr.string(),
         "version": attr.string(mandatory = True),
         "target": attr.label(
             mandatory = True,

@@ -4,7 +4,7 @@ load("//:version.bzl", "VERSION")
 exports_files(["WORKSPACE.tpl"])
 
 msbuild_binary(
-    name = "SamHowes.Bzl",
+    name = "Bzl",
     srcs = [
         "BuildReader.cs",
         "Files.cs",
@@ -21,6 +21,7 @@ msbuild_binary(
         "//tools:gazelle-dotnet",
     ],
     packable = True,
+    package_id = "SamHowes.Bzl",
     target_framework = "netcoreapp3.1",
     version = VERSION,
     visibility = ["//visibility:public"],

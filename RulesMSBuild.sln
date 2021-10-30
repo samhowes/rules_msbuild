@@ -67,7 +67,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sandboxing", "sandboxing", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "foo", "tests\sandboxing\parallel\foo.csproj", "{5C1D3275-895F-4F20-B70D-D6B5FCD95B39}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bzl", "dotnet\tools\Bzl\SamHowes.Bzl.csproj", "{2C0BA0B1-10F9-4F2E-AEB6-62B2D17D591D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bzl", "dotnet\tools\Bzl\Bzl.csproj", "{2C0BA0B1-10F9-4F2E-AEB6-62B2D17D591D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BzlTests", "tests\dotnet\tools\BzlTests\BzlTests.csproj", "{7CC19AA3-D26B-45A4-BB68-D5315514EEBB}"
 EndProject

@@ -57,6 +57,9 @@ func (p *Project) GenerateRule(f *rule.File) *rule.Rule {
 	if len(p.Data) > 0 {
 		p.Rule.SetAttr("data", util.MakeGlob(util.MakeStringExprs(p.Data), nil))
 	}
+	if p.PackageId != "" {
+		p.Rule.SetAttr("package_id", p.PackageId)
+	}
 
 	return p.Rule
 }

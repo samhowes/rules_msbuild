@@ -47,7 +47,7 @@ namespace release
             await MakeNotes(usage);
 
             Info("Building bzl...");
-            var outputs = Bazel("build //dotnet/tools/Bzl:SamHowes.Bzl.nupkg --//config:mode=release");
+            var outputs = Bazel("build //dotnet/tools/Bzl:Bzl.nupkg --//config:mode=release");
             var nupkg = outputs.Single();
 
             if (_action == Action.Release)
@@ -87,7 +87,7 @@ namespace release
             Run($"chmod -R 755 nupkg");
             
             Directory.SetCurrentDirectory(test);
-            var tool = Path.Combine(_work, "nupkg/tools/netcoreapp3.1/any/SamHowes.Bzl.dll");
+            var tool = Path.Combine(_work, "nupkg/tools/netcoreapp3.1/any/Bzl.dll");
             
             Run("dotnet new console -o console --no-restore");
             Run($"dotnet exec {tool} _test {tar}");
@@ -230,7 +230,7 @@ namespace release
             var url =
                 $"https://github.com/samhowes/rules_msbuild/releases/download/{version}/rules_msbuild-{version}.tar.gz";
             var workspaceTemplateContents =
-                SamHowes.Bzl.Util.UpdateWorkspaceTemplate(Runfiles.Create<Program>().Runfiles, tarSource, url);
+                Bzl.Util.UpdateWorkspaceTemplate(Runfiles.Create<Program>().Runfiles, tarSource, url);
 
             File.WriteAllText("dotnet/tools/Bzl/WORKSPACE.tpl", workspaceTemplateContents);
 

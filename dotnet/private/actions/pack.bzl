@@ -10,8 +10,10 @@ def pack(ctx):
 
     dotnet = dotnet_exec_context(ctx, False, False, restore.target_framework)
 
-    basename = paths.split_extension(ctx.file.project_file.basename)[0]
-    nupkg = ctx.actions.declare_file(basename + "." + ctx.attr.version + ".nupkg")
+    package_id = getattr(ctx.attr, "package_id", None)
+    if not package_id:
+        package_id = paths.split_extension(ctx.file.project_file.basename)[0]
+    nupkg = ctx.actions.declare_file(package_id + "." + ctx.attr.version + ".nupkg")
 
     cache = declare_caches(ctx, "pack")
     cache_manifest = write_cache_manifest(ctx, cache, info.caches)

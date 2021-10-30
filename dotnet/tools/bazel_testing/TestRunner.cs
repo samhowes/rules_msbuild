@@ -6,7 +6,7 @@ using System.Text;
 using Bzl;
 using RulesMSBuild.Tools.Bazel;
 using RulesMSBuild.Tools.Builder;
-using SamHowes.Bzl;
+using Bzl;
 using static TestRunner.TestLogger;
 using Files = Bzl.Files;
 
