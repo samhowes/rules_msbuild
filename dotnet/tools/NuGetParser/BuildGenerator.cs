@@ -59,6 +59,9 @@ namespace NuGetParser
                 foreach (var version in pkg.Versions.Values.OrderBy(v => v.Id.String))
                 {
                     b.StartRule("nuget_package_version", version.Id.Version);
+                    if (version.Override != null)
+                        b.SetAttr("override", version.Override.String);
+                    
                     var paths = version.AllFiles.Select(f =>
                             string.Join("/", packagesName, version.Id.String.ToLower(), f))
                         .ToList();

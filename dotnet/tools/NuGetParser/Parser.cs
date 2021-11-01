@@ -11,6 +11,7 @@ namespace NuGetParser
         public List<FrameworkInfo> Frameworks { get; set; }
 
         public readonly string PackagesFolder;
+        public string DotnetRoot;
         public readonly Dictionary<string, Package> AllPackages = PackageDict();
         public readonly Dictionary<string, TfmInfo> Tfms = new Dictionary<string, TfmInfo>();
 
@@ -18,6 +19,7 @@ namespace NuGetParser
         {
             Args = args;
             PackagesFolder = args["packages_folder"];
+            DotnetRoot = Path.GetDirectoryName(Args["dotnet_path"])!;
         }
     }
 

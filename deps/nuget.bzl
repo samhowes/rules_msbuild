@@ -15,6 +15,7 @@ def nuget_deps():
             "Newtonsoft.Json/13.0.1": ["net5.0", "netcoreapp3.1"],
             "SamHowes.Microsoft.Build/16.9.0": ["net5.0"],
             "SharpZipLib/1.3.3": ["net5.0"],
+            "System.Security.Principal/4.3.0": ["net5.0"],
             "coverlet.collector/1.3.0": ["net5.0"],
             "xunit.assert/2.4.1": ["net5.0"],
             "xunit.console/2.4.1": ["net5.0"],
