@@ -33,7 +33,7 @@ The following graph will be generated:
 
 ![Project graph](FooBar.graphviz.svg)
 
-Specifying `is_packable = True` will also generate a `<name>.nupkg` target that depends 
+Specifying `packable = True` will also generate a `<name>.nupkg` target that depends 
 on the `<name>_publish` target.
 
 
@@ -44,8 +44,8 @@ on the `<name>_publish` target.
 **USAGE**
 
 <pre>
-msbuild_binary(<a href="#msbuild_binary-name">name</a>, <a href="#msbuild_binary-content">content</a>, <a href="#msbuild_binary-data">data</a>, <a href="#msbuild_binary-deps">deps</a>, <a href="#msbuild_binary-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_binary-project_file">project_file</a>, <a href="#msbuild_binary-protos">protos</a>, <a href="#msbuild_binary-restore">restore</a>, <a href="#msbuild_binary-srcs">srcs</a>,
-               <a href="#msbuild_binary-target_framework">target_framework</a>)
+msbuild_binary(<a href="#msbuild_binary-name">name</a>, <a href="#msbuild_binary-content">content</a>, <a href="#msbuild_binary-data">data</a>, <a href="#msbuild_binary-deps">deps</a>, <a href="#msbuild_binary-lang">lang</a>, <a href="#msbuild_binary-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_binary-project_file">project_file</a>, <a href="#msbuild_binary-protos">protos</a>, <a href="#msbuild_binary-restore">restore</a>,
+               <a href="#msbuild_binary-srcs">srcs</a>, <a href="#msbuild_binary-target_framework">target_framework</a>)
 </pre>
 
 
@@ -92,6 +92,19 @@ If your project file references a project not listed, the build will fail.
 > run `bazel run //:gazelle` (assuming your workspace was set up by `SamHowes.Bzl`).
 
 Defaults to `[]`
+
+<h4 id="msbuild_binary-lang">lang</h4>
+
+(*String*): oneof (cs, fs, vb): If project_file and srcs are both absent, infer the attributes using this language
+
+i.e. given:
+```
+msbuild_binary(name = "Foo", lang = "fs", target_framework = "net5.0")
+```
+
+rules_msbuild will attempt to compile `Foo.fsproj` by globbing for `**/*.fs` files.
+
+Defaults to `""`
 
 <h4 id="msbuild_binary-msbuild_directory">msbuild_directory</h4>
 
@@ -149,7 +162,7 @@ Defaults to `[]`
 If `project_file` is not specified, the extension of these files will be used to infer the project name.
 i.e. given:
 ```
-msbuild_binary(name = "Foo", srcs = ["Program.cs"])
+msbuild_binary(name = "Foo", srcs = ["Program.cs"], target_framework = "net5.0")
 ```
 
 rules_msbuild will attempt to compile `Foo.csproj`.
@@ -195,8 +208,8 @@ nuget_fetch(
 **USAGE**
 
 <pre>
-msbuild_library(<a href="#msbuild_library-name">name</a>, <a href="#msbuild_library-content">content</a>, <a href="#msbuild_library-data">data</a>, <a href="#msbuild_library-deps">deps</a>, <a href="#msbuild_library-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_library-project_file">project_file</a>, <a href="#msbuild_library-protos">protos</a>, <a href="#msbuild_library-restore">restore</a>, <a href="#msbuild_library-srcs">srcs</a>,
-                <a href="#msbuild_library-target_framework">target_framework</a>)
+msbuild_library(<a href="#msbuild_library-name">name</a>, <a href="#msbuild_library-content">content</a>, <a href="#msbuild_library-data">data</a>, <a href="#msbuild_library-deps">deps</a>, <a href="#msbuild_library-lang">lang</a>, <a href="#msbuild_library-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_library-project_file">project_file</a>, <a href="#msbuild_library-protos">protos</a>, <a href="#msbuild_library-restore">restore</a>,
+                <a href="#msbuild_library-srcs">srcs</a>, <a href="#msbuild_library-target_framework">target_framework</a>)
 </pre>
 
 
@@ -243,6 +256,19 @@ If your project file references a project not listed, the build will fail.
 > run `bazel run //:gazelle` (assuming your workspace was set up by `SamHowes.Bzl`).
 
 Defaults to `[]`
+
+<h4 id="msbuild_library-lang">lang</h4>
+
+(*String*): oneof (cs, fs, vb): If project_file and srcs are both absent, infer the attributes using this language
+
+i.e. given:
+```
+msbuild_binary(name = "Foo", lang = "fs", target_framework = "net5.0")
+```
+
+rules_msbuild will attempt to compile `Foo.fsproj` by globbing for `**/*.fs` files.
+
+Defaults to `""`
 
 <h4 id="msbuild_library-msbuild_directory">msbuild_directory</h4>
 
@@ -300,7 +326,7 @@ Defaults to `[]`
 If `project_file` is not specified, the extension of these files will be used to infer the project name.
 i.e. given:
 ```
-msbuild_binary(name = "Foo", srcs = ["Program.cs"])
+msbuild_binary(name = "Foo", srcs = ["Program.cs"], target_framework = "net5.0")
 ```
 
 rules_msbuild will attempt to compile `Foo.csproj`.
@@ -346,7 +372,7 @@ nuget_fetch(
 **USAGE**
 
 <pre>
-msbuild_test(<a href="#msbuild_test-name">name</a>, <a href="#msbuild_test-content">content</a>, <a href="#msbuild_test-data">data</a>, <a href="#msbuild_test-deps">deps</a>, <a href="#msbuild_test-dotnet_cmd">dotnet_cmd</a>, <a href="#msbuild_test-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_test-project_file">project_file</a>, <a href="#msbuild_test-protos">protos</a>,
+msbuild_test(<a href="#msbuild_test-name">name</a>, <a href="#msbuild_test-content">content</a>, <a href="#msbuild_test-data">data</a>, <a href="#msbuild_test-deps">deps</a>, <a href="#msbuild_test-dotnet_cmd">dotnet_cmd</a>, <a href="#msbuild_test-lang">lang</a>, <a href="#msbuild_test-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_test-project_file">project_file</a>, <a href="#msbuild_test-protos">protos</a>,
              <a href="#msbuild_test-restore">restore</a>, <a href="#msbuild_test-srcs">srcs</a>, <a href="#msbuild_test-target_framework">target_framework</a>, <a href="#msbuild_test-test_env">test_env</a>)
 </pre>
 
@@ -400,6 +426,19 @@ Defaults to `[]`
 (*String*)
 
 Defaults to `"test"`
+
+<h4 id="msbuild_test-lang">lang</h4>
+
+(*String*): oneof (cs, fs, vb): If project_file and srcs are both absent, infer the attributes using this language
+
+i.e. given:
+```
+msbuild_binary(name = "Foo", lang = "fs", target_framework = "net5.0")
+```
+
+rules_msbuild will attempt to compile `Foo.fsproj` by globbing for `**/*.fs` files.
+
+Defaults to `""`
 
 <h4 id="msbuild_test-msbuild_directory">msbuild_directory</h4>
 
@@ -457,7 +496,7 @@ Defaults to `[]`
 If `project_file` is not specified, the extension of these files will be used to infer the project name.
 i.e. given:
 ```
-msbuild_binary(name = "Foo", srcs = ["Program.cs"])
+msbuild_binary(name = "Foo", srcs = ["Program.cs"], target_framework = "net5.0")
 ```
 
 rules_msbuild will attempt to compile `Foo.csproj`.

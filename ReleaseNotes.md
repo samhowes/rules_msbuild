@@ -5,8 +5,8 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_msbuild",
-    sha256 = "7be9e301e2135c12c62f453f6f4583e21500712b2b48996121cd52bcfb9e06bf",
-    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.9/rules_msbuild-0.0.9.tar.gz"],
+    sha256 = "2427b007806fcad3b37d766b26692d27a5173805a3d3f2fc8c607c4aa6a35b8c",
+    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.10/rules_msbuild-0.0.10.tar.gz"],
 )
 load("@rules_msbuild//dotnet:deps.bzl", "msbuild_register_toolchains", "msbuild_rules_dependencies")
 
@@ -14,12 +14,12 @@ msbuild_rules_dependencies()
 # See https://dotnet.microsoft.com/download/dotnet for valid versions
 msbuild_register_toolchains(version = "host")
 ```
-[SamHowes.Bzl: 0.0.9](https://www.nuget.org/packages/SamHowes.Bzl/0.0.9)
+[SamHowes.Bzl: 0.0.10](https://www.nuget.org/packages/SamHowes.Bzl/0.0.10)
 
 Changelog:
-1. [PR #174: Fix various issues after testing externally](https://github.com/samhowes/rules_msbuild/pull/174)
+1. [PR #178: Accounted for nuget package overrides](https://github.com/samhowes/rules_msbuild/pull/178)
+  Issues: #177
+2. [PR #176: Change runfiles to be a nuget package for guaranteed IDE integration](https://github.com/samhowes/rules_msbuild/pull/176)
+  Issues: #175
+3. [PR #174: Fix various issues after testing externally](https://github.com/samhowes/rules_msbuild/pull/174)
   Issues: #173
-2. [PR #172: v0.0.8 release](https://github.com/samhowes/rules_msbuild/pull/172)
-  Issues: 
-3. [PR #171: Docs with Stardoc!](https://github.com/samhowes/rules_msbuild/pull/171)
-  Issues: #14, #11, #95
