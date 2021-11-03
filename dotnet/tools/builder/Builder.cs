@@ -368,7 +368,8 @@ namespace RulesMSBuild.Tools.Builder
             {
                 var target = _context.Bazel.OutputBase;
 
-                var isJson = fileName.EndsWith("json");
+                var contents = File.ReadAllText(fileName);
+                var isJson = contents[0] == '{';
                 var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
 
                 string Escape(string s) => s.Replace(@"\", @"\\");
@@ -376,7 +377,6 @@ namespace RulesMSBuild.Tools.Builder
                 if (needsEscaping)
                     target = Escape(target);
 
-                var contents = File.ReadAllText(fileName);
                 using var output = new StreamWriter(File.Open(fileName, FileMode.Truncate));
                 var index = 0;
                 for (;;)

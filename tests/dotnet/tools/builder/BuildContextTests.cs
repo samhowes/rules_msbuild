@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using CommandLine;
@@ -31,7 +32,8 @@ namespace RulesMSBuild.Tests.Tools
                 directory_bazel_props = "Directory.Bazel.props",
                 configuration = "debug",
                 tfm = "netcoreapp3.1",
-                sdk_root = "dotnet/sdk"
+                sdk_root = "dotnet/sdk",
+                DirectorySrcs = Array.Empty<string>()
             };
             var context = new BuildContext(command);
 
