@@ -1,4 +1,6 @@
-# gazelle:exclude **/*
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
+
+# gazelle:exclude **/*.proj
 filegroup(
     name = "ide",
     srcs = [
@@ -25,4 +27,16 @@ sh_test(
         "DOTNET_CLI_HOME",
     ],
     tags = ["manual"],
+)
+
+msbuild_directory(
+    name = "msbuild_defaults",
+    srcs = [
+        "Bazel.props",
+        "Bazel.targets",
+        "Directory.Build.props",
+        "Directory.Build.targets",
+        "Directory.Solution.props",
+        "Directory.Solution.targets",
+    ],
 )

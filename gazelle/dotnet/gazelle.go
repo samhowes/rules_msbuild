@@ -66,6 +66,7 @@ var kinds = map[string]rule.KindInfo{
 	"msbuild_test":    commonInfo,
 	"msbuild_directory": {MergeableAttrs: map[string]bool{
 		"srcs": true,
+		"deps": true,
 	}},
 	"nuget_fetch": {},
 	"nuget_deps_helper": {MergeableAttrs: map[string]bool{

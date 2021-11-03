@@ -94,7 +94,6 @@ func generateDirectoryDefaults(args language.GenerateArgs, info *project.Directo
 			if proj == nil {
 				continue
 			}
-			log.Printf(proj.Rel)
 			projects = append(projects, proj)
 			for _, d := range proj.Deps {
 				dep := d.(*projectDep)
@@ -139,6 +138,9 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 	addDep := func(unsupported project.Unsupported, str string, isImport bool) {
 		dep := projectDep{IsImport: isImport}
 		dep.Comments = unsupported.Append(dep.Comments, "")
+		if isImport && len(dep.Comments) > 0 {
+			return
+		}
 
 		l, err := project.GetLabel(dir, str, repoRoot)
 		proj.Deps = append(proj.Deps, &dep)

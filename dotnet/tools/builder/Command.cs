@@ -47,6 +47,8 @@ namespace RulesMSBuild.Tools.Builder
 
         [Option("label_name", Required = true)]
         public string label_name { get; set; }
+        [Option("assembly_name", Required = true)]
+        public string assembly_name { get; set; }
 
         [Option("nuget_config", Required = true)]
         public string nuget_config { get; set; }

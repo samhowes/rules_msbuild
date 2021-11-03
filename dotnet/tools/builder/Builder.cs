@@ -200,8 +200,7 @@ namespace RulesMSBuild.Tools.Builder
                         Directory.CreateDirectory(_context.MSBuild.RestoreDir);
                     }
 
-                    var last = _context.Bazel.Label.Name.LastIndexOf("_restore", StringComparison.OrdinalIgnoreCase);
-                    _context.ProjectBazelProps["AssemblyName"] = _context.Bazel.Label.Name[0..last];
+                    _context.ProjectBazelProps["AssemblyName"] = _context.Command.assembly_name;
                     var writer =new BazelPropsWriter(); 
                     writer.WriteProperties(
                         _context.ProjectExtensionPath(".bazel.props"),

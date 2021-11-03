@@ -44,8 +44,8 @@ on the `<name>_publish` target.
 **USAGE**
 
 <pre>
-msbuild_binary(<a href="#msbuild_binary-name">name</a>, <a href="#msbuild_binary-content">content</a>, <a href="#msbuild_binary-data">data</a>, <a href="#msbuild_binary-deps">deps</a>, <a href="#msbuild_binary-lang">lang</a>, <a href="#msbuild_binary-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_binary-project_file">project_file</a>, <a href="#msbuild_binary-protos">protos</a>, <a href="#msbuild_binary-restore">restore</a>,
-               <a href="#msbuild_binary-srcs">srcs</a>, <a href="#msbuild_binary-target_framework">target_framework</a>)
+msbuild_binary(<a href="#msbuild_binary-name">name</a>, <a href="#msbuild_binary-assembly_name">assembly_name</a>, <a href="#msbuild_binary-content">content</a>, <a href="#msbuild_binary-data">data</a>, <a href="#msbuild_binary-deps">deps</a>, <a href="#msbuild_binary-lang">lang</a>, <a href="#msbuild_binary-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_binary-project_file">project_file</a>,
+               <a href="#msbuild_binary-protos">protos</a>, <a href="#msbuild_binary-restore">restore</a>, <a href="#msbuild_binary-srcs">srcs</a>, <a href="#msbuild_binary-target_framework">target_framework</a>)
 </pre>
 
 
@@ -57,6 +57,12 @@ msbuild_binary(<a href="#msbuild_binary-name">name</a>, <a href="#msbuild_binary
 
 (*<a href="https://bazel.build/docs/build-ref.html#name">Name</a>, mandatory*): A unique name for this target.
 
+
+<h4 id="msbuild_binary-assembly_name">assembly_name</h4>
+
+(*String*): Assembly name to use. If not specified <name>.dll will be produced.
+
+Defaults to `""`
 
 <h4 id="msbuild_binary-content">content</h4>
 
@@ -108,9 +114,8 @@ Defaults to `""`
 
 <h4 id="msbuild_binary-msbuild_directory">msbuild_directory</h4>
 
-(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>*)
+(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>, mandatory*)
 
-Defaults to `None`
 
 <h4 id="msbuild_binary-project_file">project_file</h4>
 
@@ -208,8 +213,8 @@ nuget_fetch(
 **USAGE**
 
 <pre>
-msbuild_library(<a href="#msbuild_library-name">name</a>, <a href="#msbuild_library-content">content</a>, <a href="#msbuild_library-data">data</a>, <a href="#msbuild_library-deps">deps</a>, <a href="#msbuild_library-lang">lang</a>, <a href="#msbuild_library-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_library-project_file">project_file</a>, <a href="#msbuild_library-protos">protos</a>, <a href="#msbuild_library-restore">restore</a>,
-                <a href="#msbuild_library-srcs">srcs</a>, <a href="#msbuild_library-target_framework">target_framework</a>)
+msbuild_library(<a href="#msbuild_library-name">name</a>, <a href="#msbuild_library-assembly_name">assembly_name</a>, <a href="#msbuild_library-content">content</a>, <a href="#msbuild_library-data">data</a>, <a href="#msbuild_library-deps">deps</a>, <a href="#msbuild_library-lang">lang</a>, <a href="#msbuild_library-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_library-project_file">project_file</a>,
+                <a href="#msbuild_library-protos">protos</a>, <a href="#msbuild_library-restore">restore</a>, <a href="#msbuild_library-srcs">srcs</a>, <a href="#msbuild_library-target_framework">target_framework</a>)
 </pre>
 
 
@@ -221,6 +226,12 @@ msbuild_library(<a href="#msbuild_library-name">name</a>, <a href="#msbuild_libr
 
 (*<a href="https://bazel.build/docs/build-ref.html#name">Name</a>, mandatory*): A unique name for this target.
 
+
+<h4 id="msbuild_library-assembly_name">assembly_name</h4>
+
+(*String*): Assembly name to use. If not specified <name>.dll will be produced.
+
+Defaults to `""`
 
 <h4 id="msbuild_library-content">content</h4>
 
@@ -272,9 +283,8 @@ Defaults to `""`
 
 <h4 id="msbuild_library-msbuild_directory">msbuild_directory</h4>
 
-(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>*)
+(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>, mandatory*)
 
-Defaults to `None`
 
 <h4 id="msbuild_library-project_file">project_file</h4>
 
@@ -372,8 +382,8 @@ nuget_fetch(
 **USAGE**
 
 <pre>
-msbuild_test(<a href="#msbuild_test-name">name</a>, <a href="#msbuild_test-content">content</a>, <a href="#msbuild_test-data">data</a>, <a href="#msbuild_test-deps">deps</a>, <a href="#msbuild_test-dotnet_cmd">dotnet_cmd</a>, <a href="#msbuild_test-lang">lang</a>, <a href="#msbuild_test-msbuild_directory">msbuild_directory</a>, <a href="#msbuild_test-project_file">project_file</a>, <a href="#msbuild_test-protos">protos</a>,
-             <a href="#msbuild_test-restore">restore</a>, <a href="#msbuild_test-srcs">srcs</a>, <a href="#msbuild_test-target_framework">target_framework</a>, <a href="#msbuild_test-test_env">test_env</a>)
+msbuild_test(<a href="#msbuild_test-name">name</a>, <a href="#msbuild_test-assembly_name">assembly_name</a>, <a href="#msbuild_test-content">content</a>, <a href="#msbuild_test-data">data</a>, <a href="#msbuild_test-deps">deps</a>, <a href="#msbuild_test-dotnet_cmd">dotnet_cmd</a>, <a href="#msbuild_test-lang">lang</a>, <a href="#msbuild_test-msbuild_directory">msbuild_directory</a>,
+             <a href="#msbuild_test-project_file">project_file</a>, <a href="#msbuild_test-protos">protos</a>, <a href="#msbuild_test-restore">restore</a>, <a href="#msbuild_test-srcs">srcs</a>, <a href="#msbuild_test-target_framework">target_framework</a>, <a href="#msbuild_test-test_env">test_env</a>)
 </pre>
 
 
@@ -385,6 +395,12 @@ msbuild_test(<a href="#msbuild_test-name">name</a>, <a href="#msbuild_test-conte
 
 (*<a href="https://bazel.build/docs/build-ref.html#name">Name</a>, mandatory*): A unique name for this target.
 
+
+<h4 id="msbuild_test-assembly_name">assembly_name</h4>
+
+(*String*): Assembly name to use. If not specified <name>.dll will be produced.
+
+Defaults to `""`
 
 <h4 id="msbuild_test-content">content</h4>
 
@@ -442,9 +458,8 @@ Defaults to `""`
 
 <h4 id="msbuild_test-msbuild_directory">msbuild_directory</h4>
 
-(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>*)
+(*<a href="https://bazel.build/docs/build-ref.html#labels">Label</a>, mandatory*)
 
-Defaults to `None`
 
 <h4 id="msbuild_test-project_file">project_file</h4>
 

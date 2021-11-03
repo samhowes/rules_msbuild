@@ -91,6 +91,7 @@ def _library_impl(ctx):
     ]
 
 _COMMON_ATTRS = {
+    "assembly_name": attr.string(doc = """Assembly name to use. If not specified <name>.dll will be produced."""),
     "project_file": attr.label(
         doc = """The project file for MSBuild to build. If not specified, a combination of `name` and the `srcs`
 attribute will be used to infer the project file.
