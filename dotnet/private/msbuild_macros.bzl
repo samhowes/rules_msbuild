@@ -74,7 +74,6 @@ def _msbuild_assembly(
 
     srcs, project_file = _guess_inputs(name, kwargs)
 
-    kwargs.setdefault("msbuild_directory", "%s//:msbuild_defaults" % native.repository_name())
     deps = kwargs.pop("deps", [])
     target_framework = kwargs.pop("target_framework", None)
     restore_deps = []
@@ -85,6 +84,7 @@ def _msbuild_assembly(
             rel = "//" + rel.split("//")[1]
         restore_deps.append(rel)
 
+    msbuild_directory = kwargs.pop("msbuild_directory", "%s//:msbuild_defaults" % native.repository_name())
     is_packable = kwargs.pop("packable", False)
     package_id = kwargs.pop("package_id", name)
     version = kwargs.pop("version", None)
@@ -95,6 +95,7 @@ def _msbuild_assembly(
     msbuild_restore(
         name = restore_name,
         target_framework = target_framework,
+        msbuild_directory = msbuild_directory,
         project_file = project_file,
         deps = restore_deps,
         **dicts.add(kwargs, dict(

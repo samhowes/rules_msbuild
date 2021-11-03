@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":common.bzl", "cache_set", "declare_caches", "write_cache_manifest")
 load("//dotnet/private:context.bzl", "dotnet_exec_context", "make_builder_cmd")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetPublishInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetPublishInfo", "MSBuildDirectoryInfo")
 
 def publish(ctx):
     info = ctx.attr.target[DotnetLibraryInfo]
@@ -16,7 +16,7 @@ def publish(ctx):
     caches = info.caches
     cache_manifest = write_cache_manifest(ctx, cache, caches)
 
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish")
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish", restore.directory_info)
 
     inputs = depset([cache_manifest], transitive = [info.files])
     outputs = [output_dir, cache.result, cache.project] + cmd_outputs

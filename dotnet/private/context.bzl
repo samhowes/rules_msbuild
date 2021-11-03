@@ -126,10 +126,16 @@ def _make_env(dotnet_sdk_root, os):
     return env
 
 def get_assembly_name(ctx, directory_info):
+    if directory_info == None:
+        return ""
     override = getattr(ctx.attr, "assembly_name", None)
     if override != None and override != "":
         return override
-    assembly_name = getattr(directory_info, "assembly_name_prefix", "")
+    parts = []
+
+    prefix = getattr(directory_info, "assembly_name_prefix", "")
+    if prefix != "":
+        parts.append(prefix)
 
     name = ctx.attr.name
     for suffix in ["_restore", "_publish"]:
@@ -139,12 +145,13 @@ def get_assembly_name(ctx, directory_info):
 
     if getattr(directory_info, "use_bazel_package_for_assembly_name", False):
         if ctx.label.package != "":
-            assembly_name = assembly_name + "." + ctx.label.package
-        if ctx.attr.name != ctx.label.package.rsplit("/", 1)[-1]:
-            assembly_name = assembly_name + "." + name
+            parts.extend(ctx.label.package.split("/"))
+
+        if ctx.attr.name != parts[-1]:
+            parts.append(ctx.attr.name)
     else:
-        assembly_name = assembly_name + "." + name
-    return assembly_name
+        parts.append(name)
+    return ".".join(parts)
 
 def make_builder_cmd(ctx, dotnet, action, directory_info):
     outputs = []

@@ -7,8 +7,8 @@ def build_assembly(ctx, dotnet):
     restore = ctx.attr.restore[DotnetRestoreInfo]
 
     output_dir = ctx.actions.declare_directory(dotnet.config.output_dir_name)
-    directory_info = ctx.attr.msbuild_directory[MSBuildDirectoryInfo]
-    assembly_name = get_assembly_name(ctx, directory_info)
+
+    assembly_name = get_assembly_name(ctx, restore.directory_info)
     assembly = ctx.actions.declare_file(paths.join(output_dir.basename, assembly_name + ".dll"))
 
     intermediate_dir = ctx.actions.declare_directory(paths.join("obj", dotnet.config.tfm))
@@ -21,7 +21,7 @@ def build_assembly(ctx, dotnet):
     files, caches, runfiles = _process_deps(ctx, dotnet)
     caches = cache_set(transitive = caches)
     cache_manifest = write_cache_manifest(ctx, cache, caches)
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build", directory_info)
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build", restore.directory_info)
 
     protos = _getProtos(ctx)
 

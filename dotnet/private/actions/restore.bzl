@@ -46,6 +46,7 @@ def restore(ctx, dotnet):
         output_dir = restore_dir,
         files = depset(outputs, transitive = [inputs]),
         caches = cache_set([cache], transitive = caches),
+        directory_info = directory_info,
     ), outputs
 
 def _process_deps(dotnet, ctx):
