@@ -73,6 +73,7 @@ namespace RulesMSBuild.Tests.Tools
                 output_type = "lib",
                 sdk_root = "foo",
                 project_file = projectName,
+                DirectorySrcs = Array.Empty<string>()
             }) {DiagnosticsEnabled = true};
             
             _context.MakeTargetGraph(true);
