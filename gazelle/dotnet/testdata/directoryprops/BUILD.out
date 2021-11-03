@@ -1,9 +1,11 @@
-load("//dotnet:defs.bzl", "msbuild_directory")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
 
 msbuild_directory(
     name = "msbuild_defaults",
     srcs = [
         "Directory.Build.props",
         "Directory.Build.targets",
+        "Imported.props",
     ],
+    deps = ["//eng:msbuild_defaults"],
 )

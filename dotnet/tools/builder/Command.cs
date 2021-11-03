@@ -69,6 +69,7 @@ namespace RulesMSBuild.Tools.Builder
         [Option("is_test", Required = false)]
         public string is_test { get; set; }
         
-        
+        [Option("directory")]
+        public IEnumerable<string> DirectorySrcs { get; set; }
     }
 }

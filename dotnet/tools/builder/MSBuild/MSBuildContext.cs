@@ -7,14 +7,12 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
     // ReSharper disable once InconsistentNaming
     public class MSBuildContext
     {
-        public MSBuildContext(string action, 
-            BazelContext bazel, 
-            string directoryBazelPropsPath, 
+        public MSBuildContext(BuildCommand command,
+            BazelContext bazel,
             string nuGetConfig, 
-            string tfm,
-            string configuration)
+            string directoryBazelPropsPath)
         {
-            Configuration = configuration;
+            Configuration = command.configuration;
             OutputPath = bazel.OutputDir;
             BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
@@ -53,14 +51,30 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 ["BINDIR"] = bazel.BinDir,
                 ["BazelExternal"] = Path.Combine(bazel.ExecRoot, "external"),
                 ["RestoreConfigFile"] = nuGetConfig,
-                ["PublishDir"] = Path.Combine(OutputPath, "publish", tfm) + "/",
+                ["PublishDir"] = Path.Combine(OutputPath, "publish", command.tfm) + "/",
                 ["UseAppHost"] = "false", // we'll basically be making our own via the launcher
                 // msbuild's shared compilation is not compatible with sandboxing because it wll delegate compilation to
                 // another process that won't have access to the sandbox requesting the build.
                 ["UseSharedCompilation"] = "false",
                 ["BazelBuild"] = "true",
             };
-            switch (action)
+            
+            foreach (var src in command.DirectorySrcs)
+            {
+                var filename = Path.GetFileName(src);
+                switch (src.ToLower())
+                {
+                    case "directory.build.props":
+                        BuildEnvironment["DirectoryBuildPropsPath"] = Path.GetFullPath(src);
+                        break;
+                    case "directory.build.targets":
+                        BuildEnvironment["ImportDirectoryBuildTargets"] = "true";
+                        BuildEnvironment["DirectoryBuildTargetsPath"] = Path.GetFullPath(src);
+                        break;
+                }
+            }
+            
+            switch (command.Action)
             {
                 case "restore":
                     Targets = new[] {"Restore"};
@@ -84,7 +98,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                     BuildEnvironment["NoBuild"] = "true";
                     break;
                 default:
-                    throw new ArgumentException($"Unknown action {action}");
+                    throw new ArgumentException($"Unknown action {command.Action}");
             }
             BuildEnvironment["NoWarn"] = noWarn;
         }

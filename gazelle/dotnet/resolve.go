@@ -23,17 +23,27 @@ import (
 // returned, including an empty slice, the rule will be indexed.
 func (d *dotnetLang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	info := getInfo(c)
+
+	var l string
 	if info.Project != nil && info.Project.Rule.Name() == r.Name() {
-		l := fmt.Sprintf(info.Project.FileLabel.String())
-		return []resolve.ImportSpec{{
-			Lang: dotnetName,
-			Imp:  l,
-		}}
+		l = fmt.Sprintf(info.Project.FileLabel.String())
+
+	} else if r.Kind() == "msbuild_directory" {
+		var imports []resolve.ImportSpec
+		for _, s := range r.Attr("srcs").(*bzl.ListExpr).List {
+			imports = append(imports, resolve.ImportSpec{
+				Lang: dotnetName,
+				Imp:  label.Label{Name: s.(*bzl.StringExpr).Value, Pkg: f.Pkg}.String(),
+			})
+		}
+		return imports
+	} else {
+		l = label.Label{Name: r.Name(), Pkg: f.Pkg}.String()
 	}
 
 	return []resolve.ImportSpec{{
 		Lang: dotnetName,
-		Imp:  label.Label{Name: r.Name(), Pkg: f.Pkg}.String(),
+		Imp:  l,
 	}}
 }
 
@@ -41,6 +51,7 @@ type projectDep struct {
 	Label     label.Label
 	Comments  []string
 	IsPackage bool
+	IsImport  bool
 }
 
 // Resolve translates imported libraries for a given rule into Bazel

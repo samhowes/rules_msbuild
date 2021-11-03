@@ -1,0 +1,6 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
+
+msbuild_directory(
+    name = "msbuild_defaults",
+    srcs = ["Imported.props"],
+)

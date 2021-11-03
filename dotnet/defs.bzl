@@ -8,14 +8,14 @@
 # may change without notice.
 
 load(
-    "//dotnet/private:msbuild_macros.bzl",
+    "@rules_msbuild//dotnet/private:msbuild_macros.bzl",
     "msbuild_binary_macro",
     "msbuild_directory_macro",
     "msbuild_library_macro",
     "msbuild_test_macro",
 )
 load(
-    "//dotnet/private/toolchain:nuget.bzl",
+    "@rules_msbuild//dotnet/private/toolchain:nuget.bzl",
     _nuget_deps_helper = "nuget_deps_helper",
     _nuget_fetch = "nuget_fetch",
 )

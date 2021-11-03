@@ -2,6 +2,7 @@ package dotnet
 
 import (
 	"fmt"
+	"github.com/bazelbuild/bazel-gazelle/rule"
 	"log"
 	"path"
 	"path/filepath"
@@ -48,9 +49,13 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 	}
 
 	dc := getConfig(args.Config)
-	if args.Rel == "" && dc.macroFileName != "" {
-		// we've collected all the package information by now, we can store it in the macro
-		d.customUpdateRepos(args)
+	generateDirectoryDefaults(args, info, &res)
+	if args.Rel == "" {
+
+		if dc.macroFileName != "" {
+			// we've collected all the package information by now, we can store it in the macro
+			d.customUpdateRepos(args)
+		}
 	}
 
 	for _, r := range args.OtherGen {
@@ -63,16 +68,53 @@ func (d *dotnetLang) GenerateRules(args language.GenerateArgs) language.Generate
 		return res
 	}
 
+	r := info.Project.GenerateRule(args.File)
+	res.Gen = append(res.Gen, r)
+
 	res.Imports = append(res.Imports, info.Project.Deps)
 	if info.Project.TargetFramework != "" {
 		dc.frameworks[info.Project.TargetFramework] = true
 	}
 
-	rule := info.Project.GenerateRule(args.File)
-
-	res.Gen = append(res.Gen, rule)
-
 	return res
+}
+
+func generateDirectoryDefaults(args language.GenerateArgs, info *project.DirectoryInfo, res *language.GenerateResult) {
+	props := append(info.Exts[".props"], info.Exts[".targets"]...)
+	var projects []*project.Project
+	deps := map[string]*projectDep{}
+	for _, p := range props {
+		lower := strings.ToLower(p)
+		switch lower {
+		case "directory.build.targets":
+		case "directory.build.props":
+			fallthrough
+		default:
+			proj := loadProject(args, p)
+			if proj == nil {
+				continue
+			}
+			log.Printf(proj.Rel)
+			projects = append(projects, proj)
+			for _, d := range proj.Deps {
+				dep := d.(*projectDep)
+				if dep.Label.Pkg != proj.FileLabel.Pkg {
+					deps[dep.Label.String()] = dep
+				}
+			}
+		}
+	}
+
+	if len(projects) > 0 {
+		r := rule.NewRule("msbuild_directory", "msbuild_defaults")
+		r.SetAttr("srcs", props)
+		res.Gen = append(res.Gen, r)
+		var imports []interface{}
+		for _, d := range deps {
+			imports = append(imports, d)
+		}
+		res.Imports = append(res.Imports, imports)
+	}
 }
 
 func loadProject(args language.GenerateArgs, projectFile string) *project.Project {
@@ -94,23 +136,29 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 	dir := project.Forward(args.Dir)
 	repoRoot := project.Forward(args.Config.RepoRoot)
 
+	addDep := func(unsupported project.Unsupported, str string, isImport bool) {
+		dep := projectDep{IsImport: isImport}
+		dep.Comments = unsupported.Append(dep.Comments, "")
+
+		l, err := project.GetLabel(dir, str, repoRoot)
+		proj.Deps = append(proj.Deps, &dep)
+		if err != nil {
+			dep.Label = label.NoLabel
+			dep.Comments = append(dep.Comments, fmt.Sprintf("could not add project reference: %v", err))
+			return
+		}
+		dep.Label = l
+	}
+
 	dc := getConfig(args.Config)
+	for _, i := range proj.Imports {
+		i.Evaluate(proj)
+		addDep(i.Unsupported, i.Project, true)
+	}
 	for _, ig := range proj.ItemGroups {
 		for _, ref := range ig.ProjectReferences {
 			ref.Evaluate(proj)
-
-			dep := projectDep{}
-
-			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
-
-			l, err := project.GetLabel(dir, ref.Include, repoRoot)
-			proj.Deps = append(proj.Deps, &dep)
-			if err != nil {
-				dep.Label = label.NoLabel
-				dep.Comments = append(dep.Comments, fmt.Sprintf("could not add project reference: %v", err))
-				continue
-			}
-			dep.Label = l
+			addDep(ref.Unsupported, ref.Include, false)
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}

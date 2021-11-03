@@ -1,4 +1,4 @@
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "MSBuildDirectoryInfo")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
 load(":common.bzl", "cache_set", "declare_caches", "get_nuget_files", "write_cache_manifest")
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -19,7 +19,8 @@ def build_assembly(ctx, dotnet):
     files, caches, runfiles = _process_deps(ctx, dotnet)
     caches = cache_set(transitive = caches)
     cache_manifest = write_cache_manifest(ctx, cache, caches)
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build")
+    directory_info = ctx.attr.msbuild_directory[MSBuildDirectoryInfo]
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "build", directory_info)
 
     protos = _getProtos(ctx)
 

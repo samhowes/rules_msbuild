@@ -125,7 +125,7 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_builder_cmd(ctx, dotnet, action):
+def make_builder_cmd(ctx, dotnet, action, directory_info):
     outputs = []
     add_diagnostics(ctx, dotnet, outputs)
 
@@ -158,6 +158,8 @@ def make_builder_cmd(ctx, dotnet, action):
         dotnet.config.configuration,
         "--output_type",
         "exe" if dotnet.config.is_executable else "library",
+        "--directory",
+        [s for s in directory_info.srcs],
     ])
     if dotnet.config.is_test:
         args.add_all(["--is_test", True])

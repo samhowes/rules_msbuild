@@ -8,27 +8,37 @@ load(
     "msbuild_restore",
     "msbuild_test",
 )
-load(
-    "//dotnet/private/rules:nuget.bzl",
-    "nuget_package",
-)
+load("//dotnet/private/rules:directory.bzl", "msbuild_directory")
+load("//dotnet/private/rules:nuget.bzl", "nuget_package")
 
 def msbuild_directory_macro(
-        name = "msbuild_directory",
+        name = None,
         srcs = [],
         deps = [],
-        visibility = [":__subpackages__"]):
-    msbuild_project(name, srcs, deps, visibility)
+        visibility = None,
+        **kwargs):
+    if visibility == None:
+        visibility = ["%s//:__subpackages__" % native.repository_name()]
+
+    msbuild_directory(
+        name = name,
+        srcs = srcs,
+        deps = deps,
+        visibility = visibility,
+        **kwargs
+    )
 
 def msbuild_project(
         name,
         srcs = [],
         deps = [],
-        visibility = ["//visibility:private"]):
+        visibility = ["//visibility:private"],
+        **kwargs):
     native.filegroup(
         name = name,
         srcs = srcs + deps,
         visibility = visibility,
+        **kwargs
     )
 
 def msbuild_binary_macro(
@@ -64,6 +74,7 @@ def _msbuild_assembly(
 
     srcs, project_file = _guess_inputs(name, kwargs)
 
+    kwargs.setdefault("msbuild_directory", "%s//:msbuild_defaults" % native.repository_name())
     deps = kwargs.pop("deps", [])
     target_framework = kwargs.pop("target_framework", None)
     restore_deps = []

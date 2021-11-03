@@ -1,4 +1,4 @@
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "DotnetSdkInfo", "NuGetPackageInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetRestoreInfo", "DotnetSdkInfo", "MSBuildDirectoryInfo", "NuGetPackageInfo")
 load("//dotnet/private:context.bzl", "dotnet_exec_context")
 load("//dotnet/private/actions:restore.bzl", "restore")
 load("//dotnet/private/actions:publish.bzl", "publish")
@@ -150,7 +150,7 @@ msbuild_publish = rule(
 )
 
 _RESTORE_COMMON_ATTRS = dicts.add(_COMMON_ATTRS, {
-    "msbuild_directory": attr.label(allow_files = True),
+    "msbuild_directory": attr.label(mandatory = True, providers = [MSBuildDirectoryInfo]),
     "target_framework": attr.string(
         doc = """The [Target Framework Moniker (TFM)](https://docs.microsoft.com/en-us/dotnet/standard/frameworks#supported-target-frameworks)
 of the target framework to compile for, i.e. `net5.0`, `netcoreapp3.1`, `netstandard2.0` etc.
