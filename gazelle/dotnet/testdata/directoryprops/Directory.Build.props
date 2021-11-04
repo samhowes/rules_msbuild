@@ -1,0 +1,4 @@
+<Project>
+    <Import Project="Imported.props"/>
+    <Import Project="eng/Imported.props"/>
+</Project>

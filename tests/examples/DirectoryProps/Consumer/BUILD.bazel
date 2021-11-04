@@ -7,7 +7,7 @@ msbuild_binary(
     content = [
         "foo.txt",
     ],
-    msbuild_directory = "//tests/examples/DirectoryProps:msbuild_directory",
+    msbuild_directory = "//tests/examples/DirectoryProps:msbuild_defaults",
     target_framework = "netcoreapp3.1",
     visibility = ["//visibility:public"],
 )

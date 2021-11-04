@@ -15,6 +15,7 @@ DotnetRestoreInfo = provider(
         "target_framework": "",
         "files": "",
         "caches": "depset of DotentCacheInfo",
+        "directory_info": "MSBuildDirectoryInfo",
     },
 )
 
@@ -39,6 +40,16 @@ DotnetPublishInfo = provider(
         "caches": "depset of DotnetCacheInfo",
         "library": "DotnetLibraryInfo",
         "restore": "DotnetRestoreInfo",
+    },
+)
+
+MSBuildDirectoryInfo = provider(
+    doc = "Information about Directory.Build.props and Directory.Build.targets",
+    fields = {
+        "srcs": "direct srcs of this directory",
+        "files": "depset of files, both srcs and deps",
+        "assembly_name_prefix": "string that will be prepended to assembly names",
+        "use_bazel_package_for_assembly_name": "bool to indicate if the bazel package should be used for the AssemblyName",
     },
 )
 

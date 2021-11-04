@@ -1,9 +1,12 @@
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
 load("@rules_msbuild//tools:gazelle.bzl", "gazelle")
+
+msbuild_directory(name = "msbuild_defaults")
 
 gazelle(
     name = "gazelle",
     args = [
         "--deps_macro=deps/nuget.bzl%nuget_deps",
-        "--srcs_mode=implicit",  # change value to "explicit" for better bazel performance
+        "--srcs_mode=explicit",
     ],
 )

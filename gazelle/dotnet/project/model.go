@@ -17,6 +17,7 @@ type Project struct {
 	Sdk            string           `xml:"Sdk,attr"`
 	PropertyGroups []*PropertyGroup `xml:"PropertyGroup"`
 	ItemGroups     []*ItemGroup     `xml:"ItemGroup"`
+	Imports        []*Import        `xml:"Import"`
 	Unsupported
 
 	Properties      map[string]string
@@ -40,6 +41,16 @@ type Project struct {
 	srcsModes map[string]SrcsMode
 	Ext       string
 	Protos    []string
+}
+
+type Import struct {
+	XMLName xml.Name `xml:"Import"`
+	Project string   `xml:"Project,attr"`
+	Unsupported
+}
+
+func (i Import) Evaluate(proj *Project) {
+	i.Project = proj.Evaluate(i.Project)
 }
 
 type FileGroup struct {

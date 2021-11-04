@@ -1,6 +1,7 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 # gazelle:exclude *.proj
+# gazelle:exclude *.props
 
 exports_files([
     "NuGet.tpl.config",

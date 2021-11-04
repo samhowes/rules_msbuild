@@ -125,7 +125,35 @@ def _make_env(dotnet_sdk_root, os):
 
     return env
 
-def make_builder_cmd(ctx, dotnet, action):
+def get_assembly_name(ctx, directory_info):
+    if directory_info == None:
+        return ""
+    override = getattr(ctx.attr, "assembly_name", None)
+    if override != None and override != "":
+        return override
+    parts = []
+
+    prefix = getattr(directory_info, "assembly_name_prefix", "")
+    if prefix != "":
+        parts.append(prefix)
+
+    name = ctx.attr.name
+    for suffix in ["_restore", "_publish"]:
+        if ctx.attr.name.endswith(suffix):
+            name = name[:(-1 * len(suffix))]
+            break
+
+    if getattr(directory_info, "use_bazel_package_for_assembly_name", False):
+        if ctx.label.package != "":
+            parts.extend(ctx.label.package.split("/"))
+
+        if ctx.attr.name != parts[-1]:
+            parts.append(ctx.attr.name)
+    else:
+        parts.append(name)
+    return ".".join(parts)
+
+def make_builder_cmd(ctx, dotnet, action, directory_info):
     outputs = []
     add_diagnostics(ctx, dotnet, outputs)
 
@@ -158,6 +186,10 @@ def make_builder_cmd(ctx, dotnet, action):
         dotnet.config.configuration,
         "--output_type",
         "exe" if dotnet.config.is_executable else "library",
+        "--directory",
+        [s for s in directory_info.srcs],
+        "--assembly_name",
+        get_assembly_name(ctx, directory_info),
     ])
     if dotnet.config.is_test:
         args.add_all(["--is_test", True])

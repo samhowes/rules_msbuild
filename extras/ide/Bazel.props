@@ -3,7 +3,7 @@
         <!-- Bazel variables -->
         <BazelWorkspaceName Condition="$(BazelWorkspaceName) == ''">@@workspace_name@@</BazelWorkspaceName>
         <BazelWorkspacePath Condition="$(BazelWorkspacePath) == ''">$(MSBuildThisFileDirectory)@@workspace_path@@</BazelWorkspacePath>
-        <BazelBin Condition="$(UseBazel) != 'true'">dotnet-bin</BazelBin>
+        <BazelBin Condition="$(BazelBin) != '' and $(UseBazel) != 'true'">dotnet-bin</BazelBin>
         <BazelBin Condition="$(BazelBin) == ''">@@bazel_bin@@</BazelBin>
         <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@nuget_workspace_name@@</BazelNuGetWorkspace>
         <BazelExecRoot>$(BazelWorkspacePath)bazel-$(BazelWorkspaceName)</BazelExecRoot>

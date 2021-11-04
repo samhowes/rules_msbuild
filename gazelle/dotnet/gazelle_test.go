@@ -128,7 +128,7 @@ func testPath(t *testing.T, testName string, repos bool, files []bazel.RunfileEn
 				if err != nil {
 					return err
 				}
-				t.Logf("%q exists", path)
+				//t.Logf("%q exists", path)
 				return nil
 			})
 		}

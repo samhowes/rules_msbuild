@@ -1,7 +1,7 @@
 load(":common.bzl", "get_nuget_files")
 load("//dotnet/private:context.bzl", "make_builder_cmd")
 load("//dotnet/private/actions:common.bzl", "cache_set", "declare_caches", "write_cache_manifest")
-load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "NuGetPackageInfo")
+load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "MSBuildDirectoryInfo", "NuGetPackageInfo")
 
 def restore(ctx, dotnet):
     # we don't really need this since we're declaring the directory, but this way, if the restore
@@ -13,15 +13,16 @@ def restore(ctx, dotnet):
 
     files, caches = _process_deps(dotnet, ctx)
     cache_manifest = write_cache_manifest(ctx, cache, cache_set(transitive = caches))
+    directory_info = ctx.attr.msbuild_directory[MSBuildDirectoryInfo]
 
     inputs = depset(
-        direct = [ctx.file.project_file, cache_manifest] + ctx.files.msbuild_directory,
-        transitive = files,
+        direct = [ctx.file.project_file, cache_manifest],
+        transitive = files + [directory_info.files],
     )
 
     outputs = [assets_json, restore_dir, cache.result, cache.project]
 
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore")
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore", directory_info)
     outputs.extend(cmd_outputs)
     args.add_all([
         "--version",
@@ -45,6 +46,7 @@ def restore(ctx, dotnet):
         output_dir = restore_dir,
         files = depset(outputs, transitive = [inputs]),
         caches = cache_set([cache], transitive = caches),
+        directory_info = directory_info,
     ), outputs
 
 def _process_deps(dotnet, ctx):

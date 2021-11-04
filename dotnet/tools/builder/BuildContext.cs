@@ -22,7 +22,6 @@ namespace RulesMSBuild.Tools.Builder
                 TargetGraph = new TargetGraph(trimPath, ProjectFile, null);
             }
         }
-        public static BuildContext Current;
         public BuildCommand Command { get; }
 
         public void SetEnvironment()
@@ -52,18 +51,15 @@ namespace RulesMSBuild.Tools.Builder
         
         public BuildContext(BuildCommand command)
         {
-            Current = this;
             Command = command;
             Bazel = new BazelContext(command);
             NuGetConfig = ToolPath(command.nuget_config);
             Tfm = command.tfm;
             MSBuild = new MSBuildContext(
-                command.Action,
+                command,
                 Bazel,
-                ToolPath(command.directory_bazel_props),
                 NuGetConfig,
-                Tfm,
-                command.configuration
+                ToolPath(command.directory_bazel_props)
             );
 
             IsExecutable = command.output_type == "exe";

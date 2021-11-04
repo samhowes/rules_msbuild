@@ -200,8 +200,7 @@ namespace RulesMSBuild.Tools.Builder
                         Directory.CreateDirectory(_context.MSBuild.RestoreDir);
                     }
 
-                    var last = _context.Bazel.Label.Name.LastIndexOf("_restore", StringComparison.OrdinalIgnoreCase);
-                    _context.ProjectBazelProps["AssemblyName"] = _context.Bazel.Label.Name[0..last];
+                    _context.ProjectBazelProps["AssemblyName"] = _context.Command.assembly_name;
                     var writer =new BazelPropsWriter(); 
                     writer.WriteProperties(
                         _context.ProjectExtensionPath(".bazel.props"),
@@ -369,7 +368,8 @@ namespace RulesMSBuild.Tools.Builder
             {
                 var target = _context.Bazel.OutputBase;
 
-                var isJson = fileName.EndsWith("json");
+                var contents = File.ReadAllText(fileName);
+                var isJson = contents[0] == '{';
                 var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
 
                 string Escape(string s) => s.Replace(@"\", @"\\");
@@ -377,7 +377,6 @@ namespace RulesMSBuild.Tools.Builder
                 if (needsEscaping)
                     target = Escape(target);
 
-                var contents = File.ReadAllText(fileName);
                 using var output = new StreamWriter(File.Open(fileName, FileMode.Truncate));
                 var index = 0;
                 for (;;)

@@ -2,7 +2,20 @@ load("@bazel_gazelle//:def.bzl", "DEFAULT_LANGUAGES", "gazelle", "gazelle_binary
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//dotnet:defs.bzl", "msbuild_directory")
 load("//:version.bzl", "VERSION")
+
+msbuild_directory(
+    name = "msbuild_defaults",
+    srcs = [
+        "Bazel.props",
+        "Directory.Build.props",
+        "Directory.Build.targets",
+        "Directory.Solution.props",
+        "Directory.Solution.targets",
+    ],
+    deps = ["//extras/ide:msbuild_defaults"],
+)
 
 # gazelle:prefix github.com/samhowes/rules_msbuild
 gazelle(
