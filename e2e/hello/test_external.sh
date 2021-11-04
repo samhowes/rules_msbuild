@@ -11,6 +11,13 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
  { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v2 ---
 
-runner="$(rlocation rules_msbuild/dotnet/tools/bazel_testing/TestRunner)"
+arg="$1"
+arg="${arg#"external/"}"
+runner="$(rlocation "$arg")"
+if [[ -z "$runner" ]]; then
+  echo "failed to locate runner at $arg"
+  exit 1
+fi;
 runfiles_export_envvars
 $runner ping
+
