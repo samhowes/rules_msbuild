@@ -28,6 +28,7 @@ go_library(
         "data_parser.go",
         "dotnet_launcher.go",
         "launcher_main.go",
+        "runfiles.go",
     ],
     importpath = "github.com/samhowes/rules_msbuild/dotnet/tools/launcher",
     visibility = ["//visibility:private"],
@@ -46,7 +47,13 @@ go_binary(
 go_test(
     name = "launcher_test",
     size = "small",
-    srcs = ["data_parser_test.go"],
+    srcs = [
+        "data_parser_test.go",
+        "runfiles_test.go",
+    ],
     embed = [":launcher_lib"],
-    deps = ["@io_bazel_rules_go//go/tools/bazel:go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+    ],
 )

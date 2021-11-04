@@ -51,7 +51,7 @@ func TestLauncher(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if launchInfo["foo"] != "bar" {
-		t.Errorf("Deserialized the wrong value for 'foo': %s", launchInfo["foo"])
+	if launchInfo.Data["foo"] != "bar" {
+		t.Errorf("Deserialized the wrong value for 'foo': %s", launchInfo.Data["foo"])
 	}
 }

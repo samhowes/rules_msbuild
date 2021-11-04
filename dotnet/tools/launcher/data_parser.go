@@ -7,22 +7,56 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"runtime"
+	"strings"
 )
 
-type LaunchInfo = map[string]string
-
-func EnsureExe(p string) string {
-	if runtime.GOOS != "windows" {
-		return p
-	}
-	if path.Ext(p) != ".exe" {
-		return p + ".exe"
-	}
-	return p
+type LaunchInfo struct {
+	Data     map[string]string
+	Runfiles *Runfiles
 }
 
-func GetLaunchInfo(binaryPath string) (LaunchInfo, error) {
+func (l *LaunchInfo) GetItem(key string) string {
+	value, present := l.Data[key]
+	if !present {
+		panic(fmt.Sprintf("missing required launch data key: %s; %s", key, l))
+	}
+	return value
+}
+
+func (l *LaunchInfo) GetListItem(key string) []string {
+	value := l.GetItem(key)
+	if value == "" {
+		return []string{}
+	}
+	return strings.Split(value, "*~*")
+}
+
+func (l *LaunchInfo) GetPathItem(key string) string {
+	value := l.GetItem(key)
+	return l.GetRunfile(value)
+}
+
+func (l *LaunchInfo) GetRunfile(p string) string {
+	fPath := l.Runfiles.Rlocation(p)
+	if fPath == "" {
+		panic(fmt.Sprintf("missing required runfile path item %s", p))
+	}
+	return fPath
+}
+
+// GetBuiltPath assumes that key is a short_path to the output directory of an assembly built by rules_msbuild
+// this means that the output directory is listed in the runfiles manifest, and since the output directory is a prefix
+// of all the items in the output directory, the actual output items are not listed explicitly in the manifest
+func (l *LaunchInfo) GetBuiltPath(key string) string {
+	outputDir := l.GetItem("output_dir")
+	value := l.GetItem(key)
+	diag(func() { fmt.Printf("findng built path: %s using prefix %s\n", value, outputDir) })
+	value = value[len(outputDir)+1:]
+	outputDirPath := l.GetRunfile(outputDir)
+	return path.Join(outputDirPath, value)
+}
+
+func GetLaunchInfo(binaryPath string) (*LaunchInfo, error) {
 	f, err := os.Open(binaryPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", binaryPath, err)
@@ -55,7 +89,9 @@ func GetLaunchInfo(binaryPath string) (LaunchInfo, error) {
 		return nil, fmt.Errorf("failed to read launch data: %w", err)
 	}
 
-	launchInfo := make(LaunchInfo)
+	launchInfo := &LaunchInfo{Data: map[string]string{},
+		Runfiles: GetRunfiles(),
+	}
 	start := 0
 
 	diag(func() { fmt.Println("==> launch data") })
@@ -82,7 +118,7 @@ func GetLaunchInfo(binaryPath string) (LaunchInfo, error) {
 
 			key = value
 		} else {
-			launchInfo[key] = value
+			launchInfo.Data[key] = value
 			diag(func() { fmt.Println(value) })
 			key = ""
 		}
