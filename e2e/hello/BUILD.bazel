@@ -6,5 +6,5 @@ sh_binary(
     name = "test_external",
     srcs = ["test_external.sh"],
     data = ["@rules_msbuild//dotnet/tools/bazel_testing:TestRunner"],
-    deps = [],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
 )
