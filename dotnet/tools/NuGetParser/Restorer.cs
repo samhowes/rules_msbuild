@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace NuGetParser
 {
@@ -67,6 +69,19 @@ namespace NuGetParser
             fetchBuilder.AddReferences(projects);
             var fetchPath = Path.Combine(dir!, "nuget.fetch.proj");
             fetchBuilder.Save(fetchPath);
+
+            var targets = new XElement("Project",
+                new XElement("ItemGroup",
+                    new XElement("PackageReference",
+                        new XAttribute("Update", "RulesMSBuild.Runfiles"),
+                        new XAttribute("Version", Environment.GetEnvironmentVariable("RULES_MSBUILD_VERSION")!)
+                    )
+                )
+            );
+            using var textWriter = File.CreateText(Path.Combine(dir, "Directory.Build.targets"));
+            using var writer = XmlWriter.Create(textWriter, new XmlWriterSettings() {Indent = true});
+            targets.Save(writer);
+            
             return (fetchPath, frameworks);
         }
 

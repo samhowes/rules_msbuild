@@ -21,6 +21,12 @@ namespace TestRunner
     {
         static int Main(string[] args)
         {
+            // for testing building an executable in an external workspace
+            if (args[0] == "ping")
+            {
+                Console.WriteLine("pong");
+                return 0;
+            }
             Debug(string.Join(" ", args));
             Debug(Environment.CurrentDirectory);
             if (args.Length != 1)

@@ -8,6 +8,7 @@ e2e_test(
     ],
     run = {
         "//RunfilesTest": "bar\n\n",
+        "//:test_external": "pong\n\n",
     },
 )
 

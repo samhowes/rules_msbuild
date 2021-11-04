@@ -1,3 +1,10 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
 
 msbuild_directory(name = "msbuild_defaults")
+
+sh_binary(
+    name = "test_external",
+    srcs = ["test_external.sh"],
+    data = ["@rules_msbuild//dotnet/tools/bazel_testing:TestRunner"],
+    deps = [],
+)
