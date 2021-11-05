@@ -347,7 +347,7 @@ namespace RulesMSBuild.Tools.Builder
                 else
                 {
                     outputManifest.Write(" ");
-                    outputManifest.Write(entry);
+                    outputManifest.WriteLine(entry);
                     File.Copy(fullPath, destPath, true);
                 }
             }
