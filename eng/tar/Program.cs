@@ -74,11 +74,11 @@ namespace tar
             }
 
             var debugLauncher =
-                runfiles.Runfiles.Rlocation(
+                runfiles.Rlocation(
                     "rules_msbuild/dotnet/tools/launcher/launcher_windows_/launcher_windows.exe");
             if (File.Exists(debugLauncher))
             {
-                var launcherPath = runfiles.Runfiles.Rlocation(debugLauncher);
+                var launcherPath = runfiles.Rlocation(debugLauncher);
                 files[".azpipelines/artifacts/windows-amd64/launcher_windows.exe"] = launcherPath;
             }
 

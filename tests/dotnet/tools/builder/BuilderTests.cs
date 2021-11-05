@@ -13,14 +13,13 @@ namespace RulesMSBuild.Tests.Tools
         public void LaunchDataWriter_Works()
         {
             var stream = new MemoryStream();
-            var writer = new LaunchDataWriter()
+            var writer = new LaunchDataWriter(stream)
                 .Add("foo", "bar")
                 .Add("a", "b");
 
-            writer.Save(stream);
+            writer.Save();
 
             stream.Seek(0, SeekOrigin.Begin);
-
 
 
             var reader = new BinaryReader(stream);

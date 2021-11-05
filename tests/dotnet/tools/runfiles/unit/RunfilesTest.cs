@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using FluentAssertions;
- using RulesMSBuild.Tools.Bazel;
+using RulesMSBuild.Tools.Bazel;
 using Xunit;
 
 namespace RulesMSBuild.Tools.RunfilesTests
@@ -50,7 +50,7 @@ namespace RulesMSBuild.Tools.RunfilesTests
             var dir =
                 Files.CreateTempDirectory();
 
-            var r = Runfiles.Create(new Dictionary<string, string> {{"RUNFILES_DIR", dir}});
+            var r = Runfiles.Create(new Dictionary<string, string> {{"RUNFILES_DIR", dir}}).Runfiles;
             AssertRlocationArg(r, null, null);
             AssertRlocationArg(r, "", null);
             AssertRlocationArg(r, "../foo", "is not normalized");
