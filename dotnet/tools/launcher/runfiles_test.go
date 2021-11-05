@@ -5,12 +5,8 @@ package main
 import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/stretchr/testify/assert"
-	"io/fs"
 	"io/ioutil"
 	"os"
-	"path"
-	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -38,27 +34,14 @@ func TestRunfilesManifest(t *testing.T) {
 }
 
 func TestRunfilesDirectory(t *testing.T) {
-	dir := filepath.Join(bazel.TestTmpDir(), "foo.runfiles")
-	dir, _ = filepath.Abs(dir)
-	assert.NoError(t, os.MkdirAll(dir, fs.ModePerm))
-	assert.NoError(t, os.Chdir(dir))
-	os.Args[0] = "foo"
-
-	assert.NoError(t, os.Setenv(bazel.RUNFILES_DIR, ""))
-	assert.NoError(t, os.Setenv("RUNFILES_MANIFEST_ONLY", ""))
-	assert.NoError(t, os.Setenv("RUNFILES_MANIFEST", ""))
-	assert.NoError(t, os.Setenv("TEST_SRCDIR", ""))
-
-	runfiles := GetRunfiles()
-
-	rdir := strings.ReplaceAll(dir, "\\", "/")
+	runfiles := &Runfiles{strategy: &DirectoryStrategy{runfileDirectory: "foo.runfiles"}}
 
 	rlocation := runfiles.Rlocation("my_workspace/foo/bar")
-	assert.Equal(t, path.Join(rdir, "my_workspace/foo/bar"), rlocation)
+	assert.Equal(t, "foo.runfiles/my_workspace/foo/bar", rlocation)
 
 	rlocation = runfiles.Rlocation("../external_workspace")
-	assert.Equal(t, path.Join(rdir, "external_workspace"), rlocation)
+	assert.Equal(t, "foo.runfiles/external_workspace", rlocation)
 
 	rlocation = runfiles.Rlocation("external/external_workspace")
-	assert.Equal(t, path.Join(rdir, "external_workspace"), rlocation)
+	assert.Equal(t, "foo.runfiles/external_workspace", rlocation)
 }
