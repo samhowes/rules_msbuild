@@ -113,41 +113,6 @@ namespace RulesMSBuild.Tools.RunfilesTests
         }
 
         [Fact]
-        public void TestIgnoresTestSrcdirWhenJavaRunfilesIsUndefinedAndJustFails()
-        {
-            var dir =
-                Files.CreateTempDirectory();
-
-            Action action = () => Runfiles.Create(
-                new Dictionary<string, string>
-                {
-                    {"RUNFILES_DIR", dir},
-                    {"RUNFILES_MANIFEST_FILE", "ignored when RUNFILES_MANIFEST_ONLY is not set to 1"},
-                    {
-                        "TEST_SRCDIR", "should always be ignored"
-                    }
-                });
-
-            action.Should().NotThrow();
-
-            var e =
-                AssertThrows<IOException>(
-                    () =>
-                        Runfiles.Create(
-                            new Dictionary<string, string>
-                            {
-                                {"RUNFILES_DIR", ""},
-                                {"JAVA_RUNFILES", ""},
-                                {
-                                    "RUNFILES_MANIFEST_FILE",
-                                    "ignored when RUNFILES_MANIFEST_ONLY is not set to 1"
-                                },
-                                {"TEST_SRCDIR", "should always be ignored"}
-                            }));
-            e.Message.Should().Contain("$RUNFILES_DIR");
-        }
-
-        [Fact]
         public void TestFailsToCreateManifestBasedBecauseManifestDoesNotExist()
         {
             var e = AssertThrows<FileNotFoundException>(
