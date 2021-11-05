@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to get launch info: %s", err))
 	}
-	binaryType, present := launchInfo["binary_type"]
+	binaryType, present := launchInfo.Data["binary_type"]
 	if !present {
 		panic(fmt.Sprintf("no binary type in launch info: %s", launchInfo))
 	}

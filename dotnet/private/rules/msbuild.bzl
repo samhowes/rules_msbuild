@@ -58,7 +58,7 @@ def _make_executable(ctx, is_test):
 
     launcher_info = ctx.attr._launcher_template[DefaultInfo]
     assembly_runfiles = ctx.runfiles(
-        files = [info.output_dir] + ctx.files.data,
+        files = [info.assembly, info.output_dir] + ctx.files.data,
         transitive_files = depset([dotnet.sdk.dotnet], transitive = [info.runfiles]),
     )
 

@@ -8,10 +8,6 @@ namespace RulesMSBuild.Tools.Builder.Launcher
     /// </summary>
     public class LauncherFactory
     {
-        public LauncherFactory()
-        {
-        }
-
         public int Create(string[] args)
         {
             var launcherTemplate = new FileInfo(args[0]);
@@ -25,7 +21,6 @@ namespace RulesMSBuild.Tools.Builder.Launcher
             }
 
             var writer = new LaunchDataWriter()
-                // see: //dotnet/tools/launcher/windows:launcher_main.cc
                 .Add("binary_type", "Dotnet");
 
             for (int i = 2; i + 1 < args.Length; i+=2)

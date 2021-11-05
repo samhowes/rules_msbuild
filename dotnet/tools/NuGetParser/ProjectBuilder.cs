@@ -9,7 +9,7 @@ namespace NuGetParser
 {
     public class ProjectBuilder
     {
-        private readonly string _sdk;
+        private readonly string? _sdk;
         private readonly XElement _project;
         private readonly string? _sdkVersion;
 

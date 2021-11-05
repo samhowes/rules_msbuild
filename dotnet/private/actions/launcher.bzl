@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//dotnet/private/util:util.bzl", "to_manifest_path")
 
 def make_launcher(ctx, dotnet, info):
     sdk = dotnet.sdk
@@ -11,13 +12,10 @@ def make_launcher(ctx, dotnet, info):
 
     is_bin_launcher = dotnet.os == "windows"
 
-    # ../dotnet_sdk/dotnet => dotnet_sdk/dotnet
-    dotnet_path = sdk.dotnet.short_path[3:]
-
     launch_data = {
-        "dotnet_bin_path": dotnet_path,
-        "target_bin_path": paths.join(ctx.workspace_name, info.assembly.short_path),
-        "output_dir": info.output_dir.short_path,
+        "dotnet_bin_path": to_manifest_path(ctx, sdk.dotnet),
+        "target_bin_path": to_manifest_path(ctx, info.assembly),
+        "output_dir": to_manifest_path(ctx, info.output_dir),
         "dotnet_root": sdk.root_file.dirname,
         "dotnet_args": _format_launcher_args([], is_bin_launcher),
         "assembly_args": _format_launcher_args([], is_bin_launcher),

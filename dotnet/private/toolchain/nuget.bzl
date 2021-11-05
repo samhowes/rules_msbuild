@@ -106,8 +106,6 @@ def _nuget_fetch_impl(ctx):
         substitutions = substitutions,
     )
 
-    if "foo" != "bar":
-        pass
     args = [
         dotnet.path,
         "run",
