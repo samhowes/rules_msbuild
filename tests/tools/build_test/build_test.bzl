@@ -43,10 +43,10 @@ def build_test(name, expected_files, run_location = "", args = [], expected_outp
 
 def _test_config_impl(ctx):
     f = ctx.actions.declare_file(ctx.attr.name.rsplit("_", 1)[0] + ".go")
-    publish_info = ctx.attr.target[DotnetPublishInfo]
+
     assembly_name = ""
-    if publish_info != None:
-        assembly_name = publish_info.library.assembly.basename
+    if DotnetPublishInfo in ctx.attr.target:
+        assembly_name = ctx.attr.target[DotnetPublishInfo].library.assembly.basename
 
     ctx.actions.expand_template(
         template = ctx.file._test_template,
