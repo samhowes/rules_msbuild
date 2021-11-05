@@ -54,7 +54,7 @@ type DirectoryStrategy struct {
 }
 
 func (s *DirectoryStrategy) Rlocation(p string) string {
-	return filepath.Join(s.runfileDirectory, p)
+	return path.Join(s.runfileDirectory, p)
 }
 func EnsureExe(p string) string {
 	if runtime.GOOS != "windows" {
