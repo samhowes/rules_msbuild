@@ -44,7 +44,7 @@ else
     fi;
 fi;
 
-this='$(realpath $0)'
+this='$0'
 
 $dotnet_path exec '$this.dll' '${@:1}'
 ".Replace('\'', '"'));
