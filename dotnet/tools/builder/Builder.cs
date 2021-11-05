@@ -212,34 +212,7 @@ namespace RulesMSBuild.Tools.Builder
                     writer.WriteTargets(_context.ProjectExtensionPath(".bazel.targets"));
                     break;
                 case "pack":
-                    var runfilesManifest = new FileInfo(_context.Command.RunfilesManifest);
-                    if (runfilesManifest.Exists)
-                    {
-                        foreach (var entry in File.ReadAllLines(runfilesManifest.FullName))
-                        {
-                            var parts = entry.Split(' ');
-                            var manifestPath = parts[0];
-                            var filePath = _deps.PathMapper.ToAbsolute(parts[1]);
-                            project.AddItem("None", filePath, new[]
-                            {
-                                new KeyValuePair<string, string>("Pack", "true"),
-                                new KeyValuePair<string, string>("PackagePath", $"content/runfiles/{manifestPath}"),
-                            });
-                        }
-                    }
-
-                    // the dll will be placed at    <root>/tools/<tfm>/any/<primaryName>.dll
-                    // runfiles will be at          <root>/content/runfiles
-                    var packDir = _context.OutputPath("pack");
-                    Directory.CreateDirectory(packDir);
-                    var path = Path.Combine(packDir, "runfiles.info");
-                    WriteRunfilesInfo(path, "../../../content/runfiles", true);
-                    project.AddItem("None", path, new[]
-                    {
-                        // new KeyValuePair<string, string>("What", "wow"),
-                        new KeyValuePair<string, string>("Pack", "true"),
-                        new KeyValuePair<string, string>("PackagePath", $"tools/{_context.Tfm}/any/"),
-                    });
+                    RegisterRunfiles(project);
 
                     // The default 'Pack' implementation by nuget sets a global property for the target framework
                     // this invalidates cache entries since they are keyed by ProjectFullPath + GlobalProperties
@@ -293,6 +266,42 @@ namespace RulesMSBuild.Tools.Builder
             var resultCode = source.Task.GetAwaiter().GetResult();
 
             return resultCode;
+        }
+
+        private void RegisterRunfiles(ProjectInstance project)
+        {
+            var runfilesDir = Path.Combine(_context.MSBuild.PublishDir,
+                _context.Command.assembly_name + ".dll.runfiles");
+            var runfilesManifest = new FileInfo(Path.Combine(runfilesDir, "MANIFEST"));
+
+            if (runfilesManifest.Exists)
+            {
+                foreach (var entry in File.ReadAllLines(runfilesManifest.FullName))
+                {
+                    var parts = entry.Split(' ');
+                    var manifestPath = parts[0];
+
+                    var filePath = Path.Combine(runfilesDir, parts[1]);
+                    project.AddItem("None", filePath, new[]
+                    {
+                        new KeyValuePair<string, string>("Pack", "true"),
+                        new KeyValuePair<string, string>("PackagePath", $"content/runfiles/{manifestPath}"),
+                    });
+                }
+            }
+
+            // the dll will be placed at    <root>/tools/<tfm>/any/<primaryName>.dll
+            // runfiles will be at          <root>/content/runfiles
+            var packDir = _context.OutputPath("pack");
+            Directory.CreateDirectory(packDir);
+            var path = Path.Combine(packDir, "runfiles.info");
+            WriteRunfilesInfo(path, "../../../content/runfiles", true);
+            project.AddItem("None", path, new[]
+            {
+                // new KeyValuePair<string, string>("What", "wow"),
+                new KeyValuePair<string, string>("Pack", "true"),
+                new KeyValuePair<string, string>("PackagePath", $"tools/{_context.Tfm}/any/"),
+            });
         }
 
         private void CopyRunfiles(string runfilesDir)
@@ -422,8 +431,9 @@ namespace RulesMSBuild.Tools.Builder
                 _context.Bazel.Label.Workspace,
                 // third is the package (nice to have)
                 _context.Bazel.Label.Package,
-                // runfiles strategy to use
-                useDirectory ? "directory" : "auto"
+                // runfiles strategy to use: if we are publishing, no other executable will ever have our runfiles,
+                // so we retrieve them from our own directory and ignore other variables
+                useDirectory ? "selfish" : "auto"
             });
         }
 

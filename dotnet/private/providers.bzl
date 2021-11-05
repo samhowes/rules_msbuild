@@ -16,6 +16,7 @@ DotnetRestoreInfo = provider(
         "files": "",
         "caches": "depset of DotentCacheInfo",
         "directory_info": "MSBuildDirectoryInfo",
+        "assembly_name": "assembly_name",
     },
 )
 

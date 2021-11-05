@@ -8,8 +8,9 @@ namespace RulesMSBuild.Tools.RunfilesTests
     {
         static void Main(string[] args)
         {
-            var r = Runfiles.Create<DotnetCat>();
-            var contents = File.ReadAllText(r.Rlocation("rules_msbuild/tests/dotnet/tools/runfiles/integration/foo.txt"));
+            var r = Runfiles.Create();
+            var contents =
+                File.ReadAllText(r.Rlocation("rules_msbuild/tests/dotnet/tools/runfiles/integration/foo.txt"));
 
             Console.Write(contents);
         }

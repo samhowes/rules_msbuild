@@ -63,7 +63,6 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
 
             foreach (var src in command.DirectorySrcs)
             {
-                var filename = Path.GetFileName(src);
                 switch (src.ToLower())
                 {
                     case "directory.build.props":

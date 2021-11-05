@@ -17,7 +17,7 @@ def pack(ctx):
     cache = declare_caches(ctx, "pack")
     cache_manifest = write_cache_manifest(ctx, cache, info.caches)
 
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "pack", restore.directory_info)
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "pack", restore.directory_info, restore.assembly_name)
     args.add_all(["--version", ctx.attr.version, "--runfiles_manifest", info.runfiles_manifest])
 
     inputs = depset(

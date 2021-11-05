@@ -17,7 +17,7 @@ def publish(ctx):
     caches = info.caches
     cache_manifest = write_cache_manifest(ctx, cache, caches)
 
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish", restore.directory_info)
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "publish", restore.directory_info, restore.assembly_name)
 
     args.add_all(["--launcher_template", ctx.file._launcher_template])
 

@@ -23,7 +23,7 @@ namespace tar
         {
             var args = argsArray.Select(a => a.TrimStart('-').Split('='))
                 .ToDictionary(p => p[0], p => p[1]);
-            
+
             var root = BazelEnvironment.TryGetWorkspaceRoot();
             if (root != null)
                 Directory.SetCurrentDirectory(root);
@@ -38,7 +38,7 @@ namespace tar
             }
             else
                 outputName = "test.tar.gz";
-            
+
             var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (;;)
             {
@@ -63,17 +63,19 @@ namespace tar
             await process!.WaitForExitAsync();
             if (process.ExitCode != 0) return process.ExitCode;
 
-            var runfiles = Runfiles.Create<Program>();
+            var runfiles = Runfiles.Create();
             var exe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
             var debugGazelle =
-                runfiles.Runfiles.Rlocation($"rules_msbuild/gazelle/dotnet/gazelle-dotnet_/gazelle-dotnet{exe}");
+                runfiles.Rlocation($"rules_msbuild/gazelle/dotnet/gazelle-dotnet_/gazelle-dotnet{exe}");
             if (File.Exists(debugGazelle))
             {
                 var gazellePath = Util.GetGazellePath();
                 files[$".azpipelines/artifacts/{gazellePath}"] = debugGazelle;
             }
+
             var debugLauncher =
-                runfiles.Runfiles.Rlocation("rules_msbuild/dotnet/tools/launcher/launcher_windows_/launcher_windows.exe");
+                runfiles.Runfiles.Rlocation(
+                    "rules_msbuild/dotnet/tools/launcher/launcher_windows_/launcher_windows.exe");
             if (File.Exists(debugLauncher))
             {
                 var launcherPath = runfiles.Runfiles.Rlocation(debugLauncher);
@@ -101,9 +103,10 @@ namespace tar
                     {
                         entry.TarHeader.Size = stream.Length;
                     }
+
                     entry.Name = tarEntry;
                     Console.WriteLine(entry.Name);
-                    
+
                     tarArchive.WriteEntry(entry, false);
                 }
 
@@ -118,7 +121,7 @@ namespace tar
                 var hash = await sha.ComputeHashAsync(outputRead);
                 hashValue = Convert.ToHexString(hash).ToLower();
             }
-            
+
             Console.WriteLine($"SHA256 = {hashValue}");
             await File.WriteAllTextAsync(outputName + ".sha256", hashValue);
 

@@ -10,6 +10,7 @@ namespace docs
     class Program
     {
         static Regex TocRegex = new Regex("(<!-- toc:start -->)(.*?)(<!-- toc:end -->)", RegexOptions.Singleline);
+
         public static void Info(string message)
         {
             Console.WriteLine(message);
@@ -17,15 +18,15 @@ namespace docs
 
         public static Regex LabelLinkRegex = new Regex(@"\[(?<link_text>[^\]]*?)\]\((?<label>(:|\/\/)[^\)]+?)\)",
             RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        
+
         static void Main(string[] args)
         {
-            var runfiles = Runfiles.Create<Program>();
+            var runfiles = Runfiles.Create();
 
             var root = BazelEnvironment.GetWorkspaceRoot();
             var tocList = new List<(string, string)>();
 
-            for (var i = 0; i < args.Length; i+=2)
+            for (var i = 0; i < args.Length; i += 2)
             {
                 var label = new Label(args[i]);
                 var file = args[i + 1];
@@ -59,10 +60,10 @@ namespace docs
                 File.WriteAllText(dest, contents);
 
                 var firstLine = Regex.Match(contents, @"^#\s*(?<title>.*)$", RegexOptions.Multiline);
-                
+
                 tocList.Add((destRel, firstLine.Groups["title"].Value));
             }
-            
+
             var toc = new StringBuilder();
             foreach (var (path, title) in tocList)
             {
