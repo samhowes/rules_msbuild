@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -45,8 +46,7 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		}
 		config.Package = `%package%`
 		if config.ExpectedOutput != "" {
-			config.Target = path.Base("%target%")
-			config.Target, err = bazel.Runfile(path.Join(config.Package, config.Target))
+			config.Target, err = bazel.Runfile("%target%")
 			if err != nil {
 				t.Fatalf("failed to find target: %v", err)
 			}
@@ -113,6 +113,10 @@ func TestBuildOutput(t *testing.T) {
 				if !config.Diag {
 					continue
 				}
+			case ".exe":
+				if runtime.GOOS != "windows" {
+					f = f[:len(f)-len(".exe")]
+				}
 			}
 
 			shouldExist := true
@@ -143,6 +147,12 @@ func TestExecutableOutput(t *testing.T) {
 		config.Target = lib.SetupFakeRunfiles(t, path.Base(config.Target))
 		config.Cwd = files.ComputeStartingDir(config.Target)
 		t.Logf("Computed starting dir to: \n%s", config.Cwd)
+	}
+
+	f, err := os.Stat(config.Target)
+	assert.NoError(t, err)
+	if f.IsDir() {
+		config.Target = path.Join(config.Target, strings.TrimSuffix("%assembly_name%", ".dll"))
 	}
 
 	lib.CheckExecutableOutput(t, &config)

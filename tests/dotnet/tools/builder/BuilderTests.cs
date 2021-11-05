@@ -17,7 +17,7 @@ namespace RulesMSBuild.Tests.Tools
                 .Add("foo", "bar")
                 .Add("a", "b");
 
-            writer.Write(stream);
+            writer.Save(stream);
 
             stream.Seek(0, SeekOrigin.Begin);
 

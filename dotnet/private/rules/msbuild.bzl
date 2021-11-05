@@ -27,7 +27,7 @@ def _publish_impl(ctx):
     info = publish(ctx)
     all = depset([info.output_dir])
     return [
-        DefaultInfo(files = all),
+        DefaultInfo(files = all, runfiles = ctx.runfiles([info.output_dir], transitive_files = info.library.runfiles)),
         info,
         OutputGroupInfo(all = all),
     ]
@@ -141,9 +141,14 @@ msbuild_tool_binary = rule(
     executable = False,
 )
 
+_LAUNCHER_ATTR = {"_launcher_template": attr.label(
+    default = Label("@rules_msbuild//dotnet/tools/launcher"),
+    allow_single_file = True,
+)}
+
 msbuild_publish = rule(
     _publish_impl,
-    attrs = dicts.add(_COMMON_ATTRS, {
+    attrs = dicts.add(_COMMON_ATTRS, _LAUNCHER_ATTR, {
         "target": attr.label(mandatory = True, providers = [DotnetLibraryInfo]),
     }),
     executable = False,
@@ -293,12 +298,7 @@ msbuild_library = rule(
     toolchains = TOOLCHAINS,
 )
 
-_EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, {
-    "_launcher_template": attr.label(
-        default = Label("//dotnet/tools/launcher"),
-        allow_single_file = True,
-    ),
-})
+_EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, _LAUNCHER_ATTR)
 
 msbuild_binary = rule(
     _binary_impl,

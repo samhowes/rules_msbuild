@@ -29,6 +29,7 @@ DotnetLibraryInfo = provider(
         "caches": "depset of DotnetCacheInfo",
         "project_cache": "cache file for this evaluation of the project file",
         "restore": "DotnetRestoreInfo",
+        "executable": "bool",
     },
 )
 
@@ -40,6 +41,7 @@ DotnetPublishInfo = provider(
         "caches": "depset of DotnetCacheInfo",
         "library": "DotnetLibraryInfo",
         "restore": "DotnetRestoreInfo",
+        "runfiles_manifest": "manually generated runfiles manifest",
     },
 )
 

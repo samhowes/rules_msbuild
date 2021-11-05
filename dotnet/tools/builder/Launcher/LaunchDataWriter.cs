@@ -5,12 +5,14 @@ using System.Text;
 
 namespace RulesMSBuild.Tools.Builder.Launcher
 {
-    public class LaunchDataWriter
+    public class LaunchDataWriter : IDisposable
     {
+        private readonly Stream _stream;
         private List<(string, string)> _data;
 
-        public LaunchDataWriter()
+        public LaunchDataWriter(Stream stream)
         {
+            _stream = stream;
             _data = new List<(string, string)>();
         }
 
@@ -20,9 +22,9 @@ namespace RulesMSBuild.Tools.Builder.Launcher
             return this;
         }
 
-        public void Write(Stream stream)
+        public void Save()
         {
-            var launchDataStart = stream.Position;
+            var launchDataStart = _stream.Position;
 
             // see @bazel_tools//src/tools/launcher/util/data_parser.cc
             // a single key-value pair is stored as single set of non-null bytes
@@ -40,12 +42,17 @@ namespace RulesMSBuild.Tools.Builder.Launcher
                     .Append(value)
                     .Append('\0');
 
-                stream.Write(encoding.GetBytes(builder.ToString()));
+                _stream.Write(encoding.GetBytes(builder.ToString()));
             }
 
-            Int64 launchDataLength = stream.Position - launchDataStart;
-            stream.Write(BitConverter.GetBytes(launchDataLength));
-            stream.Flush();
+            Int64 launchDataLength = _stream.Position - launchDataStart;
+            _stream.Write(BitConverter.GetBytes(launchDataLength));
+            _stream.Flush();
+        }
+
+        public void Dispose()
+        {
+            _stream.Dispose();
         }
     }
 }

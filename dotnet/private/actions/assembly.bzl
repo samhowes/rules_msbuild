@@ -50,6 +50,7 @@ def build_assembly(ctx, dotnet):
         runfiles = depset(ctx.files.data, transitive = runfiles),
         project_cache = cache.project,
         restore = restore,
+        executable = dotnet.config.is_executable,
     )
 
     return info, outputs

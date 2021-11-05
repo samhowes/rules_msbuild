@@ -4,11 +4,11 @@ using RulesMSBuild.Tools.Bazel;
 
 namespace RulesMSBuild.Tools.RunfilesTests
 {
-    public static class DotnetCat
+    public class DotnetCat
     {
         static void Main(string[] args)
         {
-            var r = Runfiles.Create();
+            var r = Runfiles.Create<DotnetCat>();
             var contents = File.ReadAllText(r.Rlocation("rules_msbuild/tests/dotnet/tools/runfiles/integration/foo.txt"));
 
             Console.Write(contents);

@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("//dotnet/private:providers.bzl", "DotnetPublishInfo")
 
 def build_test(name, expected_files, run_location = "", args = [], expected_output = ""):
     target = name.rsplit("_", 1)[0]
@@ -42,13 +43,17 @@ def build_test(name, expected_files, run_location = "", args = [], expected_outp
 
 def _test_config_impl(ctx):
     f = ctx.actions.declare_file(ctx.attr.name.rsplit("_", 1)[0] + ".go")
+    publish_info = ctx.attr.target[DotnetPublishInfo]
+    assembly_name = ""
+    if publish_info != None:
+        assembly_name = publish_info.library.assembly.basename
 
     ctx.actions.expand_template(
         template = ctx.file._test_template,
         output = f,
         is_executable = False,
         substitutions = {
-            "%target%": ctx.expand_location("$(location {})".format(ctx.attr.target.label)),
+            "%target%": ctx.expand_location("$(rootpath {})".format(ctx.attr.target.label)),
             "%args%": json.encode(ctx.attr.args),
             "%expected_output%": ctx.attr.expected_output,
             "%config_json%": ctx.attr.json,
@@ -57,6 +62,7 @@ def _test_config_impl(ctx):
             "%compilation_mode%": ctx.var["COMPILATION_MODE"],
             "%package%": ctx.label.package,
             "%diag%": ctx.var.get("BUILD_DIAG", ""),
+            "%assembly_name%": assembly_name,
         },
     )
 

@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("//tests/tools/build_test:build_test.bzl", "build_test")
 load("//dotnet:defs.bzl", "msbuild_binary")
 
 msbuild_binary(
@@ -10,6 +11,19 @@ msbuild_binary(
     deps = [
         "//dotnet/tools/Runfiles",
     ],
+)
+
+build_test(
+    name = "DotnetCat_publish_test",
+    expected_files = {
+        "publish/netcoreapp3.1/DotnetCat.dll.runfiles": [
+            "MANIFEST",
+        ],
+        "publish/netcoreapp3.1/DotnetCat.dll.runfiles/rules_msbuild/tests/dotnet/tools/runfiles/integration": [
+            "foo.txt",
+        ],
+    },
+    expected_output = "Hello Runfiles!\n",
 )
 
 genrule(
