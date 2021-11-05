@@ -109,10 +109,11 @@ func GetRunfiles() *Runfiles {
 	runfilesDir := findRunfilesDir()
 	manifestPath := getManifestPath(runfilesDir)
 
-	isManifestOnly := os.Getenv("RUNFILES_MANIFEST_ONLY") == "1"
+	manifestOnly := os.Getenv("RUNFILES_MANIFEST_ONLY")
 
 	runfiles := Runfiles{}
-	if isManifestOnly || runtime.GOOS == "windows" {
+	if manifestOnly == "1" || runtime.GOOS == "windows" {
+		manifestOnly = "1"
 		s := &ManifestStrategy{manifestPath: manifestPath, data: map[string]string{}}
 		runfiles.strategy = s
 		contentBytes, err := ioutil.ReadFile(manifestPath)
@@ -139,6 +140,7 @@ func GetRunfiles() *Runfiles {
 	for k, v := range map[string]string{
 		bazel.RUNFILES_DIR:           runfilesDir,
 		bazel.RUNFILES_MANIFEST_FILE: manifestPath,
+		"RUNFILES_MANIFEST_ONLY":     manifestOnly,
 	} {
 		// just assume we need to set the value for windows
 		if err := os.Setenv(k, v); err != nil {
