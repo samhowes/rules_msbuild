@@ -153,6 +153,9 @@ func TestExecutableOutput(t *testing.T) {
 	assert.NoError(t, err)
 	if f.IsDir() {
 		config.Target = path.Join(config.Target, strings.TrimSuffix("%assembly_name%", ".dll"))
+		if runtime.GOOS == "windows" {
+			config.Target = config.Target + ".exe"
+		}
 	}
 
 	lib.CheckExecutableOutput(t, &config)
