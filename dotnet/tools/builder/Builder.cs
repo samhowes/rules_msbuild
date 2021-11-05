@@ -308,10 +308,7 @@ namespace RulesMSBuild.Tools.Builder
         {
             var inputManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
 
-            if (!inputManifest.Exists)
-            {
-                throw new Exception(inputManifest.FullName);
-            }
+            if (!inputManifest.Exists) return;
 
             Directory.CreateDirectory(runfilesDir);
             var basePath = Path.GetDirectoryName(_context.Bazel.ExecRoot)!;
@@ -423,6 +420,8 @@ namespace RulesMSBuild.Tools.Builder
 
         private void WriteRunfilesInfo(string outputPath, string expectedRelativePath, bool useDirectory)
         {
+            var directory = Path.GetDirectoryName(outputPath);
+            Directory.CreateDirectory(directory!);
             File.WriteAllLines(outputPath, new string[]
             {
                 // first line is the expected location of the runfiles directory from the assembly location
