@@ -129,6 +129,7 @@ def _msbuild_assembly(
             name = name + "_publish",
             project_file = project_file,
             target = ":" + name,
+            visibility = visibility,
         )
 
 def _steal_args(dest, src, args):
