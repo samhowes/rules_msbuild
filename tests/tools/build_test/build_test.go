@@ -108,7 +108,7 @@ func TestBuildOutput(t *testing.T) {
 
 			fullPath := filepath.Join(dir, f)
 			t.Logf(fullPath)
-			_, err := os.Stat(fullPath)
+			_, err := os.Stat(filepath.Join(packageBin, fullPath))
 			exists := !errors.Is(err, os.ErrNotExist)
 
 			if shouldExist {
