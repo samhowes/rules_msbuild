@@ -4,7 +4,7 @@ package(default_visibility = ["//dotnet:__subpackages__"])
 
 bzl_library(
     name = "bzl",
-    srcs = glob(["*.bzl"]),
+    srcs = glob(["*.bzl"]) + ["@rules_dotnet_runtime//dotnet:defs.bzl"],
     visibility = ["//visibility:public"],
     deps = [
         "//dotnet/private/msbuild:bzl",
