@@ -40,7 +40,8 @@ if [[ ! -z '$DOTNET_CLI_HOME' ]]; then
 else
     dotnet_path='$(which dotnet)'
     if [[ '$?' != '0' ]]; then
-        echo 'Could not find dotnet on PATH. Set the environment variable DOTNET_CLI_HOME or install a dotnet runtime. https://dotnet.microsoft.com/download' 
+        echo 'Could not find dotnet on PATH. Set the environment variable DOTNET_CLI_HOME or install a dotnet runtime. https://dotnet.microsoft.com/download'
+        exit 1 
     fi;
 fi;
 
