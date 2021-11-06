@@ -29,6 +29,7 @@ def _publish_impl(ctx):
     return [
         DefaultInfo(files = all, runfiles = ctx.runfiles([info.output_dir], transitive_files = info.library.runfiles)),
         info,
+        info.public,
         OutputGroupInfo(all = all),
     ]
 

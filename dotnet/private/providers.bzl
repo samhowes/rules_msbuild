@@ -43,6 +43,7 @@ DotnetPublishInfo = provider(
         "library": "DotnetLibraryInfo",
         "restore": "DotnetRestoreInfo",
         "runfiles_manifest": "manually generated runfiles manifest",
+        "public": "DotnetPublishInfo from @dotnet_runtime",
     },
 )
 

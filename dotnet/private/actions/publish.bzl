@@ -1,7 +1,8 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@rules_dotnet_runtime//dotnet:defs.bzl", "DotnetPublishInfo")
 load(":common.bzl", "cache_set", "declare_caches", "write_cache_manifest")
 load("//dotnet/private:context.bzl", "dotnet_exec_context", "make_builder_cmd")
-load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "DotnetPublishInfo", "MSBuildDirectoryInfo")
+load("//dotnet/private:providers.bzl", "DotnetLibraryInfo", "MSBuildDirectoryInfo", _DotnetPublishInfo = "DotnetPublishInfo")
 load("//dotnet/private/util:util.bzl", "to_manifest_path")
 
 def publish(ctx):
@@ -11,6 +12,10 @@ def publish(ctx):
     dotnet = dotnet_exec_context(ctx, info.executable, False, restore.target_framework)
 
     output_dir = ctx.actions.declare_directory(paths.join("publish", dotnet.config.tfm))
+
+    launcher = None
+    if info.executable:
+        launcher = ctx.actions.declare_file(paths.join("publish", dotnet.config.tfm, restore.assembly_name + dotnet.ext))
 
     cache = declare_caches(ctx, "publish")
 
@@ -27,7 +32,9 @@ def publish(ctx):
         [cache_manifest, ctx.file._launcher_template, runfiles_manifest],
         transitive = [info.files, info.runfiles],
     )
-    outputs = [output_dir, cache.result, cache.project] + cmd_outputs
+    outputs = [output_dir, cache.result, cache.project] + cmd_outputs + (
+        [launcher] if info.executable else []
+    )
 
     ctx.actions.run(
         mnemonic = "DotnetPublish",
@@ -39,13 +46,18 @@ def publish(ctx):
         tools = dotnet.builder.files,
     )
 
-    publish_info = DotnetPublishInfo(
+    publish_info = _DotnetPublishInfo(
         output_dir = output_dir,
         files = depset(direct = outputs, transitive = [inputs]),
         caches = cache_set([cache], transitive = [caches]),
         library = info,
         restore = restore,
         runfiles_manifest = runfiles_manifest,
+        public = DotnetPublishInfo(
+            launcher = launcher,
+            files = depset(outputs),
+            output_directory = output_dir,
+        ),
     )
 
     return publish_info
