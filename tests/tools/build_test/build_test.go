@@ -86,12 +86,13 @@ func TestBuildOutput(t *testing.T) {
 
 	_ = filepath.WalkDir(packageBin, func(p string, info fs.DirEntry, err error) error {
 
-		p = p[len(packageBin):]
+		//p = p[len(packageBin):]
 		t.Logf(p)
 
 		return nil
 	})
 
+	t.Logf(os.Getwd())
 	// go_test starts us in our runfiles_tree (on unix) so we can base our assertions off of the current directory
 	for dir, filesA := range config.Data["expectedFiles"].(map[string]interface{}) {
 		expectedFiles := filesA.([]interface{})
@@ -122,6 +123,7 @@ func TestBuildOutput(t *testing.T) {
 			}
 
 			fullPath := filepath.Join(dir, f)
+			fullPath, _ = filepath.Abs(fullPath)
 			t.Logf(fullPath)
 			_, err := os.Stat(fullPath)
 			exists := !errors.Is(err, os.ErrNotExist)
