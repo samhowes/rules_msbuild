@@ -66,8 +66,12 @@ func TestBuildOutput(t *testing.T) {
 	ind := strings.Index(config.Target, config.Package)
 	packageBin := config.Target[0 : ind+len(config.Package)]
 	t.Logf("packageBin: %s", packageBin)
-	err := os.Chdir(packageBin)
-	assert.NoError(t, err)
+	if os.PathSeparator == '\\' {
+		// change directory on windows because we won't have recursive runfiles
+		// on mac & linux we'll be in a sandbox, so changing directory won't be nice
+		err := os.Chdir(packageBin)
+		assert.NoError(t, err)
+	}
 
 	_ = filepath.WalkDir(packageBin, func(p string, info fs.DirEntry, err error) error {
 
