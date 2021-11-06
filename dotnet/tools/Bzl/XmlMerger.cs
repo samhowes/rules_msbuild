@@ -7,7 +7,8 @@ namespace Bzl
 {
     public class XmlMerger
     {
-        private static readonly Regex MarkerRegex = new Regex(@"(<!--(\s+)?bzl:(?<name>\w+)\s(?<position>start|end)(\s+)?-->)|(?<end></Project>)",
+        private static readonly Regex MarkerRegex = new Regex(
+            @"(<!--(\s+)?bzl:(?<name>\w+)\s(?<position>start|end)(\s+)?-->)|(?<end></Project>)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly StreamReader _reader;
@@ -25,13 +26,14 @@ namespace Bzl
             Found,
             EOF
         }
+
         public string Replace(string markerName, string contents)
         {
             var addExtraLine = ReadUntilPosition(markerName, "start", out var header);
             _writer.Write(header);
             if (!addExtraLine)
                 _writer.WriteLine();
-            
+
             _writer.WriteLine($"    <!--  bzl:{markerName} start  -->");
             _writer.Write(contents);
             _writer.WriteLine($"    <!--  bzl:{markerName} end  -->");
@@ -49,7 +51,7 @@ namespace Bzl
             _writer.Flush();
             return _writer.GetStringBuilder().ToString();
         }
-        
+
         private bool ReadUntilPosition(string markerName, string position, out string contents)
         {
             bool found = false;
@@ -63,10 +65,10 @@ namespace Bzl
                 {
                     found = true;
                     break;
-                } 
-                if (state == MarkerState.EOF) break;
-                
+                }
+
                 builder.AppendLine(line);
+                if (state == MarkerState.EOF) break;
             }
 
             contents = builder.ToString();
@@ -83,6 +85,7 @@ namespace Bzl
                 {
                     return MarkerState.Found;
                 }
+
                 if (match.Groups["end"].Success) return MarkerState.EOF;
             }
 
