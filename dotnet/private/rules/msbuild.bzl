@@ -149,7 +149,7 @@ msbuild_publish = rule(
     attrs = dicts.add(_COMMON_ATTRS, {
         "target": attr.label(mandatory = True, providers = [DotnetLibraryInfo]),
         "_launcher_template": attr.label(
-            default = "@rules_msbuild//.azpipelines/artifacts:windows-amd64/launcher_windows.exe",
+            default = "@rules_msbuild//dotnet/tools/launcher:launcher_windows",
             allow_single_file = True,
         ),
     }),

@@ -78,7 +78,10 @@ genrule(
         "--packages=" + ",".join(["$(location %s)" % p for p in PACKAGES]),
     ]),
     exec_tools = ["//eng/tar"],
-    tags = ["local"],
+    tags = [
+        "local",
+        "no-cache",
+    ],
     visibility = ["//:__subpackages__"],
 )
 

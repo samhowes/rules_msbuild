@@ -1,5 +1,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
+# rules_msbuild:release start
+load("//dotnet/private/util:relased.bzl", "IS_RELEASED")
+
 package(default_visibility = ["//visibility:public"])
 
 filegroup(
@@ -22,6 +25,13 @@ filegroup(
     data = ["@bazel_tools//tools/bash/runfiles"],
 )
 
+alias(
+    name = "launcher_windows",
+    actual = ("//.azpipelines/artifacts:windows-amd64/launcher_windows.exe" if IS_RELEASED else ":launcher_windows_go"),
+)
+
+# rules_msbuild:release end
+
 go_library(
     name = "launcher_lib",
     srcs = [
@@ -39,7 +49,7 @@ go_library(
 )
 
 go_binary(
-    name = "launcher_windows",
+    name = "launcher_windows_go",
     embed = [":launcher_lib"],
     visibility = ["//visibility:public"],
 )
