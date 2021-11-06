@@ -126,7 +126,7 @@ def _nuget_fetch_impl(ctx):
         working_directory = str(parser_project.dirname),
     )
     if result.return_code != 0:
-        fail("failed executing '{}':\nstdout: {}\nstderr: {}".format(" ".join(args), result.stdout, result.stderr))
+        fail("failed executing '%s':\nstdout: %s\nstderr: %s".format(" ".join(args), result.stdout, result.stderr))
 
 def _configure_host_packages(ctx, dotnet, config):
     if not ctx.attr.use_host:
@@ -144,13 +144,13 @@ def _configure_host_packages(ctx, dotnet, config):
 
     result = ctx.execute(args)
     if result.return_code != 0:
-        fail("failed to find global-packages folder with dotnet: {}; {}" % (result.stdout, result.stderr))
+        fail("failed to find global-packages folder with dotnet: %s; %s" % (result.stdout, result.stderr))
 
     # example dotnet5 output: `global-packages: /Users/samh/.nuget/packages/`
     # example dotnet3.1 output: `info : global-packages: /Users/samh/.nuget/packages/`
     ind = result.stdout.index(cache_type)
     if ind < 0:
-        fail("unexpected output from {}: {}".format(" ".join(args), result.stdout))
+        fail("unexpected output from %s: %s".format(" ".join(args), result.stdout))
     start = ind + len(cache_type) + 2
     location = result.stdout[start:].strip()
 

@@ -22,7 +22,9 @@ def restore(ctx, dotnet):
 
     outputs = [assets_json, restore_dir, cache.result, cache.project]
 
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore", directory_info)
+    assembly_name = _get_assembly_name(ctx, directory_info)
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore", directory_info, assembly_name)
+
     outputs.extend(cmd_outputs)
     args.add_all([
         "--version",
@@ -47,6 +49,7 @@ def restore(ctx, dotnet):
         files = depset(outputs, transitive = [inputs]),
         caches = cache_set([cache], transitive = caches),
         directory_info = directory_info,
+        assembly_name = assembly_name,
     ), outputs
 
 def _process_deps(dotnet, ctx):
@@ -73,3 +76,27 @@ def _process_deps(dotnet, ctx):
             fail("Unkown dependency type: {}".format(dep))
 
     return files, caches
+
+def _get_assembly_name(ctx, directory_info):
+    if directory_info == None:
+        return ""
+    override = getattr(ctx.attr, "assembly_name", None)
+    if override != None and override != "":
+        return override
+    parts = []
+
+    prefix = getattr(directory_info, "assembly_name_prefix", "")
+    if prefix != "":
+        parts.append(prefix)
+
+    name = ctx.attr.name[:(-1 * len("_restore"))]
+
+    if getattr(directory_info, "use_bazel_package_for_assembly_name", False):
+        if ctx.label.package != "":
+            parts.extend(ctx.label.package.split("/"))
+
+        if ctx.attr.name != parts[-1]:
+            parts.append(ctx.attr.name)
+    else:
+        parts.append(name)
+    return ".".join(parts)

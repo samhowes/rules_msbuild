@@ -2,6 +2,7 @@ package build_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/samhowes/rules_msbuild/tests/tools/executable"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -44,12 +46,20 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 			fmt.Println(k)
 		}
 		config.Package = `%package%`
-		if config.ExpectedOutput != "" {
-			config.Target = path.Base("%target%")
-			config.Target, err = bazel.Runfile(path.Join(config.Package, config.Target))
+		config.Target = "%target%"
+		rlocation, err := bazel.Runfile(config.Target)
+		if err != nil {
+			// on windows, the manifest truncates nested files, so check for the directory if we miss the specific file
+			dir, file := path.Split(config.Target)
+			rlocation, err = bazel.Runfile(dir[:len(dir)-1])
 			if err != nil {
 				t.Fatalf("failed to find target: %v", err)
 			}
+			rlocation = filepath.Join(rlocation, file)
+		}
+		config.Target = rlocation
+		if os.PathSeparator == '\\' {
+			config.Target = strings.ReplaceAll(config.Target, "\\", "/")
 		}
 
 		config.RunLocation = `%run_location%`
@@ -64,40 +74,27 @@ func TestBuildOutput(t *testing.T) {
 	fmt.Printf("Current working directory: \n%s\n", cwd)
 	fmt.Printf("target: %s\n", config.Target)
 
-	exitingFiles := map[string]bool{}
-	runfiles, _ := bazel.ListRunfiles()
-
-	relpath := func(p string) string {
-		if os.PathSeparator == '\\' {
-			p = strings.Replace(p, "\\", "/", -1)
-		}
-
-		for _, prefix := range []string{"/bin/", "/rules_msbuild/", config.Package + "/"} {
-			index := strings.Index(p, prefix)
-			if index >= 0 {
-				p = p[index+len(prefix):]
-			}
-		}
-		return p
+	ind := strings.Index(config.Target, config.Package)
+	packageBin := config.Target[0 : ind+len(config.Package)]
+	t.Logf("packageBin: %s", packageBin)
+	if os.PathSeparator == '\\' {
+		// change directory on windows because we won't have recursive runfiles
+		// on mac & linux we'll be in a sandbox, so changing directory won't be nice
+		err := os.Chdir(packageBin)
+		assert.NoError(t, err)
 	}
 
-	for _, f := range runfiles {
-		if exitingFiles[relpath(f.ShortPath)] {
-			continue
-		}
-		_ = filepath.WalkDir(f.Path, func(p string, info fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(packageBin, func(p string, info fs.DirEntry, err error) error {
 
-			p = relpath(p)
-			exitingFiles[p] = true
-			t.Logf(p)
+		//p = p[len(packageBin):]
+		t.Logf(p)
 
-			return nil
-		})
-	}
+		return nil
+	})
 
+	t.Logf(os.Getwd())
 	// go_test starts us in our runfiles_tree (on unix) so we can base our assertions off of the current directory
 	for dir, filesA := range config.Data["expectedFiles"].(map[string]interface{}) {
-		t.Log(dir)
 		expectedFiles := filesA.([]interface{})
 		for _, fA := range expectedFiles {
 			f := fA.(string)
@@ -113,6 +110,10 @@ func TestBuildOutput(t *testing.T) {
 				if !config.Diag {
 					continue
 				}
+			case ".exe":
+				if runtime.GOOS != "windows" {
+					f = f[:len(f)-len(".exe")]
+				}
 			}
 
 			shouldExist := true
@@ -121,9 +122,12 @@ func TestBuildOutput(t *testing.T) {
 				f = f[1:]
 			}
 
-			fullPath := path.Join(dir, f)
-			fmt.Printf(fullPath + "\n")
-			_, exists := exitingFiles[fullPath]
+			fullPath := filepath.Join(dir, f)
+			fullPath, _ = filepath.Abs(fullPath)
+			t.Logf(fullPath)
+			_, err := os.Stat(fullPath)
+			exists := !errors.Is(err, os.ErrNotExist)
+
 			if shouldExist {
 				assert.Equal(t, true, exists, "expected file to exist: %s", fullPath)
 			} else {
@@ -143,6 +147,15 @@ func TestExecutableOutput(t *testing.T) {
 		config.Target = lib.SetupFakeRunfiles(t, path.Base(config.Target))
 		config.Cwd = files.ComputeStartingDir(config.Target)
 		t.Logf("Computed starting dir to: \n%s", config.Cwd)
+	}
+
+	f, err := os.Stat(config.Target)
+	assert.NoError(t, err)
+	if f.IsDir() {
+		config.Target = path.Join(config.Target, strings.TrimSuffix("%assembly_name%", ".dll"))
+		if runtime.GOOS == "windows" {
+			config.Target = config.Target + ".exe"
+		}
 	}
 
 	lib.CheckExecutableOutput(t, &config)

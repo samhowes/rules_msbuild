@@ -13,7 +13,7 @@ namespace BzlTests
 {
     public class WorkspaceMakerTests : IDisposable
     {
-        private static LabelRunfiles _runfiles;
+        private static Runfiles _runfiles;
         private static string _basePath;
         private string _testDir;
 
@@ -40,7 +40,7 @@ namespace BzlTests
             {
                 template.Contents = $"<Project>\n    {template.Contents}\n</Project>\n";
             }
-            
+
             var maker = new WorkspaceMaker(_testDir, workspaceName, templates);
 
             maker.Init();
@@ -56,7 +56,7 @@ namespace BzlTests
                 //     regex.IsMatch(joined).Should().BeTrue($"`{regex}` should have matched:\n```\n{joined}\n```");
                 // }
 
-                if (spec.Contents.Length > 0 )
+                if (spec.Contents.Length > 0)
                 {
                     var builder = new StringBuilder().AppendLine(spec.Rel);
 
@@ -66,7 +66,7 @@ namespace BzlTests
                     var actual = contents;
                     var expected = spec.Contents;
                     var failed = false;
-                    for (;expectedIndex < expected.Length && actualIndex < actual.Length;)
+                    for (; expectedIndex < expected.Length && actualIndex < actual.Length;)
                     {
                         var e = expected[expectedIndex];
                         var a = actual[actualIndex];
@@ -81,9 +81,9 @@ namespace BzlTests
                             builder.Append(" - ");
                             builder.AppendLine(e);
                             builder.Append(" + ");
-                            builder.AppendLine(a);    
+                            builder.AppendLine(a);
                         }
-                        
+
                         expectedIndex++;
                         actualIndex++;
                     }
@@ -152,9 +152,9 @@ namespace BzlTests
 
         public static IEnumerable<object[]> GetWorkspaces()
         {
-            _runfiles = Runfiles.Create<WorkspaceMakerTests>();
+            _runfiles = Runfiles.Create();
 
-            var list = _runfiles.ListRunfiles("//tests/dotnet/tools/BzlTests:testdata").ToList();
+            var list = _runfiles.ListRunfiles("rules_msbuild/tests/dotnet/tools/BzlTests/testdata").ToList();
             var first = list.First();
             _basePath = first[..(first.IndexOf("testdata", StringComparison.Ordinal) + "testdata".Length)];
 

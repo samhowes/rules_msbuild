@@ -19,9 +19,12 @@ func main() {
 		panic(fmt.Sprintf("no binary type in launch info: %s", launchInfo))
 	}
 
-	if binaryType == "Dotnet" {
+	switch binaryType {
+	case "Dotnet":
 		LaunchDotnet(os.Args, launchInfo)
-	} else {
+	case "DotnetPublish":
+		LaunchDotnetPublish(os.Args, launchInfo)
+	default:
 		_, _ = fmt.Fprintf(os.Stderr, "unkown binary_type: %s", binaryType)
 	}
 }

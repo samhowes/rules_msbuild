@@ -9,17 +9,19 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
     {
         public MSBuildContext(BuildCommand command,
             BazelContext bazel,
-            string nuGetConfig, 
+            string nuGetConfig,
             string directoryBazelPropsPath)
         {
             Configuration = command.configuration;
             OutputPath = bazel.OutputDir;
+            PublishDir = Path.Combine(OutputPath, "publish", command.tfm);
             BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
 
             var propsDirectory = Path.GetDirectoryName(directoryBazelPropsPath);
-            
-            var noWarn = "NU1603"; // Microsoft.TestPlatform.TestHost 16.7.1 depends on Newtonsoft.Json (>= 9.0.1) but Newtonsoft.Json 9.0.1 was not found. An approximate best match of Newtonsoft.Json 13.0.1 was resolved.
+
+            var
+                noWarn = "NU1603"; // Microsoft.TestPlatform.TestHost 16.7.1 depends on Newtonsoft.Json (>= 9.0.1) but Newtonsoft.Json 9.0.1 was not found. An approximate best match of Newtonsoft.Json 13.0.1 was resolved.
 
             GlobalProperties = new Dictionary<string, string>
             {
@@ -51,17 +53,16 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 ["BINDIR"] = bazel.BinDir,
                 ["BazelExternal"] = Path.Combine(bazel.ExecRoot, "external"),
                 ["RestoreConfigFile"] = nuGetConfig,
-                ["PublishDir"] = Path.Combine(OutputPath, "publish", command.tfm) + "/",
+                ["PublishDir"] = PublishDir + "/",
                 ["UseAppHost"] = "false", // we'll basically be making our own via the launcher
                 // msbuild's shared compilation is not compatible with sandboxing because it wll delegate compilation to
                 // another process that won't have access to the sandbox requesting the build.
                 ["UseSharedCompilation"] = "false",
                 ["BazelBuild"] = "true",
             };
-            
+
             foreach (var src in command.DirectorySrcs)
             {
-                var filename = Path.GetFileName(src);
                 switch (src.ToLower())
                 {
                     case "directory.build.props":
@@ -73,7 +74,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                         break;
                 }
             }
-            
+
             switch (command.Action)
             {
                 case "restore":
@@ -100,12 +101,15 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 default:
                     throw new ArgumentException($"Unknown action {command.Action}");
             }
+
             BuildEnvironment["NoWarn"] = noWarn;
         }
 
-        public Dictionary<string,string> GlobalProperties { get; set; }
+        public string PublishDir { get; set; }
+
+        public Dictionary<string, string> GlobalProperties { get; set; }
         public string Configuration { get; }
-        public Dictionary<string,string> BuildEnvironment { get; }
+        public Dictionary<string, string> BuildEnvironment { get; }
         public string[] Targets { get; }
         public string BaseIntermediateOutputPath { get; }
         public string RestoreDir => BaseIntermediateOutputPath;

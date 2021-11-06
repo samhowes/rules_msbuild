@@ -2,7 +2,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":common.bzl", "declare_caches", "write_cache_manifest")
 load("//dotnet/private:context.bzl", "dotnet_exec_context", "make_builder_cmd")
 load("//dotnet/private:providers.bzl", "DotnetPublishInfo")
-load("//dotnet/private/util:util.bzl", "to_manifest_path")
 
 def pack(ctx):
     info = ctx.attr.target[DotnetPublishInfo]
@@ -18,24 +17,11 @@ def pack(ctx):
     cache = declare_caches(ctx, "pack")
     cache_manifest = write_cache_manifest(ctx, cache, info.caches)
 
-    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "pack", restore.directory_info)
-    args.add_all(["--version", ctx.attr.version])
-
-    runfiles = info.library.runfiles.to_list()
-    runfiles_manifest = None
-    if len(runfiles) > 0:
-        runfiles_manifest = ctx.actions.declare_file(ctx.attr.name + ".runfiles_manifest")
-        ctx.actions.write(
-            runfiles_manifest,
-            "\n".join([
-                "%s %s" % (to_manifest_path(ctx, r), to_manifest_path(ctx, r, True))
-                for r in runfiles
-            ]),
-        )
+    args, cmd_outputs = make_builder_cmd(ctx, dotnet, "pack", restore.directory_info, restore.assembly_name)
+    args.add_all(["--version", ctx.attr.version, "--runfiles_manifest", info.runfiles_manifest])
 
     inputs = depset(
-        [cache_manifest] +
-        ([runfiles_manifest] if runfiles_manifest != None else []),
+        [cache_manifest, info.runfiles_manifest],
         transitive = [info.files, info.library.runfiles],
     )
     outputs = [nupkg, cache.result] + cmd_outputs

@@ -31,7 +31,7 @@ namespace Bzl
         {
             if (args.Length > 0 && args[0] == "_test")
                 return Test(args[1]);
-            
+
             return Parser.Default.ParseArguments<InitOptions, GazelleOptions>(args)
                 .MapResult(
                     (InitOptions init) => Init(init),
@@ -43,11 +43,11 @@ namespace Bzl
         {
             var workspaceRoot = Directory.GetCurrentDirectory();
             var workspaceName = Path.GetFileName(workspaceRoot);
-            var runfiles = Runfiles.Create<Program>();
-            var templates = Templates.CreateDefault(runfiles.Runfiles);
+            var runfiles = Runfiles.Create();
+            var templates = Templates.CreateDefault(runfiles);
 
             var workspaceContents =
-                Util.UpdateWorkspaceTemplate(runfiles.Runfiles, tarPath, $"file:{tarPath}");
+                Util.UpdateWorkspaceTemplate(runfiles, tarPath, $"file:{tarPath}");
 
             templates.Workspace = new Template("WORKSPACE", workspaceContents);
             var workspaceMaker = new WorkspaceMaker(workspaceRoot, workspaceName, templates);
@@ -71,8 +71,8 @@ namespace Bzl
                 Directory.SetCurrentDirectory(workspaceRoot);
             }
 
-            var runfiles = Runfiles.Create<Program>();
-            var templates = Templates.CreateDefault(runfiles.Runfiles);
+            var runfiles = Runfiles.Create();
+            var templates = Templates.CreateDefault(runfiles);
             var workspaceMaker = new WorkspaceMaker(workspaceRoot, workspaceName, templates);
             workspaceMaker.Init();
 
@@ -85,7 +85,7 @@ namespace Bzl
 
         public static int Gazelle(GazelleOptions options)
         {
-            var runfiles = Runfiles.Create<Program>();
+            var runfiles = Runfiles.Create();
             var gazelle = FindGazelle(runfiles);
 
             if (gazelle == null) return 1;
@@ -95,7 +95,7 @@ namespace Bzl
             return process.ExitCode;
         }
 
-        private static string? FindGazelle(LabelRunfiles runfiles)
+        private static string? FindGazelle(Runfiles runfiles)
         {
             // are we released?
             var artifactsFolder = runfiles.Rlocation($"rules_msbuild/.azpipelines/artifacts:gazelle-dotnet");

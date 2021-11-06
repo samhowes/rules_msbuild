@@ -71,88 +71,6 @@ namespace RulesMSBuild.Tools.Bazel
         public const char PathSeparator = '/';
 
         /// <summary>
-        /// The most resilient runfiles creation method. Uses a file created by RulesMSBuild to find runfiles if no
-        /// environment variables have been set. This method makes it safe to execute this assembly from an IDE or
-        /// directory using `dotnet <AssemblyName>.dll`.
-        /// </summary>
-        /// <typeparam name="TEntry">A type in an an assembly copied to the primary output directory. Best to use
-        /// a type from th entry assembly.</typeparam>
-        /// <returns>An instance of <see cref="LabelRunfiles"/> which uses bazel labels to compute runfiles paths for
-        /// you</returns>
-        /// <exception cref="IOException">If a runfiles directory cannot be found.</exception>
-        public static LabelRunfiles Create<TEntry>() where TEntry : class
-        {
-            const string infoName = "runfiles.info";
-            var assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
-            var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
-            var infoFile = new FileInfo(
-                Path.Combine(assemblyDirectory!,infoName));
-            if (!infoFile.Exists)
-            {
-                throw new IOException($"Could not find `{infoName}` file next to {assemblyLocation}");
-            }
-
-            var lines = File.ReadAllLines(infoFile.FullName);
-            if (lines.Length != 4)
-            {
-                throw new IOException($"Unexpected `{infoName}` format, expected three lines, got: {lines.Length}");
-            }
-
-            var expectedLocation = lines[0];
-            var defaultPackage = new Label(lines[1], lines[2]);
-            var strategy = lines[3];
-
-            if (!TryCreate(Environment.GetEnvironmentVariables(), out var runfiles))
-            {
-                // no one has told us where the runfiles are, this means:
-                // 1) the user ran a .dll with `dotnet <AssemblyName>.dll`
-                //      in this case, the runfiles dir is at <AssemblyName>[.exe].runfiles
-                // 2) An ide is executing this assembly, perhaps via debugging
-                //      if it's debugging, we most likely can't divine runfiles from Environment.CommandLine because that
-                //      will be the debugger arguments
-
-                // luckily, the builder left a breadcrumb for us
-                // expected location is a relative path to <EntryAssembly>[.exe].runfiles, as calculated by the builder
-                var expectedDir = Path.GetFullPath(Path.Combine(assemblyDirectory, expectedLocation));
-                if (!Directory.Exists(expectedDir))
-                {
-                    throw new IOException($"Failed to find runfiles. No environment variables were set and " +
-                                          $"{infoFile.FullName} pointed to {expectedDir} which does not exist.");
-                }
-                
-                // since no environment variables were set, we just have to take our best guess at which method to use
-                // on non-windows, there *should* be a runfiles tree, so use a directory based.
-                if (strategy == "directory" || Path.DirectorySeparatorChar != '\\')
-                {
-                    runfiles = new DirectoryBased(expectedDir);
-                }
-                else
-                {
-                    // on windows, there *may* be a runfiles tree, but there will always be a manifest, so its safe to 
-                    // use that
-                    runfiles = new ManifestBased(Path.Combine(expectedDir, "MANIFEST"));
-                }
-            }
-
-            return new LabelRunfiles(runfiles, defaultPackage);
-        }
-
-
-        /// <summary>
-        /// Returns a new <see cref="Runfiles"/> instance.
-        /// <para>This method passes <see cref="Environment.GetEnvironmentVariables"/> to <see cref="Create"/></para>
-        /// </summary>
-        public static Runfiles Create()
-        {
-            return Create(Environment.GetEnvironmentVariables());
-        }
-
-        public static Runfiles CreateNuget()
-        {
-            return Create(Environment.GetEnvironmentVariables(), true);
-        }
-
-        /// <summary>
         /// Returns a new <see cref="Runfiles"/> instance.
         /// <para>The returned object is either:</para>
         /// <list type="bullet">
@@ -172,42 +90,80 @@ namespace RulesMSBuild.Tools.Bazel
         /// <param name="env">A dictionary of environment variables</param>
         /// <param name="b"></param>
         /// <returns></returns>
-        public static Runfiles Create(IDictionary env, bool checkNuGet = false)
+        public static LabelRunfiles Create(IDictionary env)
         {
-            if (checkNuGet && TryCreateNuget(env, out var runfiles))
-                return runfiles;
-            
-            if (TryCreate(env, out runfiles)) return runfiles;
-
-            throw new IOException(
-                "Cannot find runfiles: To use a directory, set $RUNFILES_DIR, To use a manifest, set " +
-                $"RUNFILES_MANIFEST_ONLY=1 set RUNFILES_MANIFEST_FILE. Alternatively, use {nameof(Create)}<TEntry>, " +
-                $"where TEntry is a class defined in an assembly copied to the output directory.");
-        }
-
-        private static bool TryCreateNuget(IDictionary env, out Runfiles runfiles)
-        {
-            runfiles = null;
-            var binDir = Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!;
-            var settingsPath = Path.Combine(binDir!, "DotnetToolSettings.xml");
-            if (File.Exists(settingsPath))
+            const string infoName = "runfiles.info";
+            var assemblyLocation = AppDomain.CurrentDomain.BaseDirectory;
+            var assemblyDirectory = Path.GetDirectoryName(assemblyLocation);
+            var infoFile = new FileInfo(
+                Path.Combine(assemblyDirectory!, infoName));
+            if (!infoFile.Exists)
             {
-                // assume we're in <package_root>/<tfm>/<cpu>/
-                // our runfiles root is at <package_root>/content/runfiles 
-                var runfilesRoot = Path.GetFullPath(Path.Combine(binDir, "../../../content/runfiles"));
-                if (!Directory.Exists(runfilesRoot))
-                    throw new IOException(
-                        $"Found DotnetToolSettings.xml at {settingsPath}, but could not find a recognizable " +
-                        $"runfiles root at {runfilesRoot}.");
-                env["RUNFILES_MANIFEST_ONLY"] = "0";
-                // convert slashes just for consistency with bazel
-                runfilesRoot = runfilesRoot.Replace('\\', '/');
-                env["RUNFILES_DIR"] = runfilesRoot;
-                runfiles = new DirectoryBased(runfilesRoot);
-                return true;
+                throw new IOException($"Could not find `{infoName}` file next to {assemblyLocation}");
             }
 
-            return false;
+            var lines = File.ReadAllLines(infoFile.FullName);
+            if (lines.Length != 4)
+            {
+                throw new IOException($"Unexpected `{infoName}` format, expected three lines, got: {lines.Length}");
+            }
+
+            var expectedLocation = lines[0];
+            var defaultPackage = new Label(lines[1], lines[2]);
+            var strategy = lines[3];
+
+            string GetExpectedLocation()
+            {
+                // expected location is a relative path to <EntryAssembly>.dll.runfiles, as calculated by the builder
+                var expectedDir = Path.GetFullPath(Path.Combine(assemblyDirectory, expectedLocation));
+                if (!Directory.Exists(expectedDir))
+                {
+                    throw new IOException($"Failed to find runfiles. No environment variables were set and " +
+                                          $"{infoFile.FullName} pointed to {expectedDir} which does not exist.");
+                }
+
+                return expectedDir;
+            }
+
+            Runfiles runfiles;
+            if (strategy == "selfish")
+            {
+                runfiles = new DirectoryBased(GetExpectedLocation());
+            }
+            else if (!TryCreate(env, out runfiles))
+            {
+                // no one has told us where the runfiles are, this means:
+                // 1) the user ran a .dll with `dotnet <AssemblyName>.dll`
+                //      in this case, the runfiles dir is at <AssemblyName>[.exe].runfiles
+                // 2) An ide is executing this assembly, perhaps via debugging
+                //      if it's debugging, we most likely can't divine runfiles from Environment.CommandLine because that
+                //      will be the debugger arguments
+
+                // since no environment variables were set, we just have to take our best guess at which method to use
+                // on non-windows, there *should* be a runfiles tree, so use a directory based.
+                if (Path.DirectorySeparatorChar != '\\')
+                {
+                    runfiles = new DirectoryBased(GetExpectedLocation());
+                }
+                else
+                {
+                    // on windows, there *may* be a runfiles tree, but there will always be a manifest, so its safe to 
+                    // use that
+                    runfiles = new ManifestBased(Path.Combine(GetExpectedLocation(), "MANIFEST"));
+                }
+            }
+
+            return new LabelRunfiles(runfiles, defaultPackage);
+        }
+
+
+        /// <summary>
+        /// Returns a new <see cref="Runfiles"/> instance.
+        /// <para>This method passes <see cref="Environment.GetEnvironmentVariables"/> to <see cref="Create"/></para>
+        /// </summary>
+        public static Runfiles Create()
+        {
+            return Create(Environment.GetEnvironmentVariables()).Runfiles;
         }
 
         private static bool TryCreate(IDictionary env, out Runfiles runfiles)
@@ -419,8 +375,8 @@ namespace RulesMSBuild.Tools.Bazel
                 IEnumerable<string> Walk(string path)
                 {
                     foreach (var dir in Directory.EnumerateDirectories(path))
-                        foreach (var file in Walk(dir))
-                            yield return file;
+                    foreach (var file in Walk(dir))
+                        yield return file;
 
                     foreach (var file in Directory.EnumerateFiles(path))
                         yield return file;

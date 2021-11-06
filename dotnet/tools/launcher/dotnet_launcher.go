@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -64,6 +67,33 @@ func LaunchDotnet(args []string, info *LaunchInfo) {
 	newArgs := append(dotnetArgs, assemblyArgs...)
 
 	diag(func() { fmt.Printf("==> launching: \"%s\"\n", strings.Join(newArgs, "\" \"")) })
+	launch(info, newArgs)
+}
+
+func LaunchDotnetPublish(args []string, info *LaunchInfo) {
+	assembly := args[0]
+	if strings.HasSuffix(assembly, ".exe") {
+		assembly = assembly[:len(assembly)-len(".exe")]
+	}
+	assembly = assembly + ".dll"
+
+	dotnetHome := os.Getenv("DOTNET_CLI_HOME")
+	var dotnet string
+	if dotnetHome != "" {
+		dotnet = filepath.Join(dotnetHome, "dotnet")
+	} else {
+		dotnetPath, err := exec.LookPath("dotnet")
+		dotnet = dotnetPath
+		if err != nil {
+			log.Panicf("Could not find 'dotnet' on PATH. Set the environment variable DOTNET_CLI_HOME or install a dotnet runtime. https://dotnet.microsoft.com/download")
+		}
+	}
+
+	newArgs := append([]string{
+		dotnet,
+		"exec",
+		assembly,
+	}, args[1:]...)
 	launch(info, newArgs)
 }
 

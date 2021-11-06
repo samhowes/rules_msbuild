@@ -19,6 +19,7 @@ namespace release
         Clean,
         Test,
     }
+
     class Program
     {
         private static Action _action;
@@ -32,7 +33,7 @@ namespace release
             Setup(args);
 
             await DownloadArtifacts();
-            
+
             if (_action == Action.Clean)
             {
                 Run($"gh release delete \"{_version}\" -y");
@@ -76,19 +77,19 @@ namespace release
             var test = Path.Combine(_work, "test");
             if (Directory.Exists(test)) Directory.Delete(test, true);
             Directory.CreateDirectory(test);
-            
+
             var nupkg = Path.GetFullPath($"bazel-bin/dotnet/tools/Bzl/SamHowes.Bzl.{_version}.nupkg");
             var tar = Path.Combine(_work, "rules_msbuild.tar.gz");
             File.Copy("bazel-bin/rules_msbuild.tar.gz", tar);
             File.Copy("bazel-bin/rules_msbuild.tar.gz.sha256", Path.Combine(_work, "rules_msbuild.tar.gz.sha256"));
-            
+
             Directory.SetCurrentDirectory(_work);
             Run($"unzip {nupkg} -d nupkg");
             Run($"chmod -R 755 nupkg");
-            
+
             Directory.SetCurrentDirectory(test);
             var tool = Path.Combine(_work, "nupkg/tools/netcoreapp3.1/any/Bzl.dll");
-            
+
             Run("dotnet new console -o console --no-restore");
             Run($"dotnet exec {tool} _test {tar}");
             Bazel("clean --expunge");
@@ -98,6 +99,7 @@ namespace release
             {
                 Die($"test failed, bad output: {result}");
             }
+
             Info("SUCCESS");
         }
 
@@ -160,7 +162,7 @@ namespace release
             Info($"Work directory: {_work}");
             _root = BazelEnvironment.GetWorkspaceRoot();
             Directory.SetCurrentDirectory(_root);
-            
+
             var versionContents = File.ReadAllText(Path.Combine(_root, "version.bzl"));
             var versionMatch = Regex.Match(versionContents, @"VERSION.*?=.*?""([^""]+)""");
             if (!versionMatch.Success) Die("Failed to parse version from version.bzl");
@@ -221,7 +223,7 @@ namespace release
                 Console.WriteLine($"Removing old artifact: {file}");
                 File.Delete(file);
             }
-        
+
             var outputs = Bazel("build //:tar --//config:mode=release");
             var tarSource = outputs[0];
             var tarAlias = Path.Combine(work, $"rules_msbuild-{version}.tar.gz");
@@ -230,7 +232,7 @@ namespace release
             var url =
                 $"https://github.com/samhowes/rules_msbuild/releases/download/{version}/rules_msbuild-{version}.tar.gz";
             var workspaceTemplateContents =
-                Bzl.Util.UpdateWorkspaceTemplate(Runfiles.Create<Program>().Runfiles, tarSource, url);
+                Bzl.Util.UpdateWorkspaceTemplate(Runfiles.Create(), tarSource, url);
 
             File.WriteAllText("dotnet/tools/Bzl/WORKSPACE.tpl", workspaceTemplateContents);
 
@@ -239,7 +241,7 @@ namespace release
             const string readmePath = "README.md";
             var readme = File.ReadAllText(readmePath);
             var regex = new Regex(@"(```python\s+#\s?\/\/WORKSPACE).*?(```)", RegexOptions.Singleline);
-            
+
             File.WriteAllText(readmePath, regex.Replace(readme, "$1\n" + usage + "$2", 1));
 
             return (tarAlias, usage);

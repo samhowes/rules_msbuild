@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
@@ -10,6 +11,7 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Logging;
 using RulesMSBuild.Tools.Builder.Caching;
 using RulesMSBuild.Tools.Builder.Diagnostics;
+using RulesMSBuild.Tools.Builder.Launcher;
 using RulesMSBuild.Tools.Builder.MSBuild;
 using static RulesMSBuild.Tools.Builder.BazelLogger;
 
@@ -22,6 +24,7 @@ namespace RulesMSBuild.Tools.Builder
         public PathMapper PathMapper;
         public BuildCache Cache;
         public ProjectLoader ProjectLoader;
+
         public BuilderDependencies(BuildContext context, IBazelMsBuildLogger? buildLog = null)
         {
             PathMapper = new PathMapper(context.Bazel.OutputBase, context.Bazel.ExecRoot);
@@ -36,7 +39,7 @@ namespace RulesMSBuild.Tools.Builder
                 context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
                 (m) => PathMapper.ToBazel(m));
 
-            Loggers = new List<ILogger>(){BuildLog};
+            Loggers = new List<ILogger>() {BuildLog};
             if (context.DiagnosticsEnabled)
             {
                 var path = context.OutputPath(context.Bazel.Label.Name + ".binlog");
@@ -51,7 +54,7 @@ namespace RulesMSBuild.Tools.Builder
             }
         }
     }
-    
+
     public class Builder
     {
         private readonly BuildContext _context;
@@ -81,7 +84,7 @@ namespace RulesMSBuild.Tools.Builder
             {
                 project = BeginBuild();
                 if (project == null) return -1;
-                
+
                 var result = ExecuteBuild(project);
 
                 EndBuild(result);
@@ -95,6 +98,7 @@ namespace RulesMSBuild.Tools.Builder
                     _log.Error(ex.Message);
                     shouldThrow = false;
                 }
+
                 try
                 {
                     _buildManager.EndBuild();
@@ -129,11 +133,11 @@ namespace RulesMSBuild.Tools.Builder
             }
 
             var pc = new ProjectCollection(
-                _context.MSBuild.GlobalProperties, 
+                _context.MSBuild.GlobalProperties,
                 _deps.Loggers,
                 ToolsetDefinitionLocations.Default);
-            
-            
+
+
             // our restore outputs are relative to the project directory
             Environment.CurrentDirectory = _context.ProjectDirectory;
 
@@ -153,7 +157,7 @@ namespace RulesMSBuild.Tools.Builder
 
             if (!ValidateTfm(project))
                 return null;
-            
+
             _buildParameters = new BuildParameters(pc)
             {
                 EnableNodeReuse = false,
@@ -162,8 +166,8 @@ namespace RulesMSBuild.Tools.Builder
                 ResetCaches = false,
                 MaxNodeCount = 1,
                 LogTaskInputs = _context.DiagnosticsEnabled,
-                ProjectLoadSettings = _context.DiagnosticsEnabled ? 
-                    ProjectLoadSettings.RecordEvaluatedItemElements 
+                ProjectLoadSettings = _context.DiagnosticsEnabled
+                    ? ProjectLoadSettings.RecordEvaluatedItemElements
                     : ProjectLoadSettings.Default,
                 // cult-copy
                 ToolsetDefinitionLocations =
@@ -186,7 +190,7 @@ namespace RulesMSBuild.Tools.Builder
         {
             var source = new TaskCompletionSource<BuildResultCode>();
             var flags = BuildRequestDataFlags.ReplaceExistingProjectInstance;
-            
+
             var data = new BuildRequestData(
                 project,
                 _context.MSBuild.Targets, null, flags
@@ -201,43 +205,15 @@ namespace RulesMSBuild.Tools.Builder
                     }
 
                     _context.ProjectBazelProps["AssemblyName"] = _context.Command.assembly_name;
-                    var writer =new BazelPropsWriter(); 
+                    var writer = new BazelPropsWriter();
                     writer.WriteProperties(
                         _context.ProjectExtensionPath(".bazel.props"),
                         _context.ProjectBazelProps);
                     writer.WriteTargets(_context.ProjectExtensionPath(".bazel.targets"));
                     break;
                 case "pack":
-                    var runfilesManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
-                    if (runfilesManifest.Exists)
-                    {
-                        foreach (var entry in File.ReadAllLines(runfilesManifest.FullName))
-                        {
-                            var parts = entry.Split(' ');
-                            var manifestPath = parts[0];
-                            var filePath = _deps.PathMapper.ToAbsolute(parts[1]);
-                            project.AddItem("None", filePath, new[]
-                            {
-                                new KeyValuePair<string, string>("Pack", "true"),
-                                new KeyValuePair<string, string>("PackagePath", $"content/runfiles/{manifestPath}"),
-                            });
-                        }
-                    }
-                    
-                    
-                    // the dll will be placed at    <root>/tools/<tfm>/any/<primaryName>.dll
-                    // runfiles will be at          <root>/content/runfiles
-                    var packDir = _context.OutputPath("pack");
-                    Directory.CreateDirectory(packDir);
-                    var path = Path.Combine(packDir, "runfiles.info");
-                    WriteRunfilesInfo(path, "../../../content/runfiles", true);
-                    project.AddItem("None", path, new[]
-                    {
-                        // new KeyValuePair<string, string>("What", "wow"),
-                        new KeyValuePair<string, string>("Pack", "true"),
-                        new KeyValuePair<string, string>("PackagePath", $"tools/{_context.Tfm}/any/"),
-                    });
-                    
+                    RegisterRunfiles(project);
+
                     // The default 'Pack' implementation by nuget sets a global property for the target framework
                     // this invalidates cache entries since they are keyed by ProjectFullPath + GlobalProperties
                     // We enforce a single target framework though, so this specification is not necessary
@@ -245,7 +221,7 @@ namespace RulesMSBuild.Tools.Builder
                     // additionally, it rebuilds targets that produce outputs, like writing to an Assembly References 
                     // cache file, and Bazel will have those files marked as ReadOnly, so MSBuild will fail the build because
                     // it can't write to that file.
-                    
+
                     // to prevent rebuilding, we clone the configuration so MSBuild will reuse the results from previous
                     // builds.
                     _deps.Cache.CloneConfiguration(data, _buildParameters.DefaultToolsVersion, project);
@@ -264,12 +240,137 @@ namespace RulesMSBuild.Tools.Builder
 
                     source.SetResult(result);
                 }, new object());
-            
+
+            if (_action == "publish")
+            {
+                if (_context.IsExecutable)
+                {
+                    var launcherFactory = new LauncherFactory();
+                    var launcherPath = Path.Combine(_context.MSBuild.PublishDir, _context.Command.assembly_name);
+                    if (Path.DirectorySeparatorChar == '\\')
+                    {
+                        launcherPath += ".exe";
+                    }
+
+                    launcherFactory.CreatePublish(
+                        Path.Combine(_context.Bazel.ExecRoot, _context.Command.LauncherTemplate),
+                        launcherPath);
+                }
+
+                var runfilesDir = _context.Command.assembly_name + ".dll.runfiles";
+                WriteRunfilesInfo(Path.Combine(_context.MSBuild.PublishDir, "runfiles.info"),
+                    runfilesDir, true);
+                CopyRunfiles(Path.Combine(_context.MSBuild.PublishDir, runfilesDir));
+            }
+
             var resultCode = source.Task.GetAwaiter().GetResult();
 
             return resultCode;
         }
-        
+
+        private void RegisterRunfiles(ProjectInstance project)
+        {
+            var runfilesDir = Path.Combine(_context.MSBuild.PublishDir,
+                _context.Command.assembly_name + ".dll.runfiles");
+            var runfilesManifest = new FileInfo(Path.Combine(runfilesDir, "MANIFEST"));
+
+            if (runfilesManifest.Exists)
+            {
+                foreach (var entry in File.ReadAllLines(runfilesManifest.FullName))
+                {
+                    var parts = entry.Split(' ');
+                    var manifestPath = parts[0];
+
+                    var filePath = Path.Combine(runfilesDir, parts[1]);
+                    project.AddItem("None", filePath, new[]
+                    {
+                        new KeyValuePair<string, string>("Pack", "true"),
+                        new KeyValuePair<string, string>("PackagePath", $"content/runfiles/{manifestPath}"),
+                    });
+                }
+            }
+
+            // the dll will be placed at    <root>/tools/<tfm>/any/<primaryName>.dll
+            // runfiles will be at          <root>/content/runfiles
+            var packDir = _context.OutputPath("pack");
+            Directory.CreateDirectory(packDir);
+            var path = Path.Combine(packDir, "runfiles.info");
+            WriteRunfilesInfo(path, "../../../content/runfiles", true);
+            project.AddItem("None", path, new[]
+            {
+                // new KeyValuePair<string, string>("What", "wow"),
+                new KeyValuePair<string, string>("Pack", "true"),
+                new KeyValuePair<string, string>("PackagePath", $"tools/{_context.Tfm}/any/"),
+            });
+        }
+
+        private void CopyRunfiles(string runfilesDir)
+        {
+            var inputManifest = new FileInfo(_context.LabelPath(".runfiles_manifest"));
+
+            if (!inputManifest.Exists) return;
+
+            Directory.CreateDirectory(runfilesDir);
+            var basePath = Path.GetDirectoryName(_context.Bazel.ExecRoot)!;
+            var directories = new HashSet<string>();
+            using var outputManifest = new StreamWriter(File.Create(Path.Combine(runfilesDir, "MANIFEST")));
+            foreach (var line in File.ReadAllLines(inputManifest.FullName))
+            {
+                var ind = line.IndexOf(' ');
+                string entry;
+                string? fullPath = null;
+                if (ind < 0)
+                {
+                    entry = line;
+                }
+                else
+                {
+                    entry = line[0..ind];
+                    fullPath = Path.Combine(basePath, line[(ind + 1)..]);
+                }
+
+                outputManifest.Write(entry);
+
+                var parts = entry.Split('/');
+                if (parts.Length >= 1 && parts[1] == "external") continue;
+
+                var directory = Path.Combine(runfilesDir, Path.GetDirectoryName(entry)!);
+                if (directories.Add(directory))
+                    Directory.CreateDirectory(directory);
+
+                var destPath = Path.Combine(runfilesDir, entry);
+                if (fullPath == null)
+                    File.Create(destPath);
+                else
+                {
+                    outputManifest.Write(" ");
+                    outputManifest.WriteLine(entry);
+                    var file = new FileInfo(fullPath);
+                    if ((file.Attributes & FileAttributes.Directory) != 0)
+                        CopyDirectory(fullPath, destPath);
+                    else
+                        File.Copy(fullPath, destPath, true);
+                }
+            }
+        }
+
+        private void CopyDirectory(string src, string dest)
+        {
+            Directory.CreateDirectory(dest);
+            string Rel(string parent, string child) => child[(parent.Length + 1)..];
+            foreach (var subDir in Directory.EnumerateDirectories(src))
+            {
+                var rel = Rel(src, subDir);
+                CopyDirectory(subDir, Path.Combine(dest, rel));
+            }
+
+            foreach (var file in Directory.EnumerateFiles(src))
+            {
+                var rel = Rel(src, file);
+                File.Copy(file, Path.Combine(dest, rel));
+            }
+        }
+
         private bool ValidateTfm(ProjectInstance? project)
         {
             var actualTfm = project?.GetProperty("TargetFramework")?.EvaluatedValue ?? "";
@@ -317,7 +418,7 @@ namespace RulesMSBuild.Tools.Builder
                         {
                             var filename = Path.GetFileName(dll);
                             File.Copy(dll, Path.Combine(tfmPath, filename));
-                        }    
+                        }
                     }
 
                     if (_context.IsExecutable)
@@ -329,7 +430,8 @@ namespace RulesMSBuild.Tools.Builder
                             basename += ".exe";
                         }
 
-                        WriteRunfilesInfo(_context.OutputPath(_context.Tfm, "runfiles.info"), $"../{basename}.runfiles", false);
+                        WriteRunfilesInfo(_context.OutputPath(_context.Tfm, "runfiles.info"), $"../{basename}.runfiles",
+                            false);
                     }
 
                     break;
@@ -339,6 +441,8 @@ namespace RulesMSBuild.Tools.Builder
 
         private void WriteRunfilesInfo(string outputPath, string expectedRelativePath, bool useDirectory)
         {
+            var directory = Path.GetDirectoryName(outputPath);
+            Directory.CreateDirectory(directory!);
             File.WriteAllLines(outputPath, new string[]
             {
                 // first line is the expected location of the runfiles directory from the assembly location
@@ -347,8 +451,9 @@ namespace RulesMSBuild.Tools.Builder
                 _context.Bazel.Label.Workspace,
                 // third is the package (nice to have)
                 _context.Bazel.Label.Package,
-                // runfiles strategy to use
-                useDirectory ? "directory" : "auto"
+                // runfiles strategy to use: if we are publishing, no other executable will ever have our runfiles,
+                // so we retrieve them from our own directory and ignore other variables
+                useDirectory ? "selfish" : "auto"
             });
         }
 
@@ -459,6 +564,7 @@ namespace RulesMSBuild.Tools.Builder
         }
 
         public void Error(string message) => BazelLogger.Error(_deps.PathMapper.ToBazel(message));
+
         public void Fail(string shortMessage, string message)
         {
             var projectPath = _deps.PathMapper.ToBazel(_context.ProjectFile);

@@ -55,12 +55,14 @@ build_test(
     name = "HelloBazel_publish_test",
     expected_files = {
         "publish/netcoreapp3.1": [
+            "HelloBazel.exe",
             "HelloBazel.pdb",
             "HelloBazel.dll",
             "HelloBazel.deps.json",
             "HelloBazel.runtimeconfig.json",
         ],
     },
+    expected_output = "Hello Bazel!\n",
 )
 
 build_test(

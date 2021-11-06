@@ -10,26 +10,63 @@ namespace RulesMSBuild.Tools.Builder.Launcher
     {
         public int Create(string[] args)
         {
-            var launcherTemplate = new FileInfo(args[0]);
-            if (!launcherTemplate.Exists)
-                throw new Exception($"Launcher template does not exist at '{args[0]}'");
+            using var writer = CreateWriter(args[0], args[1]);
 
-            using var output = new FileInfo(args[1]).OpenWrite();
+            writer.Add("binary_type", "Dotnet");
+            for (int i = 2; i + 1 < args.Length; i += 2)
+            {
+                writer.Add(args[i], args[i + 1]);
+            }
+
+            writer.Save();
+            return 0;
+        }
+
+        public int CreatePublish(string launcherTemplate, string outputPath)
+        {
+            if (Path.DirectorySeparatorChar == '\\')
+            {
+                using var writer = CreateWriter(launcherTemplate, outputPath);
+                writer.Add("binary_type", "DotnetPublish");
+                writer.Save();
+            }
+            else
+            {
+                using var script = new StreamWriter(File.Create(outputPath));
+                script.WriteLine(@"#!/bin/bash
+dotnet_path=''
+if [[ ! -z '$DOTNET_CLI_HOME' ]]; then 
+    dotnet_path='$DOTNET_CLI_HOME/dotnet'
+else
+    dotnet_path='$(which dotnet)'
+    if [[ '$?' != '0' ]]; then
+        echo 'Could not find dotnet on PATH. Set the environment variable DOTNET_CLI_HOME or install a dotnet runtime. https://dotnet.microsoft.com/download' 
+    fi;
+fi;
+
+this='$0'
+
+$dotnet_path exec '$this.dll' '${@:1}'
+".Replace('\'', '"'));
+            }
+
+            return 0;
+        }
+
+        private static LaunchDataWriter CreateWriter(string launcherTemplatePath, string outputPath)
+        {
+            var launcherTemplate = new FileInfo(launcherTemplatePath);
+            if (!launcherTemplate.Exists)
+                throw new Exception($"Launcher template does not exist at '{launcherTemplate.FullName}'");
+
+            var output = new FileInfo(outputPath).OpenWrite();
             using (var input = launcherTemplate.OpenRead())
             {
                 input.CopyTo(output);
             }
 
-            var writer = new LaunchDataWriter()
-                .Add("binary_type", "Dotnet");
-
-            for (int i = 2; i + 1 < args.Length; i+=2)
-            {
-                writer.Add(args[i], args[i + 1]);
-            }
-
-            writer.Write(output);
-            return 0;
+            var writer = new LaunchDataWriter(output);
+            return writer;
         }
     }
 }
