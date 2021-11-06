@@ -46,9 +46,20 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 			fmt.Println(k)
 		}
 		config.Package = `%package%`
-		config.Target, err = bazel.Runfile("%target%")
+		config.Target = "%target%"
+		rlocation, err := bazel.Runfile(config.Target)
 		if err != nil {
-			t.Fatalf("failed to find target: %v", err)
+			// on windows, the manifest truncates nested files, so check for the directory if we miss the specific file
+			dir, file := path.Split(config.Target)
+			rlocation, err = bazel.Runfile(dir[:len(dir)-1])
+			if err != nil {
+				t.Fatalf("failed to find target: %v", err)
+			}
+			rlocation = filepath.Join(rlocation, file)
+		}
+		config.Target = rlocation
+		if os.PathSeparator == '\\' {
+			config.Target = strings.ReplaceAll(config.Target, "\\", "/")
 		}
 
 		config.RunLocation = `%run_location%`

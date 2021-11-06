@@ -345,8 +345,29 @@ namespace RulesMSBuild.Tools.Builder
                 {
                     outputManifest.Write(" ");
                     outputManifest.WriteLine(entry);
-                    File.Copy(fullPath, destPath, true);
+                    var file = new FileInfo(fullPath);
+                    if ((file.Attributes & FileAttributes.Directory) != 0)
+                        CopyDirectory(fullPath, destPath);
+                    else
+                        File.Copy(fullPath, destPath, true);
                 }
+            }
+        }
+
+        private void CopyDirectory(string src, string dest)
+        {
+            Directory.CreateDirectory(dest);
+            string Rel(string parent, string child) => child[(parent.Length + 1)..];
+            foreach (var subDir in Directory.EnumerateDirectories(src))
+            {
+                var rel = Rel(src, subDir);
+                CopyDirectory(subDir, Path.Combine(dest, rel));
+            }
+
+            foreach (var file in Directory.EnumerateFiles(src))
+            {
+                var rel = Rel(src, file);
+                File.Copy(file, Path.Combine(dest, rel));
             }
         }
 
