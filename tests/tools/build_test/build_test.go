@@ -111,7 +111,7 @@ func TestBuildOutput(t *testing.T) {
 					continue
 				}
 			case ".exe":
-				if runtime.GOOS != "windows" {
+				if strings.Index(dir, "publish") < 0 && runtime.GOOS != "windows" {
 					f = f[:len(f)-len(".exe")]
 				}
 			}

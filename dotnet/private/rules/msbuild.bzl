@@ -144,15 +144,14 @@ msbuild_tool_binary = rule(
     executable = False,
 )
 
-_LAUNCHER_ATTR = {"_launcher_template": attr.label(
-    default = Label("@rules_msbuild//dotnet/tools/launcher"),
-    allow_single_file = True,
-)}
-
 msbuild_publish = rule(
     _publish_impl,
-    attrs = dicts.add(_COMMON_ATTRS, _LAUNCHER_ATTR, {
+    attrs = dicts.add(_COMMON_ATTRS, {
         "target": attr.label(mandatory = True, providers = [DotnetLibraryInfo]),
+        "_launcher_template": attr.label(
+            default = "@rules_msbuild//.azpipelines/artifacts:windows-amd64/launcher_windows.exe",
+            allow_single_file = True,
+        ),
     }),
     executable = False,
     toolchains = TOOLCHAINS,
@@ -301,7 +300,12 @@ msbuild_library = rule(
     toolchains = TOOLCHAINS,
 )
 
-_EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, _LAUNCHER_ATTR)
+_EXECUTABLE_ATTRS = dicts.add(_ASSEMBLY_ATTRS, {
+    "_launcher_template": attr.label(
+        default = Label("@rules_msbuild//dotnet/tools/launcher"),
+        allow_single_file = True,
+    ),
+})
 
 msbuild_binary = rule(
     _binary_impl,

@@ -11,7 +11,8 @@ namespace Bzl
     {
         public static string UpdateWorkspaceTemplate(Runfiles runfiles, string tarPath, string url)
         {
-            var workspaceTemplate = File.ReadAllText(runfiles.Rlocation("rules_msbuild/dotnet/tools/Bzl/WORKSPACE.tpl"));
+            var workspaceTemplate =
+                File.ReadAllText(runfiles.Rlocation("rules_msbuild/dotnet/tools/Bzl/WORKSPACE.tpl"));
             var sha256 = File.ReadAllText(tarPath + ".sha256");
 
             var indexMatch = Regex.Match(workspaceTemplate, @"http_archive\(.*\s+name = ""rules_msbuild"",",
@@ -69,7 +70,7 @@ namespace Bzl
             else
             {
                 Console.Error.WriteLine($"Unknown platform: {Environment.OSVersion}");
-                return null;
+                return null!;
             }
 
             releasedSubfolder = $"{releasedSubfolder}-amd64";

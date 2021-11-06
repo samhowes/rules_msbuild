@@ -28,7 +28,7 @@ def msbuild_rules_dependencies():
     maybe(
         git_repository,
         name = "rules_dotnet_runtime",
-        commit = "fb70f958b18cc4fbd634678604861a3feec22e24",  # branch main as of 2021-11-06
-        shallow_since = "1636226142 -0400",
+        commit = "62bf8eeabb19638856f53fb97898827b7de77aa4",  # branch main as of 2021-11-06
+        shallow_since = "1636228333 -0400",
         remote = "https://github.com/samhowes/rules_dotnet_runtime",
     )

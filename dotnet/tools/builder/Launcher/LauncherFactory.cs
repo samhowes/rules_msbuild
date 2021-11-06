@@ -24,16 +24,12 @@ namespace RulesMSBuild.Tools.Builder.Launcher
 
         public int CreatePublish(string launcherTemplate, string outputPath)
         {
-            if (Path.DirectorySeparatorChar == '\\')
-            {
-                using var writer = CreateWriter(launcherTemplate, outputPath);
-                writer.Add("binary_type", "DotnetPublish");
-                writer.Save();
-            }
-            else
-            {
-                using var script = new StreamWriter(File.Create(outputPath));
-                script.WriteLine(@"#!/bin/bash
+            using var writer = CreateWriter(launcherTemplate, outputPath + ".exe");
+            writer.Add("binary_type", "DotnetPublish");
+            writer.Save();
+
+            using var script = new StreamWriter(File.Create(outputPath));
+            script.WriteLine(@"#!/bin/bash
 dotnet_path=''
 if [[ ! -z '$DOTNET_CLI_HOME' ]]; then 
     dotnet_path='$DOTNET_CLI_HOME/dotnet'
@@ -49,7 +45,6 @@ this='$0'
 
 $dotnet_path exec '$this.dll' '${@:1}'
 ".Replace('\'', '"'));
-            }
 
             return 0;
         }
