@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using NuGetParser;
 
@@ -9,6 +10,10 @@ namespace Bzl
 {
     public class WorkspaceMaker
     {
+        private static readonly Regex ReplaceRegex = new Regex(
+            @"\n([^\n]+?)(bzl:generated start)(?<public>.*?)((\n([^\n]+?)(bzl:generated end[^\n]+))|$)",
+            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
         private const string MarkerName = "generated";
 
         private readonly string _workspaceRoot;
@@ -45,43 +50,55 @@ namespace Bzl
 
             foreach (var template in _templates.XmlMerge)
             {
+                const string projectOpen = "<Project>";
+                const string projectClose = "</Project>";
+
+                var fragmentStart = template.Contents.IndexOf(projectOpen, StringComparison.OrdinalIgnoreCase);
+                fragmentStart = template.Contents.IndexOf('\n', fragmentStart) + 1;
+                var fragmentEnd = template.Contents.LastIndexOf(projectClose, StringComparison.OrdinalIgnoreCase);
+                var fragment = template.Contents[fragmentStart..fragmentEnd];
+                var substituted = SubstituteVariables(fragment);
+
                 var file = new FileInfo(Path.Combine(_workspaceRoot, template.Destination));
+
                 var created = false;
-                Stream original;
+                var builder = new StringBuilder();
+                string footer;
                 if (!file.Exists)
                 {
-                    original = new MemoryStream();
-                    var initial = new StreamWriter(original);
-                    initial.Write("<Project>\n</Project>\n");
-                    initial.Flush();
-                    original.Seek(0, SeekOrigin.Begin);
+                    builder.AppendLine("<Project>");
+                    footer = projectClose;
                     created = true;
                 }
                 else
                 {
-                    original = file.OpenRead();
+                    var original = File.ReadAllText(file.FullName);
+                    var match = ReplaceRegex.Match(original);
+                    if (!match.Success)
+                    {
+                        var close = original.LastIndexOf(projectClose, StringComparison.Ordinal);
+                        if (close < 0)
+                            builder.AppendLine(original);
+                        else
+                            builder.AppendLine(original[0..close]);
+                        footer = projectClose;
+                    }
+                    else
+                    {
+                        builder.AppendLine(original[0..match.Index]);
+                        footer = original[(match.Index + match.Length + 1)..];
+                    }
                 }
-                
-                string replaced;
-                using (original)
-                {
-                    var merger = new XmlMerger(original);
-                    const string projectOpen = "<Project>";
-                    const string projectClose = "</Project>";
 
-                    var fragmentStart = template.Contents.IndexOf(projectOpen, StringComparison.OrdinalIgnoreCase);
-                    fragmentStart = template.Contents.IndexOf('\n', fragmentStart) + 1;
+                builder
+                    .AppendLine($"    <!--  bzl:{MarkerName} start  -->")
+                    .Append(substituted)
+                    .AppendLine($"    <!--  bzl:{MarkerName} end  -->");
 
-                    var fragmentEnd = template.Contents.LastIndexOf(projectClose, StringComparison.OrdinalIgnoreCase);
-
-                    var fragment = template.Contents[fragmentStart..fragmentEnd]; 
-                    
-                    var substituted = SubstituteVariables(fragment);
-                    replaced = merger.Replace(MarkerName, substituted);
-                }
+                builder.AppendLine(footer);
 
                 using var writer = file.CreateText();
-                writer.Write(replaced);
+                writer.Write(builder.ToString());
                 ReportFile(template.Destination, created);
             }
 
