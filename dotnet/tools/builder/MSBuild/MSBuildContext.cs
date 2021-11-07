@@ -16,6 +16,9 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             OutputPath = bazel.OutputDir;
             PublishDir = Path.Combine(OutputPath, "publish", command.tfm);
             BaseIntermediateOutputPath = Path.Combine(OutputPath, "restore");
+            if (command.Action != "restore")
+                BaseIntermediateOutputPath = Path.Combine(BaseIntermediateOutputPath, "_");
+
             IntermediateOutputPath = Path.Combine(OutputPath, "obj");
 
             var propsDirectory = Path.GetDirectoryName(directoryBazelPropsPath);

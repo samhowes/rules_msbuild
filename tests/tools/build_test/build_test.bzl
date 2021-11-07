@@ -45,8 +45,10 @@ def _test_config_impl(ctx):
     f = ctx.actions.declare_file(ctx.attr.name.rsplit("_", 1)[0] + ".go")
 
     assembly_name = ""
+    is_publish = False
     if DotnetPublishInfo in ctx.attr.target:
         assembly_name = ctx.attr.target[DotnetPublishInfo].library.assembly.basename
+        is_publish = True
 
     ctx.actions.expand_template(
         template = ctx.file._test_template,
@@ -54,6 +56,7 @@ def _test_config_impl(ctx):
         is_executable = False,
         substitutions = {
             "%target%": ctx.expand_location("$(rootpath {})".format(ctx.attr.target.label)),
+            "%is_publish%": str(is_publish),
             "%args%": json.encode(ctx.attr.args),
             "%expected_output%": ctx.attr.expected_output,
             "%config_json%": ctx.attr.json,

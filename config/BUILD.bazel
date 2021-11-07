@@ -12,3 +12,10 @@ config_setting(
         ":mode": "release",
     },
 )
+
+config_setting(
+    name = "debug_launcher",
+    flag_values = {
+        ":mode": "debug_launcher",
+    },
+)

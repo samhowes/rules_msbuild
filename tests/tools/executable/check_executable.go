@@ -28,6 +28,7 @@ type TestConfig struct {
 	Debug          bool
 	Diag           bool
 	Package        string
+	IsPublish      bool
 }
 
 func SetupFakeRunfiles(t *testing.T, binName string) string {
