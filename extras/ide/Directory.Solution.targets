@@ -1,5 +1,5 @@
 <Project>
-    <Import Condition="'$(UseBazel)' == 'true'" Project="Bazel.targets"/>
+    <Import Project="Directory.Build.targets"/>
 
     <Target Condition="'$(UseBazel)' == 'true'" Name="BazelClean"
         AfterTargets="Clean">

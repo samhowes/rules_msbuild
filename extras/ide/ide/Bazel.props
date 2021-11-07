@@ -3,9 +3,8 @@
         <!-- Bazel variables -->
         <BazelWorkspaceName Condition="$(BazelWorkspaceName) == ''">@@workspace_name@@</BazelWorkspaceName>
         <BazelWorkspacePath Condition="$(BazelWorkspacePath) == ''">$(MSBuildThisFileDirectory)@@workspace_path@@</BazelWorkspacePath>
-        <BazelBin Condition="$(BazelBin) != '' and $(UseBazel) != 'true'">dotnet-bin</BazelBin>
-        <BazelBin Condition="$(BazelBin) == ''">@@bazel_bin@@</BazelBin>
-        <BazelNuGetWorkspace Condition="$(BazelNuGetWorkspace) == ''">@@nuget_workspace_name@@</BazelNuGetWorkspace>
+        <BazelBin Condition="$(BazelBin) == '' and $(UseBazel) != 'true'">dotnet-bin</BazelBin>
+        <BazelBin Condition="$(BazelBin) == ''">bazel-bin</BazelBin>
         <BazelExecRoot>$(BazelWorkspacePath)bazel-$(BazelWorkspaceName)</BazelExecRoot>
 
         <BazelPackage>$([MSBuild]::MakeRelative($(BazelWorkspacePath), $(MSBuildProjectDirectory)).Replace('\','/'))</BazelPackage>
@@ -14,7 +13,7 @@
         <BazelExternal>$(BazelExecRoot)/external</BazelExternal>
     </PropertyGroup>
 
-    <PropertyGroup  Condition="$(BazelBuild) == ''">
+    <PropertyGroup Condition="$(BazelBuild) == ''">
         <!-- Override MSBuild properties, these settings help IDEs find output files. -->
         <!--
             If UseBazel is not 'true' these will instruct msbuild to construct a similar output tree, but under
@@ -22,8 +21,12 @@
          -->
         <OutputPath>$(BazelWorkspacePath)$(BazelBin)/</OutputPath>
         <OutputPath Condition="$(BazelPackage) != ''">$(OutputPath)/$(BazelPackage)/</OutputPath>
-        <BaseIntermediateOutputPath>$(OutputPath)obj</BaseIntermediateOutputPath>
-        <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-        <BuildProjectReferences Condition="$(UseBazel) == 'true'">false</BuildProjectReferences>
+        <BaseIntermediateOutputPath>$(OutputPath)restore</BaseIntermediateOutputPath>
+        <IntermediateOutputPath>$(OutputPath)obj</IntermediateOutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(BazelBuild) == '' And $(UseBazel) == 'true'">
+        <RestoreConfigFile>$(MSBuildThisFileDirectory)/NuGet.Config</RestoreConfigFile>
+        <BuildProjectReferences>false</BuildProjectReferences>
     </PropertyGroup>
 </Project>

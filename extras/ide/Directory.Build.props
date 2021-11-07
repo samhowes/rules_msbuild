@@ -6,5 +6,5 @@
         <UseBazel Condition="$(UseBazel) == ''">true</UseBazel>
     </PropertyGroup>
     <!-- Only import Bazel.props when bazel isn't controlling msbuild. -->
-    <Import Condition="$(BazelBuild) == ''" Project="Bazel.props"/>
+    <Import Condition="$(BazelBuild) == ''" Project="ide/Bazel.props"/>
 </Project>

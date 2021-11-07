@@ -4,12 +4,13 @@ load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
 filegroup(
     name = "ide",
     srcs = [
-        "Bazel.props",
-        "Bazel.targets",
         "Directory.Build.props",
         "Directory.Build.targets",
         "Directory.Solution.props",
         "Directory.Solution.targets",
+        "ide/Bazel.props",
+        "ide/Bazel.targets",
+        "ide/NuGet.Config",
     ],
     visibility = ["//visibility:public"],
 )
@@ -32,11 +33,12 @@ sh_test(
 msbuild_directory(
     name = "msbuild_defaults",
     srcs = [
-        "Bazel.props",
-        "Bazel.targets",
         "Directory.Build.props",
         "Directory.Build.targets",
         "Directory.Solution.props",
         "Directory.Solution.targets",
+        "ide/Bazel.props",
+        "ide/Bazel.targets",
+        "ide/NuGet.Config",
     ],
 )
