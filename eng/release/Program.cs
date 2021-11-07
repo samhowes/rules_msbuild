@@ -55,11 +55,11 @@ namespace release
             {
                 Info("Creating release...");
                 File.WriteAllText(Path.Combine(_root, "commitmessage.txt"), $"release version {_version}");
+                UpdateVersion();
                 Run("git add version.bzl");
                 Run("git commit --amend -F commitmessage.txt");
                 Run("git push --force");
 
-                UpdateVersion();
                 Run($"gh release create {_version} ",
                     "--target release",
                     "--prerelease",
@@ -199,6 +199,7 @@ namespace release
                 await client.GetAsync<Response<List<Build>>>(
                     "?definitions=6&resultFilter=succeeded&branchName=refs/heads/master&$top=1");
             var buildLink = builds.Value[0].Links["self"].Href;
+            Console.WriteLine($"Downloading artifacts from {buildLink}");
             var artifacts = await client.GetAsync<Response<List<JsonApiEntity<Artifact>>>>($"{buildLink}/artifacts");
             var downloaded = new List<string>();
             foreach (var artifact in artifacts.Value)

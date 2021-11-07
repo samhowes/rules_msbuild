@@ -117,7 +117,7 @@ namespace tar
             if (File.Exists(debugLauncher))
             {
                 var launcherPath = runfiles.Rlocation(debugLauncher);
-                files[".azpipelines/artifacts/windows-amd64/launcher_windows.exe"] = launcherPath;
+                files[".azpipelines/artifacts/windows-amd64/launcher_windows_go.exe"] = launcherPath;
             }
 
             foreach (var package in _packages)

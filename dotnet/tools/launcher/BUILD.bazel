@@ -27,7 +27,7 @@ filegroup(
 
 alias(
     name = "launcher_windows",
-    actual = ("//.azpipelines/artifacts:windows-amd64/launcher_windows.exe" if IS_RELEASED else ":launcher_windows_go"),
+    actual = ("//.azpipelines/artifacts:windows-amd64/launcher_windows_go.exe" if IS_RELEASED else ":launcher_windows_go"),
 )
 
 # rules_msbuild:release end
