@@ -56,8 +56,8 @@ namespace release
                 Info("Creating release...");
                 File.WriteAllText(Path.Combine(_root, "commitmessage.txt"), $"release version {_version}");
                 Run("git add version.bzl");
-                Run(("git commit --amend -F commitmessage.txt");
-                Run(("git push --force");
+                Run("git commit --amend -F commitmessage.txt");
+                Run("git push --force");
 
                 UpdateVersion();
                 Run($"gh release create {_version} ",
