@@ -52,7 +52,6 @@ namespace release
             var nupkg = outputs.Single();
 
             File.WriteAllText(Path.Combine(_root, "commitmessage.txt"), $"release version {_version}");
-            UpdateVersion();
 
             if (_action == Action.Release)
             {
@@ -66,6 +65,7 @@ namespace release
                     nupkg);
 
                 Run($"dotnet nuget push {nupkg} --api-key {_nuGetApiKey} --source https://api.nuget.org/v3/index.json");
+                UpdateVersion();
             }
             else if (_action == Action.Test)
             {
