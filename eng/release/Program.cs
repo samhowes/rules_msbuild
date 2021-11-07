@@ -51,12 +51,17 @@ namespace release
             var outputs = Bazel("build //dotnet/tools/Bzl:Bzl.nupkg --//config:mode=release");
             var nupkg = outputs.Single();
 
-            File.WriteAllText(Path.Combine(_root, "commitmessage.txt"), $"release version {_version}");
-
             if (_action == Action.Release)
             {
                 Info("Creating release...");
+                File.WriteAllText(Path.Combine(_root, "commitmessage.txt"), $"release version {_version}");
+                Run("git add version.bzl");
+                Run(("git commit --amend -F commitmessage.txt");
+                Run(("git push --force");
+
+                UpdateVersion();
                 Run($"gh release create {_version} ",
+                    "--target release",
                     "--prerelease",
                     "--draft",
                     $"--title v{_version}",
@@ -65,7 +70,6 @@ namespace release
                     nupkg);
 
                 Run($"dotnet nuget push {nupkg} --api-key {_nuGetApiKey} --source https://api.nuget.org/v3/index.json");
-                UpdateVersion();
             }
             else if (_action == Action.Test)
             {

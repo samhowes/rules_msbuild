@@ -36,6 +36,3 @@ jobs:
     - name: Release
       run: |
         bazel run //eng/release
-        git add version.bzl
-        git commit --ammend -F commitmessage.txt
-        git push --force
