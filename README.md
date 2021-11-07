@@ -52,7 +52,7 @@ Check out the `tests/` directory & `e2e/` directory for examples
 1. [Rules](docs/rules.md)
 1. [Understanding the build](docs/Understanding.md)
 1. [Build File Generation with Gazelle](gazelle/dotnet/Readme.md)<!-- toc:start -->
- <!-- toc:end -->
+1. [Rules](docs/rules.md)<!-- toc:end -->
 1. [Implementation Details](docs/ImplementationDetails.md)
 
 # Usage
@@ -67,8 +67,8 @@ Check out the `tests/` directory & `e2e/` directory for examples
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_msbuild",
-    sha256 = "2427b007806fcad3b37d766b26692d27a5173805a3d3f2fc8c607c4aa6a35b8c",
-    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.10/rules_msbuild-0.0.10.tar.gz"],
+    sha256 = "921a0540df0a4f2e97369c209aaa17c4ff472b6410c745016218cb7db5e3ccb5",
+    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.12/rules_msbuild-0.0.12.tar.gz"],
 )
 load("@rules_msbuild//dotnet:deps.bzl", "msbuild_register_toolchains", "msbuild_rules_dependencies")
 
