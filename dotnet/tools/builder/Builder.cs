@@ -247,11 +247,6 @@ namespace RulesMSBuild.Tools.Builder
                 {
                     var launcherFactory = new LauncherFactory();
                     var launcherPath = Path.Combine(_context.MSBuild.PublishDir, _context.Command.assembly_name);
-                    if (Path.DirectorySeparatorChar == '\\')
-                    {
-                        launcherPath += ".exe";
-                    }
-
                     launcherFactory.CreatePublish(
                         Path.Combine(_context.Bazel.ExecRoot, _context.Command.LauncherTemplate),
                         launcherPath);

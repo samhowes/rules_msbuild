@@ -55,6 +55,7 @@ build_test(
     name = "HelloBazel_publish_test",
     expected_files = {
         "publish/netcoreapp3.1": [
+            "HelloBazel",
             "HelloBazel.exe",
             "HelloBazel.pdb",
             "HelloBazel.dll",

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.GZip;
@@ -16,9 +17,6 @@ namespace tar
 {
     class Program
     {
-        static Regex ReleaseRegex = new Regex(@"(?<name>.*)(\.release)(?<ext>\..*)",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
         static async Task<int> Main(string[] argsArray)
         {
             var args = argsArray.Select(a => a.TrimStart('-').Split('='))
@@ -30,8 +28,6 @@ namespace tar
             else
                 root = Directory.GetCurrentDirectory();
 
-            var process = Process.Start(new ProcessStartInfo("git", "ls-files") {RedirectStandardOutput = true});
-
             if (args.TryGetValue("tar", out var outputName))
             {
                 outputName = outputName.Split(" ")[0];
@@ -39,20 +35,62 @@ namespace tar
             else
                 outputName = "test.tar.gz";
 
+            var packages = Array.Empty<string>();
+            if (args.TryGetValue("packages", out var packagesString))
+                packages = packagesString.Split(",");
+            using var tarMaker = new TarMaker(outputName, root, packages);
+            return await tarMaker.MakeTar();
+        }
+    }
+
+    public class TarMaker : IDisposable
+    {
+        private static readonly Regex ReleaseRegex = new Regex(@"(?<name>.*)(\.release)(?<ext>\..*)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        private static readonly Regex PublicContentsRegex = new Regex(
+            @"\n([^\n]+?)(rules_msbuild:release start)(?<public>.*?)((\n([^\n]+?)(rules_msbuild:release end))|$)",
+            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        private readonly string _outputName;
+        private readonly string _root;
+        private readonly string[] _packages;
+        private List<string> _tempFiles = new();
+
+        public TarMaker(string outputName, string root, string[] packages)
+        {
+            _outputName = outputName;
+            this._root = root;
+            _packages = packages;
+        }
+
+        public async Task<int> MakeTar()
+        {
+            var process = Process.Start(new ProcessStartInfo("git", "ls-files") {RedirectStandardOutput = true});
+
             var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (;;)
             {
                 var actual = await process!.StandardOutput.ReadLineAsync();
                 if (actual == null) break;
-                if (Path.GetFileName(actual) == outputName) continue;
+                if (Path.GetFileName(actual) == _outputName) continue;
 
                 var tarValue = actual;
-                actual = Path.Combine(root, actual);
+                actual = Path.Combine(_root, actual);
                 var match = ReleaseRegex.Match(actual);
                 if (match.Success)
                 {
                     tarValue = match.Groups["name"].Value + match.Groups["ext"].Value;
-                    tarValue = Path.GetRelativePath(root, tarValue);
+                    tarValue = Path.GetRelativePath(_root, tarValue).Replace('\\','/');
+                }
+                else
+                {
+                    switch (Path.GetExtension(actual))
+                    {
+                        case ".bazel":
+                            actual = HidePrivateContent(actual);
+                            break;
+                    }
                 }
 
                 files[tarValue] = actual;
@@ -75,23 +113,19 @@ namespace tar
 
             var debugLauncher =
                 runfiles.Rlocation(
-                    "rules_msbuild/dotnet/tools/launcher/launcher_windows_/launcher_windows.exe");
+                    "rules_msbuild/dotnet/tools/launcher/launcher_windows_go_/launcher_windows_go.exe");
             if (File.Exists(debugLauncher))
             {
                 var launcherPath = runfiles.Rlocation(debugLauncher);
                 files[".azpipelines/artifacts/windows-amd64/launcher_windows.exe"] = launcherPath;
             }
 
-            if (args.TryGetValue("packages", out var packagesString))
+            foreach (var package in _packages)
             {
-                var packages = packagesString.Split(",");
-                foreach (var package in packages)
-                {
-                    files[$".azpipelines/artifacts/packages/{Path.GetFileName(package)}"] = Path.GetFullPath(package);
-                }
+                files[$".azpipelines/artifacts/packages/{Path.GetFileName(package)}"] = Path.GetFullPath(package);
             }
 
-            await using (var output = File.Create(outputName))
+            await using (var output = File.Create(_outputName))
             await using (var gzoStream = new GZipOutputStream(output))
             using (var tarArchive = TarArchive.CreateOutputTarArchive(gzoStream))
             {
@@ -114,7 +148,7 @@ namespace tar
             }
 
             string hashValue;
-            await using (var outputRead = File.OpenRead(outputName))
+            await using (var outputRead = File.OpenRead(_outputName))
             using (var sha = SHA256.Create())
             {
                 outputRead.Position = 0;
@@ -123,9 +157,34 @@ namespace tar
             }
 
             Console.WriteLine($"SHA256 = {hashValue}");
-            await File.WriteAllTextAsync(outputName + ".sha256", hashValue);
+            await File.WriteAllTextAsync(_outputName + ".sha256", hashValue);
 
             return 0;
+        }
+
+        private string HidePrivateContent(string actual)
+        {
+            var contents = File.ReadAllText(actual);
+            var builder = new StringBuilder();
+            foreach (var match in PublicContentsRegex.Matches(contents).Cast<Match>())
+            {
+                builder.Append(match.Groups["public"].Value);
+            }
+
+            if (builder.Length == 0) return actual;
+
+            var tmp = Path.Combine(BazelEnvironment.GetTmpDir(), Guid.NewGuid().ToString());
+            _tempFiles.Add(tmp);
+            File.WriteAllText(tmp, builder.ToString());
+            return tmp;
+        }
+
+        public void Dispose()
+        {
+            foreach (var file in _tempFiles)
+            {
+                File.Delete(file);
+            }
         }
     }
 }
