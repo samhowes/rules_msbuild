@@ -81,7 +81,7 @@ namespace tar
                 if (match.Success)
                 {
                     tarValue = match.Groups["name"].Value + match.Groups["ext"].Value;
-                    tarValue = Path.GetRelativePath(_root, tarValue);
+                    tarValue = Path.GetRelativePath(_root, tarValue).Replace('\\','/');
                 }
                 else
                 {
@@ -113,7 +113,7 @@ namespace tar
 
             var debugLauncher =
                 runfiles.Rlocation(
-                    "rules_msbuild/dotnet/tools/launcher/launcher_windows_/launcher_windows.exe");
+                    "rules_msbuild/dotnet/tools/launcher/launcher_windows_go_/launcher_windows_go.exe");
             if (File.Exists(debugLauncher))
             {
                 var launcherPath = runfiles.Rlocation(debugLauncher);

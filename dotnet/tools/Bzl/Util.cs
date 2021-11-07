@@ -74,7 +74,7 @@ namespace Bzl
             }
 
             releasedSubfolder = $"{releasedSubfolder}-amd64";
-            return Path.Combine(releasedSubfolder, gazelleName);
+            return string.Join('/', releasedSubfolder, gazelleName);
         }
     }
 }
