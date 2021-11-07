@@ -51,6 +51,9 @@ namespace release
             var outputs = Bazel("build //dotnet/tools/Bzl:Bzl.nupkg --//config:mode=release");
             var nupkg = outputs.Single();
 
+            File.WriteAllText(Path.Combine(_root, "commitmessage.txt"), $"release version {_version}");
+            UpdateVersion();
+
             if (_action == Action.Release)
             {
                 Info("Creating release...");
@@ -70,6 +73,14 @@ namespace release
             }
 
             return 0;
+        }
+
+        private static void UpdateVersion()
+        {
+            var versionParts = _version.Split(".").Select(int.Parse).ToArray();
+            versionParts[^1]++;
+            var newString = string.Join(".", versionParts);
+            File.WriteAllText(Path.Combine(_root, "version.bzl"), $"VERSION = \"{newString}\"");
         }
 
         private static void VerifyTar()

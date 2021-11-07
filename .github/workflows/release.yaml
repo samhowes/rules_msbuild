@@ -12,27 +12,30 @@ jobs:
   release:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: CI Init
-        run: .ci/init.sh
+    - name: CI Init
+      run: .ci/init.sh
 
-      - name: Verify
-        run: bash eng/test_release.sh
+    - name: Verify
+      run: bash eng/test_release.sh
 
-      - name: Docs
-        run: bazel run //eng/docs
+    - name: Docs
+      run: bazel run //eng/docs
 
-      - name: Commit
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email ""
-          git checkout -b release
-          git update-index --assume-unchanged .bazelrc
-          git add .
-          git commit -m "release"
-          git push --set-upstream origin release
+    - name: Commit
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email ""
+        git checkout -b release
+        git update-index --assume-unchanged .bazelrc
+        git add .
+        git commit -m "release"
+        git push --force --set-upstream origin release
 
-      - name: Release
-        run: |
-          bazel run //eng/release
+    - name: Release
+      run: |
+        bazel run //eng/release
+        git add version.bzl
+        git commit --ammend -F commitmessage.txt
+        git push --force
