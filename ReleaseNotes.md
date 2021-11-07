@@ -5,8 +5,8 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_msbuild",
-    sha256 = "921a0540df0a4f2e97369c209aaa17c4ff472b6410c745016218cb7db5e3ccb5",
-    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.12/rules_msbuild-0.0.12.tar.gz"],
+    sha256 = "6a8b02778a22c7571dfdc87bfea730cef3081a800f90fc4e2d5496f58927316e",
+    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.14/rules_msbuild-0.0.14.tar.gz"],
 )
 load("@rules_msbuild//dotnet:deps.bzl", "msbuild_register_toolchains", "msbuild_rules_dependencies")
 
@@ -14,8 +14,6 @@ msbuild_rules_dependencies()
 # See https://dotnet.microsoft.com/download/dotnet for valid versions
 msbuild_register_toolchains(version = "host")
 ```
-[SamHowes.Bzl: 0.0.12](https://www.nuget.org/packages/SamHowes.Bzl/0.0.12)
+[SamHowes.Bzl: 0.0.14](https://www.nuget.org/packages/SamHowes.Bzl/0.0.14)
 
 Changelog:
-1. [PR #187: Fixes after testing externally](https://github.com/samhowes/rules_msbuild/pull/187)
-  Issues: #185, #186, #184
