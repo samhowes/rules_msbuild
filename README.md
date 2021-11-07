@@ -67,8 +67,8 @@ Check out the `tests/` directory & `e2e/` directory for examples
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_msbuild",
-    sha256 = "6a8b02778a22c7571dfdc87bfea730cef3081a800f90fc4e2d5496f58927316e",
-    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.14/rules_msbuild-0.0.14.tar.gz"],
+    sha256 = "ca1c320c6c71954697c0e682c4f8eb2bdd9ea55dccdae8915acd121cd05265dd",
+    urls = ["https://github.com/samhowes/rules_msbuild/releases/download/0.0.15/rules_msbuild-0.0.15.tar.gz"],
 )
 load("@rules_msbuild//dotnet:deps.bzl", "msbuild_register_toolchains", "msbuild_rules_dependencies")
 
