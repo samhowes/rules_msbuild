@@ -1,11 +1,12 @@
 name: Slack reporter
 
 on:
-  workflow_run:
-    workflows: ["build-and-test"]
-    types: 
-      - completed
-      - requested
+  workflow_dispatch:
+#   workflow_run:
+#     workflows: ["build-and-test"]
+#     types: 
+#       - completed
+#       - requested
 
 
 jobs:
