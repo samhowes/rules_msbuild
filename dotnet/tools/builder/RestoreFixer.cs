@@ -35,7 +35,7 @@ namespace RulesMSBuild.Tools.Builder
             var isJson = contents[0] == '{';
             var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
             var thisTarget = needsEscaping ? _escapedTarget : _target;
-
+            var pathCharLength = needsEscaping ? 2 : 1;
 
             using var ideOutput = new StreamWriter(_files.Create(ideFileName));
             using var bazelOutput = new StreamWriter(_files.Create(bazelFileName));
@@ -51,14 +51,14 @@ namespace RulesMSBuild.Tools.Builder
                 contents = contents[thisIndex..];
 
                 var endOfPath = contents.IndexOfAny(new[] {'"', ';', '<'});
-                var sandboxPath = contents[(thisTarget.Length + 1)..endOfPath];
+                var sandboxPath = contents[(thisTarget.Length + pathCharLength)..endOfPath];
                 var path = contents[..(endOfPath)];
                 // next segment will be "sandbox" or "external"
                 if (sandboxPath[.."sandbox".Length].SequenceEqual("sandbox"))
                 {
                     // execroot path
                     var execIndex = sandboxPath.IndexOf("execroot");
-                    ideOutput.Write(contents[..(thisTarget.Length + 1)]);
+                    ideOutput.Write(contents[..(thisTarget.Length + pathCharLength)]);
                     ideOutput.Write(sandboxPath[execIndex..]);
                 }
                 else
