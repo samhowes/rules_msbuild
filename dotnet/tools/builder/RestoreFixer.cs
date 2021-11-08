@@ -17,7 +17,7 @@ namespace RulesMSBuild.Tools.Builder
         {
             _context = context;
             _target = _context!.Bazel.OutputBase;
-            _bazelBase = Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, "_");
+            _bazelBase = _context.MSBuild.BaseIntermediateOutputPath;
             _context = context;
             _files = files;
             _paths = paths;
@@ -27,18 +27,21 @@ namespace RulesMSBuild.Tools.Builder
         private static string Escape(string s) => s.Replace(@"\", @"\\");
         private static string Unescape(string s) => s.Replace(@"\\", @"\");
 
-        public void Fix(string ideFileName)
+        public void Fix(string originalFilePath)
         {
-            var bazelFileName = _paths.Combine(_bazelBase, Path.GetFileName(ideFileName));
+            var ideFileName = Path.GetFileName(originalFilePath);
+            var ideDirectory = Path.GetDirectoryName(_context.MSBuild.BaseIntermediateOutputPath)!;
+            var ideFilePath = Path.Combine(ideDirectory, ideFileName);
+            var bazelFilePath = _paths.Combine(_bazelBase, ideFileName);
 
-            var contents = _files.GetContents(ideFileName); //.AsSpan();
+            var contents = _files.GetContents(originalFilePath).AsSpan();
             var isJson = contents[0] == '{';
             var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
             var thisTarget = needsEscaping ? _escapedTarget : _target;
             var pathCharLength = needsEscaping ? 2 : 1;
 
-            using var ideOutput = new StreamWriter(_files.Create(ideFileName));
-            using var bazelOutput = new StreamWriter(_files.Create(bazelFileName));
+            using var ideOutput = new StreamWriter(_files.Create(ideFilePath));
+            using var bazelOutput = new StreamWriter(_files.Create(bazelFilePath));
 
             for (;;)
             {

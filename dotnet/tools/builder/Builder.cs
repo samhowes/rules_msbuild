@@ -467,7 +467,7 @@ namespace RulesMSBuild.Tools.Builder
         private void FixRestoreOutputs()
         {
             var fixer = new RestoreFixer(_context, new Files(), new Paths());
-            Directory.CreateDirectory(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, "_"));
+            Directory.CreateDirectory(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath));
             foreach (var ideFileName in Directory.EnumerateFiles(_context.MSBuild.BaseIntermediateOutputPath))
             {
                 fixer.Fix(ideFileName);

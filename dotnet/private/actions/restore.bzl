@@ -6,7 +6,7 @@ load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "MSBuildDirectoryInf
 def restore(ctx, dotnet):
     # we don't really need this since we're declaring the directory, but this way, if the restore
     # fails, bazel will fail the build because this file wasn't created
-    assets_json = ctx.actions.declare_file("restore/project.assets.json")
+    assets_json = ctx.actions.declare_file("restore/_/project.assets.json")
     restore_dir = ctx.actions.declare_directory("restore")
 
     cache = declare_caches(ctx, "restore")
