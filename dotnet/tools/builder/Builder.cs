@@ -250,7 +250,8 @@ namespace RulesMSBuild.Tools.Builder
                     var launcherPath = Path.Combine(_context.MSBuild.PublishDir, _context.Command.assembly_name);
                     launcherFactory.CreatePublish(
                         Path.Combine(_context.Bazel.ExecRoot, _context.Command.LauncherTemplate),
-                        launcherPath);
+                        launcherPath,
+                        _context);
                 }
 
                 var runfilesDir = _context.Command.assembly_name + ".dll.runfiles";
