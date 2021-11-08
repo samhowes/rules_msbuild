@@ -67,6 +67,7 @@ msbuild_binary(
         "PathMapper.cs",
         "Program.cs",
         "ProjectLoader.cs",
+        "RestoreFixer.cs",
     ],
     project_file = "Builder.csproj",
     target_framework = "net5.0",
