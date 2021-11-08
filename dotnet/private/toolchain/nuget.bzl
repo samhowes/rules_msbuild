@@ -126,7 +126,7 @@ def _nuget_fetch_impl(ctx):
         working_directory = str(parser_project.dirname),
     )
     if result.return_code != 0:
-        fail("failed executing '%s':\nstdout: %s\nstderr: %s".format(" ".join(args), result.stdout, result.stderr))
+        fail("failed executing '%s':\nstdout: %s\nstderr: %s" % (" ".join(args), result.stdout, result.stderr))
 
 def _configure_host_packages(ctx, dotnet, config):
     if not ctx.attr.use_host:

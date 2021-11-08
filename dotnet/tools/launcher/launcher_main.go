@@ -4,9 +4,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,8 +20,7 @@ func main() {
 	if !present {
 		panic(fmt.Sprintf("no binary type in launch info: %s", launchInfo))
 	}
-	launchInfo.Runfiles = GetRunfiles()
-	panic("foo")
+
 	switch binaryType {
 	case "Dotnet":
 		launchInfo.Runfiles = GetRunfiles()
@@ -29,15 +28,14 @@ func main() {
 	case "DotnetPublish":
 		// when we're published, our runfiles were made by rules_msbuild, and the directory is guaranteed to be next to
 		// the assembly, no monkey business allowed
-		//binName := path.Base(launchInfo.GetItem("target_bin_path"))
-		//dir, _ := path.Split(os.Args[0])
-		////runfilesDir := filepath.Join(dir, binName) + ".runfiles"
-		//////_ = os.Setenv(bazel.RUNFILES_DIR, runfilesDir)
-		//////_ = os.Setenv(bazel.RUNFILES_MANIFEST_FILE, filepath.Join(runfilesDir, "MANIFEST"))
-		//////_ = os.Setenv("RUNFILES_MANIFEST_ONLY", "0")
+
+		binName := path.Base(launchInfo.GetItem("assembly_name"))
+		dir, _ := filepath.Split(os.Args[0])
+		runfilesDir := filepath.Join(dir, binName) + ".dll.runfiles"
+		_ = os.Setenv("RUNFILES_DIR", runfilesDir)
+		_ = os.Setenv("RUNFILES_MANIFEST_FILE", filepath.Join(runfilesDir, "MANIFEST"))
+		_ = os.Setenv("RUNFILES_MANIFEST_ONLY", "0")
 		launchInfo.Runfiles = GetRunfiles()
-		panic("foo")
-		log.Printf("runfilesDir: %s", os.Getenv(bazel.RUNFILES_DIR))
 		LaunchDotnetPublish(os.Args, launchInfo)
 	default:
 		_, _ = fmt.Fprintf(os.Stderr, "unkown binary_type: %s", binaryType)

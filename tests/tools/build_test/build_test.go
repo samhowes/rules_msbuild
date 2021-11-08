@@ -160,8 +160,9 @@ func TestExecutableOutput(t *testing.T) {
 	}
 
 	if config.IsPublish {
-		_ = os.Setenv(bazel.RUNFILES_MANIFEST_FILE, "")
-		_ = os.Setenv(bazel.RUNFILES_DIR, "")
+		// explicitly register bogus runfiles variables to make sure the launcher ignores them
+		_ = os.Setenv(bazel.RUNFILES_MANIFEST_FILE, "foobar")
+		_ = os.Setenv(bazel.RUNFILES_DIR, "foobar")
 	}
 
 	lib.CheckExecutableOutput(t, &config)
