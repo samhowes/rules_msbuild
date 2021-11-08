@@ -17,8 +17,6 @@ set -uo pipefail
 #    exit 1
 #  }
 # derived from: https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/bazel/rules/java/java_stub_template.txt
-echo "wtf"
-exit 1
 
 die() {
   printf "%s: $1\n" "$0" "${@:2}" >&2
