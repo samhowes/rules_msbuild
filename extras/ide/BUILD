@@ -39,4 +39,5 @@ msbuild_directory(
         "Directory.Solution.props",
         "Directory.Solution.targets",
     ],
+    visibility = ["//:__subpackages__"],
 )
