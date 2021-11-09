@@ -58,7 +58,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                 ["UseAppHost"] = "false", // we'll basically be making our own via the launcher
                 // msbuild's shared compilation is not compatible with sandboxing because it wll delegate compilation to
                 // another process that won't have access to the sandbox requesting the build.
-                ["UseSharedCompilation"] = "false",
+                // ["UseSharedCompilation"] = "false",
                 ["BazelBuild"] = "true",
             };
 
