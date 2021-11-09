@@ -124,7 +124,7 @@ namespace BuilderTests
         [InlineData(
             @"foo: C:\output_base\execroot\main\wow\_<",
             @"foo: $(ExecRoot)\..\..\..\..\execroot\main\wow\_<",
-            @"foo: C:\output_base\execroot\main\wow\<")]
+            @"foo: C:\output_base\execroot\main\wow<")]
         public void EscapingOnWindowsWorks(string contents, string bazelout, string ideOut)
         {
             MakeContext(true);
