@@ -10,6 +10,7 @@ msbuild_test(
         "BuilderTests.cs",
         "E2eTests.cs",
         "PathMapperTests.cs",
+        "RestoreFixerTests.cs",
         "TestProgram.cs",
     ],
     dotnet_cmd = "exec",

@@ -36,10 +36,11 @@ namespace BuilderTests
             _fixer = new RestoreFixer(_context, _files.Object, new Paths());
             _files.Setup(f => f.GetContents(It.IsAny<string>())).Returns(() => _contents);
 
+            var c = Path.DirectorySeparatorChar;
             _bazelOutStream = new UnclosableMemoryStream();
             _ideOutStream = new UnclosableMemoryStream();
             _files.Setup(f => f.Create(It.IsAny<string>()))
-                .Returns<string>(path => path.Contains("_") ? _bazelOutStream : _ideOutStream);
+                .Returns<string>(path => path.Contains($"{c}_{c}") ? _bazelOutStream : _ideOutStream);
         }
 
         private void MakeContext(bool windows)
@@ -79,6 +80,14 @@ namespace BuilderTests
             "foo: /output_base/execroot/main/wow<",
             "foo: $(ExecRoot)/../../../../execroot/main/wow<",
             "foo: /output_base/execroot/main/wow<")]
+        [InlineData(
+            "{foo: /output_base/sandbox/5/execroot/main/wow/_/<",
+            "{foo: ../wow/_/<",
+            "{foo: /output_base/execroot/main/wow/<")]
+        [InlineData(
+            "{foo: /output_base/sandbox/5/execroot/main/wow/_<",
+            "{foo: ../wow/_<",
+            "{foo: /output_base/execroot/main/wow<")]
         public void RestoreFixerWorks(string contents, string bazelout, string ideOut)
         {
             _contents = contents;
@@ -97,6 +106,14 @@ namespace BuilderTests
             @"{foo: ..\\..\\..\\..\\..\\execroot\\main\\wow<",
             @"{foo: C:\\output_base\\execroot\\main\\wow<")]
         [InlineData(
+            @"{foo: C:\\output_base\\execroot\\main\\wow\\_\\<",
+            @"{foo: ..\\..\\..\\..\\..\\execroot\\main\\wow\\<",
+            @"{foo: C:\\output_base\\execroot\\main\\wow\\<")]
+        [InlineData(
+            @"{foo: C:\\output_base\\execroot\\main\\wow\\_<",
+            @"{foo: ..\\..\\..\\..\\..\\execroot\\main\\wow\\<",
+            @"{foo: C:\\output_base\\execroot\\main\\wow<")]
+        [InlineData(
             @"foo: C:\output_base\sandbox\5\execroot\main\wow<",
             @"foo: $(ExecRoot)\wow<",
             @"foo: C:\output_base\execroot\main\wow<")]
@@ -104,6 +121,10 @@ namespace BuilderTests
             @"foo: C:\output_base\execroot\main\wow<",
             @"foo: $(ExecRoot)\..\..\..\..\execroot\main\wow<",
             @"foo: C:\output_base\execroot\main\wow<")]
+        [InlineData(
+            @"foo: C:\output_base\execroot\main\wow\_<",
+            @"foo: $(ExecRoot)\..\..\..\..\execroot\main\wow\_<",
+            @"foo: C:\output_base\execroot\main\wow\<")]
         public void EscapingOnWindowsWorks(string contents, string bazelout, string ideOut)
         {
             MakeContext(true);

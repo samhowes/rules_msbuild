@@ -54,22 +54,44 @@ namespace RulesMSBuild.Tools.Builder
                 contents = contents[thisIndex..];
 
                 var endOfPath = contents.IndexOfAny(new[] {'"', ';', '<'});
-                var sandboxPath = contents[(thisTarget.Length + pathCharLength)..endOfPath];
                 var path = contents[..(endOfPath)];
-                // next segment will be "sandbox" or "external"
-                if (sandboxPath[.."sandbox".Length].SequenceEqual("sandbox"))
+                var idePath = path;
+
+                ideOutput.Write(idePath[..(thisTarget.Length + pathCharLength)]);
+                idePath = idePath[(thisTarget.Length + pathCharLength)..];
+                if (idePath[.."sandbox".Length].SequenceEqual("sandbox"))
                 {
-                    // execroot path
-                    var execIndex = sandboxPath.IndexOf("execroot");
-                    ideOutput.Write(contents[..(thisTarget.Length + pathCharLength)]);
-                    ideOutput.Write(sandboxPath[execIndex..]);
-                }
-                else
-                {
-                    // output_base path
-                    ideOutput.Write(path);
+                    idePath = idePath[idePath.IndexOf("execroot")..];
                 }
 
+                bool foundDir = false;
+                for (var i = idePath.Length - 1; i >= 0; i--)
+                {
+                    if (idePath[i] != Path.DirectorySeparatorChar) continue;
+                    if (foundDir || i < idePath.Length - 1)
+                    {
+                        if (idePath[i + 1] == '_')
+                        {
+                            if (idePath[^1] != Path.DirectorySeparatorChar)
+                            {
+                                i--;
+                                if (needsEscaping)
+                                    i--;
+                            }
+
+                            idePath = idePath[..(i + 1)];
+                        }
+
+                        break;
+                    }
+
+                    foundDir = true;
+                    // double backslash in json?
+                    if (needsEscaping)
+                        i--;
+                }
+
+                ideOutput.Write(idePath);
 
                 var pathString = path.ToString();
                 if (needsEscaping)
