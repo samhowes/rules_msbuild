@@ -9,6 +9,7 @@ filegroup(
     name = "launcher",
     srcs = select({
         "@bazel_tools//src/conditions:host_windows": [":launcher_windows"],
+        "@rules_msbuild//config:debug_launcher": [":launcher_windows_go"],
         # The go launcher would be completely cross platform, but we don't want to force the go toolchain on
         # anyone that doesn't want it. We'll precompile the windows exe, because there is only one os_arch combination
         # we care about. Unix all has bash though, and that works without requiring an extra toolchain, and without

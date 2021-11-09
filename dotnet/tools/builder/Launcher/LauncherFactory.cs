@@ -22,9 +22,10 @@ namespace RulesMSBuild.Tools.Builder.Launcher
             return 0;
         }
 
-        public int CreatePublish(string launcherTemplate, string outputPath)
+        public int CreatePublish(string launcherTemplate, string outputPath, BuildContext context)
         {
             using var writer = CreateWriter(launcherTemplate, outputPath + ".exe");
+            writer.Add("assembly_name", context.Command.assembly_name);
             writer.Add("binary_type", "DotnetPublish");
             writer.Save();
 

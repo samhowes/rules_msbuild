@@ -8,25 +8,7 @@ load(
     "msbuild_restore",
     "msbuild_test",
 )
-load("//dotnet/private/rules:directory.bzl", "msbuild_directory")
 load("//dotnet/private/rules:nuget.bzl", "nuget_package")
-
-def msbuild_directory_macro(
-        name = None,
-        srcs = [],
-        deps = [],
-        visibility = None,
-        **kwargs):
-    if visibility == None:
-        visibility = ["%s//:__subpackages__" % native.repository_name()]
-
-    msbuild_directory(
-        name = name,
-        srcs = srcs,
-        deps = deps,
-        visibility = visibility,
-        **kwargs
-    )
 
 def msbuild_project(
         name,

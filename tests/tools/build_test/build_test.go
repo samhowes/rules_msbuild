@@ -62,6 +62,7 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 			config.Target = strings.ReplaceAll(config.Target, "\\", "/")
 		}
 
+		config.IsPublish = "%is_publish%" == "True"
 		config.RunLocation = `%run_location%`
 		config.Debug = strings.ToLower(`%compilation_mode%`) == "dbg"
 		config.Diag = strings.ToLower(`%diag%`) == "1"
@@ -156,6 +157,12 @@ func TestExecutableOutput(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			config.Target = config.Target + ".exe"
 		}
+	}
+
+	if config.IsPublish {
+		// explicitly register bogus runfiles variables to make sure the launcher ignores them
+		_ = os.Setenv(bazel.RUNFILES_MANIFEST_FILE, "foobar")
+		_ = os.Setenv(bazel.RUNFILES_DIR, "foobar")
 	}
 
 	lib.CheckExecutableOutput(t, &config)

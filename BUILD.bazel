@@ -14,6 +14,7 @@ msbuild_directory(
         "Directory.Solution.props",
         "Directory.Solution.targets",
     ],
+    visibility = ["//:__subpackages__"],
     deps = ["//extras/ide:msbuild_defaults"],
 )
 

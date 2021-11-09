@@ -2,7 +2,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using CommandLine;
 using RulesMSBuild.Tools.Bazel;
 
@@ -25,6 +24,13 @@ namespace Bzl
     {
     }
 
+    [Verb("restore", HelpText = "Restores msbuild projects in the workspace, useful for working with IDEs")]
+    public class RestoreOptions
+    {
+        [Value(0, Default = "//...", HelpText = "The package expression to restore")]
+        public string Package { get; set; }
+    }
+
     class Program
     {
         static int Main(string[] args)
@@ -32,10 +38,11 @@ namespace Bzl
             if (args.Length > 0 && args[0] == "_test")
                 return Test(args[1]);
 
-            return Parser.Default.ParseArguments<InitOptions, GazelleOptions>(args)
+            return Parser.Default.ParseArguments<InitOptions, GazelleOptions, RestoreOptions>(args)
                 .MapResult(
                     (InitOptions init) => Init(init),
                     (GazelleOptions gazelle) => Gazelle(gazelle),
+                    (RestoreOptions restore) => Restore(restore),
                     errors => 1);
         }
 
@@ -93,6 +100,32 @@ namespace Bzl
             var process = Process.Start(gazelle);
             process!.WaitForExit();
             return process.ExitCode;
+        }
+
+        private static int Restore(RestoreOptions restore)
+        {
+            var workspace = BazelEnvironment.TryGetWorkspaceRoot();
+            var cwd = Directory.GetCurrentDirectory();
+            if (workspace != null && !cwd.StartsWith(workspace))
+                Directory.SetCurrentDirectory(workspace);
+
+            var query = $"kind(msbuild_restore,{restore.Package})";
+            Console.WriteLine($"bazel query {query} | xargs bazel build");
+            var info = new ProcessStartInfo("bazel") {RedirectStandardOutput = true};
+            info.ArgumentList.Add("query");
+            info.ArgumentList.Add(query);
+
+            var queryProcess = Process.Start(info)!;
+            var output = queryProcess.StandardOutput.ReadToEnd();
+            queryProcess.WaitForExit();
+            Console.WriteLine(output);
+            if (queryProcess.ExitCode != 0) return queryProcess.ExitCode;
+            var targets = output.Split(Environment.NewLine);
+            var build = Process.Start("bazel", "build " + string.Join(' ', targets))!;
+
+            build.WaitForExit();
+
+            return build.ExitCode;
         }
 
         private static string? FindGazelle(Runfiles runfiles)

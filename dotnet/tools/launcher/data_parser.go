@@ -89,9 +89,7 @@ func GetLaunchInfo(binaryPath string) (*LaunchInfo, error) {
 		return nil, fmt.Errorf("failed to read launch data: %w", err)
 	}
 
-	launchInfo := &LaunchInfo{Data: map[string]string{},
-		Runfiles: GetRunfiles(),
-	}
+	launchInfo := &LaunchInfo{Data: map[string]string{}}
 	start := 0
 
 	diag(func() { fmt.Println("==> launch data") })

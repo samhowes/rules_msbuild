@@ -10,10 +10,10 @@
 load(
     "@rules_msbuild//dotnet/private:msbuild_macros.bzl",
     "msbuild_binary_macro",
-    "msbuild_directory_macro",
     "msbuild_library_macro",
     "msbuild_test_macro",
 )
+load("@rules_msbuild//dotnet/private/rules:directory.bzl", _msbuild_directory = "msbuild_directory")
 load(
     "@rules_msbuild//dotnet/private/toolchain:nuget.bzl",
     _nuget_deps_helper = "nuget_deps_helper",
@@ -23,7 +23,7 @@ load(
 BAZEL_VERSION = "4.1.0"
 
 # primary end-user rules
-msbuild_directory = msbuild_directory_macro
+msbuild_directory = _msbuild_directory
 msbuild_binary = msbuild_binary_macro
 msbuild_library = msbuild_library_macro
 msbuild_test = msbuild_test_macro

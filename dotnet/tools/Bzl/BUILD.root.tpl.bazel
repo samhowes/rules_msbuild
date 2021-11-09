@@ -1,7 +1,10 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
 load("@rules_msbuild//tools:gazelle.bzl", "gazelle")
 
-msbuild_directory(name = "msbuild_defaults")
+msbuild_directory(
+    name = "msbuild_defaults",
+    visibility = ["//:__subpackages__"],
+)
 
 gazelle(
     name = "gazelle",

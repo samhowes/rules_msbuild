@@ -1,7 +1,6 @@
 <Project>
     <PropertyGroup>
-        <UseBazel Condition="'$(UseBazel)' == ''">true</UseBazel>
         <BazelProjectUseSolutionItems>true</BazelProjectUseSolutionItems>
     </PropertyGroup>
-    <Import Project="Bazel.props" />
+    <Import Project="Directory.Build.props" />
 </Project>

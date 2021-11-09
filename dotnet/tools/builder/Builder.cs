@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
@@ -249,7 +250,8 @@ namespace RulesMSBuild.Tools.Builder
                     var launcherPath = Path.Combine(_context.MSBuild.PublishDir, _context.Command.assembly_name);
                     launcherFactory.CreatePublish(
                         Path.Combine(_context.Bazel.ExecRoot, _context.Command.LauncherTemplate),
-                        launcherPath);
+                        launcherPath,
+                        _context);
                 }
 
                 var runfilesDir = _context.Command.assembly_name + ".dll.runfiles";
@@ -464,58 +466,11 @@ namespace RulesMSBuild.Tools.Builder
         /// </summary>
         private void FixRestoreOutputs()
         {
-            foreach (var fileName in Directory.EnumerateFiles(_context.MSBuild.BaseIntermediateOutputPath))
+            var fixer = new RestoreFixer(_context, new Files(), new Paths());
+            Directory.CreateDirectory(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath));
+            foreach (var ideFileName in Directory.EnumerateFiles(_context.MSBuild.BaseIntermediateOutputPath))
             {
-                var target = _context.Bazel.OutputBase;
-
-                var contents = File.ReadAllText(fileName);
-                var isJson = contents[0] == '{';
-                var needsEscaping = isJson && Path.DirectorySeparatorChar == '\\';
-
-                string Escape(string s) => s.Replace(@"\", @"\\");
-
-                if (needsEscaping)
-                    target = Escape(target);
-
-                using var output = new StreamWriter(File.Open(fileName, FileMode.Truncate));
-                var index = 0;
-                for (;;)
-                {
-                    var thisIndex = contents.IndexOf(target, index, StringComparison.Ordinal);
-                    if (thisIndex == -1) break;
-                    output.Write(contents[index..thisIndex]);
-
-                    if (contents[thisIndex..(thisIndex + "sandbox".Length)] == "sandbox")
-                        thisIndex = contents.IndexOf("execroot", index, StringComparison.Ordinal);
-
-                    var endOfPath = contents.IndexOfAny(new[] {'"', ';', '<'}, thisIndex);
-
-                    index = endOfPath;
-
-                    var path = contents[thisIndex..endOfPath];
-
-                    if (needsEscaping)
-                        path = path.Replace(@"\\", @"\");
-
-                    if (isJson)
-                    {
-                        path = Path.GetRelativePath(_context.ProjectDirectory, path);
-                    }
-                    else
-                    {
-                        path = Path.Combine("$(ExecRoot)", Path.GetRelativePath(_context.Bazel.ExecRoot, path));
-                    }
-
-                    if (needsEscaping)
-                    {
-                        path = Escape(path);
-                    }
-
-                    output.Write(path);
-                }
-
-                output.Write(contents[index..]);
-                output.Flush();
+                fixer.Fix(ideFileName);
             }
         }
 

@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <UseBazel>true</UseBazel>
+        <UseBazel Condition="$(UseBazel) == ''">true</UseBazel>
     </PropertyGroup>
     <Import Project="Bazel.props"/>
 

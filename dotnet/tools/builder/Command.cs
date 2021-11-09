@@ -73,5 +73,6 @@ namespace RulesMSBuild.Tools.Builder
 
 
         [Option("directory")] public IEnumerable<string> DirectorySrcs { get; set; }
+        public string? ExecRoot { get; set; }
     }
 }

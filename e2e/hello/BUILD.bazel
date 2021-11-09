@@ -1,6 +1,9 @@
 load("@rules_msbuild//dotnet:defs.bzl", "msbuild_directory")
 
-msbuild_directory(name = "msbuild_defaults")
+msbuild_directory(
+    name = "msbuild_defaults",
+    visibility = ["//:__subpackages__"],
+)
 
 sh_binary(
     name = "test_external",

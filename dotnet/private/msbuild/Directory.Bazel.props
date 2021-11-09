@@ -18,7 +18,7 @@
             the output directories, known as Tree Artifacts, and not the individual output files, since MSBuild has
             _a lot_ of output files, and we just don't need to track anything other than the directory.
          -->
-        <BaseIntermediateOutputPath>$(OutputPath)/restore/</BaseIntermediateOutputPath>
+        <BaseIntermediateOutputPath>$(OutputPath)/restore/_/</BaseIntermediateOutputPath>
         <!--
             Defaults to `obj` then `obj/Debug` by .NET, as said before, appending the MSBuild configuration
             is silly.
