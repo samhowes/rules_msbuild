@@ -111,7 +111,7 @@ namespace BuilderTests
             @"{foo: C:\\output_base\\execroot\\main\\wow\\<")]
         [InlineData(
             @"{foo: C:\\output_base\\execroot\\main\\wow\\_<",
-            @"{foo: ..\\..\\..\\..\\..\\execroot\\main\\wow<",
+            @"{foo: ..\\..\\..\\..\\..\\execroot\\main\\wow\\_<",
             @"{foo: C:\\output_base\\execroot\\main\\wow<")]
         [InlineData(
             @"foo: C:\output_base\sandbox\5\execroot\main\wow<",
