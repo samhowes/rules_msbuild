@@ -14,6 +14,13 @@ config_setting(
 )
 
 config_setting(
+    name = "diag",
+    flag_values = {
+        ":mode": "diag",
+    },
+)
+
+config_setting(
     name = "debug_launcher",
     flag_values = {
         ":mode": "debug_launcher",

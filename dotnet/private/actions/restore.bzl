@@ -95,8 +95,8 @@ def _get_assembly_name(ctx, directory_info):
         if ctx.label.package != "":
             parts.extend(ctx.label.package.split("/"))
 
-        if ctx.attr.name != parts[-1]:
-            parts.append(ctx.attr.name)
+        if name != parts[-1]:
+            parts.append(name)
     else:
         parts.append(name)
     return ".".join(parts)
