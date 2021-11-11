@@ -9,33 +9,34 @@ using RulesMSBuild.Tools.Builder.Diagnostics;
 
 namespace RulesMSBuild.Tools.Builder.MSBuild
 {
-    public interface IBazelMsBuildLogger: INodeLogger
+    public interface IBazelMsBuildLogger : INodeLogger
     {
         bool HasError { get; }
         void Error(string message);
     }
-    
+
     public class BazelMsBuildLogger : ConsoleLogger, IBazelMsBuildLogger
     {
         public bool HasError { get; set; }
 
         public void Error(string message) => _myWrite(message);
-        
+
         private static WriteHandler Write(WriteHandler? other, Func<string, string> trimPath)
         {
             other ??= Console.Out.Write;
             return (m) =>
             {
-                other(trimPath(m));
+                other((m));
+                // other(trimPath(m));
             };
         }
-        
+
         public BazelMsBuildLogger(
             WriteHandler? write,
-            LoggerVerbosity verbosity, Func<string,string> trimPath) 
+            LoggerVerbosity verbosity, Func<string, string> trimPath)
             : base(verbosity, Write(write, trimPath),
-            SetColor,
-            ResetColor)
+                SetColor,
+                ResetColor)
         {
             _myWrite = Write(write, trimPath);
         }
@@ -45,26 +46,27 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             base.Initialize(eventSource);
             InitializeImpl(eventSource);
         }
-        
+
         public override void Initialize(IEventSource eventSource, int nodeCount)
         {
             base.Initialize(eventSource, nodeCount);
             InitializeImpl(eventSource);
         }
-        
+
         private void InitializeImpl(IEventSource eventSource)
         {
             eventSource!.ErrorRaised += (sender, args) =>
             {
                 HasError = true;
                 if (
-                    args.Message.Contains("are you missing an assembly reference?") 
+                    args.Message.Contains("are you missing an assembly reference?")
                     || args.Message.Contains(
                         "The project file could not be loaded. Could not find a part of the path")
-                    )
+                )
                 {
-                    Console.WriteLine("\n\tdo you need to execute `bazel run //:gazelle` to update your build files?\n");
-                } 
+                    Console.WriteLine(
+                        "\n\tdo you need to execute `bazel run //:gazelle` to update your build files?\n");
+                }
             };
         }
 
