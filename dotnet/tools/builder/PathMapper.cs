@@ -10,7 +10,7 @@ namespace RulesMSBuild.Tools.Builder
     public class PathMapper
     {
         private static PathMapper? _instance;
-        
+
         private readonly string _outputBase;
         private readonly string _execRoot;
         const string OutputBase = "$output_base";
@@ -26,11 +26,12 @@ namespace RulesMSBuild.Tools.Builder
             BinaryTranslator.BinaryWriteTranslator.BinaryWriterFactory =
                 (stream) => new PathMappingBinaryWriter(stream, instance);
         }
+
         // for Moq
         protected PathMapper()
         {
             SetInstance(this);
-        } 
+        }
 
         public PathMapper(string outputBase, string execRoot)
         {
@@ -45,34 +46,37 @@ namespace RulesMSBuild.Tools.Builder
             // https://docs.bazel.build/versions/main/output_directories.html
             _execRoot = Path.GetDirectoryName(execRoot)!;
             var hostWorkspace = execRoot[(_execRoot.Length + 1)..];
-            _externalPrefix = hostWorkspace + "/external"; 
+            _externalPrefix = hostWorkspace + "/external";
             SetInstance(this);
-            
+
             var execRootSegment = _execRoot[(outputBase.Length)..];
 
-            _toBazelRegex = new Regex(@$"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?(/|\\)",
+            _toBazelRegex = new Regex(
+                @$"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?(/|\\)([^\\/]+(/|\\))?",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
-            
+
             _fromBazelRegex = new Regex($"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
         }
 
-        public virtual string ToBazel(string path) => _toBazelRegex.Replace(path, (match) =>
-        {
-            return (match.Groups[2].Success ? ExecRoot : OutputBase) + match.Groups[3].Value;
-        });
-        
-        public virtual string FromBazel(string path) => _fromBazelRegex.Replace(path, (match) =>
-        {
-            return match.Groups[2].Success ? _execRoot : _outputBase; 
-        });
+        public virtual string ToBazel(string path) => _toBazelRegex.Replace(path,
+            (match) =>
+            {
+                return (match.Groups[2].Success ? ExecRoot : OutputBase) + match.Groups[3].Value +
+                       match.Groups[4].Value;
+            });
+
+        public virtual string ToRelative(string path) => _toBazelRegex.Replace(path, (match) => "");
+
+        public virtual string FromBazel(string path) => _fromBazelRegex.Replace(path,
+            (match) => { return match.Groups[2].Success ? _execRoot : _outputBase; });
 
         public virtual string ToManifestPath(string absolutePath)
         {
-            var path = _toBazelRegex.Replace(absolutePath, "")
+            var path = _toBazelRegex.Replace(absolutePath, "$4")
                 // even on non-windows, MSBuild still uses backslashes sometimes.
-                .Replace('\\','/');
-            
+                .Replace('\\', '/');
+
             if (path.StartsWith(_externalPrefix))
             {
                 path = path.Substring(_externalPrefix.Length + 1);

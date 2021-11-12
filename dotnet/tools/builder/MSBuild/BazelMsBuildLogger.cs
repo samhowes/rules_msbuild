@@ -24,11 +24,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
         private static WriteHandler Write(WriteHandler? other, Func<string, string> trimPath)
         {
             other ??= Console.Out.Write;
-            return (m) =>
-            {
-                other((m));
-                // other(trimPath(m));
-            };
+            return (m) => { other(trimPath(m)); };
         }
 
         public BazelMsBuildLogger(
