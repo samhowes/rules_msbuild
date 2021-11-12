@@ -38,14 +38,14 @@ namespace RulesMSBuild.Tools.Builder
                     Console.Out.Flush();
                 },
                 context.DiagnosticsEnabled ? LoggerVerbosity.Normal : LoggerVerbosity.Quiet,
-                (m) => PathMapper.ToBazel(m));
+                (m) => PathMapper.ToRelative(m));
 
-            Loggers = new List<ILogger>() {BuildLog};
+            Loggers = new List<ILogger>() { BuildLog };
             if (context.DiagnosticsEnabled)
             {
                 var path = context.OutputPath(context.Bazel.Label.Name + ".binlog");
                 Debug($"added binlog {path}");
-                var binlog = new BinaryLogger() {Parameters = path};
+                var binlog = new BinaryLogger() { Parameters = path };
                 Loggers.Add(binlog);
             }
 
@@ -89,7 +89,7 @@ namespace RulesMSBuild.Tools.Builder
                 var result = ExecuteBuild(project);
 
                 EndBuild(result);
-                return (int) result;
+                return (int)result;
             }
             catch (Exception ex)
             {
