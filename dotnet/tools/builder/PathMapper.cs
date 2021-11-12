@@ -52,7 +52,7 @@ namespace RulesMSBuild.Tools.Builder
             var execRootSegment = _execRoot[(outputBase.Length)..];
 
             _toBazelRegex = new Regex(
-                @$"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?(/|\\)([^\\/]+(/|\\))",
+                @$"({Regex.Escape(outputBase)})({Regex.Escape(execRootSegment)})?(/|\\)([^\\/]+(/|\\))?",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
             _fromBazelRegex = new Regex($"({Regex.Escape(OutputBase)})|({Regex.Escape(ExecRoot)})",
