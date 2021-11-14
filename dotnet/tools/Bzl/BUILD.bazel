@@ -21,7 +21,7 @@ msbuild_binary(
     ],
     packable = True,
     package_id = "SamHowes.Bzl",
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     version = VERSION,
     visibility = ["//visibility:public"],
     deps = [
