@@ -1,0 +1,67 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_library")
+
+msbuild_library(
+    name = "netstandard21",
+    srcs = ["Class1.cs"],
+    packable = True,
+    target_framework = "netstandard2.1",
+    version = "1.2.3",
+    visibility = ["//visibility:public"],
+)
+
+build_test(
+    name = "netstandard21_restore_test",
+    expected_files = {
+        "": [
+            "netstandard21_restore.binlog",
+        ],
+        "restore": [
+            "project.assets.json",
+            "netstandard21.csproj.bazel.props",
+            "netstandard21.csproj.nuget.dgspec.json",
+            "netstandard21.csproj.nuget.g.props",
+            "netstandard21.csproj.nuget.g.targets",
+        ],
+    },
+)
+
+build_test(
+    name = "netstandard21_test",
+    expected_files = {
+        "": [
+            "netstandard21.cache",
+            # binlog & dot is only output with --define=BUILD_DIAG=1
+            "netstandard21.binlog",
+            "netstandard21.dot",
+        ],
+        "obj/netstandard2.1": [
+            "netstandard21.dll",
+        ],
+        "netstandard2.1": [
+            # pdb is only output with compilation mode=dbg
+            "netstandard21.pdb",
+            "netstandard21.dll",
+            "netstandard21.deps.json",
+        ],
+    },
+)
+
+build_test(
+    name = "netstandard21_publish_test",
+    expected_files = {
+        "publish/netstandard2.1": [
+            "netstandard21.pdb",
+            "netstandard21.dll",
+        ],
+    },
+)
+
+build_test(
+    name = "netstandard21.nupkg_test",
+    expected_files = {
+        "": [
+            "netstandard21.1.2.3.nupkg",
+        ],
+    },
+)

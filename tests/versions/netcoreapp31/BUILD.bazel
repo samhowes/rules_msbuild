@@ -1,0 +1,75 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "netcoreapp31",
+    srcs = ["Program.cs"],
+    packable = True,
+    target_framework = "netcoreapp3.1",
+    version = "1.2.3",
+    visibility = ["//visibility:public"],
+)
+
+build_test(
+    name = "netcoreapp31_restore_test",
+    expected_files = {
+        "": [
+            "netcoreapp31_restore.binlog",
+        ],
+        "restore": [
+            "project.assets.json",
+            "netcoreapp31.csproj.bazel.props",
+            "netcoreapp31.csproj.nuget.dgspec.json",
+            "netcoreapp31.csproj.nuget.g.props",
+            "netcoreapp31.csproj.nuget.g.targets",
+        ],
+    },
+)
+
+build_test(
+    name = "netcoreapp31_test",
+    expected_files = {
+        "": [
+            "netcoreapp31.cache",
+            # binlog & dot is only output with --define=BUILD_DIAG=1
+            "netcoreapp31.binlog",
+            "netcoreapp31.dot",
+        ],
+        "obj/netcoreapp3.1": [
+            "netcoreapp31.dll",
+        ],
+        "netcoreapp3.1": [
+            # pdb is only output with compilation mode=dbg
+            "netcoreapp31.pdb",
+            "netcoreapp31.dll",
+            "netcoreapp31.deps.json",
+            "netcoreapp31.runtimeconfig.json",
+            "netcoreapp31.runtimeconfig.dev.json",
+        ],
+    },
+    expected_output = "Hello Bazel!\n",
+)
+
+build_test(
+    name = "netcoreapp31_publish_test",
+    expected_files = {
+        "publish/netcoreapp3.1": [
+            "netcoreapp31",
+            "netcoreapp31.exe",
+            "netcoreapp31.pdb",
+            "netcoreapp31.dll",
+            "netcoreapp31.deps.json",
+            "netcoreapp31.runtimeconfig.json",
+        ],
+    },
+    expected_output = "Hello Bazel!\n",
+)
+
+build_test(
+    name = "netcoreapp31.nupkg_test",
+    expected_files = {
+        "": [
+            "netcoreapp31.1.2.3.nupkg",
+        ],
+    },
+)

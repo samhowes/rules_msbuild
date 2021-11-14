@@ -1,0 +1,75 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "net50",
+    srcs = ["Program.cs"],
+    packable = True,
+    target_framework = "net5.0",
+    version = "1.2.3",
+    visibility = ["//visibility:public"],
+)
+
+build_test(
+    name = "net50_restore_test",
+    expected_files = {
+        "": [
+            "net50_restore.binlog",
+        ],
+        "restore": [
+            "project.assets.json",
+            "net50.csproj.bazel.props",
+            "net50.csproj.nuget.dgspec.json",
+            "net50.csproj.nuget.g.props",
+            "net50.csproj.nuget.g.targets",
+        ],
+    },
+)
+
+build_test(
+    name = "net50_test",
+    expected_files = {
+        "": [
+            "net50.cache",
+            # binlog & dot is only output with --define=BUILD_DIAG=1
+            "net50.binlog",
+            "net50.dot",
+        ],
+        "obj/net5.0": [
+            "net50.dll",
+        ],
+        "net5.0": [
+            # pdb is only output with compilation mode=dbg
+            "net50.pdb",
+            "net50.dll",
+            "net50.deps.json",
+            "net50.runtimeconfig.json",
+            "net50.runtimeconfig.dev.json",
+        ],
+    },
+    expected_output = "Hello Bazel!\n",
+)
+
+build_test(
+    name = "net50_publish_test",
+    expected_files = {
+        "publish/net5.0": [
+            "net50",
+            "net50.exe",
+            "net50.pdb",
+            "net50.dll",
+            "net50.deps.json",
+            "net50.runtimeconfig.json",
+        ],
+    },
+    expected_output = "Hello Bazel!\n",
+)
+
+build_test(
+    name = "net50.nupkg_test",
+    expected_files = {
+        "": [
+            "net50.1.2.3.nupkg",
+        ],
+    },
+)

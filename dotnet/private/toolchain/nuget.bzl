@@ -39,6 +39,7 @@ Definitions: (some are made up)
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(
     "//dotnet/private/msbuild:xml.bzl",
     "STARTUP_DIR",
@@ -70,8 +71,6 @@ def _nuget_fetch_impl(ctx):
         bazel_packages = ctx.path("bazel_packages"),
         packages_folder = "packages",
         fetch_config = ctx.path("NuGet.Fetch.Config"),
-        packages_by_tfm = {},  # dict[tfm, dict[pkg_id_lower: _pkg]] of requested packages
-        packages = {},  # {pkg_name/version: _pkg} where keys are in all lowercase
     )
     os, _ = detect_host_platform(ctx)
     dotnet = dotnet_context(
@@ -121,7 +120,7 @@ def _nuget_fetch_impl(ctx):
 
     result = ctx.execute(
         args,
-        environment = dotnet.env,
+        environment = dicts.add(dotnet.env, {"BazelFetch": "true"}),
         quiet = True,
         working_directory = str(parser_project.dirname),
     )
@@ -178,8 +177,8 @@ def _copy_parser(ctx, config):
 
 def _fetch_custom_packages(ctx, config):
     ctx.download(
-        "https://github.com/samhowes/SamHowes.Microsoft.Build/releases/download/0.0.1/SamHowes.Microsoft.Build.16.9.0.nupkg",
-        output = config.bazel_packages.get_child("SamHowes.Microsoft.Build.16.9.0.nupkg"),
+        "https://github.com/samhowes/SamHowes.Microsoft.Build/releases/download/0.0.2/SamHowes.Microsoft.Build.17.0.0.nupkg",
+        output = config.bazel_packages.get_child("SamHowes.Microsoft.Build.17.0.0.nupkg"),
         sha256 = "e6618ec0f9fa91c2ffb7ad0dd7758417e0cf97e1da6a54954834f3cb84b56c2d",
     )
 

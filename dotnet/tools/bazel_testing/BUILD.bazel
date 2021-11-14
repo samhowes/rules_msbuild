@@ -10,7 +10,7 @@ msbuild_binary(
         "TestRunner.cs",
     ],
     project_file = "TestRunner.csproj",
-    target_framework = "net5.0",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = [
         "//dotnet/tools/Bzl",

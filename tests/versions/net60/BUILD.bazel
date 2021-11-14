@@ -1,0 +1,75 @@
+load("//tests/tools/build_test:build_test.bzl", "build_test")
+load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
+
+msbuild_binary(
+    name = "net60",
+    srcs = ["Program.cs"],
+    packable = True,
+    target_framework = "net6.0",
+    version = "1.2.3",
+    visibility = ["//visibility:public"],
+)
+
+build_test(
+    name = "net60_restore_test",
+    expected_files = {
+        "": [
+            "net60_restore.binlog",
+        ],
+        "restore": [
+            "project.assets.json",
+            "net60.csproj.bazel.props",
+            "net60.csproj.nuget.dgspec.json",
+            "net60.csproj.nuget.g.props",
+            "net60.csproj.nuget.g.targets",
+        ],
+    },
+)
+
+build_test(
+    name = "net60_test",
+    expected_files = {
+        "": [
+            "net60.cache",
+            # binlog & dot is only output with --define=BUILD_DIAG=1
+            "net60.binlog",
+            "net60.dot",
+        ],
+        "obj/net6.0": [
+            "net60.dll",
+        ],
+        "net60": [
+            # pdb is only output with compilation mode=dbg
+            "net60.pdb",
+            "net60.dll",
+            "net60.deps.json",
+            "net60.runtimeconfig.json",
+            "net60.runtimeconfig.dev.json",
+        ],
+    },
+    expected_output = "Hello Bazel!\n",
+)
+
+build_test(
+    name = "net60_publish_test",
+    expected_files = {
+        "publish/net6.0": [
+            "net60",
+            "net60.exe",
+            "net60.pdb",
+            "net60.dll",
+            "net60.deps.json",
+            "net60.runtimeconfig.json",
+        ],
+    },
+    expected_output = "Hello Bazel!\n",
+)
+
+build_test(
+    name = "net60.nupkg_test",
+    expected_files = {
+        "": [
+            "net60.1.2.3.nupkg",
+        ],
+    },
+)

@@ -1,7 +1,8 @@
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
 load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
 load("//dotnet/private/msbuild:nuget.bzl", "NUGET_BUILD_CONFIG", "prepare_nuget_config")
-load("//dotnet/private/toolchain:common.bzl", "BUILDER_PACKAGES", "default_tfm", "detect_host_platform")
+load("//dotnet/private/toolchain:common.bzl", "default_tfm", "detect_host_platform")
+load("//deps:public_nuget.bzl", "PACKAGES")
 
 SDK_NAME = "dotnet_sdk"
 
@@ -18,6 +19,9 @@ def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget")
     if version == "host":
         _dotnet_host_sdk(name = SDK_NAME, nuget_repo = nuget_repo)
     else:
+        if version[0] != "6":
+            fail("cannot use version %s; dotnet 6 is required for rules_msbuild" % version)
+
         _dotnet_download_sdk(
             name = SDK_NAME,
             version = version,
@@ -34,6 +38,9 @@ def _dotnet_host_sdk_impl(ctx):
         fail("could not find {} on path".format(dotnet_name))
 
     version = _try_execute(ctx, [dotnet_path, "--version"]).strip()
+    if version[0] != "6":
+        fail("cannot use dotnet version %s; dotnet 6 is required for rules_msbuild. Download and install from https://dotnet.microsoft.com/download" % version)
+
     sdk_list = _try_execute(ctx, [dotnet_path, "--list-sdks"]).split("\n")
     if len(sdk_list) == 0:
         fail("no dotnet sdks are installed")
@@ -177,10 +184,12 @@ def _sdk_build_file(ctx, version):
    srcs = ["dotnet.exe"],
 )""")
 
-    builder_deps = [
-        "@{}//{}".format(ctx.attr.nuget_repo, k)
-        for k in BUILDER_PACKAGES.keys()
-    ]
+    deps_dict = {}
+    for k in PACKAGES.keys():
+        parts = k.split("/")
+        deps_dict["@{}//{}".format(ctx.attr.nuget_repo, parts[0])] = True
+    builder_deps = [k for k in deps_dict.keys()]
+
     builder_tfm = default_tfm(version)
     ctx.template(
         "BUILD.bazel",
