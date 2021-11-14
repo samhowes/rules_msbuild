@@ -43,6 +43,12 @@ jobs:
             env:
               BUILDBUDDY_API_KEY: $(BUILDBUDDY_API_KEY)
 
+          - task: UseDotNet@2
+            displayName: 'Use .NET 6'
+            inputs:
+              packageType: 'sdk'
+              version: '6.0.x'
+
           - script: |
               bash tests/runall.sh
             displayName: 'Build & Test'
