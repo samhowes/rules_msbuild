@@ -86,8 +86,6 @@ namespace NuGetParser
                     if (_downloadDeps.TryGetValue(overridesName, out var overridesPackageId))
                     {
                         var rel = overridesPackageId.String.ToLower();
-                        if (Path.DirectorySeparatorChar == '\\')
-                            rel = rel.Replace('\\', '/');
                         overridesPath = Path.Combine(_context.PackagesFolder, rel);
                     }
                     else
@@ -96,6 +94,8 @@ namespace NuGetParser
                     }
 
                     overridesPath = Path.Combine(overridesPath, "data", "PackageOverrides.txt");
+                    if (Path.DirectorySeparatorChar == '\\')
+                        overridesPath = overridesPath.Replace('\\', '/');
 
                     var overridesList = _files.ReadAllLines(overridesPath)
                         .Select(l => l.Split('|'))
