@@ -179,7 +179,7 @@ def _fetch_custom_packages(ctx, config):
     ctx.download(
         "https://github.com/samhowes/SamHowes.Microsoft.Build/releases/download/0.0.2/SamHowes.Microsoft.Build.17.0.0.nupkg",
         output = config.bazel_packages.get_child("SamHowes.Microsoft.Build.17.0.0.nupkg"),
-        sha256 = "e6618ec0f9fa91c2ffb7ad0dd7758417e0cf97e1da6a54954834f3cb84b56c2d",
+        sha256 = "cea8020962afa7d5b99c9cb97cfd383e02a8a751602ce0c41df0f8912947f938",
     )
 
 def _generate_nuget_configs(ctx, config):
