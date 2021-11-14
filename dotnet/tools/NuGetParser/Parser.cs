@@ -126,6 +126,8 @@ namespace NuGetParser
                 foreach (var file in _files.EnumerateFiles(path))
                 {
                     var subPath = file[(root.Length + 1)..];
+                    if (Path.DirectorySeparatorChar == '\\')
+                        subPath = subPath.Replace('\\', '/');
                     version.AllFiles.Add(subPath);
                 }
             }
