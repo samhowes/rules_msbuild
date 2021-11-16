@@ -25,10 +25,10 @@ build_test(
             "appsettings.json",
             "appsettings.Development.json",
         ],
-        "restore/_/Debug/net6.0": [
+        "restore/_/$(Configuration)/net6.0": [
             "staticwebassets.build.json",
         ],
-        "restore/Debug/net6.0": [
+        "restore/$(Configuration)/net6.0": [
             "staticwebassets.build.json",
         ],
     },

@@ -24,7 +24,7 @@ msbuild_binary(
 build_test(
     name = "Server_test",
     expected_files = {
-        "net5.0": [
+        "net6.0": [
             "Google.Protobuf.dll",
             "Grpc.AspNetCore.Server.ClientFactory.dll",
             "Grpc.AspNetCore.Server.dll",

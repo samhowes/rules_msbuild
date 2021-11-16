@@ -36,10 +36,10 @@ build_test(
             "HelloBazel.binlog",
             "HelloBazel.dot",
         ],
-        "obj/net5.0": [
+        "obj/net6.0": [
             "HelloBazel.dll",
         ],
-        "net5.0": [
+        "net6.0": [
             # pdb is only output with compilation mode=dbg
             "HelloBazel.pdb",
             "HelloBazel.dll",
@@ -54,7 +54,7 @@ build_test(
 build_test(
     name = "HelloBazel_publish_test",
     expected_files = {
-        "publish/net5.0": [
+        "publish/net6.0": [
             "HelloBazel",
             "HelloBazel.exe",
             "HelloBazel.pdb",

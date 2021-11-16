@@ -24,6 +24,8 @@ func initConfig(t *testing.T, config *lib.TestConfig) {
 		var data interface{}
 
 		config.JsonText = files.Endings(`%config_json%`)
+		config.JsonText = strings.ReplaceAll(config.JsonText, "$(Configuration)", `%configuration%`)
+
 		config.ExpectedOutput = files.Endings(`%expected_output%`)
 
 		err := json.Unmarshal([]byte(config.JsonText), &data)
