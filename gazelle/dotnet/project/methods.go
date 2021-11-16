@@ -63,6 +63,7 @@ func Load(projectFile string) (*Project, error) {
 	}
 
 	proj.TargetFramework, _ = proj.Properties["TargetFramework"]
+	proj.AssemblyName, _ = proj.Properties["AssemblyName"]
 	proj.PackageId, _ = proj.Properties["PackageId"]
 
 	baseName := filepath.Base(projectFile)
@@ -265,28 +266,28 @@ func (p *Project) CollectFiles(dir *DirectoryInfo, rel string) {
 
 func (p *Project) GetUnsupported() []string {
 	var messages []string
-	messages = p.Unsupported.Append(messages, "project")
+	messages = p.Unsupported.Append(messages, "project", true)
 	for _, pg := range p.PropertyGroups {
-		messages = pg.Unsupported.Append(messages, "property group")
+		messages = pg.Unsupported.Append(messages, "property group", true)
 		for _, prop := range pg.Properties {
 			if SpecialProperties[prop.XMLName.Local] {
 				continue
 			}
-			messages = prop.Unsupported.Append(messages, "property")
+			messages = prop.Unsupported.Append(messages, "property", true)
 		}
 	}
 	for _, ig := range p.ItemGroups {
-		messages = ig.Unsupported.Append(messages, "item group")
+		messages = ig.Unsupported.Append(messages, "item group", true)
 	}
 	return messages
 }
 
-func (u *Unsupported) Append(messages []string, prefix string) []string {
-	messages = append(messages, u.Messages(prefix)...)
+func (u *Unsupported) Append(messages []string, prefix string, includeElements bool) []string {
+	messages = append(messages, u.Messages(prefix, includeElements)...)
 	return messages
 }
 
-func (u *Unsupported) Messages(prefix string) []string {
+func (u *Unsupported) Messages(prefix string, includeElements bool) []string {
 	var messages []string
 	if prefix != "" {
 		prefix = fmt.Sprintf(" %s", prefix)
@@ -298,8 +299,10 @@ func (u *Unsupported) Messages(prefix string) []string {
 	for _, a := range u.UnsupportedAttrs {
 		apnd("attribute", a.Name.Local)
 	}
-	for _, a := range u.UnsupportedElements {
-		apnd("element", a.XMLName.Local)
+	if includeElements {
+		for _, a := range u.UnsupportedElements {
+			apnd("element", a.XMLName.Local)
+		}
 	}
 	return messages
 }

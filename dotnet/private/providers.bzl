@@ -54,7 +54,7 @@ MSBuildDirectoryInfo = provider(
         "srcs": "direct srcs of this directory",
         "files": "depset of files, both srcs and deps",
         "assembly_name_prefix": "string that will be prepended to assembly names",
-        "use_bazel_package_for_assembly_name": "bool to indicate if the bazel package should be used for the AssemblyName",
+        "assembly_name_root_package": "string to indicate the root bazel package to be used for the AssemblyName",
     },
 )
 

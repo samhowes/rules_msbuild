@@ -90,9 +90,15 @@ def _get_assembly_name(ctx, directory_info):
 
     name = ctx.attr.name[:(-1 * len("_restore"))]
 
-    if getattr(directory_info, "use_bazel_package_for_assembly_name", False):
-        if ctx.label.package != "":
-            parts.extend(ctx.label.package.split("/"))
+    root_package = getattr(directory_info, "assembly_name_root_package", None)
+    if root_package:
+        root_package = root_package[2:]  # skip the //
+        package = ctx.label.package
+        if package != "":
+            if package.startswith(root_package):
+                package = package[len(root_package) + 1:]
+
+            parts.extend(package.split("/"))
 
         if name != parts[-1]:
             parts.append(name)

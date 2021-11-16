@@ -18,7 +18,9 @@
 
   <ItemGroup>
     <ProjectReference Include="foo.csproj"/>
-    <PackageReference Include="bar" Version="4" />
+    <PackageReference Include="bar" Version="4">
+      <PrivateAssetts>all</PrivateAssetts>
+    </PackageReference>
   </ItemGroup>
   <Target></Target>
 </Project>

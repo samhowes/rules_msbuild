@@ -17,6 +17,7 @@ build_test(
     expected_files = {
         "netcoreapp3.1": [
             "foo.txt",
+            "Foo.DirectoryProps.Consumer.dll",
         ],
     },
 )
