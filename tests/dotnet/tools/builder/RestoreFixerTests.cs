@@ -129,8 +129,7 @@ namespace BuilderTests
         public void EscapingOnWindowsWorks(string contents, string bazelout, string ideOut)
         {
             MakeContext(true);
-            _fixer = new RestoreFixer(_context, _files.Object,
-                new WindowsPaths());
+            _fixer = new RestoreFixer(_context, _files.Object, new WindowsPaths());
             _contents = contents;
             Fix();
             _bazelOut.Should().Be(bazelout);
@@ -140,7 +139,7 @@ namespace BuilderTests
 
         private void Fix()
         {
-            _fixer.Fix("foo");
+            _fixer.Fix(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, "foo"));
             _bazelOutStream.Seek(0, SeekOrigin.Begin);
             _ideOutStream.Seek(0, SeekOrigin.Begin);
             _bazelOut = new StreamReader(_bazelOutStream).ReadToEnd();
