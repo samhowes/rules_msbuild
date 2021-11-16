@@ -9,7 +9,7 @@ import (
 
 func TestRunPublishOutput(t *testing.T) {
 
-	publishDir, err := files.Path("publish/netcoreapp3.1")
+	publishDir, err := files.Path("publish/net6.0")
 	if err != nil {
 		t.Fatalf("can't locate publish directory: %v", err)
 	}

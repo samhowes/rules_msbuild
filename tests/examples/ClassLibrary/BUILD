@@ -7,7 +7,7 @@ msbuild_library(
     name = "ClassLibrary",
     srcs = glob(["**/*.cs"]),
     project_file = "ClassLibrary.csproj",
-    target_framework = "netstandard2.1",
+    target_framework = "net6.0",
 )
 
 build_test(
@@ -32,10 +32,10 @@ build_test(
             "ClassLibrary.cache",
             "ClassLibrary.binlog",
         ],
-        "obj/netstandard2.1": [
+        "obj/net6.0": [
             "ClassLibrary.dll",
         ],
-        "netstandard2.1": [
+        "net6.0": [
             "ClassLibrary.pdb",
             "ClassLibrary.dll",
             "ClassLibrary.deps.json",

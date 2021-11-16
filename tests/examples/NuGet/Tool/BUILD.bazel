@@ -12,7 +12,7 @@ msbuild_binary(
         "foo.txt",
     ],
     packable = True,
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     version = "1.2.3",
     visibility = ["//visibility:public"],
     deps = ["//dotnet/tools/Runfiles"],

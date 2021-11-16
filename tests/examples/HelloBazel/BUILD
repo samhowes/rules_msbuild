@@ -6,7 +6,7 @@ msbuild_binary(
     srcs = ["Program.cs"],
     packable = True,
     project_file = "HelloBazel.csproj",
-    target_framework = "net5.0",
+    target_framework = "net6.0",
     version = "1.2.3",
     visibility = ["//visibility:public"],
 )

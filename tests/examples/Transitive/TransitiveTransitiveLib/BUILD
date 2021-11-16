@@ -5,7 +5,7 @@ msbuild_library(
     name = "TransitiveTransitiveLib",
     srcs = ["TransitiveTransitiveLibClass.cs"],
     project_file = "TransitiveTransitiveLib.csproj",
-    target_framework = "netstandard2.1",
+    target_framework = "net6.0",
     visibility = ["//tests/examples/Transitive/TransitiveLib:__pkg__"],
 )
 
@@ -15,7 +15,7 @@ build_test(
         "": [
             "TransitiveTransitiveLib.cache",
         ],
-        "netstandard2.1": [
+        "net6.0": [
             "TransitiveTransitiveLib.pdb",
             "TransitiveTransitiveLib.dll",
         ],
