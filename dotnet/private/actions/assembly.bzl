@@ -29,7 +29,16 @@ def build_assembly(ctx, dotnet):
         transitive = files + [restore.files] + protos,
     )
 
-    outputs = [output_dir, assembly, intermediate_dir, intermediate_assembly, cache.project, cache.result] + cmd_outputs
+    outputs = [
+        output_dir,
+        assembly,
+        ctx.actions.declare_directory("restore/_/" + dotnet.config.configuration),
+        ctx.actions.declare_directory("restore/" + dotnet.config.configuration),
+        intermediate_dir,
+        intermediate_assembly,
+        cache.project,
+        cache.result,
+    ] + cmd_outputs
 
     ctx.actions.run(
         mnemonic = "MSBuild",

@@ -33,7 +33,8 @@ namespace BuilderTests
             _files = new Mock<Files>();
             MakeContext(false);
 
-            _fixer = new RestoreFixer(_context, _files.Object, new Paths());
+            _fixer = new RestoreFixer(_context, _files.Object,
+                new Paths());
             _files.Setup(f => f.GetContents(It.IsAny<string>())).Returns(() => _contents);
 
             var c = Path.DirectorySeparatorChar;
@@ -128,7 +129,8 @@ namespace BuilderTests
         public void EscapingOnWindowsWorks(string contents, string bazelout, string ideOut)
         {
             MakeContext(true);
-            _fixer = new RestoreFixer(_context, _files.Object, new WindowsPaths());
+            _fixer = new RestoreFixer(_context, _files.Object,
+                new WindowsPaths());
             _contents = contents;
             Fix();
             _bazelOut.Should().Be(bazelout);

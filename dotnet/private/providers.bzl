@@ -11,7 +11,8 @@ DotnetCacheInfo = provider(
 DotnetRestoreInfo = provider(
     doc = "todo",
     fields = {
-        "output_dir": "",
+        "outputs": "",
+        "assets_json": "",
         "target_framework": "",
         "files": "",
         "caches": "depset of DotentCacheInfo",
