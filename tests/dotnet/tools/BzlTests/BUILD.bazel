@@ -7,7 +7,7 @@ msbuild_test(
     size = "small",
     srcs = ["WorkspaceMakerTests.cs"],
     data = glob(["testdata/**"]) + ["WORKSPACE.FAKE.tpl"],
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     deps = [
         "//dotnet/tools/Bzl",
         "//dotnet/tools/Runfiles",

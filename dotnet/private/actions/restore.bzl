@@ -6,9 +6,7 @@ load("//dotnet/private:providers.bzl", "DotnetRestoreInfo", "MSBuildDirectoryInf
 def restore(ctx, dotnet):
     # we don't really need this since we're declaring the directory, but this way, if the restore
     # fails, bazel will fail the build because this file wasn't created
-    assets_json = ctx.actions.declare_file("restore/_/project.assets.json")
-    restore_dir = ctx.actions.declare_directory("restore")
-
+    outputs, assets_json = _declare_restore_outputs(ctx)
     cache = declare_caches(ctx, "restore")
 
     files, caches = _process_deps(dotnet, ctx)
@@ -20,7 +18,7 @@ def restore(ctx, dotnet):
         transitive = files + [directory_info.files],
     )
 
-    outputs = [assets_json, restore_dir, cache.result, cache.project]
+    outputs.extend([cache.result, cache.project])
 
     assembly_name = _get_assembly_name(ctx, directory_info)
     args, cmd_outputs = make_builder_cmd(ctx, dotnet, "restore", directory_info, assembly_name)
@@ -45,7 +43,8 @@ def restore(ctx, dotnet):
 
     return DotnetRestoreInfo(
         target_framework = ctx.attr.target_framework,
-        output_dir = restore_dir,
+        assets_json = assets_json,
+        outputs = outputs,
         files = depset(outputs, transitive = [inputs]),
         caches = cache_set([cache], transitive = caches),
         directory_info = directory_info,
@@ -100,3 +99,12 @@ def _get_assembly_name(ctx, directory_info):
     else:
         parts.append(name)
     return ".".join(parts)
+
+def _declare_restore_outputs(ctx):
+    outputs = []
+    for d in ["restore/_/", "restore/"]:
+        for x in [".assets.json", ".nuget.cache"]:
+            outputs.append(ctx.actions.declare_file(d + "project" + x))
+        for x in [".bazel.props", ".bazel.targets", ".nuget.g.props", ".nuget.g.targets", ".nuget.dgspec.json"]:
+            outputs.append(ctx.actions.declare_file(d + ctx.attr.project_file.label.name + x))
+    return outputs, outputs[0]

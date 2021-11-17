@@ -6,7 +6,7 @@ msbuild_binary(
         "Program.cs",
         "Util.cs",
     ],
-    target_framework = "net5.0",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = [
         "//dotnet/tools/Bzl",

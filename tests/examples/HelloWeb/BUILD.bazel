@@ -14,16 +14,22 @@ msbuild_binary(
     ] + glob(["wwwroot/**"]),
     data = glob(["wwwroot/**"]),
     project_file = "HelloWeb.csproj",
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
 )
 
 build_test(
     name = "HelloWeb_test",
     expected_files = {
-        "netcoreapp3.1": [
+        "net6.0": [
             "appsettings.json",
             "appsettings.Development.json",
+        ],
+        "restore/_/$(Configuration)/net6.0": [
+            "staticwebassets.build.json",
+        ],
+        "restore/$(Configuration)/net6.0": [
+            "staticwebassets.build.json",
         ],
     },
     expected_output = "The special value is: 42!\n",
@@ -33,7 +39,7 @@ build_test(
 build_test(
     name = "HelloWeb_publish_test",
     expected_files = {
-        "publish/netcoreapp3.1": [
+        "publish/net6.0": [
             "appsettings.json",
             "appsettings.Development.json",
             "HelloWeb.deps.json",
@@ -42,7 +48,7 @@ build_test(
             "HelloWeb.runtimeconfig.json",
             "web.config",
         ],
-        "publish/netcoreapp3.1/wwwroot": [
+        "publish/net6.0/wwwroot": [
             "foo.txt",
         ],
     },

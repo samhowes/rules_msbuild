@@ -176,8 +176,11 @@ Any issues with the label
 are specifically known to be confusing and make working with these rules hard.
 
 Specifically:
+1. .NET 6 is required to run rules_msbuild. You can still compile old frameworks though. This is 
+   because rules_msbuild uses MSBuild 17 to build .NET 6 code, and MSBuild 17 targets net6.0 as a 
+   TargetFramework.
 
-1. If a machine doesn't have a dotnet sdk/runtime installed, and a project file targets a framework
+3. If a machine doesn't have a dotnet sdk/runtime installed, and a project file targets a framework
    version defined by that sdk/runtime, then a
    [weird error message](https://github.com/samhowes/rules_msbuild/issues?q=is%3Aissue+is%3Aopen+label%3Asharp-edge)
    will be output by the NuGetparser, or the builder when restoring packages for that framework

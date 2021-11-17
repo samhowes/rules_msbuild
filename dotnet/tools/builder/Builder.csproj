@@ -12,10 +12,7 @@
 
   <PropertyGroup>
     <PublishDir Condition="$(_IsBootstrapping) == 'true'">$(BINDIR)/external/dotnet_sdk/publish</PublishDir>
-    <TargetFramework>net5.0</TargetFramework>
-    <!--  Hack to detect when we're testing internally: Package will be dotnet/tools/builder when internal, but '' when
-      external as part of the sdk. -->
-<!--    <TargetFramework Condition="$(_IsBootstrapping) != 'true'">netcoreapp3.1</TargetFramework>-->
+    <TargetFramework>net6.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <LangVersion>9.0</LangVersion>
     <NoWarn>$(NoWarn);NU1603</NoWarn>
@@ -25,14 +22,15 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.4.1" />
-    <PackageReference Include="SamHowes.Microsoft.Build" Version="16.9.0" ExcludeAssets="Runtime" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.NET.StringTools" Version="1.0.0" />
+    <PackageReference Include="SamHowes.Microsoft.Build" Version="17.0.0" ExcludeAssets="Runtime" GeneratePathProperty="true" />
     <!--  Make sure msbuild only copies this exact dll and no dependencies.  -->
     <None Include="$(PkgSamHowes_Microsoft_Build)/lib/**/*.dll">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </None>
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.9.0" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.0.0" ExcludeAssets="Runtime" />
     <PackageReference Include="CommandLineParser" Version="2.9.0-preview1" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

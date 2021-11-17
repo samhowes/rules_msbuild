@@ -13,6 +13,10 @@ namespace RulesMSBuild.Tools.Builder
         public virtual Stream OpenRead(string path) => File.OpenRead(path);
 
         public virtual bool Exists(string path) => File.Exists(path);
+
+        public virtual bool DirectoryExists(string path) => Directory.Exists(path);
+
+        public virtual void CreateDirectory(string path) => Directory.CreateDirectory(path);
     }
 
     public class Paths
@@ -31,7 +35,7 @@ namespace RulesMSBuild.Tools.Builder
 
     public class SimplerPaths : Paths
     {
-        private static readonly char[] AllSeparators = {'\\', '/'};
+        private static readonly char[] AllSeparators = { '\\', '/' };
         public override string Combine(params string[] paths) => Fix(Join(paths));
 
         public override string GetRelativePath(string relativeTo, string path)

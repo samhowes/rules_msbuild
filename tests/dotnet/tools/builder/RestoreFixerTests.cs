@@ -33,7 +33,8 @@ namespace BuilderTests
             _files = new Mock<Files>();
             MakeContext(false);
 
-            _fixer = new RestoreFixer(_context, _files.Object, new Paths());
+            _fixer = new RestoreFixer(_context, _files.Object,
+                new Paths());
             _files.Setup(f => f.GetContents(It.IsAny<string>())).Returns(() => _contents);
 
             var c = Path.DirectorySeparatorChar;
@@ -138,7 +139,7 @@ namespace BuilderTests
 
         private void Fix()
         {
-            _fixer.Fix("foo");
+            _fixer.Fix(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath, "foo"));
             _bazelOutStream.Seek(0, SeekOrigin.Begin);
             _ideOutStream.Seek(0, SeekOrigin.Begin);
             _bazelOut = new StreamReader(_bazelOutStream).ReadToEnd();

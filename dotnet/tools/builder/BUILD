@@ -70,13 +70,14 @@ msbuild_binary(
         "RestoreFixer.cs",
     ],
     project_file = "Builder.csproj",
-    target_framework = "net5.0",
+    target_framework = "net6.0",
     visibility = ["//:__subpackages__"],
     deps = [
         "@nuget//CommandLineParser",
         "@nuget//Microsoft.Build.Locator",
         # gazelle-err: unsupported attribute: ExcludeAssets
         "@nuget//Microsoft.Build.Utilities.Core",
+        "@nuget//Microsoft.NET.StringTools",
         # gazelle-err: unsupported attribute: ExcludeAssets
         # gazelle-err: unsupported attribute: GeneratePathProperty
         "@nuget//SamHowes.Microsoft.Build",

@@ -18,7 +18,16 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '6.x'
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.x'
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.x'
+
       - name: CI Init
         run: .ci/init.sh
       

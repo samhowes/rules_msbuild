@@ -2,17 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\dotnet\tools\bazel_testing\TestRunner.csproj" />
-    <ProjectReference Include="..\..\dotnet\tools\Bzl\Bzl.csproj" />
-    <ProjectReference Include="..\..\dotnet\tools\Runfiles\Runfiles.csproj" />
+    <ProjectReference Include="..\..\dotnet\tools\bazel_testing\TestRunner.csproj"/>
+    <ProjectReference Include="..\..\dotnet\tools\Bzl\Bzl.csproj"/>
+    <ProjectReference Include="..\..\dotnet\tools\Runfiles\Runfiles.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1"/>
   </ItemGroup>
 
 </Project>

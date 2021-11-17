@@ -16,7 +16,7 @@ msbuild_library(
     srcs = [],
     project_file = "Protos.csproj",
     protos = [":greet_proto"],
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = ["@nuget//Grpc.AspNetCore"],
 )
@@ -24,7 +24,7 @@ msbuild_library(
 build_test(
     name = "Protos.Net_test",
     expected_files = {
-        "netcoreapp3.1": [
+        "net6.0": [
             "Protos.Net.dll",
         ],
     },

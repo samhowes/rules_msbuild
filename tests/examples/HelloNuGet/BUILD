@@ -5,7 +5,7 @@ msbuild_binary(
     name = "HelloNuGet",
     srcs = ["Program.cs"],
     project_file = "HelloNuGet.csproj",
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = [
         "@nuget//CommandLineParser",
@@ -16,7 +16,7 @@ build_test(
     name = "HelloNuGet_test",
     args = ["<3"],
     expected_files = {
-        "netcoreapp3.1": [
+        "net6.0": [
             "HelloNuGet.dll",
             "CommandLine.dll",
         ],

@@ -12,12 +12,14 @@ namespace RulesMSBuild.Tools.Builder
         private readonly Files _files;
         private readonly Paths _paths;
         private readonly string _escapedTarget;
+        private readonly string _ideBase;
 
         public RestoreFixer(BuildContext context, Files files, Paths paths)
         {
             _context = context;
             _target = _context!.Bazel.OutputBase;
             _bazelBase = _context.MSBuild.BaseIntermediateOutputPath;
+            _ideBase = Path.GetDirectoryName(_context.MSBuild.BaseIntermediateOutputPath)!;
             _context = context;
             _files = files;
             _paths = paths;
@@ -29,10 +31,9 @@ namespace RulesMSBuild.Tools.Builder
 
         public void Fix(string originalFilePath)
         {
-            var ideFileName = Path.GetFileName(originalFilePath);
-            var ideDirectory = Path.GetDirectoryName(_context.MSBuild.BaseIntermediateOutputPath)!;
-            var ideFilePath = Path.Combine(ideDirectory, ideFileName);
-            var bazelFilePath = _paths.Combine(_bazelBase, ideFileName);
+            var rel = Path.GetRelativePath(_bazelBase, originalFilePath);
+            var ideFilePath = Path.Combine(_ideBase, rel);
+            var bazelFilePath = originalFilePath;
 
             var contents = _files.GetContents(originalFilePath).AsSpan();
             var isJson = contents[0] == '{';
@@ -40,6 +41,7 @@ namespace RulesMSBuild.Tools.Builder
             var thisTarget = needsEscaping ? _escapedTarget : _target;
             var pathCharLength = needsEscaping ? 2 : 1;
 
+            _files.CreateDirectory(Path.GetDirectoryName(ideFilePath)!);
             using var ideOutput = new StreamWriter(_files.Create(ideFilePath));
             using var bazelOutput = new StreamWriter(_files.Create(bazelFilePath));
 
@@ -53,7 +55,7 @@ namespace RulesMSBuild.Tools.Builder
 
                 contents = contents[thisIndex..];
 
-                var endOfPath = contents.IndexOfAny(new[] {'"', ';', '<'});
+                var endOfPath = contents.IndexOfAny(new[] { '"', ';', '<' });
                 var path = contents[..(endOfPath)];
                 var idePath = path;
 

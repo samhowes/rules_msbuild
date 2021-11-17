@@ -173,6 +173,6 @@ namespace RulesMSBuild.Tools.Builder
         public string OutputDir { get; }
         public BazelLabel Label { get; }
         public string BinDir { get; }
-        public string ExecRoot { get; init; }
+        public string ExecRoot { get; set; }
     }
 }

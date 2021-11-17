@@ -1,11 +1,3 @@
-# keep in sync with //dotnet/tools/builder/builder.csproj
-BUILDER_PACKAGES = {
-    "CommandLineParser": "2.9.0-preview1",
-    "Microsoft.Build.Locator": "1.4.1",
-    "SamHowes.Microsoft.Build": "16.9.0",
-    "Microsoft.Build.Utilities.Core": "16.9.0",
-}
-
 def default_tfm(sdk_version):
     default_tfm_version = sdk_version.rsplit(".", 1)[0]
     major_version = int(default_tfm_version.split(".")[0])

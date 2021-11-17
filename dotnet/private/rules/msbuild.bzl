@@ -38,7 +38,7 @@ def _restore_impl(ctx):
     restore_info, outputs = restore(ctx, dotnet)
     return [
         DefaultInfo(
-            files = depset([restore_info.output_dir]),
+            files = depset([restore_info.assets_json]),
         ),
         restore_info,
         OutputGroupInfo(

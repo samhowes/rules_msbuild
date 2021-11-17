@@ -43,6 +43,16 @@ def build_test(name, expected_files, run_location = "", args = [], expected_outp
 
 def _test_config_impl(ctx):
     f = ctx.actions.declare_file(ctx.attr.name.rsplit("_", 1)[0] + ".go")
+    mode = ctx.var["COMPILATION_MODE"]
+    configuration = "fastbuild"
+    if mode == "opt":
+        configuration = "Release"
+    elif mode == "dbg":
+        configuration = "Debug"
+
+    diag = ctx.var.get("BUILD_DIAG", False) == "1"
+    if diag:
+        configuration = "Debug"
 
     assembly_name = ""
     is_publish = False
@@ -63,6 +73,7 @@ def _test_config_impl(ctx):
             "%exec_path%": ctx.expand_location("$(execpath {})".format(ctx.attr.target.label)),
             "%run_location%": ctx.attr.run_location,
             "%compilation_mode%": ctx.var["COMPILATION_MODE"],
+            "%configuration%": configuration,
             "%package%": ctx.label.package,
             "%diag%": ctx.var.get("BUILD_DIAG", ""),
             "%assembly_name%": assembly_name,

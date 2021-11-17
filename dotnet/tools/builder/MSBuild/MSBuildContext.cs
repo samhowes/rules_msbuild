@@ -79,7 +79,7 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
             switch (command.Action)
             {
                 case "restore":
-                    Targets = new[] {"Restore"};
+                    Targets = new[] { "Restore" };
                     // this is auto-set by NuGet.targets in Restore when restoring a referenced project. If we don't set it
                     // ahead of time, there will be a cache miss on the restored project.
                     // https://github.com/NuGet/NuGet.Client/blob/21e2a87537cd9655b7f6599af013d447aa058e29/src/NuGet.Core/NuGet.Build.Tasks/NuGet.targets#L69
@@ -92,11 +92,11 @@ namespace RulesMSBuild.Tools.Builder.MSBuild
                     };
                     break;
                 case "publish":
-                    Targets = new[] {"Publish"};
+                    Targets = new[] { "Publish" };
                     BuildEnvironment["NoBuild"] = "true";
                     break;
                 case "pack":
-                    Targets = new[] {"Pack"};
+                    Targets = new[] { "Pack" };
                     BuildEnvironment["NoBuild"] = "true";
                     break;
                 default:

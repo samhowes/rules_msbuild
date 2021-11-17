@@ -4,7 +4,7 @@ load("//tests/tools/build_test:build_test.bzl", "build_test")
 msbuild_binary(
     name = "overrides",
     srcs = ["Program.cs"],
-    target_framework = "net5.0",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = ["@nuget//System.Security.Principal"],
 )
@@ -12,7 +12,7 @@ msbuild_binary(
 build_test(
     name = "overrides_test",
     expected_files = {
-        "net5.0": [
+        "net6.0": [
             "overrides.dll",
             # this is overridden by the framework and is bundled with the framework itself
             # therefore it won't be copied to the output directory

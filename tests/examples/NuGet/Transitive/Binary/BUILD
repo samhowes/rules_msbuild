@@ -5,7 +5,7 @@ msbuild_binary(
     name = "Binary",
     srcs = ["Program.cs"],
     project_file = "Binary.csproj",
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = [
         "//tests/examples/NuGet/Transitive/Library",
@@ -15,7 +15,7 @@ msbuild_binary(
 build_test(
     name = "Binary_test",
     expected_files = {
-        "netcoreapp3.1": [
+        "net6.0": [
             "Library.dll",
             "Newtonsoft.Json.dll",
         ],

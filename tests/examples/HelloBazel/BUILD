@@ -6,7 +6,7 @@ msbuild_binary(
     srcs = ["Program.cs"],
     packable = True,
     project_file = "HelloBazel.csproj",
-    target_framework = "netcoreapp3.1",
+    target_framework = "net6.0",
     version = "1.2.3",
     visibility = ["//visibility:public"],
 )
@@ -36,16 +36,15 @@ build_test(
             "HelloBazel.binlog",
             "HelloBazel.dot",
         ],
-        "obj/netcoreapp3.1": [
+        "obj/net6.0": [
             "HelloBazel.dll",
         ],
-        "netcoreapp3.1": [
+        "net6.0": [
             # pdb is only output with compilation mode=dbg
             "HelloBazel.pdb",
             "HelloBazel.dll",
             "HelloBazel.deps.json",
             "HelloBazel.runtimeconfig.json",
-            "HelloBazel.runtimeconfig.dev.json",
         ],
     },
     expected_output = "Hello Bazel!\n",
@@ -54,7 +53,7 @@ build_test(
 build_test(
     name = "HelloBazel_publish_test",
     expected_files = {
-        "publish/netcoreapp3.1": [
+        "publish/net6.0": [
             "HelloBazel",
             "HelloBazel.exe",
             "HelloBazel.pdb",

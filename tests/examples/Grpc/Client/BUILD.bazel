@@ -4,7 +4,7 @@ load("@rules_msbuild//dotnet:defs.bzl", "msbuild_binary")
 msbuild_binary(
     name = "Client",
     srcs = ["Program.cs"],
-    target_framework = "net5.0",
+    target_framework = "net6.0",
     visibility = ["//visibility:public"],
     deps = [
         "//tests/examples/Grpc/Protos:Protos.Net",
@@ -15,7 +15,7 @@ msbuild_binary(
 build_test(
     name = "Client_test",
     expected_files = {
-        "net5.0": [
+        "net6.0": [
             "Client.dll",
             "Google.Protobuf.dll",
             "Grpc.AspNetCore.Server.ClientFactory.dll",

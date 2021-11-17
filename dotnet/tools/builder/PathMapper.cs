@@ -22,7 +22,7 @@ namespace RulesMSBuild.Tools.Builder
         private static void SetInstance(PathMapper instance)
         {
             _instance = instance;
-            InterningBinaryReader.OpportunisticIntern = new PathMappingInterner(instance);
+            InterningBinaryReader.Strings = new PathMappingInterner(instance);
             BinaryTranslator.BinaryWriteTranslator.BinaryWriterFactory =
                 (stream) => new PathMappingBinaryWriter(stream, instance);
         }

@@ -400,10 +400,12 @@ namespace RulesMSBuild.Tools.Builder
             switch (_action)
             {
                 case "restore":
-                    FixRestoreOutputs();
+                    FixRestoreOutputs(_context.MSBuild.BaseIntermediateOutputPath);
                     break;
                 case "build":
                 {
+                    FixRestoreOutputs(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath,
+                        _context.MSBuild.Configuration));
                     if (_context.IsTest)
                     {
                         // todo make this less hacky
@@ -464,13 +466,20 @@ namespace RulesMSBuild.Tools.Builder
         /// For the xml files, we'll prepend MSBuildThisFileDirectory in case another project file is evaluating these
         /// files.
         /// </summary>
-        private void FixRestoreOutputs()
+        private void FixRestoreOutputs(string targetPath)
         {
+            targetPath = Path.GetFullPath(targetPath);
             var fixer = new RestoreFixer(_context, new Files(), new Paths());
-            Directory.CreateDirectory(Path.Combine(_context.MSBuild.BaseIntermediateOutputPath));
-            foreach (var ideFileName in Directory.EnumerateFiles(_context.MSBuild.BaseIntermediateOutputPath))
+            Directory.CreateDirectory(targetPath);
+
+            Fix(targetPath);
+
+            void Fix(string path)
             {
-                fixer.Fix(ideFileName);
+                foreach (var directory in Directory.EnumerateDirectories(path))
+                    Fix(directory);
+                foreach (var ideFileName in Directory.EnumerateFiles(path))
+                    fixer!.Fix(ideFileName);
             }
         }
 

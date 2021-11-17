@@ -1,4 +1,7 @@
 <Project>
+    <PropertyGroup>
+        <UseBazel Condition="$(UseBazel) == ''">true</UseBazel>
+    </PropertyGroup>
     <Import Project="Bazel.props"/>
     <Import Project="extras/ide/Directory.Solution.props"/>
 </Project>

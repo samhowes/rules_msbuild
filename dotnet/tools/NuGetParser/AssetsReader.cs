@@ -50,7 +50,7 @@ namespace NuGetParser
             }
 
             _frameworkInfo = _assets;
-            foreach (var part in new[] {"project", "frameworks", tfm})
+            foreach (var part in new[] { "project", "frameworks", tfm })
             {
                 _frameworkInfo.GetRequired(part, out _frameworkInfo);
             }
@@ -73,7 +73,7 @@ namespace NuGetParser
                 foreach (var @ref in refs.EnumerateObject())
                 {
                     if (!@ref.Value.TryGetProperty("privateAssets", out var assets)) continue;
-                    
+
                     if (assets.GetString() != "all") continue;
 
                     var match = Regex.Match(tfm, @"[\d\.]+");
@@ -86,16 +86,16 @@ namespace NuGetParser
                     if (_downloadDeps.TryGetValue(overridesName, out var overridesPackageId))
                     {
                         var rel = overridesPackageId.String.ToLower();
-                        if (Path.DirectorySeparatorChar == '\\')
-                            rel = rel.Replace('/', '\\');
                         overridesPath = Path.Combine(_context.PackagesFolder, rel);
                     }
                     else
                     {
-                        overridesPath = Path.Combine(_context.DotnetRoot, "packs", overridesName, tfmVersion + ".0");    
+                        overridesPath = Path.Combine(_context.DotnetRoot, "packs", overridesName, tfmVersion + ".0");
                     }
-                        
+
                     overridesPath = Path.Combine(overridesPath, "data", "PackageOverrides.txt");
+                    if (Path.DirectorySeparatorChar == '\\')
+                        overridesPath = overridesPath.Replace('\\', '/');
 
                     var overridesList = _files.ReadAllLines(overridesPath)
                         .Select(l => l.Split('|'))
@@ -134,7 +134,7 @@ namespace NuGetParser
                 {
                     version.Override = pkgOverride.Id;
                 }
-                
+
                 version.AllFiles = packageDesc.Value.GetProperty("files")
                     .EnumerateArray()
                     .Select(f => f.GetString())
