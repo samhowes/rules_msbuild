@@ -103,6 +103,17 @@ namespace RulesMSBuild.Tools.Builder
                 try
                 {
                     _buildManager.EndBuild();
+                    foreach (var logger in _deps.Loggers)
+                    {
+                        try
+                        {
+                            logger.Shutdown();
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                    }
                 }
                 catch
                 {

@@ -6,12 +6,8 @@ msbuild_test(
     deps = [
         "//binproj:bin",
         "@nuget//Microsoft.NET.Test.Sdk",
-        # gazelle-err: unsupported element: IncludeAssets
-        # gazelle-err: unsupported element: PrivateAssets
         "@nuget//coverlet.collector",
         "@nuget//xunit",
-        # gazelle-err: unsupported element: IncludeAssets
-        # gazelle-err: unsupported element: PrivateAssets
         "@nuget//xunit.runner.visualstudio",
     ],
 )

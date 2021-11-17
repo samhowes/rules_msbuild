@@ -69,6 +69,7 @@ msbuild_binary(
         "ProjectLoader.cs",
         "RestoreFixer.cs",
     ],
+    assembly_name = "builder",
     project_file = "Builder.csproj",
     target_framework = "net6.0",
     visibility = ["//:__subpackages__"],

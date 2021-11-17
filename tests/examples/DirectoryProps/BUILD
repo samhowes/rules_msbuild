@@ -6,5 +6,7 @@ msbuild_directory(
         "Directory.Build.props",
         "Directory.Build.targets",
     ],
+    assembly_name_prefix = "Foo",
+    assembly_name_root_package = "//tests/examples",
     visibility = [":__subpackages__"],
 )

@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using CommandLine;
 using RulesMSBuild.Tools.Bazel;
 
@@ -111,7 +112,7 @@ namespace Bzl
 
             var query = $"kind(msbuild_restore,{restore.Package})";
             Console.WriteLine($"bazel query {query} | xargs bazel build");
-            var info = new ProcessStartInfo("bazel") {RedirectStandardOutput = true};
+            var info = new ProcessStartInfo("bazel") { RedirectStandardOutput = true };
             info.ArgumentList.Add("query");
             info.ArgumentList.Add(query);
 
@@ -131,7 +132,7 @@ namespace Bzl
         private static string? FindGazelle(Runfiles runfiles)
         {
             // are we released?
-            var artifactsFolder = runfiles.Rlocation($"rules_msbuild/.azpipelines/artifacts:gazelle-dotnet");
+            var artifactsFolder = runfiles.Rlocation($"rules_msbuild/.azpipelines/artifacts");
             string? gazellePath = null;
 
             // if we're in nuget, runfiles will be directory-based, and this will work just fine on windows
@@ -142,7 +143,11 @@ namespace Bzl
             }
             else
             {
-                gazellePath = runfiles.Rlocation("rules_msbuild/gazelle/dotnet:gazelle-dotnet_/gazelle-dotnet");
+                string suffix = "";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    suffix = ".exe";
+                gazellePath =
+                    runfiles.Rlocation($"rules_msbuild/gazelle/dotnet/gazelle-dotnet_/gazelle-dotnet{suffix}");
             }
 
             if (gazellePath == null || !File.Exists(gazellePath))

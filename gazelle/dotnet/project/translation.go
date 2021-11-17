@@ -54,6 +54,9 @@ func (p *Project) GenerateRule(f *rule.File) *rule.Rule {
 	}
 
 	p.Rule.SetAttr("target_framework", p.TargetFramework)
+	if p.AssemblyName != "" {
+		p.Rule.SetAttr("assembly_name", p.AssemblyName)
+	}
 	if len(p.Data) > 0 {
 		p.Rule.SetAttr("data", util.MakeGlob(util.MakeStringExprs(p.Data), nil))
 	}
@@ -74,7 +77,7 @@ func (p *Project) SetProperties() {
 				continue
 			}
 			e := bzl.KeyValueExpr{
-				Comments: bzl.Comments{Before: util.CommentErrs(prop.Unsupported.Messages("property"))},
+				Comments: bzl.Comments{Before: util.CommentErrs(prop.Unsupported.Messages("property", true))},
 				Key:      &bzl.StringExpr{Value: name},
 				Value:    &bzl.StringExpr{Value: prop.Value},
 			}
@@ -92,7 +95,7 @@ func (p *Project) ProcessItemGroup(fgKey string, getItems func(ig *ItemGroup) []
 			i.Evaluate(p)
 			itemType := i.XMLName.Local
 			fg := p.GetFileGroup(itemType)
-			comments := util.CommentErrs(i.Unsupported.Messages(itemType))
+			comments := util.CommentErrs(i.Unsupported.Messages(itemType, true))
 			if i.Remove != "" {
 				fg.Filters = append(fg.Filters, forceSlash(i.Remove))
 			}

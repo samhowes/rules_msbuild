@@ -21,6 +21,7 @@ type Project struct {
 	Unsupported
 
 	Properties      map[string]string
+	AssemblyName    string
 	TargetFramework string
 	PackageId       string
 	IsExe           bool

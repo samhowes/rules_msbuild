@@ -2,6 +2,7 @@ load("@rules_msbuild//dotnet:defs.bzl", "msbuild_library")
 
 msbuild_library(
     name = "properties",
+    assembly_name = "random",
     content = ["Bar/item.json"],
     target_framework = "netstandard2.1",
     visibility = ["//visibility:public"],

@@ -137,7 +137,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 
 	addDep := func(unsupported project.Unsupported, str string, isImport bool) {
 		dep := projectDep{IsImport: isImport}
-		dep.Comments = unsupported.Append(dep.Comments, "")
+		dep.Comments = unsupported.Append(dep.Comments, "", true)
 		if isImport && len(dep.Comments) > 0 {
 			return
 		}
@@ -164,7 +164,7 @@ func processDeps(args language.GenerateArgs, proj *project.Project) {
 		}
 		for _, ref := range ig.PackageReferences {
 			dep := projectDep{IsPackage: true}
-			dep.Comments = ref.Unsupported.Append(dep.Comments, "")
+			dep.Comments = ref.Unsupported.Append(dep.Comments, "", false)
 
 			ref.Evaluate(proj)
 			switch strings.ToLower(ref.Include) {
