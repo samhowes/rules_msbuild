@@ -33,7 +33,7 @@ namespace NuGetParserTests
         [Theory] // 2.8.0 is in the assets file
         [InlineData("2.9.0", 15)]
         [InlineData("2.7.0", 15)]
-        [InlineData("2.8.0", 15)] 
+        [InlineData("2.8.0", 15)]
         public void Overrides_IgnoreFiles(string overrideVersion, int expectedFileCount)
         {
             var json = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "project.assets.json"));
@@ -59,7 +59,7 @@ namespace NuGetParserTests
         private void SetupOverrides(string overrideVersion, string? overridesPath)
         {
             _files.Setup(f => f.ReadAllLines(overridesPath))
-                .Returns(new[] {$"CommandLineParser|{overrideVersion}"});
+                .Returns(new[] { $"CommandLineParser|{overrideVersion}" });
         }
 
         [Fact]
@@ -79,12 +79,10 @@ namespace NuGetParserTests
             errorMessage.Should().BeNull();
 
             var path = $"{PackagesFolder}/microsoft.netcore.app.ref/3.1.0/data/PackageOverrides.txt";
-            if (Path.DirectorySeparatorChar == '\\')
-                path = path.Replace('/', '\\');
-            
+
             _files.Verify(f => f.ReadAllLines(path),
                 Times.Exactly(1));
-            
+
             var versions = _assetsReader.GetPackages().ToList();
 
             versions.Count.Should().Be(1);

@@ -38,13 +38,12 @@ build_test(
         "obj/net6.0": [
             "net60.dll",
         ],
-        "net60": [
+        "net6.0": [
             # pdb is only output with compilation mode=dbg
             "net60.pdb",
             "net60.dll",
             "net60.deps.json",
             "net60.runtimeconfig.json",
-            "net60.runtimeconfig.dev.json",
         ],
     },
     expected_output = "Hello Bazel!\n",
