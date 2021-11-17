@@ -45,7 +45,6 @@ build_test(
             "HelloBazel.dll",
             "HelloBazel.deps.json",
             "HelloBazel.runtimeconfig.json",
-            "HelloBazel.runtimeconfig.dev.json",
         ],
     },
     expected_output = "Hello Bazel!\n",
