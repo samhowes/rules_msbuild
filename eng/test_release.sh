@@ -5,7 +5,7 @@
 set -euo pipefail
 bazel build //eng/release
 export BUILD_WORKSPACE_DIRECTORY="$(pwd)"
-tool="$(pwd)/bazel-bin/eng/release/net5.0/release.dll"
+tool="$(pwd)/bazel-bin/eng/release/net6.0/release.dll"
 if [[ -d tmp ]]; then rm -rf tmp; fi
 mkdir -p tmp
 pushd tmp
