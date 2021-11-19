@@ -110,7 +110,7 @@ namespace release
             Bazel("clean --expunge");
             Bazel("run //:gazelle");
             var result = TryRun("bazel run //console");
-            if (result.Trim() != "Hello World!")
+            if (result.Trim() != "Hello, World!")
             {
                 Die($"test failed, bad output: {result}");
             }
