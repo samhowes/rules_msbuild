@@ -189,7 +189,7 @@ Specifically:
 
 # Should I Use rules_msbuild?
 
-rules_msbuild works (see //tests/... and //e2e:all), and the implementation on .NET 5 & MSBuild 16 has survived a [major version upgrade to .NET 6 and MSBuild 17](https://github.com/samhowes/rules_msbuild/pull/198). [rules_tsql](https://github.com/samhowes/rules_tsql) is a small project that is built and tested using rules_msbuild.
+rules_msbuild works as intended (see //tests/... and //e2e:all), and the implementation on .NET 5 & MSBuild 16 has survived a [major version upgrade to .NET 6 and MSBuild 17](https://github.com/samhowes/rules_msbuild/pull/198). [rules_tsql](https://github.com/samhowes/rules_tsql) is a small project that is built and tested using rules_msbuild.
 
 rules_msbuild is not yet optimized for performance, nor tested for performance. Specifically, because of the sandboxed execution model, [shared compilation is disabled](https://github.com/samhowes/rules_msbuild/issues/35), which likely leads to significant [performance degredation](https://github.com/dotnet/roslyn/issues/12360#issuecomment-233473465) for larger builds.
 
