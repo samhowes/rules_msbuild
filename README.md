@@ -49,6 +49,7 @@ Check out the `tests/` directory & `e2e/` directory for examples
         1. [msbuild_binary](#msbuild_binary)
         1. [NuGet Dependencies](#nuget-dependencies)
     1. [Sharp Edges](#watch-out-for-sharp-edges)
+    1. [Should I Use rules_msbuild?](#should-i-use-rules_msbuild)
 1. [Rules](docs/rules.md)
 1. [Understanding the build](docs/Understanding.md)
 1. [Build File Generation with Gazelle](gazelle/dotnet/Readme.md)<!-- toc:start -->
@@ -185,3 +186,13 @@ Specifically:
    [weird error message](https://github.com/samhowes/rules_msbuild/issues?q=is%3Aissue+is%3Aopen+label%3Asharp-edge)
    will be output by the NuGetparser, or the builder when restoring packages for that framework
    version.
+
+# Should I Use rules_msbuild?
+
+rules_msbuild works (see //tests/... and //e2e:all), and the implementation on .NET 5 & MSBuild 16 has survived a [major version upgrade to .NET 6 and MSBuild 17](https://github.com/samhowes/rules_msbuild/pull/198). [rules_tsql](https://github.com/samhowes/rules_tsql) is a small project that is built and tested using rules_msbuild.
+
+rules_msbuild is not yet optimized for performance, nor tested for performance. Specifically, because of the sandboxed execution model, [shared compilation is disabled](https://github.com/samhowes/rules_msbuild/issues/35), which likely leads to significant [performance degredation](https://github.com/dotnet/roslyn/issues/12360#issuecomment-233473465) for larger builds.
+
+Implementation has started on [bazel persistent workers](https://github.com/samhowes/rules_msbuild/issues/201) which should allow for shared compilation as well as more efficient MSBuild performance as build results could be kept in memory instead of loading from disk. Based on [comments from Microsoft engineers](https://github.com/dotnet/roslyn/issues/12360#issuecomment-233473465) this could result in a 3x performance boost, as indicated, no performance testing has been done yet. 
+
+rules_msbuild could be integrated with bazelbuild/rules_dotnet in the future. See the [discussion issue for more details](https://github.com/bazelbuild/rules_dotnet/issues/260).
