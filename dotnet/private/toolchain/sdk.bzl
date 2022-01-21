@@ -114,7 +114,7 @@ def _dotnet_download_sdk_impl(ctx):
 
     url = None
     for line in res.stdout.split("\n"):
-        if "Primary named payload URL:" in line:
+        if "rimary" in line and ("url" in line or "URL" in line) and "-dev-" not in line:
             url = line.rsplit(" ", 1)[1]
             break
 
