@@ -10,7 +10,7 @@ BAZEL_DOTNETOS_CONSTRAINTS = {
 
 BAZEL_DOTNETARCH_CONSTRAINTS = {
     "amd64": "@platforms//cpu:x86_64",
-    "arm64": "@platforms//cpu:arm64",
+    "arm64": "@platforms//cpu:aarch64",
 }
 
 DOTNETOS_DOTNETARCH = (
