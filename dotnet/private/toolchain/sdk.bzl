@@ -10,9 +10,10 @@ _download_sdk_attrs = {
     "version": attr.string(),
     "nuget_repo": attr.string(mandatory = True),
     "shas": attr.string_dict(),
+    "installer_shas": attr.string_dict(),
 }
 
-def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
+def msbuild_register_toolchains(version = None, shas = {}, installer_shas = {}, nuget_repo = "nuget"):
     if not version:
         fail('msbuild_register_toolchains: version must be a string like "3.1.100" or "host"')
 
@@ -26,6 +27,7 @@ def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget")
             name = SDK_NAME,
             version = version,
             shas = shas,
+            installer_shas = installer_shas,
             nuget_repo = nuget_repo,
         )
     _register_toolchains(SDK_NAME)
@@ -86,10 +88,13 @@ def _dotnet_download_sdk_impl(ctx):
     if platform in shas:
         sdk_sha = shas[platform]
 
+    installer_shas = getattr(ctx.attr, "installer_shas", {})
     install_script = None
     script_url = None
     args = None
     sha = ""
+    if platform in installer_shas:
+        sha = installer_shas[platform]
     if os == "windows":
         script_url = "https://dot.net/v1/dotnet-install.ps1"
         install_script = ctx.path("dotnet-install.ps1")
@@ -97,7 +102,6 @@ def _dotnet_download_sdk_impl(ctx):
     else:
         script_url = "https://dot.net/v1/dotnet-install.sh"
         install_script = ctx.path("dotnet_install.sh")
-        #sha = "575aaa47b0e2ed6f64e3f76d42386656e4efe56c018d3245d11d51dc7ed1b983"
         args = [str(install_script)]
 
     ctx.download(
