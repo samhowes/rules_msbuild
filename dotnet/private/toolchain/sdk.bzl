@@ -92,9 +92,9 @@ def _dotnet_download_sdk_impl(ctx):
     install_script = None
     script_url = None
     args = None
-    sha = ""
+    installer_sha = ""
     if platform in installer_shas:
-        sha = installer_shas[platform]
+        installer_sha = installer_shas[platform]
     if os == "windows":
         script_url = "https://dot.net/v1/dotnet-install.ps1"
         install_script = ctx.path("dotnet-install.ps1")
@@ -105,9 +105,9 @@ def _dotnet_download_sdk_impl(ctx):
         args = [str(install_script)]
 
     ctx.download(
-        script_url,
-        install_script,
-        sha256 = sha,
+        url = script_url,
+        output = install_script,
+        sha256 = installer_sha,
         executable = True,
     )
 
