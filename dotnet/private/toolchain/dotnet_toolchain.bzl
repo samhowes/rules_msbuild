@@ -70,7 +70,6 @@ def declare_toolchains(host, sdk, builder):
             tags = ["manual"],
             visibility = ["//visibility:public"],
         )
-        print("creating toolchain @rules_msbuild//dotnet:toolchain for @rules_msbuild//dotnet:{} @rules_msbuild//dotnet:{} and constraints {}".format(host_dotnetos, host_dotnetarch, constraints))
         native.toolchain(
             name = toolchain_name,
             toolchain_type = "@rules_msbuild//dotnet:toolchain",

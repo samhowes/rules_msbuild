@@ -228,7 +228,6 @@ def _register_toolchains(repo):
         "@{}//:{}".format(repo, name)
         for name in generate_toolchain_names()
     ]
-    print(labels)
     native.register_toolchains(*labels)
 
 def _parse_version(version):
