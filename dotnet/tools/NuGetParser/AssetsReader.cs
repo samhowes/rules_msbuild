@@ -92,7 +92,7 @@ namespace NuGetParser
                     {
                         var dir = Path.Combine(_context.DotnetRoot, "packs", overridesName);
                         var overridesVersions = _files.EnumerateDirectories(dir);
-                        throw new Exception(string.Join(",", overridesVersions));
+                        throw new Exception(tfmVersion + "==" + string.Join(",", overridesVersions));
                         overridesName = overridesVersions.Where(d => d.StartsWith(tfmVersion)).Last();
                     }
 
