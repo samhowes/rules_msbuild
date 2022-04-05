@@ -6,12 +6,6 @@ package(default_visibility = ["//visibility:public"])
 
 # https://docs.microsoft.com/en-us/dotnet/core/distribution-packaging
 
-declare_toolchains(
-    builder = ":builder",
-    host = "{dotnetos}_{dotnetarch}",
-    sdk = ":dotnet_sdk",
-)
-
 exports_files([
     "Directory.Bazel.props",
     "Directory.Bazel.targets",

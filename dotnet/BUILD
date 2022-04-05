@@ -1,14 +1,24 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load(":toolchains.bzl", "declare_constraints")
+load("//dotnet:toolchain.bzl", "msbuild_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
 toolchain_type(
-    name = "toolchain",
+    name = "toolchain_type",
     visibility = ["//visibility:public"],
 )
 
-declare_constraints()
+msbuild_toolchain(
+    name = "toolchain_impl",
+    builder = "//dotnet/tools/builder:Builder",
+    dotnet_runtime = "@dotnet_runtime//:dotnet_runtime",
+)
+
+toolchain(
+    name = "toolchain",
+    toolchain = ":toolchain_impl",
+    toolchain_type = ":toolchain_type",
+)
 
 exports_files(
     ["defs.bzl"],
@@ -21,6 +31,5 @@ bzl_library(
     deps = [
         "//dotnet/private:bzl",
         "//dotnet/private/rules:bzl",
-        "//dotnet/private/toolchain:bzl",
     ],
 )

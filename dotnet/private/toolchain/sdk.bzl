@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "update_attrs")
-load("//dotnet/private:platforms.bzl", "generate_toolchain_names")
-load("//dotnet/private/msbuild:nuget.bzl", "NUGET_BUILD_CONFIG", "prepare_nuget_config")
+load("//dotnet/private/msbuild:nuget.bzl", "NUGET_BUILD_CONFIG")
 load("//dotnet/private/toolchain:common.bzl", "default_tfm", "detect_host_platform")
 load("//deps:public_nuget.bzl", "PACKAGES")
 
@@ -28,7 +27,6 @@ def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget")
             shas = shas,
             nuget_repo = nuget_repo,
         )
-    _register_toolchains(SDK_NAME)
 
 def _dotnet_host_sdk_impl(ctx):
     os, _ = detect_host_platform(ctx)
@@ -218,13 +216,6 @@ def _sdk_build_file(ctx, version):
             "{builder_tfm}": builder_tfm,
         },
     )
-
-def _register_toolchains(repo):
-    labels = [
-        "@{}//:{}".format(repo, name)
-        for name in generate_toolchain_names()
-    ]
-    native.register_toolchains(*labels)
 
 def _parse_version(version):
     """Parses a version string like "3.1" and returns a tuple of numbers or None"""
