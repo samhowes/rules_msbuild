@@ -13,8 +13,6 @@ Links
 
 > These docs are under construction. Please open an issue for any specific questions!
 
-rules_msbuild is an alternative to [rules_dotnet](https://github.com/bazelbuild/rules_dotnet).
-
 # In Beta!
 
 ```bash
