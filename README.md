@@ -1,7 +1,10 @@
 # Dotnet Rules for Bazel
 
+## Project status: Out of date/Non-functional
+For a working implementation use [rules_dotnet](https://github.com/bazel-contrib/rules_dotnet) instea.
+
 | Windows                                                                                                                                                                                                                                                  | Mac                                                                                                                                                                                                                                              | Linux                                                                                                                                                                                                                                                |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [![Build Status](https://dev.azure.com/samhowes/rules_msbuild/_apis/build/status/samhowes.rules_msbuild?branchName=master&jobName=windows)](https://dev.azure.com/samhowes/rules_msbuild/_build/latest?definitionId=6&branchName=master&jobName=windows) | [![Build Status](https://dev.azure.com/samhowes/rules_msbuild/_apis/build/status/samhowes.rules_msbuild?branchName=master&jobName=mac)](https://dev.azure.com/samhowes/rules_msbuild/_build/latest?definitionId=6&branchName=master&jobName=mac) | [![Build Status](https://dev.azure.com/samhowes/rules_msbuild/_apis/build/status/samhowes.rules_msbuild?branchName=master&jobName=linux)](https://dev.azure.com/samhowes/rules_msbuild/_build/latest?definitionId=6&branchName=master&jobName=linux) |
 
 <!--
@@ -9,8 +12,6 @@ Links
  -->
 
 > These docs are under construction. Please open an issue for any specific questions!
-
-rules_msbuild is an alternative to [rules_dotnet](https://github.com/bazelbuild/rules_dotnet).
 
 # In Beta!
 
