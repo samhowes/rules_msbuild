@@ -10,9 +10,10 @@ _download_sdk_attrs = {
     "version": attr.string(),
     "nuget_repo": attr.string(mandatory = True),
     "shas": attr.string_dict(),
+    "installer_shas": attr.string_dict(),
 }
 
-def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget"):
+def msbuild_register_toolchains(version = None, shas = {}, installer_shas = {}, nuget_repo = "nuget"):
     if not version:
         fail('msbuild_register_toolchains: version must be a string like "3.1.100" or "host"')
 
@@ -26,6 +27,7 @@ def msbuild_register_toolchains(version = None, shas = {}, nuget_repo = "nuget")
             name = SDK_NAME,
             version = version,
             shas = shas,
+            installer_shas = installer_shas,
             nuget_repo = nuget_repo,
         )
     _register_toolchains(SDK_NAME)
@@ -86,10 +88,13 @@ def _dotnet_download_sdk_impl(ctx):
     if platform in shas:
         sdk_sha = shas[platform]
 
+    installer_shas = getattr(ctx.attr, "installer_shas", {})
     install_script = None
     script_url = None
     args = None
-    sha = ""
+    installer_sha = ""
+    if platform in installer_shas:
+        installer_sha = installer_shas[platform]
     if os == "windows":
         script_url = "https://dot.net/v1/dotnet-install.ps1"
         install_script = ctx.path("dotnet-install.ps1")
@@ -97,13 +102,12 @@ def _dotnet_download_sdk_impl(ctx):
     else:
         script_url = "https://dot.net/v1/dotnet-install.sh"
         install_script = ctx.path("dotnet_install.sh")
-        sha = "c96360abc54d74454105df45cba5d6ac78c8d46859d9a1c2164df2a4dd09af6c"
         args = [str(install_script)]
 
     ctx.download(
-        script_url,
-        install_script,
-        sha256 = sha,
+        url = script_url,
+        output = install_script,
+        sha256 = installer_sha,
         executable = True,
     )
 
@@ -114,7 +118,7 @@ def _dotnet_download_sdk_impl(ctx):
 
     url = None
     for line in res.stdout.split("\n"):
-        if "Primary named payload URL:" in line:
+        if "rimary" in line and ("url" in line or "URL" in line) and "-dev-" not in line:
             url = line.rsplit(" ", 1)[1]
             break
 
